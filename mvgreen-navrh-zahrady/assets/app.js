@@ -109,7 +109,14 @@ const plants=[
 {name:'Třapatkovka nachová',latin:'Echinacea purpurea',sun:['Slunce'],water:['normal'],soil:['normal'],cold:5,density:5,price:79,priceType:'exact',size:'květináč 9 cm',bloom:'červenec–září',height:'do 80 cm',source:'https://eshop.starkl.com/trapatka-cervena',verified:'2026-10-17'},
 {name:'Kostřava sivá „Elijah Blue“',latin:'Festuca cinerea Elijah Blue',sun:['Slunce'],water:['dry','normal'],soil:['sand','normal'],cold:5,density:7,price:98,priceType:'exact',size:'květináč 9 cm',bloom:'červen–červenec',height:'do 40 cm',source:'https://www.eshop.starkl.com/kostrava-siva-elijah-blue',verified:'2026-10-17'},
 {name:'Rudbékie „Cherry Brandy“',latin:"Rudbeckia hirta Cherry Brandy",sun:['Slunce'],water:['normal'],soil:['normal'],cold:5,density:5,price:98,priceType:'exact',size:'květináč 9 cm',bloom:'červenec–září',height:'do 80 cm',source:'https://eshop.starkl.com/rudbekie-cherry-brandy',verified:'2026-10-17'},
-{name:'Rozchodník suchomilný',latin:'Sedum cristatum',sun:['Slunce'],water:['dry'],soil:['sand','normal'],cold:5,density:9,price:53,priceType:'approx',size:'květináč 7 cm (prodej po 3 ks za 159 Kč)',bloom:'neuvedeno',height:'do 15 cm',availability:'vyprodáno',source:'https://eshop.starkl.com/rozchodnik-suchomilny',verified:'2026-10-17'}
+{name:'Rozchodník suchomilný',latin:'Sedum cristatum',sun:['Slunce'],water:['dry'],soil:['sand','normal'],cold:5,density:9,price:53,priceType:'approx',size:'květináč 7 cm (prodej po 3 ks za 159 Kč)',bloom:'neuvedeno',height:'do 15 cm',availability:'vyprodáno',source:'https://eshop.starkl.com/rozchodnik-suchomilny',verified:'2026-10-17'},
+
+{name:'Šanta „Purrsian Blue“',latin:'Nepeta x faassenii Purrsian Blue',sun:['Slunce'],water:['dry','normal'],soil:['sand','normal'],cold:5,density:6,price:98,priceType:'exact',size:'květináč 9 cm',bloom:'dlouhé kvetení (až 5 měsíců)',height:'do 40 cm',source:'https://www.eshop.starkl.com/santa-zkrizena',verified:'2026-10-17'},
+{name:'Šalvěj hajní „Sensation Compact Bright Rose“',latin:'Salvia nemorosa Sensation Compact Bright Rose',sun:['Slunce'],water:['dry','normal'],soil:['sand','normal'],cold:5,density:7,price:98,priceType:'exact',size:'květináč 9 cm',bloom:'květen–srpen',height:'do 35 cm',source:'https://www.eshop.starkl.com/salvej-sensation-compact-bright-rose',verified:'2026-10-17'},
+{name:'Kakost himálajský „Plenum“',latin:'Geranium himalayense Plenum',sun:['Slunce','Polostín'],water:['normal'],soil:['normal'],cold:5,density:6,price:109,priceType:'exact',size:'květináč 9 cm',bloom:'květen–červenec',height:'do 30 cm',availability:'vyprodáno',source:'https://eshop.starkl.com/plnokvety-kakost',verified:'2026-10-17'},
+{name:'Třapatka zářivá „Goldsturm“',latin:'Rudbeckia fulgida Goldsturm',sun:['Slunce','Polostín'],water:['normal'],soil:['normal'],cold:5,density:5,price:144,priceType:'approx',size:'kontejner 1,5 l',bloom:'červenec–říjen',height:'do 100 cm',source:'https://www.rostlinky.cz/rudbeckia-fulgida-goldsturm-trapatka-zariva-c1-5.html',verified:'2026-10-17'},
+{name:'Rozchodník „Xenox Yellow“',latin:'Sedum Xenox Yellow',sun:['Slunce'],water:['dry','normal'],soil:['sand','normal'],cold:5,density:6,price:187,priceType:'approx',size:'kontejner 1 l',bloom:'srpen–říjen',height:'do 50 cm',source:'https://www.rostlinky.cz/sedum-xenox-yellow-rozchodnik-c1.html',verified:'2026-10-17'}
+
 ];
 let lastPlan=null;
 const money=n=>Math.round(n).toLocaleString('cs-CZ')+' Kč';
@@ -124,6 +131,7 @@ function createPlan(){
  let eligible=plants.filter(p=>(p.sun.includes(sun)||sun==='Různé podmínky')&&p.water.includes(water)&&(soil==='unknown'||p.soil.includes(soil)));
  if(!eligible.length){q('mg-plan-output').textContent='Pro tyto podmínky zatím nemáme ověřené rostliny. Nevhodné druhy nebudeme doporučovat.';q('mg-plan-output').classList.remove('mg-hidden');lastPlan=null;return}
  eligible=eligible.filter(p=>p.availability!=='vyprodáno').slice(0,4);
+ if(!eligible.length){q('mg-plan-output').textContent='Pro zadané podmínky nejsou aktuálně dostupné ověřené rostliny.';q('mg-plan-output').classList.remove('mg-hidden');lastPlan=null;return;}
  const shares=eligible.map(()=>1/eligible.length);
  const reserve=.1,soilRate=80*13, mulchRate=50*11;
  // Keep the client-facing estimate focused on plants and the bed itself; never exceed the budget.
