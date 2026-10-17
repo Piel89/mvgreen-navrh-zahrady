@@ -104,7 +104,7 @@ syncMode();
 const plants=[
 {name:'Levandule úzkolistá „Munstead“',latin:'Lavandula angustifolia Munstead',sun:['Slunce'],water:['dry','normal'],soil:['sand','normal'],cold:5,density:6,price:89,priceType:'exact',size:'květináč 9 cm',bloom:'červen–srpen',height:'30–40 cm',source:'https://eshop.starkl.com/lavandula-angustifolia-blue',verified:'2026-10-17'},
 {name:'Levandule úzkolistá „Rosea“',latin:"Lavandula angustifolia Rosea",sun:['Slunce'],water:['dry','normal'],soil:['sand','normal'],cold:5,density:6,price:89,priceType:'exact',size:'květináč 9 cm',bloom:'červen–srpen',height:'30–40 cm',source:'https://www.eshop.starkl.com/vonava-levandule-ruzova',verified:'2026-10-17'},
-{name:'Levandule úzkolistá „Dark Hidcote Blue“',latin:'Lavandula angustifolia Dark Hidcote Blue',sun:['Slunce'],water:['dry','normal'],soil:['sand','normal'],cold:5,density:6,price:null,priceType:'unknown',size:'kontejner 2 l',bloom:'červen–srpen',height:'do 40 cm',source:'https://eshop.starkl.com/levandule-uzkolista-dark-hidcote-blue',verified:'2026-10-17'}
+{name:'Levandule úzkolistá „Dark Hidcote Blue“',latin:'Lavandula angustifolia Dark Hidcote Blue',sun:['Slunce'],water:['dry','normal'],soil:['sand','normal'],cold:5,density:6,price:239,priceType:'exact',availability:'vyprodáno',size:'kontejner 2 l',bloom:'červen–srpen',height:'do 40 cm',source:'https://eshop.starkl.com/levandule-uzkolista-dark-hidcote-blue',verified:'2026-10-17'}
 ];
 let lastPlan=null;
 const money=n=>Math.round(n).toLocaleString('cs-CZ')+' Kč';
@@ -119,14 +119,14 @@ function createPlan(){
  let eligible=plants.filter(p=>(p.sun.includes(sun)||sun==='Různé podmínky')&&p.water.includes(water)&&(soil==='unknown'||p.soil.includes(soil)));
  if(!eligible.length){q('mg-plan-output').textContent='Pro tyto podmínky zatím nemáme ověřené rostliny. Nevhodné druhy nebudeme doporučovat.';q('mg-plan-output').classList.remove('mg-hidden');lastPlan=null;return}
  eligible=eligible.slice(0,4);
- const shares=eligible.map((_,i)=>[.35,.3,.2,.15][i]);
+ const shares=eligible.map(()=>1/eligible.length);
  const reserve=.1,soilRate=80*13, mulchRate=50*11;
  // Keep the client-facing estimate focused on plants and the bed itself; never exceed the budget.
  // Estimate includes soil and mulch but excludes labour, transport, removal, paving and irrigation.
  function estimate(area){
    const items=eligible.map((p,i)=>({name:p.name,latin:p.latin,quantity:Math.max(1,Math.round(area*shares[i]*p.density)),unit:p.price,kind:'rostlina'}));
    const plantsCost=items.reduce((sum,p)=>sum+(Number.isFinite(p.unit)?p.quantity*p.unit:0),0);
-   const materials=Math.ceil(area*.08*100)/100*13000+Math.ceil(area*.05*100)/100*5500;
+   const materials=0; // No verified supplier pricing for materials.
    return {items,plantsCost,materials,total:Math.ceil((plantsCost+materials)*(1+reserve))};
  }
  let area=requested,calc=estimate(area);
@@ -139,31 +139,25 @@ function createPlan(){
  const output=q('mg-plan-output');
  if(!canFit){lastPlan=null;output.innerHTML=`<h4>Rozpočet ${money(budget)} nestačí na základní výsadbu</h4><p>Zkuste zvýšit rozpočet nebo zvolit jednodušší výsadbu. Nechceme slibovat návrh, který se do limitu nevejde.</p>`;output.classList.remove('mg-hidden');return}
  const reduced=area<requested-.05;
- const items=[...calc.items,{name:'Zahradnický substrát',quantity:Math.ceil(area*.08*100)/100,unit:13000,kind:'materiál',unitName:'m³',visual:'tmavě hnědý sypký zahradnický substrát'},{name:'Borová mulčovací kůra',quantity:Math.ceil(area*.05*100)/100,unit:5500,kind:'materiál',unitName:'m³',visual:'přírodní hnědá borová mulčovací kůra střední frakce'}];
+ const diversityNotice=eligible.length<4?'<p class="mg-budget-notice">Upozornění: Katalog zatím nemá dostatek ověřených druhů pro pestrou výsadbu. Jde o částečný návrh.</p>':'';
+ const items=[...calc.items,{name:'Zahradnický substrát',quantity:Math.ceil(area*.08*100)/100,unit:null,kind:'materiál',unitName:'m³',visual:'tmavě hnědý sypký zahradnický substrát'},{name:'Borová mulčovací kůra',quantity:Math.ceil(area*.05*100)/100,unit:null,kind:'materiál',unitName:'m³',visual:'přírodní hnědá borová mulčovací kůra střední frakce'}];
  lastPlan={data:d,area,items,subtotal:calc.plantsCost+calc.materials,reserve,total:calc.total};
  const plantCards=calc.items.map((p,i)=>{
    const original=eligible[i];const page='https://commons.wikimedia.org/w/index.php?search='+encodeURIComponent(original.latin)+'&title=Special:MediaSearch&type=image';
-   return `<tr><td><div class="mg-plant-photo" data-plant-latin="${htmlEscape(original.latin)}"><span aria-hidden="true">🌱</span><small>Fotografie se načítá…</small></div></td><td><strong>${htmlEscape(p.name)}</strong><small>${htmlEscape(p.latin)} · ${htmlEscape(original.size)}</small><a href="${htmlEscape(original.source)}" target="_blank" rel="noopener noreferrer">Ověřená nabídka ↗</a></td><td>${p.quantity} ks</td><td>${htmlEscape(original.bloom)}</td><td>${htmlEscape(original.height)}</td><td>${Number.isFinite(p.unit)?money(p.unit):'Cena nezjištěna'}</td><td>${Number.isFinite(p.unit)?money(p.quantity*p.unit):'Cena nezjištěna'}</td></tr>`;
+   return `<tr><td><div class="mg-plant-photo" data-plant-latin="${htmlEscape(original.latin.split(' ').slice(0,2).join(' '))}"><span aria-hidden="true">🌱</span><small>Fotografie se načítá…</small></div></td><td><strong>${htmlEscape(p.name)}</strong><small>${htmlEscape(p.latin)} · ${htmlEscape(original.size)}${original.availability?' · '+htmlEscape(original.availability):''}</small><a href="${htmlEscape(original.source)}" target="_blank" rel="noopener noreferrer">Nabídka prodejce ↗</a></td><td>${p.quantity} ks</td><td>${htmlEscape(original.bloom)}</td><td>${htmlEscape(original.height)}</td><td>${Number.isFinite(p.unit)?money(p.unit):'Cena nezjištěna'}</td><td>${Number.isFinite(p.unit)?money(p.quantity*p.unit):'Cena nezjištěna'}</td></tr>`;
  }).join('');
- const materialCards=items.filter(x=>x.kind==='materiál').map(x=>`<article class="mg-plant-card"><div class="mg-plant-photo" data-material-name="${htmlEscape(x.name)}"><span aria-hidden="true">🪴</span><small>Fotografie se načítá…</small></div><div><strong>${htmlEscape(x.name)}</strong><small>${htmlEscape(x.visual)}</small><div>${x.quantity.toLocaleString('cs-CZ')} ${x.unitName} · ${money(x.quantity*x.unit)}</div></div></article>`).join('');
- output.innerHTML=`<h4>🌿 Návrh výsadby – ${htmlEscape(d['mg-locality']||'vaše zahrada')}</h4><p>${htmlEscape(sun)} · ${htmlEscape(water)} půda${alt>650?' · Ve vyšší poloze ověřte mrazuvzdornost.':''}</p>${reduced?`<p class="mg-budget-notice">Abychom dodrželi rozpočet, navrhujeme výsadbu na <strong>${area.toLocaleString('cs-CZ')} m²</strong> z požadovaných ${requested.toLocaleString('cs-CZ')} m². Zbývající plochu bude nutné řešit zvlášť.</p>`:`<p>Navržená plocha výsadby: <strong>${area.toLocaleString('cs-CZ')} m²</strong></p>`}<div class="mg-plan-scroll"><table><thead><tr><th>Foto</th><th>Rostlina</th><th>Počet</th><th>Kvetení</th><th>Výška</th><th>Cena/ks</th><th>Celkem</th></tr></thead><tbody>${plantCards}</tbody></table></div><div class="mg-plant-cards">${materialCards}</div><div class="mg-budget-total"><span>Orientační minimum (nezjištěné ceny nejsou zahrnuty)</span><strong>${money(calc.total)}</strong><small>Váš limit: ${money(budget)} · Včetně 10% rezervy</small></div><details class="mg-budget-details"><summary>Zobrazit podrobnosti ceny</summary><p>Rostliny: ${money(calc.plantsCost)}<br>Substrát a mulč: ${money(calc.materials)}<br>Rezerva: ${money(calc.total-calc.plantsCost-calc.materials)}</p></details><p class="mg-note">Ceny ověřené 17. 10. 2026 dle odkazovaných nabídek; ceny a skladovost se mohou změnit. Položky s označením Cena nezjištěna nejsou zahrnuty do součtu; skutečná cena může překročit rozpočet. Nezahrnují práci, dopravu, terénní úpravy, závlahu ani odstranění původních prvků. Fotografie jsou referenční; při nedostupnosti se zobrazí náhradní symbol. U rostlin se může lišit kultivar a velikost. Přesnou vhodnost rostlin a plochu ověřte na místě.</p>`;
+ const materialCards=items.filter(x=>x.kind==='materiál').map(x=>`<article class="mg-plant-card"><div class="mg-plant-photo" data-unused-material="${htmlEscape(x.name)}"><span aria-hidden="true">🪴</span><small>Fotografie se načítá…</small></div><div><strong>${htmlEscape(x.name)}</strong><small>${htmlEscape(x.visual)}</small><div>${x.quantity.toLocaleString('cs-CZ')} ${x.unitName} · Cena nezjištěna</div></div></article>`).join('');
+ output.innerHTML=`<h4>🌿 Návrh výsadby – ${htmlEscape(d['mg-locality']||'vaše zahrada')}</h4><p>${htmlEscape(sun)} · ${htmlEscape(water)} půda${alt>650?' · Ve vyšší poloze ověřte mrazuvzdornost.':''}</p>${reduced?`<p class="mg-budget-notice">Abychom dodrželi rozpočet, navrhujeme výsadbu na <strong>${area.toLocaleString('cs-CZ')} m²</strong> z požadovaných ${requested.toLocaleString('cs-CZ')} m². Zbývající plochu bude nutné řešit zvlášť.</p>`:`<p>Navržená plocha výsadby: <strong>${area.toLocaleString('cs-CZ')} m²</strong></p>`}${diversityNotice}<p class="mg-budget-notice">Neúplný rozpočet: materiály nejsou naceněné. Skutečná cena může přesáhnout zadaný limit.</p><div class="mg-plan-scroll"><table><thead><tr><th>Foto</th><th>Rostlina</th><th>Počet</th><th>Kvetení</th><th>Výška</th><th>Cena/ks</th><th>Celkem</th></tr></thead><tbody>${plantCards}</tbody></table></div><div class="mg-plant-cards">${materialCards}</div><div class="mg-budget-total"><span>Součet známých cen (bez materiálu)</span><strong>${money(calc.total)}</strong><small>Váš limit: ${money(budget)} · Materiály bez ověřené ceny</small></div><details class="mg-budget-details"><summary>Zobrazit podrobnosti ceny</summary><p>Rostliny: ${money(calc.plantsCost)}<br>Substrát a mulč: Cena nezjištěna<br>Rezerva: ${money(calc.total-calc.plantsCost-calc.materials)}</p></details><p class="mg-note">Ceny jsou orientační podle nabídek prodejců. Skladovost a množstevní slevy je nutné ověřit; některé položky mohou být vyprodané. Položky s označením Cena nezjištěna nejsou zahrnuty do součtu; skutečná cena může překročit rozpočet. Nezahrnují práci, dopravu, terénní úpravy, závlahu ani odstranění původních prvků. Fotografie jsou referenční; při nedostupnosti se zobrazí náhradní symbol. U rostlin se může lišit kultivar a velikost. Přesnou vhodnost rostlin a plochu ověřte na místě.</p>`;
  output.classList.remove('mg-hidden');
  // Free external image lookup; if unavailable, leave the explicit link to plant photographs.
- output.querySelectorAll('[data-material-name]').forEach(async box=>{
-   const term=box.getAttribute('data-material-name')==='Zahradnický substrát'?'potting soil':'pine bark mulch';
-   try {const api='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent('filetype:bitmap '+term)+'&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=240&format=json&origin=*';
-     const res=await fetch(api),json=await res.json(),page=Object.values(json.query?.pages||{})[0],src=page?.imageinfo?.[0]?.thumburl;
-     if(src&&src.startsWith('https://')){const im=document.createElement('img');im.src=src;im.alt='Ilustrační fotografie: '+term;im.loading='lazy';box.replaceChildren(im)}else box.querySelector('small').textContent='Fotografie není dostupná';
-   }catch(e){const sm=box.querySelector('small');if(sm)sm.textContent='Fotografie není dostupná'}
- });
  output.querySelectorAll('[data-plant-latin]').forEach(async box=>{
    const latin=box.getAttribute('data-plant-latin');
    try{
-     const url='https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages&piprop=thumbnail&pithumbsize=240&redirects=1&titles='+encodeURIComponent(latin);
+     const url='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent('filetype:bitmap '+latin)+'&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url&iiurlwidth=240&format=json&origin=*';
      const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),3500);
      let res;try{res=await fetch(url,{signal:controller.signal})}finally{clearTimeout(timeout)}
-     const data=await res.json(),page=Object.values(data.query?.pages||{})[0],src=page?.thumbnail?.source;
-     if(src&&/^https:\/\//.test(src)){const im=document.createElement('img');im.src=src;im.alt='Fotografie: '+latin;im.loading='lazy';box.replaceChildren(im)}else{box.querySelector('small').textContent='Fotografie není dostupná'}
+     const data=await res.json(),page=Object.values(data.query?.pages||{}).find(p=>p.title?.toLowerCase().includes(latin.toLowerCase())),src=page?.imageinfo?.[0]?.thumburl;
+     if(src&&/^https:\/\//.test(src)){const im=document.createElement('img');im.src=src;im.alt='Fotografie: '+latin;im.loading='lazy';box.replaceChildren(im)}else{box.querySelector('small').textContent='Fotografie není dostupná – viz nabídka prodejce'}
    }catch(e){const small=box.querySelector('small');if(small)small.textContent='Fotografie není dostupná'}
  });
 }
