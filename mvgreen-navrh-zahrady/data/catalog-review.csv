@@ -1,0 +1,19 @@
+category,cz_name,latin_name,cultivar,source_url,available_in_cz,price_czk,price_type,container_size,flowering,adult_height,light,soil,moisture,verified_date,review_status
+trvalka,Levandule úzkolistá,Lavandula angustifolia,Munstead,,unverified,,unknown,,červen–srpen,30–40 cm,slunce,propustná,sušší,,needs_supplier_verification
+trvalka,Levandule úzkolistá,Lavandula angustifolia,Rosea,,unverified,,unknown,,červen–srpen,30–40 cm,slunce,propustná,sušší,,needs_supplier_verification
+trvalka,Levandule úzkolistá,Lavandula angustifolia,Dark Hidcote Blue,,unverified,,unknown,,červen–srpen,do 40 cm,slunce,propustná,sušší,,needs_supplier_verification
+strom,Habr obecný,Carpinus betulus,,,unverified,,unknown,,,,slunce/polostín,běžná,střední,,needs_supplier_verification
+strom,Javor babyka,Acer campestre,,,unverified,,unknown,,,,slunce/polostín,běžná,střední,,needs_supplier_verification
+strom,Bříza bělokorá,Betula pendula,,,unverified,,unknown,,,,slunce,běžná,střední,,needs_supplier_verification
+strom,Jeřáb ptačí,Sorbus aucuparia,,,unverified,,unknown,,,,slunce/polostín,běžná,střední,,needs_supplier_verification
+strom,Lípa malolistá,Tilia cordata,,,unverified,,unknown,,,,slunce/polostín,běžná,střední,,needs_supplier_verification
+jehlicnan,Borovice lesní,Pinus sylvestris,,,unverified,,unknown,,,,slunce,propustná,sušší,,needs_supplier_verification
+jehlicnan,Smrk omorika,Picea omorika,,,unverified,,unknown,,,,slunce/polostín,běžná,střední,,needs_supplier_verification
+ker,Hortenzie latnatá,Hydrangea paniculata,,,unverified,,unknown,,,,slunce/polostín,živná,střední,,needs_supplier_verification
+ker,Tavolník japonský,Spiraea japonica,,,unverified,,unknown,,,,slunce,propustná,střední,,needs_supplier_verification
+trvalka,Šalvěj hajní,Salvia nemorosa,,,unverified,,unknown,,,,slunce,propustná,sušší,,needs_supplier_verification
+trvalka,Třapatkovka nachová,Echinacea purpurea,,,unverified,,unknown,,,,slunce,propustná,střední,,needs_supplier_verification
+trava,Ozdobnice čínská,Miscanthus sinensis,,,unverified,,unknown,,,,slunce,propustná,střední,,needs_supplier_verification
+trava,Třtina ostrokvětá,Calamagrostis × acutiflora,,,unverified,,unknown,,,,slunce,propustná,střední,,needs_supplier_verification
+popinavka,Plamének,Clematis,,,unverified,,unknown,,,,slunce/polostín,živná,střední,,needs_supplier_verification
+ovocny_strom,Jabloň domácí,Malus domestica,,,unverified,,unknown,,,,slunce,živná,střední,,needs_supplier_verification
