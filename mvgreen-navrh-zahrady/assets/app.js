@@ -166,16 +166,44 @@ function createPlan(){
  let eligible=plants.filter(p=>(p.sun.includes(sun)||sun==='Různé podmínky')&&p.water.includes(water)&&(soil==='unknown'||p.soil.includes(soil)));
  if(!eligible.length){q('mg-plan-output').textContent='Pro tyto podmínky zatím nemáme ověřené rostliny. Nevhodné druhy nebudeme doporučovat.';q('mg-plan-output').classList.remove('mg-hidden');lastPlan=null;return}
  eligible=eligible.filter(p=>p.availability!=='vyprodáno');
- // Evaluate the entire suitable catalog, then choose a proportional number of species for the bed.
- const suitableCount=eligible.length;
- const maxSpecies=Math.max(1,Math.min(12,Math.floor(Math.sqrt(requested)*1.8)));
- eligible=eligible
-   .map((p,i)=>({p,i,score:((i*37+Math.round(requested*10)*13)%101)}))
-   .sort((a,b)=>a.score-b.score)
-   .slice(0,maxSpecies)
-   .map(x=>x.p);
+ // Design a coherent planting scheme, never choose species randomly.
+ // The catalog is fully considered; species count is limited by bed area and plant groups.
+ const maxSpecies=requested<4?3:requested<10?4:requested<20?5:requested<40?6:8;
+ const parseHeight=p=>{
+   const nums=(p.height||'').match(/\\d+/g);
+   return nums?Number(nums[nums.length-1]):50;
+ };
+ const colors=p=>{
+   const n=(p.name+' '+p.latin).toLowerCase();
+   if(/alba|white|schnee|bíl|kopret|kontryhel/.test(n))return 'white';
+   if(/rose|pink|růž|bright rose|rosa/.test(n))return 'pink';
+   if(/yellow|gold|zlat|žlut|rudb|krásnooč/.test(n))return 'yellow';
+   if(/cherry|burgundy|paprika|red|červen/.test(n))return 'red';
+   if(/blue|hidcote|munstead|levand|šalvěj|šanta|violet|purple|kakost/.test(n))return 'purple';
+   return 'neutral';
+ };
+ const palettes=[['purple','white','pink','neutral'],['yellow','white','purple','neutral'],['pink','white','purple','neutral']];
+ const palette=palettes[Math.abs(Math.round(requested*10))%palettes.length];
+ const ordered=eligible.map(p=>({...p,_height:parseHeight(p),_color:colors(p)}))
+   .filter(p=>palette.includes(p._color))
+   .sort((a,b)=>a._height-b._height||a.name.localeCompare(b.name,'cs'));
+ const selected=[];
+ const targets=maxSpecies<=3?[0,0.5,1]:[0,0.25,0.5,0.75,1];
+ for(const t of targets){
+   if(selected.length>=maxSpecies)break;
+   const index=Math.min(ordered.length-1,Math.floor(t*Math.max(0,ordered.length-1)));
+   const candidate=ordered[index];
+   if(candidate&&!selected.some(p=>p.latin===candidate.latin))selected.push(candidate);
+ }
+ for(const p of ordered){
+   if(selected.length>=maxSpecies)break;
+   if(!selected.some(x=>x.latin===p.latin))selected.push(p);
+ }
+ eligible=selected.sort((a,b)=>b._height-a._height);
  if(!eligible.length){q('mg-plan-output').textContent='Pro zadané podmínky nejsou aktuálně dostupné ověřené rostliny.';q('mg-plan-output').classList.remove('mg-hidden');lastPlan=null;return;}
- const shares=eligible.map(()=>1/eligible.length);
+ const weights=eligible.map((p,i)=>i===0?0.2:i===eligible.length-1?0.25:0.55/Math.max(1,eligible.length-2));
+ const sumWeights=weights.reduce((a,b)=>a+b,0);
+ const shares=weights.map(w=>w/sumWeights);
  const reserve=.1,soilRate=80*13, mulchRate=50*11;
  // Keep the client-facing estimate focused on plants and the bed itself; never exceed the budget.
  // Estimate includes soil and mulch but excludes labour, transport, removal, paving and irrigation.
