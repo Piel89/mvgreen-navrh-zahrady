@@ -165,7 +165,15 @@ function createPlan(){
  if(!Number.isFinite(budget)||budget<=0){alert('Zadejte maximální rozpočet vyšší než 0 Kč.');return}
  let eligible=plants.filter(p=>(p.sun.includes(sun)||sun==='Různé podmínky')&&p.water.includes(water)&&(soil==='unknown'||p.soil.includes(soil)));
  if(!eligible.length){q('mg-plan-output').textContent='Pro tyto podmínky zatím nemáme ověřené rostliny. Nevhodné druhy nebudeme doporučovat.';q('mg-plan-output').classList.remove('mg-hidden');lastPlan=null;return}
- eligible=eligible.filter(p=>p.availability!=='vyprodáno').slice(0,8);
+ eligible=eligible.filter(p=>p.availability!=='vyprodáno');
+ // Evaluate the entire suitable catalog, then choose a proportional number of species for the bed.
+ const suitableCount=eligible.length;
+ const maxSpecies=Math.max(1,Math.min(12,Math.floor(Math.sqrt(requested)*1.8)));
+ eligible=eligible
+   .map((p,i)=>({p,i,score:((i*37+Math.round(requested*10)*13)%101)}))
+   .sort((a,b)=>a.score-b.score)
+   .slice(0,maxSpecies)
+   .map(x=>x.p);
  if(!eligible.length){q('mg-plan-output').textContent='Pro zadané podmínky nejsou aktuálně dostupné ověřené rostliny.';q('mg-plan-output').classList.remove('mg-hidden');lastPlan=null;return;}
  const shares=eligible.map(()=>1/eligible.length);
  const reserve=.1,soilRate=80*13, mulchRate=50*11;
