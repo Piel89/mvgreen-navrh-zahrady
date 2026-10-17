@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 
 function mvgreen_github_update_meta() {
     $cached = get_transient('mvgreen_github_update_meta');
-    if (is_array($cached)) return $cached;
+    if (is_array($cached) && !wp_doing_cron() && !(is_admin() && isset($_GET['force-check']))) return $cached;
     $response = wp_remote_get('https://raw.githubusercontent.com/Piel89/mvgreen-navrh-zahrady/main/version.json', ['timeout' => 12]);
     if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) return false;
     $data = json_decode(wp_remote_retrieve_body($response), true);
@@ -13,7 +13,7 @@ function mvgreen_github_update_meta() {
     return $data;
 }
 
-add_filter('site_transient_update_plugins', function ($transient) {
+add_filter('pre_set_site_transient_update_plugins', function ($transient) {
     if (!is_object($transient) || empty($transient->checked)) return $transient;
     $basename = plugin_basename(__DIR__ . '/mvgreen-navrh-zahrady.php');
     if (empty($transient->checked[$basename])) return $transient;
