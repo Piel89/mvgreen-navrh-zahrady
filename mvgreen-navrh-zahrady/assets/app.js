@@ -170,7 +170,7 @@ function createPlan(){
  // The catalog is fully considered; species count is limited by bed area and plant groups.
  const maxSpecies=requested<4?3:requested<10?4:requested<20?5:requested<40?6:8;
  const parseHeight=p=>{
-   const nums=(p.height||'').match(/\\d+/g);
+   const nums=(p.height||'').match(/\d+/g);
    return nums?Number(nums[nums.length-1]):50;
  };
  const colors=p=>{
@@ -231,7 +231,7 @@ function createPlan(){
    const names=['leden','únor','březen','duben','květen','červen','červenec','srpen','září','říjen','listopad','prosinec'];
    const starts=['led','úno','bře','dub','kvě','červ','červenc','srp','zář','říj','list','pros'];
    const parts=b.split(/[–—-]/).map(x=>x.trim());
-   const monthIndex=part=>{for(let i=11;i>=0;i--)if(part.startsWith(starts[i]))return i;return -1};
+   const monthIndex=part=>{for(let i=0;i<starts.length;i++)if(part.startsWith(starts[i])&&(i!==5||!part.startsWith('červenc')))return i;return -1};
    const a=monthIndex(parts[0]||''),z=monthIndex(parts[1]||parts[0]||'');
    if(a<0||z<0||z<a)return [];
    return names.slice(a,z+1);
