@@ -171,14 +171,10 @@ function createPlan(){
  if(!Number.isFinite(budget)||budget<=0){alert('Zadejte maximální rozpočet vyšší než 0 Kč.');return}
  const preference=d['mg-preference']||'auto';
  const isGrass=p=>/^(Calamagrostis|Festuca|Bouteloua|Miscanthus|Panicum|Pennisetum|Molinia|Deschampsia|Carex|Stipa|Hakonechloa)\b/i.test(p.latin);
- if(false){
-   const output=q('mg-plan-output');
-   output.textContent='Zvolená skupina ('+(preference==='shrubs'?'okrasné keře':'stromy')+') zatím není v ověřeném katalogu dostatečně zastoupena. Nebudeme místo ní doporučovat nesouvisející trvalky. Zvolte kombinaci, traviny nebo kvetoucí trvalky.';
-   output.classList.remove('mg-hidden');lastPlan=null;return;
- }
  let eligible=plants.filter(p=>p.latin&&p.source&&p.bloom&&p.height&&(p.sun.includes(sun)||sun==='Různé podmínky')&&p.water.includes(water)&&(soil==='unknown'||p.soil.includes(soil)));
  if(!eligible.length){q('mg-plan-output').textContent='Pro tyto podmínky zatím nemáme ověřené rostliny. Nevhodné druhy nebudeme doporučovat.';q('mg-plan-output').classList.remove('mg-hidden');lastPlan=null;return}
  eligible=eligible.filter(p=>p.availability!=='vyprodáno');
+ if(preference==='mix'||preference==='auto')eligible=eligible.filter(p=>p.category!=='trees'&&p.category!=='shrubs');
  if(preference==='grasses')eligible=eligible.filter(p=>p.category==='grasses'||(!p.category&&isGrass(p)));
  if(preference==='shrubs')eligible=eligible.filter(p=>p.category==='shrubs');
  if(preference==='trees')eligible=eligible.filter(p=>p.category==='trees');
@@ -187,7 +183,7 @@ function createPlan(){
 
  // Design a coherent planting scheme, never choose species randomly.
  // The catalog is fully considered; species count is limited by bed area and plant groups.
- const maxSpecies=requested<4?3:requested<10?4:requested<20?5:requested<40?6:8;
+ const maxSpecies=(preference==='trees'||preference==='shrubs')?Math.min(3,Math.max(1,Math.floor(requested/8))):requested<4?3:requested<10?4:requested<20?5:requested<40?6:8;
  const parseHeight=p=>{
    const nums=(p.height||'').match(/\d+/g);
    return nums?Number(nums[nums.length-1]):50;
@@ -242,7 +238,7 @@ function createPlan(){
  const output=q('mg-plan-output');
  if(!canFit){lastPlan=null;output.innerHTML=`<h4>Rozpočet ${money(budget)} nestačí na základní výsadbu</h4><p>Zkuste zvýšit rozpočet nebo zvolit jednodušší výsadbu. Nechceme slibovat návrh, který se do limitu nevejde.</p>`;output.classList.remove('mg-hidden');return}
  const reduced=area<requested-.05;
- const diversityNotice=eligible.length<4?'<p class="mg-budget-notice">Upozornění: Katalog zatím nemá dostatek ověřených druhů pro pestrou výsadbu. Jde o částečný návrh.</p>':'';
+ const diversityNotice=eligible.length<4&&preference!=='trees'&&preference!=='shrubs'?'<p class="mg-budget-notice">Upozornění: Katalog zatím nemá dostatek ověřených druhů pro pestrou výsadbu. Jde o částečný návrh.</p>':'';
  const items=[...calc.items,{name:'Zahradnický substrát',quantity:Math.ceil(area*.08*100)/100,unit:null,kind:'materiál',unitName:'m³',visual:'tmavě hnědý sypký zahradnický substrát'},{name:'Borová mulčovací kůra',quantity:Math.ceil(area*.05*100)/100,unit:null,kind:'materiál',unitName:'m³',visual:'přírodní hnědá borová mulčovací kůra střední frakce'}];
  lastPlan={data:d,area,items,subtotal:calc.plantsCost+calc.materials,reserve,total:calc.total};
  const bloomMonths=p=>{
