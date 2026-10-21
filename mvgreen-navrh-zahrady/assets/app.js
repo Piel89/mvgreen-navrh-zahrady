@@ -247,6 +247,85 @@ if(photoSection){
  }
  photoSection.insertAdjacentElement('afterend',measureSection);
 }
+
+/* Reference-inspired steps 4–9. Existing photo editor and cost engine remain wired. */
+const detailStep=root.querySelector('[data-mg-step="4"]');
+const styleStep=root.querySelector('[data-mg-step="2"]');
+if(detailStep&&styleStep){
+ const detailFields=document.createElement('div');
+ detailFields.className='mg-reference-details';
+ detailStep.insertBefore(detailFields,detailStep.querySelector('.mg-plan'));
+ ['mg-sun','mg-width','mg-length','mg-build','mg-maint','mg-locality','mg-soil','mg-water','mg-bed-area','mg-altitude'].forEach(id=>{
+  const el=q(id)?.closest('.mg-field');
+  if(el)detailFields.appendChild(el);
+ });
+ const originalDimensions=detailStep.querySelector('.mg-dimensions-row');
+ if(originalDimensions)detailFields.prepend(originalDimensions);
+ const styleControl=q('mg-style')?.closest('.mg-field');
+ if(styleControl){styleControl.classList.add('mg-hidden');styleStep.appendChild(styleControl);}
+ const budgetMax=q('mg-max')?.closest('.mg-field');
+ if(budgetMax)budgetMax.classList.add('mg-budget-in-details');
+}
+function makeReferenceStep(number,title,description){
+ const el=document.createElement('section');
+ el.className='mg-wizard-step mg-reference-step';
+ el.dataset.mgStep=String(number);
+ el.hidden=true;
+ el.innerHTML='<div class="mg-step-kicker">'+String(number).padStart(2,'0')+' / 09 · MVGREEN NÁVRH ZAHRADY</div><h3 class="mg-section-title">'+title+'</h3><p class="mg-note">'+description+'</p>';
+ return el;
+}
+const resultStep=root.querySelector('[data-mg-step="6"]');
+const generationStep=makeReferenceStep(5,'Vytváříme váš návrh…','Na základě vaší fotografie, zvoleného stylu a podmínek připravíme zadání pro vizualizaci.');
+generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="Ilustrační ukázka návrhu zahrady"><span>Ukázka vzhledu návrhu</span></div><div class="mg-generation-status"><h4>Co návrh zohledňuje?</h4><p>✓ Nahranou fotografii</p><p>✓ Zvolený styl a podvariantu</p><p>✓ Rozměry a označené plochy</p><p>✓ Lokalitu, podmínky a rozpočet</p><div class="mg-reference-note">AI generování je zatím v testovacím režimu správce. Tato ukázka není výsledkem zpracování vaší fotografie.</div><button type="button" id="mg-generation-admin" class="mg-primary mg-hidden">✨ Spustit testovací AI návrh</button></div></div>';
+resultStep.insertAdjacentElement('beforebegin',generationStep);
+const actualAiButton=q('mg-ai-test');
+const adminButton=q('mg-generation-admin');
+if(actualAiButton&&adminButton&&!actualAiButton.classList.contains('mg-hidden')){
+ adminButton.classList.remove('mg-hidden');
+ adminButton.addEventListener('click',()=>actualAiButton.click());
+}
+const resultDemo=document.createElement('div');
+resultDemo.className='mg-reference-result';
+resultDemo.innerHTML='<div class="mg-reference-result-top"><strong>Ukázka porovnání PŘED / PO</strong><span>Ilustrace – nejedná se o vygenerovaný návrh zákazníka</span></div><div class="mg-result-comparison"><img id="mg-result-before" src="https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg" alt="Ukázková původní zahrada"><img src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="Ukázková vizualizace zahrady"><span>PŘED</span><span>PO – ukázka</span></div><div class="mg-result-options"><button type="button" class="mg-reference-choice" aria-pressed="true" data-mg-demo-variant="1">Varianta 1</button><button type="button" class="mg-reference-choice" aria-pressed="false" data-mg-demo-variant="2">Varianta 2</button><button type="button" class="mg-reference-choice" aria-pressed="false" data-mg-demo-variant="3">Varianta 3</button></div><p class="mg-note" id="mg-result-demo-note">Varianty jsou zatím pouze výběrem zadání. Nové vizualizace se automaticky nevytvářejí.</p></div>';
+resultStep.insertBefore(resultDemo,resultStep.querySelector('.mg-result-intro'));
+resultStep.querySelector('.mg-result-intro')?.classList.add('mg-hidden');
+root.querySelectorAll('[data-mg-demo-variant]').forEach(btn=>btn.addEventListener('click',()=>{
+ root.querySelectorAll('[data-mg-demo-variant]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+ q('mg-result-demo-note').textContent='Vybrána varianta '+btn.dataset.mgDemoVariant+'. Pro skutečnou novou vizualizaci je nutné spustit dostupné AI generování.';
+}));
+const editStep=makeReferenceStep(7,'Detailní úpravy návrhu','Vyberte prvky, které chcete doplnit, a podle potřeby označte změny přímo na své fotografii.');
+editStep.innerHTML+='<div class="mg-edit-tabs" role="tablist" aria-label="Kategorie úprav">'+['Rostliny','Materiály','Prvky','Osvětlení','Nábytek'].map((t,i)=>'<button type="button" role="tab" data-mg-edit-tab="'+i+'" aria-selected="'+(i===0)+'">'+t+'</button>').join('')+'</div><div class="mg-edit-layout"><div class="mg-edit-library" id="mg-edit-library"></div><div class="mg-edit-preview"><img src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="Ilustrační zahradní návrh"><small>Ukázková fotografie. Změny do své fotografie zakreslíte v kroku Měření a plochy.</small><button type="button" class="mg-primary" id="mg-open-editor">✏️ Označit úpravy na fotografii</button></div></div>';
+resultStep.insertAdjacentElement('afterend',editStep);
+const editItems=[['Okrasné trávy','Hortenzie','Levandule','Okrasné keře','Túje / živý plot'],['Mulčovací kůra','Kačírek','Kamenné šlapáky','Dřevěné prvky'],['Zahradní chodník','Terasa','Vyvýšený záhon','Zahradní domek'],['Zahradní lampy','LED osvětlení','Bodová světla'],['Zahradní sezení','Pergola','Lavička']];
+function showEditCategory(i){
+ root.querySelectorAll('[data-mg-edit-tab]').forEach(btn=>btn.setAttribute('aria-selected',String(Number(btn.dataset.mgEditTab)===i)));
+ q('mg-edit-library').innerHTML='<h4>Vybrané prvky</h4>'+editItems[i].map(t=>'<label class="mg-edit-item"><input type="checkbox" value="'+t+'"><span>🌿 '+t+'</span></label>').join('')+'<p class="mg-note">Volby slouží jako seznam přání. Kreslení a úpravy ploch otevřete tlačítkem vpravo.</p>';
+}
+root.querySelectorAll('[data-mg-edit-tab]').forEach(b=>b.addEventListener('click',()=>showEditCategory(Number(b.dataset.mgEditTab))));
+q('mg-open-editor').addEventListener('click',()=>showWizardStep(3));
+showEditCategory(0);
+const budgetStep=makeReferenceStep(8,'Přehled a rozpočet','Zkontrolujte zadání a sestavte orientační rozpočet rostlin, materiálu a prací.');
+resultStep.parentNode.insertBefore(budgetStep,editStep.nextSibling);
+const budgetPlan=detailStep?.querySelector('.mg-plan');
+if(budgetPlan)budgetStep.appendChild(budgetPlan);
+const budgetSummary=document.createElement('div');
+budgetSummary.className='mg-budget-summary';
+budgetSummary.innerHTML='<div><h4>Souhrn návrhu</h4><p id="mg-budget-summary-info">Zatím bez výpočtu</p><button type="button" id="mg-budget-show-summary">Zobrazit celé zadání</button></div><div><h4>Orientační rozpočet</h4><p>Výsledná cena se vypočítá podle zadaných podmínek a vybraných rostlin. Nejde o závaznou nabídku.</p><button type="button" class="mg-primary" id="mg-budget-create">🌿 Vypočítat rozpočet</button></div></div>';
+budgetStep.prepend(budgetSummary);
+q('mg-budget-show-summary').addEventListener('click',()=>{q('mg-summary').click();showWizardStep(6);});
+q('mg-budget-create').addEventListener('click',()=>q('mg-plan-create').click());
+const chatStep=makeReferenceStep(9,'Chatový průvodce a další kroky','Potřebujete něco vysvětlit nebo se vrátit k úpravám?');
+chatStep.innerHTML+='<div class="mg-chat-layout"><div class="mg-chat-main"><div class="mg-chat-title">🌿 MVGreen – průvodce návrhem <small>Jednoduchá nápověda, nikoli živý AI chat</small></div><div id="mg-chat-messages" class="mg-chat-messages" aria-live="polite"><p class="mg-chat-bot">Dobrý den! Mohu vám poradit, kde upravit styl, rozměry nebo rozpočet. Vyberte téma níže.</p></div><div class="mg-chat-questions"><button type="button" data-mg-question="style">Jak změnit styl?</button><button type="button" data-mg-question="measure">Jak změřit zahradu?</button><button type="button" data-mg-question="budget">Kde najdu rozpočet?</button></div></div><aside class="mg-chat-actions"><h4>Další možnosti</h4><button type="button" data-mg-goto="7">✏️ Upravit návrh</button><button type="button" data-mg-goto="8">▤ Přehled a rozpočet</button><button type="button" data-mg-goto="6">🌱 Výsledky návrhu</button><p class="mg-note">AI chat ani odesílání dotazů zatím nejsou aktivní.</p></aside></div>';
+budgetStep.insertAdjacentElement('afterend',chatStep);
+const answers={style:['Jak změnit styl?','Klikněte vlevo na Styl zahrady a vyberte jednu ze tří variant a její podvariantu.',2],measure:['Jak změřit zahradu?','V kroku Měření a plochy označte na fotografii dva body se známou vzdáleností. Výpočet je orientační.',3],budget:['Kde najdu rozpočet?','Otevřete Přehled a rozpočet a stiskněte Vypočítat rozpočet.',8]};
+root.querySelectorAll('[data-mg-question]').forEach(b=>b.addEventListener('click',()=>{
+ const a=answers[b.dataset.mgQuestion],box=q('mg-chat-messages');
+ const user=document.createElement('p');user.className='mg-chat-user';user.textContent=a[0];
+ const reply=document.createElement('p');reply.className='mg-chat-bot';reply.textContent=a[1];
+ box.append(user,reply);box.scrollTop=box.scrollHeight;
+}));
+root.querySelectorAll('[data-mg-goto]').forEach(b=>b.addEventListener('click',()=>showWizardStep(Number(b.dataset.mgGoto))));
+
 showWizardStep(0);
 const heroComparison=root.querySelector('.mg-hero-comparison');
 if(heroComparison){
