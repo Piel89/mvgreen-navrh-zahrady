@@ -599,3 +599,11 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-step .mg-editor-actions{margin-top:12px!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-step .mg-calibration strong{font-size:15px!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-step .mg-calibration .mg-note{font-size:12px!important}
+
+/* Illustrative before/after slider matching reference result layout. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison{display:block!important;position:relative!important;--mg-demo-reveal:50%!important;overflow:hidden!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison>img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison>img:nth-of-type(2){clip-path:inset(0 0 0 var(--mg-demo-reveal))!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison:before{content:"";position:absolute;z-index:3;top:0;bottom:0;left:var(--mg-demo-reveal);width:3px;transform:translateX(-50%);background:#fff;box-shadow:0 0 8px #001a1044;pointer-events:none}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison:after{content:"‹ ›";position:absolute;z-index:4;top:50%;left:var(--mg-demo-reveal);transform:translate(-50%,-50%);display:grid;place-items:center;width:43px;height:43px;border-radius:50%;background:#fff;color:#067544;font-size:21px;font-weight:850;box-shadow:0 2px 9px #001d143d;pointer-events:none}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-demo-reveal{position:absolute!important;inset:0!important;z-index:5!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;opacity:0!important;cursor:ew-resize!important}
