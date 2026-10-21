@@ -1024,3 +1024,57 @@ body.mg-designer-modal-open{overflow:hidden!important}
  .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 [data-mg-step="1"] .mg-variant-picture{height:115px!important}
  .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 [data-mg-step="1"] .mg-variant-info{min-height:80px!important}
 }
+
+/* 0.6.10 – enlarge the approved compact proportions uniformly, no home-page overrides. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal{
+ transform:translateX(-50%) scale(var(--mg-modal-scale,1))!important;
+ transform-origin:top center!important;
+ z-index:2147483602!important;
+}
+.mvgreen-designer .mg-designer-modal-backdrop{z-index:2147483600!important}
+.mvgreen-designer .mg-designer-backplate{
+ display:block;position:fixed;z-index:2147483601!important;pointer-events:none;
+ box-sizing:border-box;border:1px solid #c9e5d5;border-radius:22px;
+ background:linear-gradient(155deg,#f5fcf7 0%,#e5f4ea 42%,#dbece3 100%);
+ box-shadow:0 22px 65px #00281626,0 1px 0 #fff inset;
+}
+.mvgreen-designer .mg-designer-backplate[hidden]{display:none!important}
+/* In the reference, tips have consistently designed outline icons, not emoji. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tip-icon{
+ display:grid!important;place-items:center!important;
+ background:#e9f6ed!important;color:#007443!important;
+ border:1px solid #dcf1e2!important;border-radius:50%!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-professional-icon{
+ width:17px!important;height:17px!important;display:block!important;
+ flex:none!important;stroke:currentColor!important;
+}
+/* Next now sits at the bottom of the right column on screens with a visible tips panel. */
+@media(min-width:681px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 .mg-redesign-tips,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-redesign-tips,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-redesign-tips{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ }
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 .mg-wizard-footer #mg-next,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-wizard-footer #mg-next,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-wizard-footer #mg-next{display:none!important}
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips .mg-side-next{
+  display:flex!important;justify-content:center!important;align-items:center!important;gap:10px!important;
+  width:100%!important;min-height:39px!important;
+  margin-top:auto!important;padding:9px 13px!important;
+  color:#fff!important;background:#006744!important;border:0!important;
+  border-radius:7px!important;font-size:12px!important;
+  font-weight:800!important;line-height:1.2!important;
+  box-shadow:0 3px 10px #07533622!important;cursor:pointer!important;
+ }
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips .mg-side-next:hover{
+  background:#005437!important;
+ }
+}
+/* The smaller-screen layout retains the original Next button and hides the extra layer. */
+@media(max-width:680px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal{transform:none!important}
+ .mvgreen-designer .mg-designer-backplate{display:none!important}
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips .mg-side-next{display:none!important}
+}
