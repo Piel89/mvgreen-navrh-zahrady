@@ -615,7 +615,9 @@ const step3PhotoStage=q('mg-stage');
 const step3AdvancedControls=[
  measureStep?.querySelector('.mg-below-photo'),
  measureStep?.querySelector('.mg-editor-actions'),
- measureStep?.querySelector('.mg-mobile-controls')
+ measureStep?.querySelector('.mg-mobile-controls'),
+ measureStep?.querySelector('#mg-area-list'),
+ ...Array.from(measureStep?.querySelectorAll('.mg-note')||[])
 ].filter(Boolean);
 const step3Toggle=document.createElement('button');
 step3Toggle.type='button';step3Toggle.className='mg-step3-advanced-toggle';
