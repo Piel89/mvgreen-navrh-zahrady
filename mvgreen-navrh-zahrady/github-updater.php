@@ -9,7 +9,7 @@ function mvgreen_github_update_meta() {
     if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) return false;
     $data = json_decode(wp_remote_retrieve_body($response), true);
     if (!is_array($data) || empty($data['version']) || !preg_match('/^\d+\.\d+\.\d+$/', $data['version'])) return false;
-    set_transient('mvgreen_github_update_meta', $data, 3 * HOUR_IN_SECONDS);
+    set_transient('mvgreen_github_update_meta', $data, 5 * MINUTE_IN_SECONDS);
     return $data;
 }
 
