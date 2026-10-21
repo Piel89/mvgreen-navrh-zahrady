@@ -437,3 +437,25 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-info{min-height:107px!important}
 @media(max-width:1100px){.mvgreen-designer .mg-redesign-frame.mg-is-modal{grid-template-columns:180px minmax(0,1fr)!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{display:none!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding:35px 24px!important}}
 @media(max-width:680px){.mvgreen-designer .mg-redesign-frame.mg-is-modal{top:0!important;left:0!important;transform:none!important;width:100vw!important;height:100dvh!important;max-height:none!important;border-radius:0!important;grid-template-columns:minmax(0,1fr)!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side{display:none!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding:63px 17px 20px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-modal-close{top:12px;right:15px}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-grid{grid-template-columns:1fr!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-picture{height:210px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer{bottom:-20px!important}}
+
+/* 0.5.23 – step clarity, accessible navigation and measured editable dimensions */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-progress-label{display:block!important;visibility:visible!important;width:auto!important;max-width:100%!important;height:auto!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-size:15px!important;line-height:1.5!important;color:#135a35!important;font-weight:850!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-progress{display:flex!important;flex-direction:column!important;gap:9px!important;min-height:60px!important;overflow:visible!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side [data-go-step]{display:flex!important;align-items:center!important;gap:10px!important;opacity:1!important;cursor:pointer!important;white-space:normal!important;line-height:1.35!important;text-align:left!important;word-break:normal!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side [data-go-step]:hover{background:#e5f3e9!important;color:#08663b!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side [data-go-step]:focus-visible{outline:3px solid #7cce9d!important;outline-offset:2px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side [data-go-step] span{flex:0 0 27px!important;width:27px!important;height:27px!important;display:grid!important;place-items:center!important;border-radius:50%!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side [data-go-step].is-active span{background:#087746!important;color:#fff!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-brand strong{font-size:23px!important;letter-spacing:-.04em!important}
+.mvgreen-designer .mg-dimensions-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:15px 0 5px}
+.mvgreen-designer .mg-dimensions-row .mg-field{min-width:0;margin:0!important}
+.mvgreen-designer .mg-dimensions-row .mg-field input{width:100%;min-width:0;box-sizing:border-box}
+.mvgreen-designer .mg-dimension-hint{color:#577564;font-size:12px;line-height:1.6;background:#f0f8f2;border:1px solid #deebdf;border-radius:10px;padding:10px 13px;margin:16px 0 0}
+.mvgreen-designer .mg-preference-internal{display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-grid{gap:18px!important;margin-top:18px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-picture{height:225px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-info{padding:16px!important;min-height:130px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-info strong{font-size:16px!important;line-height:1.35!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-info small{font-size:13px!important;line-height:1.55!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-choices{margin-top:25px!important}
+@media(max-width:680px){.mvgreen-designer .mg-dimensions-row{grid-template-columns:1fr}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-picture{height:210px!important}}
