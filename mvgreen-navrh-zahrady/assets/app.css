@@ -1700,3 +1700,13 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
 .mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-step3-advanced-toggle{
  display:block!important;width:100%!important;
 }
+
+/* v0.6.33 – remove the entire lower drawing toolbar, helper text and area list in AI mode. */
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-measure-layout .mg-below-photo,
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-measure-layout .mg-editor-actions,
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-measure-layout .mg-mobile-controls,
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-measure-layout #mg-area-list,
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-measure-layout > .mg-note,
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-measure-photo > .mg-note{
+ display:none!important;
+}
