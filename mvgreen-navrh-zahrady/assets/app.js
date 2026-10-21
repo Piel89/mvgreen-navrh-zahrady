@@ -276,7 +276,21 @@ const modalBackdrop=document.createElement('div');
 modalBackdrop.className='mg-designer-modal-backdrop';
 modalBackdrop.hidden=true;
 root.appendChild(modalBackdrop);
+// Render the entire designer at document.body level while open.
+ // This avoids transformed/contained WordPress theme ancestors trapping position:fixed.
+const designerOriginalParent=root.parentNode;
+const designerReturnMarker=document.createComment('MVGreen designer original position');
+designerOriginalParent.insertBefore(designerReturnMarker,root);
+function mountDesignerAtViewport(){
+ if(root.parentNode!==document.body)document.body.appendChild(root);
+ root.classList.add('mg-viewport-mounted');
+}
+function restoreDesignerToPage(){
+ root.classList.remove('mg-viewport-mounted');
+ if(designerReturnMarker.parentNode)designerReturnMarker.parentNode.insertBefore(root,designerReturnMarker.nextSibling);
+}
 function openDesignerModal(){
+ mountDesignerAtViewport();
  const frame=root.querySelector('.mg-redesign-frame');
  if(!frame)return;
  modalBackdrop.hidden=false;
@@ -297,6 +311,7 @@ function closeDesignerModal(){
  modalBackdrop.hidden=true;
  document.body.classList.remove('mg-designer-modal-open');
  showWizardStep(0);
+ restoreDesignerToPage();
  q('mg-start')?.focus();
 }
 modalBackdrop.addEventListener('click',closeDesignerModal);
