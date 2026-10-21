@@ -1420,3 +1420,28 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
  overflow-y:auto!important;overflow-x:hidden!important;
  overscroll-behavior-y:contain!important;
 }
+
+/* v0.6.20 – readable centered workspace inside the full-screen editor. */
+@media(min-width:1101px){
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  grid-template-columns:clamp(200px,15vw,250px) minmax(0,1fr) clamp(230px,18vw,290px)!important;
+ }
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-main{
+  box-sizing:border-box!important;
+  padding-left:max(24px,calc((100% - 1050px)/2))!important;
+  padding-right:max(24px,calc((100% - 1050px)/2))!important;
+ }
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal.mg-view-step-1 [data-mg-step="1"] .mg-variant-picture{
+  height:clamp(125px,18vh,195px)!important;
+ }
+}
+@media(min-width:681px) and (max-width:1100px){
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-main{
+  padding:18px 20px 26px!important;
+ }
+}
+@media(max-width:680px){
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-main{
+  padding:52px 14px 24px!important;max-width:100%!important;
+ }
+}
