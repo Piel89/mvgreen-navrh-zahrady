@@ -202,3 +202,13 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-welcome-copy h2{font-size:clamp(25px,2.6vw,37px)}
 @media(max-width:1150px){.mvgreen-designer .mg-redesign-frame{grid-template-columns:150px minmax(0,1fr)}.mvgreen-designer .mg-redesign-tips{grid-column:2;border-left:0;border-top:1px solid var(--mg-border);display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.mvgreen-designer .mg-redesign-tips h3{grid-column:1/-1;margin:0!important}}
 @media(max-width:740px){.mvgreen-designer .mg-redesign-frame{display:block;border-radius:14px}.mvgreen-designer .mg-redesign-side{flex-direction:row;align-items:center;overflow-x:auto;padding:10px;gap:5px;border-right:0;border-bottom:1px solid var(--mg-border)}.mvgreen-designer .mg-redesign-brand,.mvgreen-designer .mg-redesign-side-note{display:none}.mvgreen-designer .mg-redesign-side button{min-width:max-content;width:auto;font-size:11px;padding:8px}.mvgreen-designer .mg-redesign-side button span{flex-basis:22px;height:22px}.mvgreen-designer .mg-redesign-main{padding:0 12px 12px}.mvgreen-designer .mg-redesign-tips{display:block;padding:14px}.mvgreen-designer .mg-redesign-tips p{margin:6px 0!important}.mvgreen-designer .mg-welcome{grid-template-columns:1fr}.mvgreen-designer .mg-variant-picture{height:140px!important}}
+
+.mvgreen-designer .mg-tailored-choices{grid-column:1/-1;margin:14px 0 20px;padding:18px;background:#f5faf6;border:1px solid #dcebdd;border-radius:16px}
+.mvgreen-designer .mg-tailored-choices h4{margin:0 0 13px!important;font-size:17px!important;color:#184c31;font-weight:800}
+.mvgreen-designer .mg-tailored-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mvgreen-designer .mg-tailored-options button{border:1px solid #d5e4d8;border-radius:12px;padding:14px 12px;text-align:left;background:white;cursor:pointer;display:flex;flex-direction:column;gap:5px;color:#1d4630}
+.mvgreen-designer .mg-tailored-options button strong{font-size:13px;line-height:1.35}
+.mvgreen-designer .mg-tailored-options button small{font-size:11px;line-height:1.5;color:#6b806f}
+.mvgreen-designer .mg-tailored-options button[aria-pressed="true"]{border:2px solid #16834e;background:#eaf7ee;box-shadow:0 0 0 2px #d5eddb}
+.mvgreen-designer .mg-tailored-choices .mg-note{margin:10px 0 0;font-size:11px}
+@media(max-width:760px){.mvgreen-designer .mg-tailored-options{grid-template-columns:1fr}}
