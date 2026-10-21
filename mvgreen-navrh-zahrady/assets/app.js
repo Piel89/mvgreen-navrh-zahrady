@@ -265,7 +265,7 @@ if(detailStep&&styleStep){
   if(el)detailFields.appendChild(el);
  });
  const originalDimensions=detailStep.querySelector('.mg-dimensions-row');
- if(originalDimensions)detailFields.prepend(originalDimensions);
+ if(originalDimensions){['mg-width','mg-length'].forEach(id=>{const field=q(id)?.closest('.mg-field');if(field)originalDimensions.appendChild(field)});detailFields.prepend(originalDimensions);}
  const styleControl=q('mg-style')?.closest('.mg-field');
  if(styleControl){styleControl.classList.add('mg-hidden');styleStep.appendChild(styleControl);}
  const budgetMax=q('mg-max')?.closest('.mg-field');
@@ -285,8 +285,7 @@ generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-genera
 resultStep.insertAdjacentElement('beforebegin',generationStep);
 const actualAiButton=q('mg-ai-test');
 const adminButton=q('mg-generation-admin');
-if(actualAiButton&&adminButton&&!actualAiButton.classList.contains('mg-hidden')){
- adminButton.classList.remove('mg-hidden');
+if(actualAiButton&&adminButton){
  adminButton.addEventListener('click',()=>actualAiButton.click());
 }
 const resultDemo=document.createElement('div');
@@ -371,6 +370,7 @@ const originalShowWizardStep=showWizardStep;
 showWizardStep=function(n){
  originalShowWizardStep(n);
  const badge=q('mg-progress-badge');if(badge)badge.textContent=String(wizardStep);
+ const aiTrigger=q('mg-generation-admin'),aiOriginal=q('mg-ai-test');if(aiTrigger&&aiOriginal)aiTrigger.classList.toggle('mg-hidden',aiOriginal.classList.contains('mg-hidden'));
  const summary=q('mg-budget-summary-info');
  if(summary)summary.textContent='Styl: '+(q('mg-variant-note')?.textContent||'neurčen')+' · Lokalita: '+(q('mg-locality')?.value||'nezadána')+' · Plochy: '+areas.length;
 };
