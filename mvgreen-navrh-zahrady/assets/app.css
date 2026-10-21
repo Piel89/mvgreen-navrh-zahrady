@@ -212,3 +212,15 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-tailored-options button[aria-pressed="true"]{border:2px solid #16834e;background:#eaf7ee;box-shadow:0 0 0 2px #d5eddb}
 .mvgreen-designer .mg-tailored-choices .mg-note{margin:10px 0 0;font-size:11px}
 @media(max-width:760px){.mvgreen-designer .mg-tailored-options{grid-template-columns:1fr}}
+
+/* Accessible before/after slider – identical photograph dimensions */
+.mvgreen-designer .mg-before-after{--mg-reveal:50%;position:relative;overflow:hidden;border-radius:17px;aspect-ratio:16/10;background:#173b2a;isolation:isolate;box-shadow:0 14px 32px #102e2020}
+.mvgreen-designer .mg-before-after>img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;background:#173b2a}
+.mvgreen-designer .mg-before-after .mg-before-image{clip-path:inset(0 calc(100% - var(--mg-reveal)) 0 0)}
+.mvgreen-designer .mg-comparison-labels{position:absolute;inset:14px 14px auto;display:flex;justify-content:space-between;pointer-events:none;z-index:2}
+.mvgreen-designer .mg-comparison-labels span{font-size:11px;font-weight:800;letter-spacing:.04em;padding:7px 11px;border-radius:20px;background:#0f3528dc;color:white}
+.mvgreen-designer .mg-comparison-range{position:absolute;inset:0;width:100%;height:100%;margin:0!important;opacity:0;cursor:ew-resize;z-index:5;touch-action:pan-y}
+.mvgreen-designer .mg-before-after:after{content:'';position:absolute;top:0;bottom:0;left:var(--mg-reveal);width:3px;background:#fff;box-shadow:0 0 0 1px #15573588;transform:translateX(-50%);pointer-events:none;z-index:3}
+.mvgreen-designer .mg-before-after:before{content:'↔';position:absolute;top:50%;left:var(--mg-reveal);transform:translate(-50%,-50%);width:43px;height:43px;display:grid;place-items:center;border-radius:50%;background:white;color:#165638;font-size:22px;font-weight:800;box-shadow:0 4px 16px #0003;z-index:4;pointer-events:none}
+.mvgreen-designer .mg-before-after:focus-within{outline:3px solid #218052;outline-offset:3px}
+@media(max-width:760px){.mvgreen-designer .mg-before-after{aspect-ratio:4/3}}
