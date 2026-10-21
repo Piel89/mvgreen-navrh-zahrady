@@ -1088,3 +1088,82 @@ body.mg-designer-modal-open{overflow:hidden!important}
  vertical-align:middle!important;display:inline-block!important;
  margin-right:7px!important;
 }
+
+
+/* v0.6.11: nine steps on the introductory screen, without disrupting its approved hero. */
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-redesign-side>.mg-nine-step-nav{
+ display:flex!important;flex-direction:column!important;gap:2px!important;width:100%!important;
+}
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-nine-step-nav [data-go-step]{
+ display:flex!important;align-items:center!important;min-height:35px!important;
+ margin:0!important;padding:6px 7px!important;gap:8px!important;
+ font-size:11px!important;font-weight:750!important;line-height:1.25!important;
+ text-align:left!important;white-space:normal!important;
+}
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-nine-step-nav [data-go-step] span{
+ display:grid!important;place-items:center!important;flex:0 0 23px!important;
+ width:23px!important;height:23px!important;font-size:11px!important;
+}
+/* The other sidebar content follows the full step navigation without clipping. */
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-sidebar-story{
+ margin-top:18px!important;
+}
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-sidebar-story h2{
+ font-size:24px!important;
+}
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-sidebar-benefits{
+ gap:13px!important;margin:19px 0!important;
+}
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-sidebar-quote{
+ padding:11px 13px!important;
+}
+/* Two soft green offset rectangles behind the welcome screen, as in the reference. */
+@media(min-width:1000px){
+ .mvgreen-designer .mg-redesign-frame:not(.mg-is-modal){
+  box-shadow:
+   124px -64px 0 -25px rgba(228,243,233,.83),
+   -94px 65px 0 -33px rgba(220,239,226,.6),
+   0 24px 60px rgba(16,62,37,.14)!important;
+ }
+}
+/* The official logo comes from this WordPress site's actual media library. */
+.mvgreen-designer .mg-redesign-brand.mg-has-official-logo{
+ display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+ justify-content:center!important;gap:2px!important;
+}
+.mvgreen-designer .mg-redesign-brand .mg-official-logo{
+ width:auto!important;max-width:125px!important;height:59px!important;
+ object-fit:contain!important;object-position:left center!important;display:block!important;
+}
+.mvgreen-designer .mg-redesign-brand.mg-has-official-logo small{
+ display:block!important;width:100%!important;
+ padding-left:0!important;text-align:left!important;font-size:10px!important;
+ color:inherit!important;opacity:.82!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-brand.mg-has-official-logo{
+ margin:0 0 9px!important;padding:0 3px 8px!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-official-logo{
+ height:47px!important;max-width:112px!important;
+}
+/* v0.6.11: the enlarged editor must be centered in the visible viewport, not
+   positioned 5vh down BEFORE scaling (that caused clipping below the taskbar). */
+@media(min-width:681px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal{
+  transform:translateX(-50%) scale(var(--mg-modal-scale,1))!important;
+  transform-origin:top center!important;
+  max-height:90dvh!important;
+ }
+}
+/* Mobile uses an unscaled full-screen step view. */
+@media(max-width:680px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal{
+  transform:none!important;top:0!important;
+ }
+ .mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-redesign-side>.mg-nine-step-nav{
+  flex-direction:row!important;overflow-x:auto!important;
+ }
+ .mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-nine-step-nav [data-go-step]{
+  width:max-content!important;flex:none!important;white-space:nowrap!important;
+ }
+}
