@@ -151,7 +151,7 @@ function chooseVariant(code,applySettings=true,styleChoice=null){
  const chosenCard=root.querySelector('[data-mg-style-choice="'+key+'"]');
  const chosenImage=chosenCard?.querySelector('img');
  const tipsImage=root.querySelector('.mg-redesign-tips .mg-tips-reference-photo');
- if(chosenImage&&tipsImage){tipsImage.src=chosenImage.currentSrc||chosenImage.src;tipsImage.alt='Vybraný styl: '+config.name;}
+ if(chosenImage&&tipsImage){tipsImage.src=chosenImage.src;tipsImage.alt='Vybraný styl: '+config.name;tipsImage.dataset.mgStyle=key;}
  renderTailoredChoices(selected);
  if(applySettings){q('mg-style').value=config.style;q('mg-preference').value=v.preference;q('mg-maint').value=selected==='C'?'Nízká':'Střední';lastPlan=null;}
 }
@@ -184,7 +184,7 @@ function showWizardStep(n){
 8:['Ceny jsou pouze orientační.','Nezapomeňte na dopravu a realizaci.','Stáhněte si položkový rozpočet.'],
 9:['Ptejte se průvodce na jednotlivé kroky.','Zadání lze znovu upravit.','Průvodce není živý AI chat.']};
 tips.innerHTML='<h3>'+(wizardStep===1?'Tipy pro výběr stylu':'Tipy pro lepší výsledek')+'</h3>'+ (wizardStep===0?[['camera','Foťte za denního světla.','Zahrada bude mít přirozené barvy a detaily.'],['maximize','Zachyťte co největší plochu.','Ideálně z rohu zahrady.'],['list','Označte hlavní zóny.','Trávník, záhony, terasa, cestičky.'],['settings','Nemusíte měřit přesně.','AI návrh se přizpůsobí fotografii.']].map(x=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+({camera:'📷',maximize:'◎',list:'☷',settings:'⚙'}[x[0]])+'</span><div><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div></div>').join(''):(data[wizardStep]||data[1]).map((x,i)=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+['✓','✦','◉'][i%3]+'</span><div><strong>'+x+'</strong></div></div>').join(''));}
- if(tips&&[1,4,5,7,8,9].includes(wizardStep)){const selectedPhoto=root.querySelector('[data-mg-style-choice][aria-pressed="true"] img');if(selectedPhoto){const photo=document.createElement('img');photo.className='mg-tips-reference-photo';photo.src=selectedPhoto.src;photo.alt='Inspirace pro vybraný styl zahrady';photo.loading='lazy';tips.appendChild(photo);}}
+ if(tips&&[1,4,5,7,8,9].includes(wizardStep)){const selectedPhoto=root.querySelector('[data-mg-style-choice][aria-pressed="true"] img');if(selectedPhoto){const photo=document.createElement('img');photo.className='mg-tips-reference-photo';photo.src=selectedPhoto.src;photo.alt='Inspirace pro vybraný styl zahrady';photo.loading='lazy';photo.dataset.mgStyle=q('mg-style-card')?.value||'english';tips.appendChild(photo);}}
  if(wizardStep>0){const main=root.querySelector('.mg-redesign-main');if(main)main.scrollTo({top:0,behavior:'instant'});}
 }
 function setDesignMode(mode){
@@ -214,7 +214,7 @@ if(shell){
  side.addEventListener('click',e=>{const b=e.target.closest('[data-go-step]');if(!b||!side.contains(b))return;const n=Number(b.dataset.goStep);if(n===0){closeDesignerModal();return}if(n>2&&!photoReady){showWizardStep(2);q('mg-photo').focus();return}if(!frame.classList.contains('mg-is-modal'))openDesignerModal();showWizardStep(n)});
 }
 // Keep the approved four-item welcome sidebar unchanged; show all nine steps only inside the designer.
-const designerStepNames=['Výběr stylu zahrady','Fotografie zahrady','Měření a označení ploch','Detaily zahrady','Váš návrh – generování','Výsledky návrhu','Detailní úpravy návrhu','Přehled a rozpočet','Chatový průvodce a další kroky'];
+const designerStepNames=['Styl zahrady','Fotografie zahrady','Měření a plochy','Detaily zahrady','Generování návrhu','Výsledky návrhu','Úpravy návrhu','Přehled a rozpočet','Chatový průvodce'];
 function switchDesignerNavigation(isOpen){
  const side=root.querySelector('.mg-redesign-side');if(!side)return;
  let nav=side.querySelector('.mg-nine-step-nav');
