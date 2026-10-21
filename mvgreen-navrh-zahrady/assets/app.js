@@ -165,7 +165,7 @@ function showWizardStep(n){
  const side=root.querySelector('.mg-redesign-side');if(side)side.querySelectorAll('[data-go-step]').forEach(b=>{b.classList.toggle('is-active',Number(b.dataset.goStep)===(wizardStep<=1?1:wizardStep<=3?2:wizardStep===4?4:6));b.disabled=false});
  const tips=root.querySelector('.mg-redesign-tips');if(tips){const data={
 0:['Vyberte si zahradu, kterou chcete proměnit.','Připravte fotografii skutečného prostoru.','Návrh můžete později upravit.'],
-1:['Vyberte styl podle využití zahrady.','Zvažte čas, který chcete věnovat údržbě.','Styl a výsadbu můžete později změnit.'],
+1:['Zamyslete se, jak chcete zahradu využívat.','Zvolte styl podle času na údržbu.','Vybírejte rostliny podle vaší lokality.','Styl můžete kdykoliv změnit.'],
 2:['Fotografujte za denního světla.','Zachyťte celý prostor včetně domu a plotu.','Vyberte ostrý snímek bez zbytečných překážek.'],
 3:['Znáte délku plotu? Označte dva body pro lepší odhad ploch.','Trávník a záhony označte samostatně.','Rozměry z fotografie jsou pouze orientační.'],
 4:['Zadejte obec a skutečné podmínky pozemku.','Rozpočet je orientační limit, nikoli závazná nabídka.','Čím přesnější údaje, tím použitelnější odhad.'],
