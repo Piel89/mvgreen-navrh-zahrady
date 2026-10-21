@@ -260,30 +260,17 @@ designerBackplate.hidden=true;
 root.appendChild(designerBackplate);
 function syncDesignerChrome(){
  const frame=root.querySelector('.mg-redesign-frame');
- if(!frame?.classList.contains('mg-is-modal')){designerBackplate.hidden=true;return;}
- if(window.matchMedia('(max-width:680px)').matches){
-  frame.style.removeProperty('--mg-modal-scale');
-  frame.style.removeProperty('top');
-  designerBackplate.hidden=true;return;
+ if(!frame?.classList.contains('mg-is-modal')){
+  designerBackplate.hidden=true;
+  return;
  }
- // Measure the untransformed frame. Both the height AND its position must fit the viewport.
- const vw=document.documentElement.clientWidth||window.innerWidth;
- const vh=window.innerHeight;
- const naturalWidth=Math.max(1,frame.offsetWidth);
- const naturalHeight=Math.max(1,frame.offsetHeight);
- const scale=Math.min(1.57,(vw-44)/naturalWidth,(vh-50)/naturalHeight);
- const safeScale=Math.max(.55,scale);
- frame.style.setProperty('--mg-modal-scale',String(safeScale));
- const top=Math.max(14,Math.floor((vh-naturalHeight*safeScale)/2));
- frame.style.setProperty('top',top+'px','important');
- const rect=frame.getBoundingClientRect();
- const inset=11;
- designerBackplate.hidden=false;
- designerBackplate.style.left=(rect.left-inset)+'px';
- designerBackplate.style.top=(rect.top-inset)+'px';
- designerBackplate.style.width=(rect.width+inset*2)+'px';
- designerBackplate.style.height=(rect.height+inset*2)+'px';
+ // The browser must lay out the editor at its actual viewport size.
+ // Previous inline top and transform-scale values pushed it off-screen.
+ frame.style.removeProperty('top');
+ frame.style.removeProperty('--mg-modal-scale');
+ designerBackplate.hidden=true;
 }
+
 window.addEventListener('resize',()=>requestAnimationFrame(syncDesignerChrome));
 const modalBackdrop=document.createElement('div');
 modalBackdrop.className='mg-designer-modal-backdrop';
