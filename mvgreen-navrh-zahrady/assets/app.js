@@ -331,6 +331,50 @@ root.querySelectorAll('[data-mg-question]').forEach(b=>b.addEventListener('click
 }));
 root.querySelectorAll('[data-mg-goto]').forEach(b=>b.addEventListener('click',()=>showWizardStep(Number(b.dataset.mgGoto))));
 
+// Match reference layout: upload/photo first, then mode choice, then editing.
+const uploadStep=root.querySelector('[data-mg-step="1"]');
+if(uploadStep){
+ const preview=q('mg-upload-preview');
+ const modeSelect=uploadStep.querySelector('.mg-mode-select');
+ if(preview&&modeSelect)modeSelect.insertAdjacentElement('beforebegin',preview);
+ const uploadLabel=q('mg-photo')?.closest('.mg-field')?.querySelector('label');
+ if(uploadLabel)uploadLabel.textContent='Vybrat fotografii zahrady';
+}
+const progress=q('mg-wizard-progress');
+if(progress){
+ const badge=document.createElement('span');
+ badge.id='mg-progress-badge';badge.className='mg-progress-badge';badge.textContent='1';
+ progress.insertBefore(badge,progress.firstChild);
+}
+const photoStage=q('mg-stage');
+const measureStep=root.querySelector('[data-mg-step="3"]');
+if(photoStage&&measureStep){
+ const layout=document.createElement('div');layout.className='mg-measure-layout';
+ const photoCol=document.createElement('div');photoCol.className='mg-measure-photo';
+ const toolCol=document.createElement('aside');toolCol.className='mg-measure-side';
+ toolCol.innerHTML='<h4>Nástroje</h4><button type="button" data-mg-tool-link="keep">🟢 Zachovat</button><button type="button" data-mg-tool-link="change">🔵 Změnit</button><button type="button" data-mg-tool-link="remove">🔴 Odstranit</button><h4>Tipy pro zakreslení</h4><p>✓ Označte nejdříve velké plochy.</p><p>✓ Měřítko nastavíte podle známé délky.</p><p>✓ Rozměry jsou orientační.</p>';
+ const calibration=q('mg-calibrate')?.closest('.mg-calibration');
+ if(calibration)photoCol.append(calibration);
+ photoCol.append(photoStage);
+ const below=measureStep.querySelector('.mg-below-photo');
+ if(below)photoCol.append(below);
+ const actions=measureStep.querySelector('.mg-editor-actions');
+ if(actions)photoCol.append(actions);
+ layout.append(photoCol,toolCol);
+ measureStep.insertBefore(layout,measureStep.querySelector('.mg-mobile-controls'));
+ toolCol.querySelectorAll('[data-mg-tool-link]').forEach(b=>b.addEventListener('click',()=>{
+  root.querySelector('[data-tool="'+b.dataset.mgToolLink+'"]')?.click();
+  toolCol.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+ }));
+}
+const originalShowWizardStep=showWizardStep;
+showWizardStep=function(n){
+ originalShowWizardStep(n);
+ const badge=q('mg-progress-badge');if(badge)badge.textContent=String(wizardStep);
+ const summary=q('mg-budget-summary-info');
+ if(summary)summary.textContent='Styl: '+(q('mg-variant-note')?.textContent||'neurčen')+' · Lokalita: '+(q('mg-locality')?.value||'nezadána')+' · Plochy: '+areas.length;
+};
+
 showWizardStep(0);
 const heroComparison=root.querySelector('.mg-hero-comparison');
 if(heroComparison){
