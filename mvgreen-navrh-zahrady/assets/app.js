@@ -166,7 +166,7 @@ function showWizardStep(n){
    q('mg-next').textContent=wizardStep===9?'✓ Dokončit':'Další krok →';
    q('mg-step-description').textContent=['','Výběr stylu zahrady','Nahrání fotografie','Měření a plochy','Detaily a podmínky','Generování návrhu','Výsledné varianty','Úpravy návrhu','Rozpočet a souhrn','Další kroky'][wizardStep];
  }
- const side=root.querySelector('.mg-redesign-side');if(side)side.querySelectorAll('[data-go-step]').forEach(b=>{b.classList.toggle('is-active',Number(b.dataset.goStep)===(wizardStep<=1?1:wizardStep<=3?2:wizardStep===4?4:6));b.disabled=false});
+ const side=root.querySelector('.mg-redesign-side');if(side)side.querySelectorAll('[data-go-step]').forEach(b=>{const inNine=!!b.closest('.mg-nine-step-nav');b.classList.toggle('is-active',Number(b.dataset.goStep)===(inNine?wizardStep:(wizardStep<=1?1:wizardStep<=3?2:wizardStep===4?4:6)));b.disabled=false});
  const tips=root.querySelector('.mg-redesign-tips');if(tips){const data={
 0:['Vyberte si zahradu, kterou chcete proměnit.','Připravte fotografii skutečného prostoru.','Návrh můžete později upravit.'],
 1:['Zamyslete se, jak chcete zahradu využívat.','Zvolte styl podle času na údržbu.','Vybírejte rostliny podle vaší lokality.','Styl můžete kdykoliv změnit.'],
@@ -206,7 +206,21 @@ if(shell){
  const main=document.createElement('div');main.className='mg-redesign-main';
  const tips=document.createElement('aside');tips.className='mg-redesign-tips';tips.setAttribute('aria-label','Tipy pro návrh');
  shell.parentNode.insertBefore(frame,shell);frame.append(side,main,tips);main.append(shell);
- side.querySelectorAll('[data-go-step]').forEach(b=>b.addEventListener('click',()=>{const n=Number(b.dataset.goStep);if(n===0){closeDesignerModal();return}if(n>2&&!photoReady){showWizardStep(2);q('mg-photo').focus();return}if(!frame.classList.contains('mg-is-modal'))openDesignerModal();showWizardStep(n)}));
+ side.addEventListener('click',e=>{const b=e.target.closest('[data-go-step]');if(!b||!side.contains(b))return;const n=Number(b.dataset.goStep);if(n===0){closeDesignerModal();return}if(n>2&&!photoReady){showWizardStep(2);q('mg-photo').focus();return}if(!frame.classList.contains('mg-is-modal'))openDesignerModal();showWizardStep(n)});
+}
+// Keep the approved four-item welcome sidebar unchanged; show all nine steps only inside the designer.
+const designerStepNames=['Výběr stylu zahrady','Fotografie zahrady','Měření a označení ploch','Detaily zahrady','Váš návrh – generování','Výsledky návrhu','Detailní úpravy návrhu','Přehled a rozpočet','Chatový průvodce a další kroky'];
+let welcomeNavMarkup='';
+function switchDesignerNavigation(isOpen){
+ const side=root.querySelector('.mg-redesign-side');if(!side)return;
+ let nav=side.querySelector('.mg-nine-step-nav');
+ if(isOpen){
+  if(!nav){nav=document.createElement('div');nav.className='mg-nine-step-nav';nav.setAttribute('aria-label','Devět kroků návrhu');nav.innerHTML=designerStepNames.map((name,i)=>'<button type="button" data-go-step="'+(i+1)+'"><span>'+(i+1)+'</span>'+name+'</button>').join('');side.querySelector('.mg-redesign-brand')?.insertAdjacentElement('afterend',nav);}
+  side.querySelectorAll(':scope > [data-go-step]').forEach(b=>b.hidden=true);
+ }else{
+  if(nav)nav.remove();
+  side.querySelectorAll(':scope > [data-go-step]').forEach(b=>b.hidden=false);
+ }
 }
 const modalBackdrop=document.createElement('div');
 modalBackdrop.className='mg-designer-modal-backdrop';
@@ -217,6 +231,7 @@ function openDesignerModal(){
  if(!frame)return;
  modalBackdrop.hidden=false;
  frame.classList.add('mg-is-modal');
+ switchDesignerNavigation(true);
  document.body.classList.add('mg-designer-modal-open');
  showWizardStep(1);
  frame.querySelector('.mg-redesign-main')?.scrollTo({top:0,behavior:'instant'});
@@ -226,6 +241,7 @@ function closeDesignerModal(){
  const frame=root.querySelector('.mg-redesign-frame');
  if(!frame)return;
  frame.classList.remove('mg-is-modal');
+ switchDesignerNavigation(false);
  modalBackdrop.hidden=true;
  document.body.classList.remove('mg-designer-modal-open');
  showWizardStep(0);
