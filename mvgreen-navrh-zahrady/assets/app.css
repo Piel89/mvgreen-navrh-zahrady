@@ -1445,3 +1445,48 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
   padding:52px 14px 24px!important;max-width:100%!important;
  }
 }
+
+/* v0.6.21 – unify all nine stages around the approved three-panel reference.
+   Keep the already-approved welcome screen untouched. */
+@media(min-width:1101px){
+ body.admin-bar>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal,
+ body:not(.admin-bar)>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  box-sizing:border-box!important;
+  position:fixed!important;
+  left:50%!important;right:auto!important;
+  width:min(1440px,calc(100vw - 24px))!important;
+  max-width:1440px!important;
+  transform:translateX(-50%)!important;
+  display:grid!important;
+  grid-template-columns:clamp(185px,15%,215px) minmax(0,1fr) clamp(225px,19%,270px)!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  border-radius:12px!important;
+  overflow:hidden!important;
+ }
+ body.admin-bar>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  top:32px!important;bottom:8px!important;
+  height:calc(100dvh - 40px)!important;max-height:calc(100dvh - 40px)!important;
+ }
+ body:not(.admin-bar)>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  top:8px!important;bottom:8px!important;
+  height:calc(100dvh - 16px)!important;max-height:calc(100dvh - 16px)!important;
+ }
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-main{
+  padding:20px 22px 28px!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  min-height:0!important;min-width:0!important;
+ }
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-side,
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-tips{
+  min-height:0!important;overflow-y:auto!important;
+ }
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-wizard-footer{
+  position:sticky!important;bottom:0!important;
+  background:#fff!important;z-index:10!important;
+ }
+}
+@media(min-width:681px) and (max-width:1100px){
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  grid-template-columns:160px minmax(0,1fr) 190px!important;
+ }
+}
