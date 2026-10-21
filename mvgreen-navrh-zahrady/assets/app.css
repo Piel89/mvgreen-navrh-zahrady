@@ -1295,3 +1295,45 @@ body.mg-designer-modal-open{overflow-y:auto!important}
   overflow-y:auto!important;overscroll-behavior-y:contain!important;
  }
 }
+
+/* v0.6.17: desktop wizard fills the available screen, no scaled miniature. */
+@media(min-width:1101px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal:not(.mg-view-step-9),
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9{
+  position:fixed!important;inset:8px 8px 8px 8px!important;
+  top:8px!important;left:8px!important;right:8px!important;bottom:8px!important;
+  width:calc(100vw - 16px)!important;max-width:none!important;
+  min-width:0!important;height:calc(100dvh - 16px)!important;
+  min-height:0!important;max-height:calc(100dvh - 16px)!important;
+  transform:none!important;transform-origin:center!important;
+  grid-template-columns:clamp(205px,16vw,270px) minmax(0,1fr) clamp(235px,19vw,310px)!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  overflow:hidden!important;
+ }
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{
+  min-height:0!important;min-width:0!important;
+  height:100%!important;max-height:100%!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  overscroll-behavior-y:auto!important;
+ }
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{
+  padding:22px clamp(16px,2vw,36px) 28px!important;
+ }
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 [data-mg-step="1"] .mg-variant-grid{
+  gap:16px!important;
+ }
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 [data-mg-step="1"] .mg-variant-picture{
+  height:clamp(125px,17vh,220px)!important;
+ }
+}
+@media(min-width:681px) and (max-width:1100px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal{
+  left:8px!important;top:8px!important;right:8px!important;bottom:8px!important;
+  transform:none!important;width:calc(100vw - 16px)!important;max-width:none!important;
+  height:calc(100dvh - 16px)!important;max-height:calc(100dvh - 16px)!important;
+  grid-template-columns:170px minmax(0,1fr) 195px!important;
+ }
+}
