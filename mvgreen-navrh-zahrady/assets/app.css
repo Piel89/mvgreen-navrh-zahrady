@@ -787,3 +787,69 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>.mg-nine-step-nav [data-go-step]{display:flex!important;width:100%!important;min-height:41px!important;padding:7px 8px!important;margin:0!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>.mg-nine-step-nav [data-go-step] span{flex:0 0 24px!important;width:24px!important;height:24px!important;font-size:12px!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>[data-go-step][hidden]{display:none!important}
+
+/* 0.6.8 – typography and layout aligned with the approved nine-screen reference. */
+/* Scope everything to the open wizard: the approved home screen stays unchanged. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal button,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal input,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal select,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal textarea{
+ font-family:Inter,"Segoe UI",Arial,sans-serif!important;
+ font-stretch:normal!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side{
+ background:#f7fbf8!important;
+ border-right:1px solid #e1ebe5!important;
+ padding:23px 14px!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-brand strong{font-size:19px!important;letter-spacing:-.02em!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>.mg-nine-step-nav{gap:5px!important;margin-top:16px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>.mg-nine-step-nav [data-go-step]{
+ font-size:12px!important;line-height:1.35!important;font-weight:650!important;
+ min-height:43px!important;padding:8px 9px!important;
+ color:#294838!important;border-radius:9px!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>.mg-nine-step-nav [data-go-step].is-active{
+ background:#dff2e5!important;color:#075e39!important;font-weight:800!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>.mg-nine-step-nav [data-go-step] span{
+ width:25px!important;height:25px!important;flex-basis:25px!important;
+ font-size:12px!important;font-weight:800!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding-left:20px!important;padding-right:20px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-progress-label{
+ font-size:21px!important;line-height:1.25!important;letter-spacing:-.02em!important;
+ font-weight:800!important;color:#192744!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-section-title{
+ font-size:20px!important;font-weight:800!important;line-height:1.3!important;
+ letter-spacing:-.02em!important;color:#1c3029!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"]>.mg-note{
+ font-size:13px!important;line-height:1.55!important;color:#536c5d!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info strong{
+ font-size:13px!important;line-height:1.35!important;font-weight:800!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info small{
+ font-size:12px!important;line-height:1.45!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{
+ background:#f7fbf8!important;border-left:1px solid #e3ece5!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips h3{
+ font-size:15px!important;line-height:1.35!important;font-weight:800!important;color:#193a2b!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tip-card strong{
+ font-size:12px!important;line-height:1.55!important;font-weight:550!important;color:#3c5647!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tips-reference-photo{
+ width:100%!important;object-fit:cover!important;border-radius:9px!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer button{
+ font-size:13px!important;font-weight:750!important;
+}
+@media(min-width:900px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal{grid-template-columns:205px minmax(0,1fr) 250px!important}
+}
