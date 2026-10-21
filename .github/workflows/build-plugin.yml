@@ -1,0 +1,30 @@
+name: Build installable MVGreen plugin ZIP
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mvgreen-navrh-zahrady/**'
+      - 'version.json'
+      - '.github/workflows/build-plugin.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate and package the WordPress plugin
+        run: |
+          test -f mvgreen-navrh-zahrady/mvgreen-navrh-zahrady.php
+          test -f mvgreen-navrh-zahrady/github-updater.php
+          test -f mvgreen-navrh-zahrady/assets/app.js
+          test -f mvgreen-navrh-zahrady/assets/app.css
+          test -f mvgreen-navrh-zahrady/assets/catalog-805.js
+          zip -r -q mvgreen-navrh-zahrady.zip mvgreen-navrh-zahrady -x '*.DS_Store'
+          unzip -l mvgreen-navrh-zahrady.zip | grep 'mvgreen-navrh-zahrady/mvgreen-navrh-zahrady.php'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mvgreen-navrh-zahrady-wordpress-install
+          path: mvgreen-navrh-zahrady.zip
+          retention-days: 30
