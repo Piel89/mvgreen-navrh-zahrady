@@ -390,3 +390,14 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-welcome-styles button{border:1px solid #dce9df!important}
 @media(max-width:1200px){.mvgreen-designer .mg-variant-picture{height:165px!important}.mvgreen-designer .mg-welcome-styles img{height:115px!important}}
 @media(max-width:800px){.mvgreen-designer .mg-mode-select{grid-template-columns:1fr!important}.mvgreen-designer .mg-variant-grid{grid-template-columns:1fr!important}.mvgreen-designer .mg-variant-picture{height:205px!important}.mvgreen-designer .mg-welcome-styles{grid-template-columns:repeat(2,minmax(0,1fr))!important}.mvgreen-designer .mg-welcome-styles img{height:130px!important}.mvgreen-designer .mg-wizard-step{min-height:0}.mvgreen-designer .mg-tailored-options{grid-template-columns:1fr!important}}
+
+.mvgreen-designer .mg-result-intro{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);border:1px solid #e0eae1;border-radius:17px;overflow:hidden;background:#f3faf5;margin:20px 0 24px;min-height:260px}
+.mvgreen-designer .mg-result-intro-photo{min-height:260px;background:url('https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png') center/cover}
+.mvgreen-designer .mg-result-intro-copy{padding:24px;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.mvgreen-designer .mg-result-intro-copy strong{font-size:23px;line-height:1.25;letter-spacing:-.03em;color:#16452f}
+.mvgreen-designer .mg-result-intro-copy p{font-size:14px;line-height:1.65;color:#557060;margin:0}
+.mvgreen-designer .mg-result-intro-copy span{font-size:12px;color:#087c46;font-weight:750}
+.mvgreen-designer .mg-wizard-step .mg-actions{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
+.mvgreen-designer .mg-wizard-step .mg-actions button{border-radius:11px!important;min-height:47px;padding:12px 17px!important}
+.mvgreen-designer .mg-wizard-step .mg-hint{background:#f2f8f4;border:1px solid #dce9e0;border-radius:12px;padding:15px;line-height:1.65;color:#5c7162}
+@media(max-width:740px){.mvgreen-designer .mg-result-intro{grid-template-columns:1fr}.mvgreen-designer .mg-result-intro-photo{min-height:220px}}
