@@ -227,24 +227,31 @@ const shell=root.querySelector('.mg-shell');
 if(shell){
  const frame=document.createElement('div');frame.className='mg-redesign-frame';
  const side=document.createElement('nav');side.className='mg-redesign-side';side.setAttribute('aria-label','Průběh návrhu');
- side.innerHTML='<div class="mg-redesign-brand"><span class="mg-brand-leaf">❧</span><strong>MVGreen</strong><small>Navrhni si zahradu</small></div>'+['Styl zahrady','Fotografie a měřítko','Detaily a podmínky','Váš návrh'].map((name,i)=>'<button type="button" data-go-step="'+[1,2,4,6][i]+'"><span>'+(i+1)+'</span>'+name+'</button>').join('')+'<div class="mg-sidebar-story"><h2>Začněte svůj<br>návrh zahrady</h2><p>Vyberte styl, který vám nejvíce vyhovuje.</p></div><div class="mg-sidebar-benefits"><div><span>◷</span><p><strong>Rychlý výsledek</strong><small>do 1–2 minut (orientačně)</small></p></div><div><span>❧</span><p><strong>Reálné rostliny</strong><small>pro vaši lokalitu</small></p></div><div><span>▤</span><p><strong>Orientační rozpočet</strong><small>hned ve výsledku</small></p></div><div><span>✦</span><p><strong>Možnost úprav</strong><small>dle vašich preferencí</small></p></div></div><div class="mg-sidebar-quote"><span>❝</span><p>Vaše zahrada. Váš styl. Váš návrh.</p><small>MVGreen – Navrhni si zahradu</small></div>';
+ side.innerHTML='<div class="mg-redesign-brand"><span class="mg-brand-leaf">❧</span><strong>MVGreen</strong><small>Navrhni si zahradu</small></div>'+('<div class="mg-nine-step-nav" aria-label="Všech devět kroků návrhu">'+['Styl zahrady','Fotografie zahrady','Měření a plochy','Detaily zahrady','Generování návrhu','Výsledky návrhu','Úpravy návrhu','Přehled a rozpočet','Chatový průvodce'].map((name,i)=>'<button type="button" data-go-step="'+(i+1)+'"><span>'+(i+1)+'</span>'+name+'</button>').join('')+'</div>')+'<div class="mg-sidebar-story"><h2>Začněte svůj<br>návrh zahrady</h2><p>Vyberte styl, který vám nejvíce vyhovuje.</p></div><div class="mg-sidebar-benefits"><div><span>◷</span><p><strong>Rychlý výsledek</strong><small>do 1–2 minut (orientačně)</small></p></div><div><span>❧</span><p><strong>Reálné rostliny</strong><small>pro vaši lokalitu</small></p></div><div><span>▤</span><p><strong>Orientační rozpočet</strong><small>hned ve výsledku</small></p></div><div><span>✦</span><p><strong>Možnost úprav</strong><small>dle vašich preferencí</small></p></div></div><div class="mg-sidebar-quote"><span>❝</span><p>Vaše zahrada. Váš styl. Váš návrh.</p><small>MVGreen – Navrhni si zahradu</small></div>';
  const main=document.createElement('div');main.className='mg-redesign-main';
  const tips=document.createElement('aside');tips.className='mg-redesign-tips';tips.setAttribute('aria-label','Tipy pro návrh');
  shell.parentNode.insertBefore(frame,shell);frame.append(side,main,tips);main.append(shell);
+ // Use the real logo configured on the MVGreen WordPress site, never a fabricated replacement.
+ const siteLogo=window.MVGreenBrand?.logoUrl;
+ if(typeof siteLogo==='string'&&/^https?:\/\//.test(siteLogo)){
+  const header=side.querySelector('.mg-redesign-brand');
+  const official=document.createElement('img');
+  official.className='mg-official-logo';
+  official.src=siteLogo;official.alt='Oficiální logo MVGreen';
+  official.decoding='async';
+  official.onerror=()=>{official.remove();header.classList.remove('mg-has-official-logo');};
+  const tagline=document.createElement('small');tagline.textContent='Navrhni si zahradu';
+  header.replaceChildren(official,tagline);
+  header.classList.add('mg-has-official-logo');
+ }
  side.addEventListener('click',e=>{const b=e.target.closest('[data-go-step]');if(!b||!side.contains(b))return;const n=Number(b.dataset.goStep);if(n===0){closeDesignerModal();return}if(n>2&&!photoReady){showWizardStep(2);q('mg-photo').focus();return}if(!frame.classList.contains('mg-is-modal'))openDesignerModal();showWizardStep(n)});
 }
 // Keep the approved four-item welcome sidebar unchanged; show all nine steps only inside the designer.
 const designerStepNames=['Styl zahrady','Fotografie zahrady','Měření a plochy','Detaily zahrady','Generování návrhu','Výsledky návrhu','Úpravy návrhu','Přehled a rozpočet','Chatový průvodce'];
 function switchDesignerNavigation(isOpen){
- const side=root.querySelector('.mg-redesign-side');if(!side)return;
- let nav=side.querySelector('.mg-nine-step-nav');
- if(isOpen){
-  if(!nav){nav=document.createElement('div');nav.className='mg-nine-step-nav';nav.setAttribute('aria-label','Devět kroků návrhu');nav.innerHTML=designerStepNames.map((name,i)=>'<button type="button" data-go-step="'+(i+1)+'"><span>'+(i+1)+'</span>'+name+'</button>').join('');side.querySelector('.mg-redesign-brand')?.insertAdjacentElement('afterend',nav);}
-  side.querySelectorAll(':scope > [data-go-step]').forEach(b=>b.hidden=true);
- }else{
-  if(nav)nav.remove();
-  side.querySelectorAll(':scope > [data-go-step]').forEach(b=>b.hidden=false);
- }
+ // One persistent nine-step sidebar for both the welcome screen and the editor.
+ const nav=root.querySelector('.mg-redesign-side .mg-nine-step-nav');
+ if(nav)nav.setAttribute('aria-label',isOpen?'Navigace mezi devíti kroky':'Přehled devíti kroků návrhu');
 }
 const designerBackplate=document.createElement('div');
 designerBackplate.className='mg-designer-backplate';
@@ -254,12 +261,24 @@ root.appendChild(designerBackplate);
 function syncDesignerChrome(){
  const frame=root.querySelector('.mg-redesign-frame');
  if(!frame?.classList.contains('mg-is-modal')){designerBackplate.hidden=true;return;}
- const mobile=window.matchMedia('(max-width:680px)').matches;
- const scale=mobile?1:Math.min(1.72,window.innerWidth*.94/Math.max(1,frame.offsetWidth),window.innerHeight*.89/Math.max(1,frame.offsetHeight));
- frame.style.setProperty('--mg-modal-scale',String(Math.max(.8,scale)));
+ if(window.matchMedia('(max-width:680px)').matches){
+  frame.style.removeProperty('--mg-modal-scale');
+  frame.style.removeProperty('top');
+  designerBackplate.hidden=true;return;
+ }
+ // Measure the untransformed frame. Both the height AND its position must fit the viewport.
+ const vw=document.documentElement.clientWidth||window.innerWidth;
+ const vh=window.innerHeight;
+ const naturalWidth=Math.max(1,frame.offsetWidth);
+ const naturalHeight=Math.max(1,frame.offsetHeight);
+ const scale=Math.min(1.57,(vw-44)/naturalWidth,(vh-50)/naturalHeight);
+ const safeScale=Math.max(.55,scale);
+ frame.style.setProperty('--mg-modal-scale',String(safeScale));
+ const top=Math.max(14,Math.floor((vh-naturalHeight*safeScale)/2));
+ frame.style.setProperty('top',top+'px','important');
  const rect=frame.getBoundingClientRect();
- const inset=mobile?0:15;
- designerBackplate.hidden=mobile;
+ const inset=11;
+ designerBackplate.hidden=false;
  designerBackplate.style.left=(rect.left-inset)+'px';
  designerBackplate.style.top=(rect.top-inset)+'px';
  designerBackplate.style.width=(rect.width+inset*2)+'px';
