@@ -1680,3 +1680,23 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
   grid-template-columns:clamp(140px,17vw,180px) minmax(0,1fr) clamp(170px,20vw,218px)!important;
  }
 }
+
+/* v0.6.32 – Step 03 mode switch: full AI hides ALL drawing tools, advanced restores them. */
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-measure-side,
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-below-photo,
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-editor-actions,
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 .mg-mobile-controls,
+.mvgreen-designer.mg-step3-is-auto .mg-redesign-frame.mg-view-step-3 #mg-area-list,
+.mvgreen-designer.mg-step3-is-auto .mg-stage.mg-fullscreen-fallback .mg-fs-area-kinds,
+.mvgreen-designer.mg-step3-is-auto .mg-stage.mg-fullscreen-fallback .mg-fullscreen-bar{
+ display:none!important;
+}
+.mvgreen-designer.mg-step3-is-advanced .mg-redesign-frame.mg-view-step-3 .mg-measure-side,
+.mvgreen-designer.mg-step3-is-advanced .mg-redesign-frame.mg-view-step-3 .mg-below-photo,
+.mvgreen-designer.mg-step3-is-advanced .mg-redesign-frame.mg-view-step-3 .mg-editor-actions{
+ display:flex!important;
+}
+.mvgreen-designer.mg-step3-is-advanced .mg-redesign-frame.mg-view-step-3 .mg-editor-actions{flex-direction:column!important}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-step3-advanced-toggle{
+ display:block!important;width:100%!important;
+}
