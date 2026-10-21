@@ -108,3 +108,20 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-result-details summary{cursor:pointer;font-weight:600;color:#254c30}
 .mvgreen-designer .mg-result-details[open] summary{margin-bottom:10px}
 @media(max-width:600px){.mvgreen-designer .mg-season-grid{grid-template-columns:1fr}.mvgreen-designer .mg-result-overview span{font-size:12px}}
+
+/* MVGreen – quick visual choice of garden concept */
+.mvgreen-designer .mg-variant-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0 8px}
+.mvgreen-designer .mg-variant{appearance:none;display:flex;flex-direction:column;text-align:left;padding:0;overflow:hidden;background:#fff;border:2px solid #dce8dd;border-radius:15px;cursor:pointer;box-shadow:0 3px 12px #234c2d0b;transition:border-color .15s,box-shadow .15s,transform .15s;color:#24342b;font:inherit}
+.mvgreen-designer .mg-variant:hover{border-color:#73a681;box-shadow:0 8px 20px #234c2d20;transform:translateY(-2px)}
+.mvgreen-designer .mg-variant[aria-pressed="true"]{border-color:#19824d;box-shadow:0 0 0 2px #c7e8d0}
+.mvgreen-designer .mg-variant:focus-visible{outline:3px solid #256fb8;outline-offset:3px}
+.mvgreen-designer .mg-variant-picture{position:relative;display:block;aspect-ratio:16/10;width:100%;background:linear-gradient(135deg,#7dad75,#e4eee1)}
+.mvgreen-designer .mg-variant-picture img{display:block;width:100%;height:100%;object-fit:cover}
+.mvgreen-designer .mg-variant-letter{position:absolute;top:10px;left:10px;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-weight:750;background:#fff;color:#21643e;box-shadow:0 2px 10px #0002}
+.mvgreen-designer .mg-variant-info{display:flex;flex-direction:column;gap:6px;padding:15px 14px 17px}
+.mvgreen-designer .mg-variant-info strong{font-size:16px;color:#1c5336;line-height:1.3}
+.mvgreen-designer .mg-variant-info small{font-size:13px;color:#4d6354;line-height:1.5}
+.mvgreen-designer .mg-variant[aria-pressed="true"] .mg-variant-info{background:#eff8f0}
+.mvgreen-designer .mg-variant-note{color:#21643e;font-weight:650;margin-top:8px}
+@media(max-width:680px){.mvgreen-designer .mg-variant-grid{grid-template-columns:1fr;gap:10px}.mvgreen-designer .mg-variant{flex-direction:row}.mvgreen-designer .mg-variant-picture{width:116px;min-width:116px;align-self:stretch;aspect-ratio:auto}.mvgreen-designer .mg-variant-info{padding:13px}.mvgreen-designer .mg-variant-letter{width:27px;height:27px;top:7px;left:7px}}
+@media(prefers-reduced-motion:reduce){.mvgreen-designer .mg-variant{transition:none}}
