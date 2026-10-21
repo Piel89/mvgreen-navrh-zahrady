@@ -112,18 +112,29 @@ function updateFullscreenUI(){const full=isStageFullscreen(),btn=q('mg-photo-ful
 function updateRotateHint(){const mobile=window.matchMedia('(max-width: 767px) and (orientation: portrait)').matches;q('mg-rotate-hint').classList.toggle('mg-hidden',!photoReady||!mobile)}
 function toggleFullscreen(){
  const open=!isStageFullscreen();
- stage.classList.toggle('mg-fullscreen-fallback',open);
- document.body.classList.toggle('mg-editor-overlay-open',open);
  if(open){
-  // Portal the editor above the modal's transformed/scrolling containers.
   if(!stage.__mgFullscreenMarker){
-   stage.__mgFullscreenMarker=document.createComment('MVGreen fullscreen return');
+   stage.__mgFullscreenMarker=document.createComment('MVGreen editor return point');
    stage.parentNode.insertBefore(stage.__mgFullscreenMarker,stage);
   }
-  document.body.appendChild(stage);
- }else if(stage.__mgFullscreenMarker?.parentNode){
-  stage.__mgFullscreenMarker.parentNode.insertBefore(stage,stage.__mgFullscreenMarker);
+  const overlay=document.createElement('div');
+  overlay.id='mg-fullscreen-overlay';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label','Úpravy fotografie na celé obrazovce');
+  document.body.appendChild(overlay);
+  overlay.appendChild(stage);
+  stage.__mgOverlay=overlay;
+  stage.__mgPreviousZoom=zoom;
+  zoom=1;
+ }else{
+  if(stage.__mgFullscreenMarker?.parentNode)stage.__mgFullscreenMarker.parentNode.insertBefore(stage,stage.__mgFullscreenMarker);
+  stage.__mgOverlay?.remove();
+  stage.__mgOverlay=null;
+  zoom=stage.__mgPreviousZoom||1;
  }
+ stage.classList.toggle('mg-fullscreen-fallback',open);
+ document.body.classList.toggle('mg-editor-overlay-open',open);
  stage.scrollLeft=0;stage.scrollTop=0;
  updateFullscreenUI();
 }
