@@ -607,3 +607,14 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison:before{content:"";position:absolute;z-index:3;top:0;bottom:0;left:var(--mg-demo-reveal);width:3px;transform:translateX(-50%);background:#fff;box-shadow:0 0 8px #001a1044;pointer-events:none}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison:after{content:"‹ ›";position:absolute;z-index:4;top:50%;left:var(--mg-demo-reveal);transform:translate(-50%,-50%);display:grid;place-items:center;width:43px;height:43px;border-radius:50%;background:#fff;color:#067544;font-size:21px;font-weight:850;box-shadow:0 2px 9px #001d143d;pointer-events:none}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-demo-reveal{position:absolute!important;inset:0!important;z-index:5!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;opacity:0!important;cursor:ew-resize!important}
+
+
+/* Six-card style gallery inspired by the approved MVGreen nine-step reference. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-picture{height:154px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info{padding:10px 12px!important;min-height:92px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info strong{font-size:14px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info small{font-size:11px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant[aria-pressed="true"]{border-color:#007747!important;box-shadow:0 0 0 2px #b6e7c7!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tips-reference-photo{display:block;width:100%;max-height:210px;object-fit:cover;border-radius:11px;margin-top:14px}
+@media(max-width:680px){.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-picture{height:120px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info{min-height:103px!important;padding:9px!important}}
