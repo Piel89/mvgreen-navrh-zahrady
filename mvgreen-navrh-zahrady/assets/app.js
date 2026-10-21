@@ -147,6 +147,11 @@ function chooseVariant(code,applySettings=true,styleChoice=null){
  q('mg-variant').value=selected;q('mg-style-card').value=key;
  root.querySelectorAll('[data-mg-style-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mgStyleChoice===key)));
  q('mg-variant-note').textContent='Vybráno: '+config.name;
+ // The right-hand inspiration photo must follow the selected card immediately.
+ const chosenCard=root.querySelector('[data-mg-style-choice="'+key+'"]');
+ const chosenImage=chosenCard?.querySelector('img');
+ const tipsImage=root.querySelector('.mg-redesign-tips .mg-tips-reference-photo');
+ if(chosenImage&&tipsImage){tipsImage.src=chosenImage.currentSrc||chosenImage.src;tipsImage.alt='Vybraný styl: '+config.name;}
  renderTailoredChoices(selected);
  if(applySettings){q('mg-style').value=config.style;q('mg-preference').value=v.preference;q('mg-maint').value=selected==='C'?'Nízká':'Střední';lastPlan=null;}
 }
@@ -210,7 +215,6 @@ if(shell){
 }
 // Keep the approved four-item welcome sidebar unchanged; show all nine steps only inside the designer.
 const designerStepNames=['Výběr stylu zahrady','Fotografie zahrady','Měření a označení ploch','Detaily zahrady','Váš návrh – generování','Výsledky návrhu','Detailní úpravy návrhu','Přehled a rozpočet','Chatový průvodce a další kroky'];
-let welcomeNavMarkup='';
 function switchDesignerNavigation(isOpen){
  const side=root.querySelector('.mg-redesign-side');if(!side)return;
  let nav=side.querySelector('.mg-nine-step-nav');
