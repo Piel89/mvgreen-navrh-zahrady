@@ -628,7 +628,7 @@ function refreshStep3Controls(){
  step3AdvancedControls.forEach(el=>el.classList.toggle('mg-step3-controls-collapsed',!advanced));
  step3Toggle.hidden=advanced;
  step3Toggle.setAttribute('aria-expanded',String(advanced));
- if(step3Tools)step3Tools.classList.toggle('mg-step3-tools-collapsed',!advanced);
+ if(step3Tools)step3Tools.classList.remove('mg-step3-tools-collapsed');
 }
 step3Toggle.addEventListener('click',()=>{step3AdvancedOpen=true;refreshStep3Controls();});
 // Fullscreen uses the same working area-kind actions as the right-hand sidebar.
