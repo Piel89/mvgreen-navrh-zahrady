@@ -94,14 +94,17 @@ function isStageFullscreen(){return stage.classList.contains('mg-fullscreen-fall
 function updateCanvasLayout(){
  if(!photoReady||!canvas.width||!canvas.height)return;
  const full=isStageFullscreen();
- const fullToolsWidth=full&&window.innerWidth>740?220:0;
- const availableWidth=Math.max(1,stage.clientWidth-24-fullToolsWidth);
- const availableHeight=full?Math.max(1,stage.clientHeight-(window.innerWidth<=740?180:105)):Infinity;
+ const mobile=window.innerWidth<=740;
+ const fullToolsWidth=full&&!mobile&&q('mg-design-mode')?.value==='advanced'?210:0;
+ const availableWidth=Math.max(1,full?window.innerWidth-fullToolsWidth-48:stage.clientWidth-24);
+ const availableHeight=full?Math.max(1,window.innerHeight-(mobile?200:125)):Infinity;
  const fittedWidth=Math.min(availableWidth,availableHeight*canvas.width/canvas.height);
- canvas.style.width=(fittedWidth*zoom)+'px';
- canvas.style.height='auto';
- canvas.style.maxWidth='none';
- canvas.style.maxHeight='none';
+ const finalWidth=Math.max(1,fittedWidth*zoom);
+ const finalHeight=finalWidth*canvas.height/canvas.width;
+ canvas.style.setProperty('width',finalWidth+'px','important');
+ canvas.style.setProperty('height',finalHeight+'px','important');
+ canvas.style.setProperty('max-width','none','important');
+ canvas.style.setProperty('max-height','none','important');
  canvas.style.flex='0 0 auto';
 }
 function updateFullscreenUI(){const full=isStageFullscreen(),btn=q('mg-photo-fullscreen');btn.textContent=full?'⤢':'⛶';btn.setAttribute('aria-label',full?'Ukončit celou obrazovku':'Otevřít fotografii na celou obrazovku');btn.title=full?'Ukončit celou obrazovku':'Celá obrazovka';updateRotateHint();updateCanvasLayout()}
