@@ -654,7 +654,7 @@ body.mg-designer-modal-open{overflow:hidden!important}
 
 
 /* MVGREEN 9-screen reference layout — preserves all 9 screens and 4 sidebar groups. */
-.mvgreen-designer .mg-redesign-frame.mg-is-modal{font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal{font-family:"Roboto Condensed","Arial Narrow",Arial,sans-serif!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side{background:linear-gradient(150deg,#f7fcf8,#edf8f0)!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{background:#fff!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{background:linear-gradient(140deg,#f6fcf7,#eef8f0)!important}
