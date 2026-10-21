@@ -459,3 +459,12 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-info small{font-size:13px!important;line-height:1.55!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-choices{margin-top:25px!important}
 @media(max-width:680px){.mvgreen-designer .mg-dimensions-row{grid-template-columns:1fr}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-picture{height:210px!important}}
+
+/* 0.5.24: Uploaded photo always visible on photo step, regardless of AI/edit mode. */
+.mvgreen-designer #mg-upload-preview.mg-upload-preview[hidden]{display:none!important}
+.mvgreen-designer #mg-upload-preview.mg-upload-preview.is-visible{display:block!important;margin:20px 0 24px!important;padding:0!important;overflow:hidden!important;border:1px solid #d7e9dc!important;border-radius:16px!important;background:#f3f9f4!important;box-shadow:0 8px 25px rgba(14,78,40,.07)!important}
+.mvgreen-designer #mg-upload-preview-image{display:block!important;width:100%!important;height:auto!important;max-height:430px!important;object-fit:contain!important;background:#e9f2ec!important}
+.mvgreen-designer #mg-upload-preview figcaption{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:5px 14px!important;padding:13px 17px!important;margin:0!important;color:#16573a!important}
+.mvgreen-designer #mg-upload-preview figcaption span{font-size:14px!important;font-weight:800!important}
+.mvgreen-designer #mg-upload-preview figcaption small{font-size:12px!important;color:#587365!important;line-height:1.5!important}
+.mvgreen-designer.mg-automatic-mode #mg-upload-preview,.mvgreen-designer:not(.mg-automatic-mode) #mg-upload-preview{visibility:visible!important;opacity:1!important}
