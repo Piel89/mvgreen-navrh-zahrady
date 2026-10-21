@@ -617,20 +617,27 @@ const step3AdvancedControls=[
  measureStep?.querySelector('.mg-editor-actions'),
  measureStep?.querySelector('.mg-mobile-controls')
 ].filter(Boolean);
-let step3AdvancedOpen=false;
 const step3Toggle=document.createElement('button');
 step3Toggle.type='button';step3Toggle.className='mg-step3-advanced-toggle';
-step3Toggle.textContent='✏️ Pokročilé úpravy – označit plochy';
 step3Toggle.setAttribute('aria-expanded','false');
 if(step3PhotoStage)step3PhotoStage.insertAdjacentElement('afterend',step3Toggle);
 function refreshStep3Controls(){
- const advanced=q('mg-design-mode')?.value==='advanced'||step3AdvancedOpen;
+ const advanced=q('mg-design-mode')?.value==='advanced';
+ root.classList.toggle('mg-step3-is-advanced',advanced);
+ root.classList.toggle('mg-step3-is-auto',!advanced);
  step3AdvancedControls.forEach(el=>el.classList.toggle('mg-step3-controls-collapsed',!advanced));
- step3Toggle.hidden=advanced;
+ step3Toggle.textContent=advanced?'✨ Přepnout na automatický AI návrh':'✏️ Pokročilé úpravy – označit plochy';
  step3Toggle.setAttribute('aria-expanded',String(advanced));
- if(step3Tools)step3Tools.classList.remove('mg-step3-tools-collapsed');
+ if(step3Tools)step3Tools.classList.toggle('mg-step3-tools-collapsed',!advanced);
+ const fullKinds=root.querySelector('.mg-fs-area-kinds');
+ if(fullKinds)fullKinds.hidden=!advanced;
 }
-step3Toggle.addEventListener('click',()=>{step3AdvancedOpen=true;refreshStep3Controls();});
+step3Toggle.addEventListener('click',()=>{
+ const advanced=q('mg-design-mode')?.value==='advanced';
+ setDesignMode(advanced?'auto':'advanced');
+ refreshStep3Controls();
+ autoSave();
+});
 // Fullscreen uses the same working area-kind actions as the right-hand sidebar.
 const fullscreenKinds=document.createElement('div');
 fullscreenKinds.className='mg-fs-area-kinds';
