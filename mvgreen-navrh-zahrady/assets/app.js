@@ -607,6 +607,29 @@ if(photoStage&&measureStep){
  }));
  toolCol.querySelector('#mg-ref-add-zone')?.addEventListener('click',()=>{if(!photoReady){showWizardStep(2);return}root.querySelector('[data-mg-area-kind="lawn"]')?.click();q('mg-polygon').click()});
 }
+// Step 03: keep the original wired tool buttons, but display them in the right sidebar.
+const step3Tools=measureStep?.querySelector('.mg-measure-side');
+const step3ToolHome=step3Tools?.parentNode;
+const step3PhotoStage=q('mg-stage');
+const step3AdvancedControls=[
+ measureStep?.querySelector('.mg-below-photo'),
+ measureStep?.querySelector('.mg-editor-actions'),
+ measureStep?.querySelector('.mg-mobile-controls')
+].filter(Boolean);
+let step3AdvancedOpen=false;
+const step3Toggle=document.createElement('button');
+step3Toggle.type='button';step3Toggle.className='mg-step3-advanced-toggle';
+step3Toggle.textContent='✏️ Pokročilé úpravy – označit plochy';
+step3Toggle.setAttribute('aria-expanded','false');
+if(step3PhotoStage)step3PhotoStage.insertAdjacentElement('afterend',step3Toggle);
+function refreshStep3Controls(){
+ const advanced=q('mg-design-mode')?.value==='advanced'||step3AdvancedOpen;
+ step3AdvancedControls.forEach(el=>el.classList.toggle('mg-step3-controls-collapsed',!advanced));
+ step3Toggle.hidden=advanced;
+ step3Toggle.setAttribute('aria-expanded',String(advanced));
+ if(step3Tools)step3Tools.classList.toggle('mg-step3-tools-collapsed',!advanced);
+}
+step3Toggle.addEventListener('click',()=>{step3AdvancedOpen=true;refreshStep3Controls();});
 const originalShowWizardStep=showWizardStep;
 const sideTips=root.querySelector('.mg-redesign-tips');
 sideTips?.addEventListener('click',event=>{
@@ -614,7 +637,21 @@ sideTips?.addEventListener('click',event=>{
  if(b&&sideTips.contains(b))q('mg-next')?.click();
 });
 showWizardStep=function(n){
+ // Move the existing tool DOM back before the tips column is re-rendered.
+ if(step3Tools&&step3ToolHome&&step3Tools.parentNode!==step3ToolHome)step3ToolHome.appendChild(step3Tools);
  originalShowWizardStep(n);
+ if(wizardStep===3){
+  const right=root.querySelector('.mg-redesign-tips');
+  if(right&&step3Tools)right.prepend(step3Tools);
+  if(photoReady&&img){
+   const stage=q('mg-stage'),placeholder=q('mg-placeholder');
+   if(stage)stage.classList.add('mg-stage-has-upload');
+   if(placeholder)placeholder.classList.add('mg-hidden');
+   canvas.classList.remove('mg-hidden');
+   draw();
+  }
+  refreshStep3Controls();
+ }
  const frame=root.querySelector('.mg-redesign-frame');if(frame){for(let i=0;i<=9;i++)frame.classList.toggle('mg-view-step-'+i,i===wizardStep);}
  const badge=q('mg-progress-badge');if(badge)badge.textContent=String(wizardStep);
  const aiTrigger=q('mg-generation-admin'),aiOriginal=q('mg-ai-test');if(aiTrigger&&aiOriginal)aiTrigger.classList.toggle('mg-hidden',aiOriginal.classList.contains('mg-hidden'));
