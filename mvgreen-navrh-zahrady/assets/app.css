@@ -1546,3 +1546,19 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
   grid-template-columns:clamp(140px,17vw,180px) minmax(0,1fr) clamp(170px,20vw,218px)!important;
  }
 }
+
+/* v0.6.26 – interactive quality verdict: exactly one card for the uploaded photo. */
+.mvgreen-designer .mg-photo-quality-guide{grid-template-columns:minmax(0,1fr)!important;max-width:100%!important}
+.mvgreen-designer .mg-photo-quality-card:not(.is-current),
+.mvgreen-designer .mg-photo-quality-card[hidden]{display:none!important}
+.mvgreen-designer .mg-photo-quality-card.is-current{
+ display:grid!important;grid-template-columns:80px minmax(0,1fr)!important;
+ grid-template-rows:auto auto!important;column-gap:10px!important;
+ text-align:left!important;align-items:center!important;padding:9px!important;
+}
+.mvgreen-designer .mg-photo-quality-card.is-current .mg-photo-quality-image{
+ grid-row:1/3!important;width:80px!important;height:68px!important;aspect-ratio:auto!important
+}
+.mvgreen-designer .mg-photo-quality-card.is-current strong{font-size:13px!important;margin:0!important;align-self:end!important}
+.mvgreen-designer .mg-photo-quality-card.is-current small{font-size:12px!important;align-self:start!important}
+.mvgreen-designer .mg-photo-quality-result{margin:0!important;padding:6px 3px!important}
