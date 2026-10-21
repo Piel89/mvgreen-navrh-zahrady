@@ -38,6 +38,7 @@ function showUploadedPhotoPreview(){
  const preview=q('mg-upload-preview-image');
  // Reuse the decoded uploaded image directly, with no additional upload to server.
  preview.src=canvas.toDataURL('image/jpeg',0.88);
+ const beforeResult=q('mg-result-before');if(beforeResult){beforeResult.src=preview.src;beforeResult.alt='Vaše nahraná fotografie zahrady před návrhem';}
  photoPreview.hidden=false;
  photoPreview.classList.add('is-visible');
 }
@@ -157,8 +158,12 @@ function showWizardStep(n){
 2:['Vyberte styl podle využití zahrady.','Zvažte čas, který chcete věnovat údržbě.','Styl a výsadbu můžete později změnit.'],
 3:['Znáte délku plotu? Označte dva body pro lepší odhad ploch.','Trávník a záhony označte samostatně.','Rozměry z fotografie jsou pouze orientační.'],
 4:['Zadejte obec a skutečné podmínky pozemku.','Rozpočet je orientační limit, nikoli závazná nabídka.','Čím přesnější údaje, tím použitelnější odhad.'],
-5:['Zkontrolujte zadání před pokračováním.','Vizualizace není projektová dokumentace.','AI generování je zatím dostupné pouze pro testování správci.']};
-tips.innerHTML='<h3>💡 Tipy pro lepší výsledek</h3>'+ (wizardStep===0?[['camera','Foťte za denního světla.','Zahrada bude mít přirozené barvy a detaily.'],['maximize','Zachyťte co největší plochu.','Ideálně z rohu zahrady.'],['list','Označte hlavní zóny.','Trávník, záhony, terasa, cestičky.'],['settings','Nemusíte měřit přesně.','AI návrh se přizpůsobí fotografii.']].map(x=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+({camera:'📷',maximize:'◎',list:'☷',settings:'⚙'}[x[0]])+'</span><div><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div></div>').join(''):data[wizardStep].map(x=>'<p>✓ '+x+'</p>').join(''));}
+5:['Prohlédněte si postup zpracování zadání.','AI test může spustit pouze oprávněný správce.','Ukázková fotografie není výsledkem vašeho návrhu.'],
+6:['Výsledek AI je dostupný jen po skutečném generování.','Porovnání PŘED a PO je zatím ukázkové.','Vyberte preferovanou variantu zadání.'],
+7:['Vybírejte rostliny podle slunce a půdy.','Plochy lze upravit ve fotografickém editoru.','Přání se zohlední při dalším návrhu.'],
+8:['Ceny jsou pouze orientační.','Nezapomeňte na dopravu a realizaci.','Stáhněte si položkový rozpočet.'],
+9:['Ptejte se průvodce na jednotlivé kroky.','Zadání lze znovu upravit.','Průvodce není živý AI chat.']};
+tips.innerHTML='<h3>💡 Tipy pro lepší výsledek</h3>'+ (wizardStep===0?[['camera','Foťte za denního světla.','Zahrada bude mít přirozené barvy a detaily.'],['maximize','Zachyťte co největší plochu.','Ideálně z rohu zahrady.'],['list','Označte hlavní zóny.','Trávník, záhony, terasa, cestičky.'],['settings','Nemusíte měřit přesně.','AI návrh se přizpůsobí fotografii.']].map(x=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+({camera:'📷',maximize:'◎',list:'☷',settings:'⚙'}[x[0]])+'</span><div><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div></div>').join(''):(data[wizardStep]||data[1]).map((x,i)=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+['✓','✦','◉'][i%3]+'</span><div><strong>'+x+'</strong></div></div>').join(''));}
  if(wizardStep>0){const main=root.querySelector('.mg-redesign-main');if(main)main.scrollTo({top:0,behavior:'instant'});}
 }
 function setDesignMode(mode){
