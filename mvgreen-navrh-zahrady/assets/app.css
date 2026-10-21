@@ -781,3 +781,9 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-area-mulch{background:#f5e4d3!important;color:#805027!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-area-terrace{background:#fff0d5!important;color:#a45a05!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-area-kind[aria-pressed="true"]{border-color:currentColor!important;box-shadow:inset 0 0 0 1px currentColor!important}
+
+/* v0.6.7: nine-step navigation in the modal, without changing the approved landing screen. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>.mg-nine-step-nav{display:flex;flex-direction:column;gap:3px;width:100%}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>.mg-nine-step-nav [data-go-step]{display:flex!important;width:100%!important;min-height:41px!important;padding:7px 8px!important;margin:0!important;font-size:11px!important;line-height:1.25!important;white-space:normal!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>.mg-nine-step-nav [data-go-step] span{flex:0 0 24px!important;width:24px!important;height:24px!important;font-size:12px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side>[data-go-step][hidden]{display:none!important}
