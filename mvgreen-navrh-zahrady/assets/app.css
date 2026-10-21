@@ -1567,3 +1567,37 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
 .mvgreen-designer .mg-mode-heading{display:flex!important;flex-direction:column!important;gap:3px!important;margin:14px 0 9px!important}
 .mvgreen-designer .mg-mode-heading strong{font-size:14px!important;color:#103c2b!important}
 .mvgreen-designer .mg-mode-heading small{font-size:12px!important;color:#657d70!important;line-height:1.45!important}
+
+/* v0.6.29 – Step 03: original uploaded photo and contextual editing tools. */
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-measure-layout{
+ display:block!important;grid-template-columns:minmax(0,1fr)!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-measure-side{
+ width:100%!important;max-width:none!important;
+ position:static!important;padding:10px!important;margin:0 0 12px!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-redesign-tips{
+ display:flex!important;flex-direction:column!important;gap:10px!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-measure-photo{
+ width:100%!important;max-width:100%!important;min-width:0!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-stage-has-upload{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ background:#edf3ee!important;overflow:hidden!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-stage-has-upload #mg-canvas:not(.mg-hidden){
+ display:block!important;max-width:100%!important;max-height:52vh!important;
+ width:auto!important;height:auto!important;object-fit:contain!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-step3-controls-collapsed,
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-step3-tools-collapsed .mg-ref-area-kind,
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-step3-tools-collapsed #mg-ref-add-zone{
+ display:none!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-step3-advanced-toggle{
+ display:block!important;width:100%!important;margin:12px 0!important;
+ border:1px solid #087447!important;background:#eef8f1!important;color:#08633d!important;
+ padding:12px!important;border-radius:9px!important;font-weight:750!important;cursor:pointer!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-step3-advanced-toggle[hidden]{display:none!important}
