@@ -651,3 +651,124 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tips-reference-photo{max-height:235px!important;margin-top:15px!important;border-radius:10px!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer #mg-step-description{display:none!important}
 @media(max-width:680px){.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-picture{height:122px!important}}
+
+
+/* MVGREEN 9-screen reference layout — preserves all 9 screens and 4 sidebar groups. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal{font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side{background:linear-gradient(150deg,#f7fcf8,#edf8f0)!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{background:#fff!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{background:linear-gradient(140deg,#f6fcf7,#eef8f0)!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-section-title{font-size:22px!important;font-weight:850!important;color:#152b37!important;letter-spacing:-.025em!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-progress{margin-bottom:13px!important;padding-bottom:8px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-progress-label{font-size:23px!important;font-weight:850!important;color:#16204b!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-progress-badge{width:34px!important;height:34px!important;background:#005f43!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer{position:sticky!important;bottom:0!important;z-index:10!important;background:#fff!important;display:flex!important;justify-content:space-between!important;gap:10px!important;padding:12px 0!important;margin-top:14px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer #mg-next{background:#006044!important;border-radius:7px!important;font-weight:850!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer #mg-prev{background:#fff!important;color:#24352b!important;border-radius:7px!important}
+/* Step 1 — exactly six cards, three across, reference typography and side panel. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 .mg-style-subvariants{display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 [data-mg-step="1"] .mg-variant-picture{height:145px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 [data-mg-step="1"] .mg-variant-info{min-height:79px!important;padding:9px 10px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-1 .mg-redesign-tips .mg-tips-reference-photo{height:235px!important;max-height:235px!important;object-fit:cover!important}
+/* Step 2 — photo hero, 2 mode cards, upload strip and mini gallery. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-photo-showcase{position:relative;border-radius:9px;overflow:hidden;width:100%;height:300px;background:#eaf2ec;margin:12px 0 14px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-photo-showcase-img{width:100%;height:100%;object-fit:cover}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-photo-distance{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#fff;color:#142b24;font-weight:900;font-size:15px;padding:8px 17px;border-radius:25px;white-space:nowrap;box-shadow:0 3px 10px #0002}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 #mg-upload-preview{display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-mode-select{margin:10px 0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-mode-card{min-height:80px!important;padding:12px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-photo-thumbs{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 0;color:#3b5746;font-size:12px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-thumbs-images{display:flex;gap:5px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-thumbs-images img{width:58px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #dce6dc}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-redesign-tips .mg-tips-reference-photo{height:155px!important;object-fit:cover!important}
+/* Steps 3 and 5–9 occupy the full content area; their own right panels are inside the screen. */
+@media(min-width:1181px){
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9{grid-template-columns:220px minmax(0,1fr)!important}
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-redesign-tips,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-redesign-tips,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-redesign-tips,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-redesign-tips,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-redesign-tips,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-redesign-tips{display:none!important}
+/* Step 3 — photo on left, colored area tools on right. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-measure-layout{grid-template-columns:minmax(0,1fr) 240px!important;gap:18px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-measure-side{background:#fff!important;border:1px solid #e1eae4!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-area-kind{border:1px solid #d7e2dc!important;border-radius:8px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-area-lawn{background:#e4f7e7!important;color:#156333!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-area-bed{background:#f2dcfb!important;color:#7b2c9a!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-area-path{background:#e9ecee!important;color:#465361!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-area-mulch{background:#f8e5d5!important;color:#824617!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-area-terrace{background:#fff0d5!important;color:#945d10!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-area-kind[aria-pressed="true"]{outline:2px solid #077d4b!important}
+/* Step 4 — information / budget / conditions. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 [data-mg-step="4"]{position:relative}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-reference-details{width:57%!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices{position:absolute;top:78px;left:60%;width:38%;border:1px solid #e5ebe5;border-radius:10px;padding:13px;background:#fff}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices h4{font-size:14px;margin:0 0 12px;color:#1b3642}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices h4:not(:first-child){margin-top:18px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices button{display:block;width:100%;text-align:left;background:#fff;border:1px solid #d9e5dc;border-radius:7px;margin-bottom:7px;padding:10px;font-size:12px;color:#284b35}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices button[aria-pressed="true"]{border-color:#078f57;background:#eaf9ef;font-weight:800}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices ul{padding-left:18px;font-size:11px;line-height:1.9;color:#315b41}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-conditions{grid-column:1/-1}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-conditions h4{font-size:13px;margin:10px 0 8px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-sun-options,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-moisture-options{display:flex;gap:7px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-sun-options button,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-moisture-options button{flex:1;border:1px solid #dce8df;border-radius:7px;background:#fff;padding:10px 4px;color:#345e42;font-size:11px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-sun-options button[aria-pressed="true"],.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-moisture-options button[aria-pressed="true"]{background:#e9f8ed;border-color:#0c9156;font-weight:800}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-sun-options button span{display:block;font-size:18px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-budget-in-details{display:none!important}
+/* Step 5 — centered generation preview and status. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-grid{grid-template-columns:1.4fr .9fr!important;gap:18px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-image{min-height:370px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-status{background:#f3faf5!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-status p{padding:8px 0!important;font-size:13px!important}
+/* Step 6 — before/after comparison, thumbnails and details/actions. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-ref-results-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;margin:12px 0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-reference-result{margin:0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-result-comparison{height:365px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-ref-result-aside{border:1px solid #e0eae2;border-radius:10px;padding:14px;background:#fff}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-ref-result-aside h4{font-size:14px;margin:0 0 14px;color:#183d29}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-ref-result-aside h4:not(:first-child){margin-top:22px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-ref-result-aside p{font-size:12px;line-height:1.7;color:#405b4b}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-ref-result-aside button{display:block;width:100%;padding:10px;border:1px solid #dfe9e2;border-radius:8px;background:#fff;color:#215a39;text-align:left;margin-bottom:8px;font-size:12px}
+/* Step 7 — plant library, photo, planting tips. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-edit-layout{grid-template-columns:175px minmax(0,1fr) 230px!important;gap:13px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-edit-preview img{height:355px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-tips{background:#f5fbf6;border:1px solid #e1eae4;border-radius:10px;padding:14px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-tips h4{font-size:15px;color:#23462e}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-tips p{font-size:12px;line-height:1.65;color:#45664f}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-thumbnails{display:flex;gap:5px;margin:15px 0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-thumbnails img{width:31%;height:78px;object-fit:cover;border-radius:6px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-tips button{background:#006b42;color:#fff;border:0;border-radius:7px;padding:10px;width:100%}
+/* Step 8 — overview at left, line-item budget at right. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary{width:49%;display:block!important;margin:12px 0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary>div:nth-child(2){display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table{position:absolute;top:78px;left:53%;width:45%;padding:14px;border:1px solid #e1ebe3;border-radius:11px;background:#fff}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 [data-mg-step="8"]{position:relative;min-height:470px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table h4{font-size:16px;margin:0 0 14px;color:#213c2c}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table>div{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #e8eee8;font-size:12px;color:#47614f}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table .mg-ref-budget-total{font-size:15px;font-weight:900;color:#153d2a}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table p{font-size:11px;line-height:1.5;color:#627869}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table button{width:100%}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details{margin-top:20px;max-width:50%;font-size:12px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details summary{cursor:pointer;font-weight:800;color:#006b3e}
+/* Step 9 — chat and helpful links. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-chat-layout{grid-template-columns:minmax(0,1fr) 245px!important;gap:16px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-chat-messages{min-height:320px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-ref-chat-composer{display:flex;gap:7px;padding:10px;border-top:1px solid #e0e9e2}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-ref-chat-composer input{flex:1;min-width:0;border:1px solid #dce9de;border-radius:8px;padding:10px;font-size:13px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-ref-chat-composer button{background:#006b3e;border:0;border-radius:7px;color:#fff;padding:0 16px}
+@media(max-width:1180px){
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-measure-layout,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-ref-results-layout,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-edit-layout,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-chat-layout{grid-template-columns:1fr!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-reference-details,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary{width:100%!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table{position:static!important;width:auto!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details{max-width:100%}
+}
