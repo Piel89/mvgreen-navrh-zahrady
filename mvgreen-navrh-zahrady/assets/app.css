@@ -1524,3 +1524,25 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
 .mvgreen-designer .mg-photo-quality-bad.is-current,
 .mvgreen-designer .mg-photo-quality-dark.is-current{border-color:#dc5549!important;box-shadow:0 0 0 2px #dc55491a!important}
 .mvgreen-designer .mg-photo-quality-result{grid-column:1/-1!important;margin:7px 0 0!important;font-size:11px!important;line-height:1.45!important;color:#375d49!important}
+
+/* v0.6.25 – compact proportions matching the approved 9-step reference. */
+@media(min-width:1101px){
+ body.admin-bar>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal,
+ body:not(.admin-bar)>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  width:min(1190px,calc(100vw - 32px))!important;
+  max-width:1190px!important;
+  grid-template-columns:180px minmax(0,1fr) 218px!important;
+ }
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-main{
+  padding:18px 18px 24px!important;
+ }
+}
+@media(min-width:681px) and (max-width:1100px){
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  width:calc(100vw - 16px)!important;
+  max-width:100%!important;
+  left:50%!important;right:auto!important;
+  transform:translateX(-50%)!important;
+  grid-template-columns:clamp(140px,17vw,180px) minmax(0,1fr) clamp(170px,20vw,218px)!important;
+ }
+}
