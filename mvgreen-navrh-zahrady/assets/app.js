@@ -94,8 +94,9 @@ function isStageFullscreen(){return stage.classList.contains('mg-fullscreen-fall
 function updateCanvasLayout(){
  if(!photoReady||!canvas.width||!canvas.height)return;
  const full=isStageFullscreen();
- const availableWidth=full?Math.max(1,stage.clientWidth-24):Math.max(1,stage.clientWidth-24);
- const availableHeight=full?Math.max(1,stage.clientHeight-112):Infinity;
+ const fullToolsWidth=full&&window.innerWidth>740?220:0;
+ const availableWidth=Math.max(1,stage.clientWidth-24-fullToolsWidth);
+ const availableHeight=full?Math.max(1,stage.clientHeight-(window.innerWidth<=740?180:105)):Infinity;
  const fittedWidth=Math.min(availableWidth,availableHeight*canvas.width/canvas.height);
  canvas.style.width=(fittedWidth*zoom)+'px';
  canvas.style.height='auto';
@@ -630,6 +631,20 @@ function refreshStep3Controls(){
  if(step3Tools)step3Tools.classList.toggle('mg-step3-tools-collapsed',!advanced);
 }
 step3Toggle.addEventListener('click',()=>{step3AdvancedOpen=true;refreshStep3Controls();});
+// Fullscreen uses the same working area-kind actions as the right-hand sidebar.
+const fullscreenKinds=document.createElement('div');
+fullscreenKinds.className='mg-fs-area-kinds';
+fullscreenKinds.innerHTML='<strong>Označit plochu</strong>';
+[['Trávník','lawn'],['Záhon','bed'],['Cestička','path'],['Mulč / štěrk','mulch'],['Terasa','terrace']].forEach(([label,kind])=>{
+ const b=document.createElement('button');b.type='button';b.textContent=label;
+ b.dataset.mgFullscreenKind=kind;
+ b.addEventListener('click',()=>{
+  step3Tools?.querySelector('[data-mg-area-kind="'+kind+'"]')?.click();
+  fullscreenKinds.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+ });
+ fullscreenKinds.appendChild(b);
+});
+step3PhotoStage?.appendChild(fullscreenKinds);
 const originalShowWizardStep=showWizardStep;
 const sideTips=root.querySelector('.mg-redesign-tips');
 sideTips?.addEventListener('click',event=>{
