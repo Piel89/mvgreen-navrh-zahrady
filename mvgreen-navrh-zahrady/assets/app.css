@@ -1917,3 +1917,18 @@ body > #mg-stage.mg-fullscreen-fallback .mg-fs-area-kinds[hidden]{display:none!i
   flex-direction:row!important;
  }
 }
+
+/* v0.6.39 – overlay must be ABOVE wizard modal; stage remains reachable by JS after portaling. */
+html body #mg-fullscreen-overlay{
+ position:fixed!important;inset:0!important;
+ z-index:2147483647!important;isolation:isolate!important;
+ display:block!important;visibility:visible!important;opacity:1!important;
+ background:#eaf2ec!important;
+}
+html body #mg-fullscreen-overlay > #mg-stage.mg-fullscreen-fallback{
+ position:absolute!important;inset:0!important;z-index:1!important;
+ display:block!important;visibility:visible!important;opacity:1!important;
+}
+html body #mg-fullscreen-overlay #mg-canvas:not(.mg-hidden){
+ display:block!important;visibility:visible!important;opacity:1!important;
+}
