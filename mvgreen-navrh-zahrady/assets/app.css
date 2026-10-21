@@ -607,3 +607,47 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison:before{content:"";position:absolute;z-index:3;top:0;bottom:0;left:var(--mg-demo-reveal);width:3px;transform:translateX(-50%);background:#fff;box-shadow:0 0 8px #001a1044;pointer-events:none}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison:after{content:"‹ ›";position:absolute;z-index:4;top:50%;left:var(--mg-demo-reveal);transform:translate(-50%,-50%);display:grid;place-items:center;width:43px;height:43px;border-radius:50%;background:#fff;color:#067544;font-size:21px;font-weight:850;box-shadow:0 2px 9px #001d143d;pointer-events:none}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-demo-reveal{position:absolute!important;inset:0!important;z-index:5!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;opacity:0!important;cursor:ew-resize!important}
+
+
+/* Six-card style gallery inspired by the approved MVGreen nine-step reference. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-picture{height:154px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info{padding:10px 12px!important;min-height:92px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info strong{font-size:14px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info small{font-size:11px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant[aria-pressed="true"]{border-color:#007747!important;box-shadow:0 0 0 2px #b6e7c7!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tips-reference-photo{display:block;width:100%;max-height:210px;object-fit:cover;border-radius:11px;margin-top:14px}
+@media(max-width:680px){.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-picture{height:120px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info{min-height:103px!important;padding:9px!important}}
+
+
+/* Approved reference: screen 1, 3x2 photographic style gallery, four-stage navigation and right tips. */
+@media(min-width:1181px){
+.mvgreen-designer .mg-redesign-frame.mg-is-modal{grid-template-columns:220px minmax(0,1fr) 310px!important;max-width:1400px!important;width:min(1400px,97vw)!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side{padding:25px 14px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding:25px 24px 24px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{padding:35px 15px 18px!important}
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-step-kicker{display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-section-title{font-size:22px!important;color:#142f26!important;letter-spacing:-.025em!important;margin:0 0 6px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"]>.mg-note{font-size:12px!important;line-height:1.5!important;margin-bottom:13px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-grid{margin:10px 0 0!important;gap:10px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant{border-radius:8px!important;border-width:1px!important;box-shadow:0 2px 8px #143c2410!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-picture{height:150px!important;aspect-ratio:auto!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info{min-height:84px!important;padding:10px!important;gap:4px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info strong{font-size:13px!important;line-height:1.25!important;color:#1a3025!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-info small{font-size:11px!important;line-height:1.35!important;color:#667369!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant[aria-pressed="true"]{border:2px solid #007b47!important;box-shadow:0 0 0 1px #bfe4c9!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant[aria-pressed="true"] .mg-variant-info{background:#fff!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-note{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-style-subvariants{margin:17px 0 5px;border:1px solid #e2ede4;border-radius:9px;padding:9px 12px;background:#f8fbf9;color:#205b3b;font-size:12px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-style-subvariants summary{cursor:pointer;font-weight:750}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-style-subvariants .mg-tailored-choices{margin:10px 0 0!important;padding:12px 0 0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-style-subvariants:not([open]) .mg-tailored-choices{display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-grid{display:block!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips h3{font-size:15px!important;color:#193629!important;background:transparent!important;border:0!important;padding:0!important;margin:0 0 14px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tip-card{min-height:62px!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:7px 3px!important;margin:0 0 7px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tip-card strong{font-size:12px!important;line-height:1.5!important;color:#526355!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tip-icon{width:30px!important;height:30px!important;flex:0 0 30px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tips-reference-photo{max-height:235px!important;margin-top:15px!important;border-radius:10px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer #mg-step-description{display:none!important}
+@media(max-width:680px){.mvgreen-designer .mg-redesign-frame.mg-is-modal [data-mg-step="1"] .mg-variant-picture{height:122px!important}}
