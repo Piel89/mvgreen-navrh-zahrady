@@ -8,7 +8,7 @@ on:
       - '.github/workflows/build-plugin.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -28,3 +28,10 @@ jobs:
           name: mvgreen-navrh-zahrady-wordpress-install
           path: mvgreen-navrh-zahrady.zip
           retention-days: 30
+      - name: Publish direct-download installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(python3 -c 'import json;print(json.load(open("version.json"))["version"])')
+          gh release view "v$VERSION" >/dev/null 2>&1 || gh release create "v$VERSION" --title "MVGreen $VERSION" --notes "Instalační ZIP pro WordPress – nahrajte přímo přes Pluginy → Instalace pluginů → Nahrát plugin."
+          gh release upload "v$VERSION" mvgreen-navrh-zahrady.zip --clobber
