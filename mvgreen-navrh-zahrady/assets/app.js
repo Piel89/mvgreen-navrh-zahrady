@@ -37,6 +37,41 @@ photoPreview.className='mg-upload-preview';
 photoPreview.hidden=true;
 photoPreview.innerHTML='<img id="mg-upload-preview-image" alt="Náhled nahrané fotografie zahrady"><figcaption><span>✓ Vaše fotografie je připravená</span><small>Stejný snímek použijeme pro automatický návrh i pokročilé úpravy. Plochy můžete označit v kroku 3.</small></figcaption>';
 photoField.insertAdjacentElement('afterend',photoPreview);
+// Lightweight, local image-quality check. Framing is a heuristic, not object recognition.
+function analyzeGardenPhoto(image){
+ const sample=document.createElement('canvas');sample.width=160;sample.height=100;
+ const context=sample.getContext('2d',{willReadFrequently:true});
+ if(!context)return {type:'good',note:'Zkontrolujte, zda je vidět celá zahrada.'};
+ context.drawImage(image,0,0,160,100);
+ const pixels=context.getImageData(0,0,160,100).data;
+ let light=0,dark=0,bright=0,contrast=0,edges=0;
+ const lumas=new Float32Array(160*100);
+ for(let i=0;i<lumas.length;i++){
+  const j=i*4,lum=.2126*pixels[j]+.7152*pixels[j+1]+.0722*pixels[j+2];
+  lumas[i]=lum;light+=lum;if(lum<48)dark++;if(lum>210)bright++;
+ }
+ light/=lumas.length;
+ for(let y=1;y<99;y++)for(let x=1;x<159;x++){
+  const i=y*160+x;
+  const d=Math.abs(lumas[i]-lumas[i-1])+Math.abs(lumas[i]-lumas[i-160]);
+  contrast+=d;if(d>54)edges++;
+ }
+ const edgeRate=edges/(158*98),darkRate=dark/lumas.length;
+ if(light<75||darkRate>.67)return {type:'dark',note:'Fotografie je příliš tmavá. Zkuste ji pořídit za denního světla.'};
+ // A very dense close-up can be suspected, but cannot be verified from pixels alone.
+ if(edgeRate>.44&&bright/lumas.length<.12)return {type:'bad',note:'Fotografie může být příliš detailní. Ověřte, že je vidět celý prostor.'};
+ return {type:'good',note:'Světlo vypadá dobře. Zkontrolujte, zda snímek zachycuje celou zahradu.'};
+}
+function updateGardenPhotoQuality(){
+ if(!photoReady||!img)return;
+ const result=analyzeGardenPhoto(img);
+ root.dataset.mgPhotoQuality=result.type;
+ const guide=root.querySelector('.mg-photo-quality-guide');
+ if(!guide)return;
+ guide.querySelectorAll('.mg-photo-quality-card').forEach(card=>card.classList.toggle('is-current',card.classList.contains('mg-photo-quality-'+result.type)));
+ const note=guide.querySelector('.mg-photo-quality-result');
+ if(note)note.textContent=result.note;
+}
 function showUploadedPhotoPreview(){
  if(!photoReady||!img)return;
  const preview=q('mg-upload-preview-image');
@@ -45,6 +80,7 @@ function showUploadedPhotoPreview(){
  const beforeResult=q('mg-result-before');if(beforeResult){beforeResult.src=preview.src;beforeResult.alt='Vaše nahraná fotografie zahrady před návrhem';}
  photoPreview.hidden=false;
  photoPreview.classList.add('is-visible');
+ updateGardenPhotoQuality();
 }
 q('mg-photo').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;if(!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>10*1024*1024){alert('Vyberte JPG, PNG nebo WebP do 10 MB.');e.target.value='';return}const url=URL.createObjectURL(f),next=new Image();next.onload=()=>{img=next;const s=Math.min(1,1400/Math.max(next.naturalWidth,next.naturalHeight));canvas.width=Math.max(1,Math.round(next.naturalWidth*s));canvas.height=Math.max(1,Math.round(next.naturalHeight*s));photoReady=true;zoom=1;calibration=[];metersPerPixel=null;areas=[];draft=[];selected=-1;history=[],redoHistory=[],draftRedo=[],infoOpen=-1,snapEnabled=q('mg-snap').checked;spacePan=false;mode='polygon';canvas.classList.remove('mg-hidden');q('mg-placeholder').classList.add('mg-hidden');q('mg-scale-status').textContent='Měřítko není nastavené';updateList();draw();showUploadedPhotoPreview();root.classList.add('mg-has-photo');updateRotateHint();URL.revokeObjectURL(url)};next.onerror=()=>{URL.revokeObjectURL(url);alert('Fotografii se nepodařilo otevřít.')};next.src=url});
 function chooseTool(next){if(draft.length){if(!confirm('Rozpracovaná oblast není dokončená. Přepnout režim a zahodit rozpracované body?'))return}tool=next;draft=[];draftRedo=[];selected=-1;mode='polygon';setPan(false);syncMode();root.querySelectorAll('[data-tool], [data-fs-tool]').forEach(x=>x.setAttribute('aria-pressed',String((x.dataset.tool||x.dataset.fsTool)===tool)));draw()}root.querySelectorAll('[data-tool], [data-fs-tool]').forEach(b=>b.addEventListener('click',()=>chooseTool(b.dataset.tool||b.dataset.fsTool)));
@@ -223,7 +259,9 @@ tips.innerHTML='<h3>'+(wizardStep===1?'Tipy pro výběr stylu':'Tipy pro lepší
    const desc=document.createElement('small');desc.textContent=example.desc;
    card.append(photo,title,desc);indicator.appendChild(card);
   });
+  const note=document.createElement('p');note.className='mg-photo-quality-result';note.setAttribute('role','status');indicator.appendChild(note);
   tips.appendChild(indicator);
+  if(photoReady)updateGardenPhotoQuality();
  }
  if(tips&&[1,4,5,7,8,9].includes(wizardStep)){const selectedPhoto=root.querySelector('[data-mg-style-choice][aria-pressed="true"] img');if(selectedPhoto){const photo=document.createElement('img');photo.className='mg-tips-reference-photo';photo.src=selectedPhoto.src;photo.alt='Inspirace pro vybraný styl zahrady';photo.loading='lazy';photo.dataset.mgStyle=q('mg-style-card')?.value||'english';tips.appendChild(photo);}}
  if(wizardStep>0){const main=root.querySelector('.mg-redesign-main');if(main)main.scrollTo({top:0,behavior:'instant'});}
