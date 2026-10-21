@@ -340,12 +340,53 @@ if(conditionsSection){
 const photoSection=root.querySelector('[data-mg-step="2"]');
 if(photoSection){
  const visual=document.createElement('div');visual.className='mg-ref-photo-showcase';
- visual.innerHTML='<img class="mg-ref-photo-showcase-img" src="https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg" alt="Ukázková fotografie zahrady"><span class="mg-ref-photo-distance">10,0 m</span>';
+ visual.innerHTML='<img class="mg-ref-photo-showcase-img" src="https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg" alt="Ukázková fotografie zahrady">';
  photoSection.insertBefore(visual,photoSection.querySelector('.mg-mode-select'));
  const thumbs=document.createElement('div');thumbs.className='mg-ref-photo-thumbs';
- thumbs.innerHTML='<div class="mg-ref-thumbs-images">'+Array.from({length:4},(_,i)=>'<img alt="Náhled fotografie '+(i+1)+'" src="https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg">').join('')+'</div><span>＋ Přidat další</span>';
+ thumbs.innerHTML='<div class="mg-ref-thumbs-images" aria-label="Nahrané fotografie"></div><button type="button" class="mg-add-more-photos">＋ Přidat další fotografii</button><input type="file" class="mg-extra-photos-input" accept="image/jpeg,image/png,image/webp" multiple hidden>';
  const field=q('mg-photo')?.closest('.mg-field');if(field)field.appendChild(thumbs);
- const originalPreview=q('mg-upload-preview-image');if(originalPreview)originalPreview.addEventListener('load',()=>{visual.querySelector('img').src=originalPreview.src;thumbs.querySelectorAll('img').forEach(el=>el.src=originalPreview.src)});
+ const gallery=thumbs.querySelector('.mg-ref-thumbs-images');
+ const extraInput=thumbs.querySelector('.mg-extra-photos-input');
+ const photos=[];
+ function renderGallery(){
+  gallery.replaceChildren();
+  photos.forEach((file,index)=>{
+   const btn=document.createElement('button');btn.type='button';btn.className='mg-gallery-photo';btn.title='Zobrazit fotografii '+(index+1);
+   const thumb=document.createElement('img');thumb.alt='Fotografie '+(index+1);thumb.src=URL.createObjectURL(file);
+   thumb.onload=()=>URL.revokeObjectURL(thumb.src);
+   btn.appendChild(thumb);btn.addEventListener('click',()=>{
+    const transfer=new DataTransfer();transfer.items.add(file);
+    q('mg-photo').files=transfer.files;
+    q('mg-photo').dispatchEvent(new Event('change',{bubbles:true}));
+    gallery.querySelectorAll('button').forEach(el=>el.classList.remove('is-active'));btn.classList.add('is-active');
+   });
+   gallery.appendChild(btn);
+  });
+ }
+ q('mg-photo').addEventListener('change',()=>{
+  const file=q('mg-photo').files?.[0];if(!file)return;
+  if(!photos.some(p=>p.name===file.name&&p.size===file.size&&p.lastModified===file.lastModified)){photos.push(file);renderGallery();}
+  const selected=photos.findIndex(p=>p.name===file.name&&p.size===file.size&&p.lastModified===file.lastModified);
+  gallery.querySelectorAll('button').forEach((el,i)=>el.classList.toggle('is-active',i===selected));
+ });
+ thumbs.querySelector('.mg-add-more-photos').addEventListener('click',()=>extraInput.click());
+ extraInput.addEventListener('change',()=>{
+  const incoming=Array.from(extraInput.files||[]).filter(f=>['image/jpeg','image/png','image/webp'].includes(f.type)&&f.size<=10*1024*1024);
+  incoming.forEach(file=>{if(!photos.some(p=>p.name===file.name&&p.size===file.size&&p.lastModified===file.lastModified))photos.push(file)});
+  renderGallery();
+  if(incoming.length){const transfer=new DataTransfer();transfer.items.add(incoming[0]);q('mg-photo').files=transfer.files;q('mg-photo').dispatchEvent(new Event('change',{bubbles:true}));}
+  extraInput.value='';
+ });
+ const originalPreview=q('mg-upload-preview-image');if(originalPreview)originalPreview.addEventListener('load',()=>{visual.querySelector('img').src=originalPreview.src;});
+ const modeInfo=document.createElement('div');modeInfo.className='mg-mode-explanation';modeInfo.setAttribute('role','status');modeInfo.setAttribute('aria-live','polite');
+ photoSection.querySelector('.mg-mode-select').insertAdjacentElement('afterend',modeInfo);
+ function updateModeInfo(){
+  const advanced=q('mg-design-mode').value==='advanced';
+  modeInfo.innerHTML=advanced?'<strong>Pokročilé úpravy</strong><p>Po nahrání fotografie pokračujte do kroku 3, kde označíte trávník, záhony, cestičky a další plochy.</p><button type="button" class="mg-mode-go-next">Pokračovat k označení ploch →</button>':'<strong>Automatický AI návrh</strong><p>Vyberte fotografii a pokračujte. Návrhář připraví další kroky bez ručního zakreslování.</p>';
+  const go=modeInfo.querySelector('.mg-mode-go-next');if(go)go.addEventListener('click',()=>{if(!photoReady){q('mg-photo').focus();alert('Nejprve nahrajte fotografii zahrady.');return}showWizardStep(3)});
+ }
+ photoSection.querySelectorAll('[data-mg-mode]').forEach(btn=>btn.addEventListener('click',updateModeInfo));
+ updateModeInfo();
 }
 if(photoSection){
  const measureSection=document.createElement('section');
