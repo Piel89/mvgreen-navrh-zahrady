@@ -263,3 +263,51 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-wizard-footer .mg-primary,.mvgreen-designer .mg-primary{background:#006a3c!important;border-radius:11px!important}
 @media(max-width:1150px){.mvgreen-designer .mg-redesign-frame{grid-template-columns:190px minmax(0,1fr)!important}.mvgreen-designer .mg-redesign-tips{grid-column:2}.mvgreen-designer .mg-variant-picture{height:180px!important}}
 @media(max-width:740px){.mvgreen-designer{width:calc(100vw - 16px)!important}.mvgreen-designer .mg-redesign-frame{display:block!important}.mvgreen-designer .mg-redesign-side{display:flex!important;flex-direction:row!important;overflow:auto;background:#06462d!important;padding:10px!important}.mvgreen-designer .mg-redesign-side button{font-size:11px!important;white-space:nowrap;padding:9px!important}.mvgreen-designer .mg-redesign-brand,.mvgreen-designer .mg-redesign-side-note{display:none!important}.mvgreen-designer .mg-redesign-main{padding:0 15px 16px!important}.mvgreen-designer .mg-welcome{grid-template-columns:1fr!important;min-height:0!important}.mvgreen-designer .mg-welcome-copy h2{font-size:34px!important}.mvgreen-designer .mg-welcome .mg-welcome-image,.mvgreen-designer .mg-welcome .mg-welcome-media{min-height:300px!important}.mvgreen-designer .mg-variant-grid{grid-template-columns:1fr!important}.mvgreen-designer .mg-variant-picture{height:210px!important}.mvgreen-designer .mg-redesign-tips{padding:15px!important}}
+
+/* MVGreen 0.5.18 – landing page faithful to approved photographic mockup */
+.mvgreen-designer .mg-redesign-frame{grid-template-columns:285px minmax(0,1fr) 275px!important;align-items:stretch!important;min-height:890px!important;border-radius:14px!important;overflow:hidden!important}
+.mvgreen-designer .mg-redesign-side{background:linear-gradient(180deg,rgba(0,51,33,.94) 0%,rgba(0,54,35,.82) 26%,rgba(0,52,34,.28) 42%,rgba(0,48,31,.92) 58%,#003321 100%),url('https://images.pexels.com/photos/1005417/pexels-photo-1005417.jpeg?auto=compress&cs=tinysrgb&w=900') center center/cover!important;padding:26px 22px 20px!important;gap:4px!important}
+.mvgreen-designer .mg-redesign-brand{display:grid!important;grid-template-columns:43px 1fr;grid-template-rows:31px 18px;column-gap:8px;align-items:center;margin:0 4px 26px!important;font-size:28px!important;letter-spacing:-.04em!important}
+.mvgreen-designer .mg-brand-leaf{grid-row:1/3;display:grid;place-items:center;font-size:44px;color:#b0ee9c;line-height:1}
+.mvgreen-designer .mg-redesign-brand strong{grid-column:2;font-size:27px!important}
+.mvgreen-designer .mg-redesign-brand small{grid-column:2;margin:0!important;color:#e0f5e4!important;font-size:12px!important}
+.mvgreen-designer .mg-redesign-side button{gap:12px!important;padding:11px 12px!important;font-size:14px!important;font-weight:750!important;border-radius:10px!important;min-height:45px}
+.mvgreen-designer .mg-redesign-side button span{background:#fff!important;border-color:#fff!important;color:#12472d!important;font-weight:800!important;font-size:14px!important;flex-basis:29px!important;height:29px!important}
+.mvgreen-designer .mg-redesign-side button.is-active{background:#006b3d!important}
+.mvgreen-designer .mg-sidebar-story{margin-top:94px;color:#fff}
+.mvgreen-designer .mg-sidebar-story h2{color:#fff!important;font-size:29px!important;line-height:1.13!important;letter-spacing:-.035em!important;font-weight:850!important;margin:0 0 12px!important}
+.mvgreen-designer .mg-sidebar-story p{font-size:12px;line-height:1.6;color:#ecf8eb;margin:0}
+.mvgreen-designer .mg-sidebar-benefits{display:flex;flex-direction:column;gap:19px;margin:30px 0 24px}
+.mvgreen-designer .mg-sidebar-benefits>div{display:flex;align-items:center;gap:13px}
+.mvgreen-designer .mg-sidebar-benefits>div>span{color:#82dc27;font-size:28px;width:34px;flex-shrink:0;text-align:center}
+.mvgreen-designer .mg-sidebar-benefits p{margin:0;color:#fff;line-height:1.3}
+.mvgreen-designer .mg-sidebar-benefits strong{display:block;color:#fff;font-size:13px;font-weight:750}
+.mvgreen-designer .mg-sidebar-benefits small{display:block;color:#dcebe0;font-size:11px;margin-top:3px}
+.mvgreen-designer .mg-sidebar-quote{margin-top:auto;background:#056b43c9;border:1px solid #ffffff15;border-radius:12px;padding:16px 17px;color:#fff}
+.mvgreen-designer .mg-sidebar-quote>span{font-size:33px;color:#b7dcca;line-height:.7;display:block}
+.mvgreen-designer .mg-sidebar-quote p{font-size:15px;line-height:1.55;margin:12px 0!important;color:#fff}
+.mvgreen-designer .mg-sidebar-quote small{font-size:11px;color:#d4efdd}
+.mvgreen-designer .mg-redesign-main{padding:0 25px 20px!important}
+.mvgreen-designer .mg-redesign-main .mg-head{padding:22px 10px 24px!important}
+.mvgreen-designer .mg-redesign-main .mg-head h2{font-size:23px!important;color:#10442e!important}
+.mvgreen-designer .mg-redesign-main .mg-body{padding:24px 0 0!important}
+.mvgreen-designer .mg-welcome{display:grid!important;grid-template-columns:minmax(0,.68fr) minmax(0,1.15fr)!important;grid-template-rows:minmax(460px,auto) auto!important;gap:18px 24px!important;padding:0!important;min-height:0!important}
+.mvgreen-designer .mg-welcome-copy{grid-column:1;grid-row:1;gap:22px!important;padding:12px 2px!important;align-items:flex-start!important}
+.mvgreen-designer .mg-welcome-copy .mg-eyebrow{display:none!important}
+.mvgreen-designer .mg-welcome-copy h2{font-size:clamp(35px,3.2vw,54px)!important;line-height:1.08!important;letter-spacing:-.045em!important;font-weight:850!important;color:#103d31!important}
+.mvgreen-designer .mg-welcome-copy p{font-size:18px!important;line-height:1.6!important;color:#536878!important}
+.mvgreen-designer .mg-welcome-copy small{font-size:13px!important;color:#65788b!important}
+.mvgreen-designer .mg-welcome-copy .mg-start{font-size:18px!important;padding:18px 22px!important;min-height:60px!important;box-shadow:0 7px 19px #0c53301c!important}
+.mvgreen-designer .mg-welcome-image{grid-column:2;grid-row:1;min-height:465px!important;height:auto!important;align-self:stretch;border-radius:15px!important;overflow:hidden!important;background:linear-gradient(180deg,transparent 60%,#0a271a77),url('https://images.pexels.com/photos/1105019/pexels-photo-1105019.jpeg?auto=compress&cs=tinysrgb&w=1200') center/cover!important}
+.mvgreen-designer .mg-welcome-image span{font-size:15px!important;font-weight:800!important;left:24px!important;bottom:23px!important}
+.mvgreen-designer .mg-welcome-styles{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 0 4px}
+.mvgreen-designer .mg-welcome-styles button{display:flex;flex-direction:column;text-align:left;padding:0 0 14px;border:1px solid #e2eae3;border-radius:13px;background:#fff;box-shadow:0 3px 13px #15482c0b;overflow:hidden;cursor:pointer;font:inherit;color:#16342c;transition:transform .2s,box-shadow .2s}
+.mvgreen-designer .mg-welcome-styles button:hover{transform:translateY(-3px);box-shadow:0 11px 23px #15482c20}
+.mvgreen-designer .mg-welcome-styles img{width:100%;height:125px;object-fit:cover;display:block}
+.mvgreen-designer .mg-welcome-styles strong{font-size:13px;line-height:1.35;margin:12px 12px 5px}
+.mvgreen-designer .mg-welcome-styles small{font-size:11px;line-height:1.55;color:#506777;margin:0 12px}
+.mvgreen-designer .mg-redesign-tips{background:#f7faf8!important;padding:25px 13px!important}
+.mvgreen-designer .mg-redesign-tips h3{font-size:17px!important;background:#ecf5ee;border-radius:11px;padding:15px 12px;margin:0 0 12px!important}
+.mvgreen-designer .mg-redesign-tips p{font-size:13px!important;min-height:87px;display:flex;align-items:center;border-radius:13px!important}
+@media(max-width:1250px){.mvgreen-designer .mg-redesign-frame{grid-template-columns:235px minmax(0,1fr)!important}.mvgreen-designer .mg-redesign-tips{grid-column:2}.mvgreen-designer .mg-sidebar-story{margin-top:65px}.mvgreen-designer .mg-welcome-styles img{height:100px}}
+@media(max-width:800px){.mvgreen-designer .mg-redesign-frame{display:block!important}.mvgreen-designer .mg-redesign-side{display:flex!important;flex-direction:row!important;background:#03412b!important;padding:12px!important}.mvgreen-designer .mg-sidebar-story,.mvgreen-designer .mg-sidebar-benefits,.mvgreen-designer .mg-sidebar-quote{display:none!important}.mvgreen-designer .mg-redesign-main{padding:0 15px 16px!important}.mvgreen-designer .mg-welcome{grid-template-columns:1fr!important;grid-template-rows:auto!important}.mvgreen-designer .mg-welcome-copy{grid-column:1;grid-row:auto}.mvgreen-designer .mg-welcome-image{grid-column:1;grid-row:auto;min-height:330px!important}.mvgreen-designer .mg-welcome-styles{grid-column:1;grid-row:auto;grid-template-columns:repeat(2,minmax(0,1fr))}.mvgreen-designer .mg-welcome-copy h2{font-size:37px!important}.mvgreen-designer .mg-welcome-styles img{height:125px}.mvgreen-designer .mg-redesign-tips{display:block!important}}
