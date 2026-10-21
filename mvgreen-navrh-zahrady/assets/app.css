@@ -1490,3 +1490,17 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
   grid-template-columns:160px minmax(0,1fr) 190px!important;
  }
 }
+
+/* v0.6.22 – functional photo gallery and design mode details. */
+.mvgreen-designer .mg-ref-photo-distance{display:none!important}
+.mvgreen-designer .mg-ref-photo-showcase{height:auto!important;max-height:min(36vh,310px)!important;min-height:0!important;display:flex!important;justify-content:center!important;background:#f2f7f2!important;overflow:hidden!important}
+.mvgreen-designer .mg-ref-photo-showcase-img{width:100%!important;height:100%!important;max-height:min(36vh,310px)!important;object-fit:contain!important}
+.mvgreen-designer .mg-ref-photo-thumbs{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;flex-wrap:wrap!important}
+.mvgreen-designer .mg-ref-thumbs-images{display:flex!important;gap:8px!important;flex-wrap:wrap!important}
+.mvgreen-designer .mg-gallery-photo{border:2px solid transparent!important;background:#fff!important;padding:2px!important;border-radius:6px!important;cursor:pointer!important}
+.mvgreen-designer .mg-gallery-photo.is-active{border-color:#087447!important}
+.mvgreen-designer .mg-gallery-photo img{width:58px!important;height:48px!important;object-fit:cover!important}
+.mvgreen-designer .mg-add-more-photos{cursor:pointer!important;border:1px solid #d4e6d9!important;border-radius:8px!important;background:#fff!important;padding:9px 12px!important;color:#07633d!important;font-weight:650!important}
+.mvgreen-designer .mg-mode-explanation{padding:12px 14px!important;margin:8px 0 12px!important;background:#f0f8f2!important;border:1px solid #d7e8db!important;border-radius:9px!important;font-size:13px!important}
+.mvgreen-designer .mg-mode-explanation p{margin:5px 0!important}
+.mvgreen-designer .mg-mode-go-next{border:0!important;border-radius:7px!important;background:#087447!important;color:white!important;padding:10px 14px!important;cursor:pointer!important;margin-top:7px!important}
