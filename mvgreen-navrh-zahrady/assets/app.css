@@ -1372,3 +1372,51 @@ body.mg-designer-modal-open{overflow-y:auto!important}
   max-height:calc(100dvh - 46px)!important;
  }
 }
+
+/* v0.6.19 – viewport portal bypasses transformed WordPress theme containers. */
+body>.mvgreen-designer.mg-viewport-mounted{
+ position:static!important;transform:none!important;filter:none!important;
+ perspective:none!important;contain:none!important;
+ width:0!important;height:0!important;min-height:0!important;
+ margin:0!important;padding:0!important;overflow:visible!important;
+}
+body>.mvgreen-designer.mg-viewport-mounted .mg-designer-modal-backdrop{
+ position:fixed!important;inset:0!important;z-index:2147483600!important;
+}
+@media(min-width:681px){
+ body.admin-bar>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  position:fixed!important;inset:32px 0 0!important;top:32px!important;
+  left:0!important;right:0!important;bottom:0!important;
+  width:100vw!important;height:calc(100dvh - 32px)!important;
+  max-width:none!important;max-height:calc(100dvh - 32px)!important;
+  transform:none!important;display:grid!important;
+  grid-template-columns:clamp(205px,16vw,270px) minmax(0,1fr) clamp(235px,19vw,310px)!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  overflow:hidden!important;border-radius:0!important;margin:0!important;
+ }
+ body:not(.admin-bar)>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  position:fixed!important;inset:0!important;
+  width:100vw!important;height:100dvh!important;max-width:none!important;
+  max-height:100dvh!important;transform:none!important;
+  overflow:hidden!important;border-radius:0!important;
+ }
+}
+@media(max-width:680px){
+ body.admin-bar>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  position:fixed!important;inset:46px 0 0!important;
+  width:100vw!important;height:calc(100dvh - 46px)!important;
+  max-height:calc(100dvh - 46px)!important;transform:none!important;
+ }
+ body:not(.admin-bar)>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal{
+  position:fixed!important;inset:0!important;
+  width:100vw!important;height:100dvh!important;transform:none!important;
+ }
+}
+body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-main,
+body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-side,
+body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-redesign-tips{
+ min-height:0!important;min-width:0!important;
+ height:100%!important;max-height:100%!important;
+ overflow-y:auto!important;overflow-x:hidden!important;
+ overscroll-behavior-y:contain!important;
+}
