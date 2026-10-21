@@ -1839,3 +1839,34 @@ body > .mg-stage.mg-fullscreen-fallback .mg-exit-fullscreen{
   left:50%!important;top:calc((100dvh - 110px) / 2)!important;
  }
 }
+
+/* v0.6.37 – final desktop fullscreen cleanup: hide old stage hints and keep canvas centred. */
+body > #mg-stage.mg-fullscreen-fallback{
+ position:fixed!important;inset:0!important;
+ width:100vw!important;height:100dvh!important;max-width:none!important;
+ max-height:none!important;display:block!important;overflow:hidden!important;
+ padding:0!important;margin:0!important;background:#eaf2ec!important;
+}
+body > #mg-stage.mg-fullscreen-fallback #mg-placeholder,
+body > #mg-stage.mg-fullscreen-fallback #mg-rotate-hint,
+body > #mg-stage.mg-fullscreen-fallback #mg-photo-fullscreen,
+body > #mg-stage.mg-fullscreen-fallback .mg-zoom-tip{
+ display:none!important;visibility:hidden!important;
+}
+body > #mg-stage.mg-fullscreen-fallback #mg-canvas:not(.mg-hidden){
+ display:block!important;position:absolute!important;
+ left:calc((100vw - 210px) / 2)!important;top:50%!important;
+ transform:translate(-50%,-50%)!important;margin:0!important;
+ width:var(--mg-fs-photo-width)!important;height:var(--mg-fs-photo-height)!important;
+ max-width:none!important;max-height:none!important;object-fit:contain!important;
+}
+body > #mg-stage.mg-fullscreen-fallback .mg-fs-area-kinds{
+ display:flex!important;position:fixed!important;top:60px!important;right:14px!important;
+ bottom:82px!important;width:190px!important;
+}
+body > #mg-stage.mg-fullscreen-fallback .mg-fs-area-kinds[hidden]{display:none!important}
+@media(max-width:740px){
+ body > #mg-stage.mg-fullscreen-fallback #mg-canvas:not(.mg-hidden){
+  left:50%!important;top:calc((100dvh - 105px)/2)!important;
+ }
+}
