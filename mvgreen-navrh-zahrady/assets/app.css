@@ -1562,3 +1562,8 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
 .mvgreen-designer .mg-photo-quality-card.is-current strong{font-size:13px!important;margin:0!important;align-self:end!important}
 .mvgreen-designer .mg-photo-quality-card.is-current small{font-size:12px!important;align-self:start!important}
 .mvgreen-designer .mg-photo-quality-result{margin:0!important;padding:6px 3px!important}
+
+/* v0.6.28 – decision heading for the following wizard steps. */
+.mvgreen-designer .mg-mode-heading{display:flex!important;flex-direction:column!important;gap:3px!important;margin:14px 0 9px!important}
+.mvgreen-designer .mg-mode-heading strong{font-size:14px!important;color:#103c2b!important}
+.mvgreen-designer .mg-mode-heading small{font-size:12px!important;color:#657d70!important;line-height:1.45!important}
