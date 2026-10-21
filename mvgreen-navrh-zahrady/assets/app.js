@@ -426,6 +426,7 @@ if(photoStage&&measureStep){
 const originalShowWizardStep=showWizardStep;
 showWizardStep=function(n){
  originalShowWizardStep(n);
+ const frame=root.querySelector('.mg-redesign-frame');if(frame){for(let i=0;i<=9;i++)frame.classList.toggle('mg-view-step-'+i,i===wizardStep);}
  const badge=q('mg-progress-badge');if(badge)badge.textContent=String(wizardStep);
  const aiTrigger=q('mg-generation-admin'),aiOriginal=q('mg-ai-test');if(aiTrigger&&aiOriginal)aiTrigger.classList.toggle('mg-hidden',aiOriginal.classList.contains('mg-hidden'));
  const summary=q('mg-budget-summary-info');
