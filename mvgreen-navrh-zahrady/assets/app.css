@@ -1270,3 +1270,28 @@ body.mg-designer-modal-open{overflow:hidden!important}
   top:0!important;bottom:0!important;height:100dvh!important;
  }
 }
+
+/* v0.6.16 – restore scrolling of the page and the wizard. */
+html:has(.mvgreen-designer),body:has(.mvgreen-designer){
+ overflow-y:auto!important;overscroll-behavior-y:auto!important;
+}
+body.mg-designer-modal-open{overflow-y:auto!important}
+@media(min-width:681px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal{
+  display:grid!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:contain!important;
+ }
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{
+  overflow-y:auto!important;min-height:0!important;max-height:100%!important;
+  scrollbar-width:thin!important;
+ }
+}
+@media(max-width:680px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal{
+  overflow-y:auto!important;overscroll-behavior-y:contain!important;
+ }
+}
