@@ -1805,3 +1805,37 @@ body.mg-editor-overlay-open.mg-step3-is-auto > .mg-stage.mg-fullscreen-fallback 
  }
  body > .mg-stage.mg-fullscreen-fallback .mg-fs-area-kinds button{width:auto!important;white-space:nowrap!important}
 }
+
+/* v0.6.36: isolate the image from text/layout in the body-level fullscreen portal. */
+body > .mg-stage.mg-fullscreen-fallback{
+ display:block!important;position:fixed!important;
+ overflow:hidden!important;padding:0!important;
+ width:100vw!important;height:100dvh!important;
+}
+body > .mg-stage.mg-fullscreen-fallback #mg-canvas:not(.mg-hidden){
+ position:absolute!important;display:block!important;
+ top:50%!important;left:calc((100vw - 210px) / 2)!important;
+ transform:translate(-50%,-50%)!important;
+ width:var(--mg-fs-photo-width)!important;
+ height:var(--mg-fs-photo-height)!important;
+ max-width:none!important;max-height:none!important;
+ margin:0!important;padding:0!important;object-fit:contain!important;
+}
+body > .mg-stage.mg-fullscreen-fallback .mg-placeholder,
+body > .mg-stage.mg-fullscreen-fallback .mg-rotate-hint,
+body > .mg-stage.mg-fullscreen-fallback .mg-zoom-tip{
+ display:none!important;
+}
+body > .mg-stage.mg-fullscreen-fallback .mg-fs-area-kinds[hidden]{display:none!important}
+body > .mg-stage.mg-fullscreen-fallback .mg-fs-area-kinds{
+ position:fixed!important;right:14px!important;top:60px!important;
+ bottom:80px!important;width:185px!important;z-index:2147483643!important;
+}
+body > .mg-stage.mg-fullscreen-fallback .mg-exit-fullscreen{
+ position:fixed!important;right:14px!important;top:10px!important;
+}
+@media(max-width:740px){
+ body > .mg-stage.mg-fullscreen-fallback #mg-canvas:not(.mg-hidden){
+  left:50%!important;top:calc((100dvh - 110px) / 2)!important;
+ }
+}
