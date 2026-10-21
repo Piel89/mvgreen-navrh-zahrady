@@ -401,3 +401,11 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-wizard-step .mg-actions button{border-radius:11px!important;min-height:47px;padding:12px 17px!important}
 .mvgreen-designer .mg-wizard-step .mg-hint{background:#f2f8f4;border:1px solid #dce9e0;border-radius:12px;padding:15px;line-height:1.65;color:#5c7162}
 @media(max-width:740px){.mvgreen-designer .mg-result-intro{grid-template-columns:1fr}.mvgreen-designer .mg-result-intro-photo{min-height:220px}}
+
+/* Hide duplicate WordPress page heading, retain MVGreen application heading */
+body:has(.mvgreen-designer) .entry-header>.entry-title,
+body:has(.mvgreen-designer) .entry-header>.page-title,
+body:has(.mvgreen-designer) .wp-block-post-title,
+body:has(.mvgreen-designer) main>.page-header,
+body:has(.mvgreen-designer) .site-main>.page-header{display:none!important}
+.mvgreen-designer .mg-redesign-main .mg-head{display:none!important}
