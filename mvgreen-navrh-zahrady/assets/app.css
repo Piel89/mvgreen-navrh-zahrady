@@ -1337,3 +1337,38 @@ body.mg-designer-modal-open{overflow-y:auto!important}
   grid-template-columns:170px minmax(0,1fr) 195px!important;
  }
 }
+
+/* v0.6.18 – attach the opened designer directly below the WP admin bar. */
+@media(min-width:681px){
+ body.admin-bar .mvgreen-designer .mg-redesign-frame.mg-is-modal,
+ body.admin-bar .mvgreen-designer .mg-redesign-frame.mg-is-modal:not(.mg-view-step-9),
+ body.admin-bar .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9{
+  position:fixed!important;
+  top:32px!important;left:0!important;right:0!important;bottom:0!important;
+  inset:32px 0 0 0!important;
+  width:100vw!important;max-width:none!important;
+  height:calc(100dvh - 32px)!important;max-height:calc(100dvh - 32px)!important;
+  min-height:0!important;transform:none!important;
+  border-radius:0!important;margin:0!important;
+ }
+ body:not(.admin-bar) .mvgreen-designer .mg-redesign-frame.mg-is-modal,
+ body:not(.admin-bar) .mvgreen-designer .mg-redesign-frame.mg-is-modal:not(.mg-view-step-9),
+ body:not(.admin-bar) .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9{
+  position:fixed!important;inset:0!important;
+  top:0!important;left:0!important;right:0!important;bottom:0!important;
+  width:100vw!important;max-width:none!important;
+  height:100dvh!important;max-height:100dvh!important;
+  transform:none!important;border-radius:0!important;margin:0!important;
+ }
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main,
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{
+  overflow-y:auto!important;min-height:0!important;max-height:100%!important;
+ }
+}
+@media(max-width:680px){
+ body.admin-bar .mvgreen-designer .mg-redesign-frame.mg-is-modal{
+  top:46px!important;height:calc(100dvh - 46px)!important;
+  max-height:calc(100dvh - 46px)!important;
+ }
+}
