@@ -1504,3 +1504,15 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
 .mvgreen-designer .mg-mode-explanation{padding:12px 14px!important;margin:8px 0 12px!important;background:#f0f8f2!important;border:1px solid #d7e8db!important;border-radius:9px!important;font-size:13px!important}
 .mvgreen-designer .mg-mode-explanation p{margin:5px 0!important}
 .mvgreen-designer .mg-mode-go-next{border:0!important;border-radius:7px!important;background:#087447!important;color:white!important;padding:10px 14px!important;cursor:pointer!important;margin-top:7px!important}
+
+/* v0.6.23 – step 2 photo-quality examples in the right-hand panel. */
+.mvgreen-designer .mg-photo-quality-guide{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;margin:16px 0 12px!important}
+.mvgreen-designer .mg-photo-quality-card{display:flex!important;flex-direction:column!important;align-items:center!important;text-align:center!important;background:#fff!important;border:1px solid #e1eae3!important;border-radius:8px!important;padding:4px 3px 8px!important;min-width:0!important}
+.mvgreen-designer .mg-photo-quality-image{position:relative!important;width:100%!important;aspect-ratio:4/5!important;border-radius:5px!important;overflow:hidden!important}
+.mvgreen-designer .mg-photo-quality-image img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important}
+.mvgreen-designer .mg-photo-quality-bad img{transform:scale(2.5)!important}
+.mvgreen-designer .mg-photo-quality-dark img{filter:brightness(.25) saturate(.7)!important}
+.mvgreen-designer .mg-photo-quality-mark{position:absolute!important;bottom:3px!important;left:3px!important;width:19px!important;height:19px!important;border-radius:50%!important;background:#e0463d!important;color:#fff!important;display:grid!important;place-items:center!important;font-size:13px!important;font-weight:800!important}
+.mvgreen-designer .mg-photo-quality-good .mg-photo-quality-mark{background:#0a9852!important}
+.mvgreen-designer .mg-photo-quality-card strong{font-size:11px!important;line-height:1.25!important;margin-top:6px!important}
+.mvgreen-designer .mg-photo-quality-card small{font-size:10px!important;line-height:1.2!important}
