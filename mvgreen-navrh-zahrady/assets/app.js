@@ -113,6 +113,16 @@ function toggleFullscreen(){
  const open=!isStageFullscreen();
  stage.classList.toggle('mg-fullscreen-fallback',open);
  document.body.classList.toggle('mg-editor-overlay-open',open);
+ if(open){
+  // Portal the editor above the modal's transformed/scrolling containers.
+  if(!stage.__mgFullscreenMarker){
+   stage.__mgFullscreenMarker=document.createComment('MVGreen fullscreen return');
+   stage.parentNode.insertBefore(stage.__mgFullscreenMarker,stage);
+  }
+  document.body.appendChild(stage);
+ }else if(stage.__mgFullscreenMarker?.parentNode){
+  stage.__mgFullscreenMarker.parentNode.insertBefore(stage,stage.__mgFullscreenMarker);
+ }
  stage.scrollLeft=0;stage.scrollTop=0;
  updateFullscreenUI();
 }
