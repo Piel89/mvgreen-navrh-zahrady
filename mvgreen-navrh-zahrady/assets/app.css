@@ -1651,3 +1651,32 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
   max-height:calc(100dvh - 205px)!important;
  }
 }
+
+/* v0.6.31 – step 03: undo legacy rule hiding the third column. */
+@media(min-width:681px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3,
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal.mg-view-step-3{
+  display:grid!important;
+  grid-template-columns:180px minmax(0,1fr) 218px!important;
+ }
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-redesign-tips,
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-redesign-tips{
+  display:flex!important;flex-direction:column!important;visibility:visible!important;
+  min-width:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+  padding:12px!important;gap:10px!important;
+ }
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-measure-side{
+ display:flex!important;flex-direction:column!important;gap:7px!important;
+ background:#fff!important;border:1px solid #dce9df!important;border-radius:10px!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-measure-side .mg-ref-area-kind,
+.mvgreen-designer .mg-redesign-frame.mg-view-step-3 .mg-measure-side #mg-ref-add-zone{
+ display:flex!important;width:100%!important;align-items:center!important;
+}
+@media(min-width:681px) and (max-width:1100px){
+ .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3,
+ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal.mg-view-step-3{
+  grid-template-columns:clamp(140px,17vw,180px) minmax(0,1fr) clamp(170px,20vw,218px)!important;
+ }
+}
