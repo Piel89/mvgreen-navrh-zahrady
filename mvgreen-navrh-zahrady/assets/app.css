@@ -468,3 +468,122 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer #mg-upload-preview figcaption span{font-size:14px!important;font-weight:800!important}
 .mvgreen-designer #mg-upload-preview figcaption small{font-size:12px!important;color:#587365!important;line-height:1.5!important}
 .mvgreen-designer.mg-automatic-mode #mg-upload-preview,.mvgreen-designer:not(.mg-automatic-mode) #mg-upload-preview{visibility:visible!important;opacity:1!important}
+
+/* MVGreen 0.6.0 — Nine-screen visual system based on the approved reference.
+   All selectors scoped to the standalone designer dialog. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal{grid-template-columns:188px minmax(0,1fr) 254px!important;max-width:1570px!important;top:2vh!important;height:96vh!important;width:min(1560px,97vw)!important;border-radius:16px!important;background:#fff!important;font-family:Inter,"Segoe UI",Arial,sans-serif!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side{background:#f5faf7!important;padding:24px 12px!important;border-right:1px solid #e5eee7!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-brand{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:5px!important;padding:0 4px 16px!important;margin:0 0 13px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-brand strong{font-size:20px!important;font-weight:900!important;color:#075c37!important;letter-spacing:-.05em!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-brand small{width:100%;font-size:9px!important;color:#7b9d87!important;padding-left:31px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-brand-leaf{font-size:23px!important;color:#087747!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side [data-go-step]{min-height:43px!important;font-size:12px!important;font-weight:650!important;padding:8px 9px!important;margin:2px 0!important;border-radius:10px!important;color:#345344!important;gap:9px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side [data-go-step].is-active{background:#e0f3e5!important;color:#006c3d!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-side [data-go-step] span{font-size:12px!important;font-weight:850!important;flex:0 0 25px!important;width:25px!important;height:25px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding:31px 33px 30px!important;background:#fff!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{background:#f5faf7!important;border-left:1px solid #e5eee7!important;padding:70px 13px 22px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips h3{font-size:14px!important;color:#173b29!important;background:#eaf5ed!important;border:1px solid #e0ebe3!important;padding:13px 12px!important;margin:0 0 13px!important;border-radius:11px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tip-card{border:1px solid #e1ebe4!important;background:#fff!important;border-radius:12px!important;box-shadow:0 3px 10px #16432a09!important;min-height:86px!important;padding:14px 11px!important;display:flex!important;gap:10px!important;align-items:center!important;margin:0 0 10px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tip-card strong{font-size:12px!important;font-weight:650!important;line-height:1.5!important;color:#52685a!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tip-icon{width:35px!important;height:35px!important;flex:0 0 35px!important;background:#e6f5e9!important;color:#06723f!important;font-size:16px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-modal-close{top:14px!important;right:15px!important;border-radius:9px!important;font-size:12px!important;padding:8px 10px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-progress{display:flex!important;flex-direction:row!important;align-items:center!important;gap:11px!important;min-height:43px!important;margin:0 0 24px!important;padding:0 0 14px!important;border-bottom:1px solid #e8eee9!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-progress-badge{display:grid!important;place-items:center!important;flex:0 0 32px!important;width:32px!important;height:32px!important;background:#006b3e!important;color:#fff!important;border-radius:50%!important;font-size:16px!important;font-weight:900!important;box-shadow:0 3px 8px #005d3633!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-progress-label{font-size:19px!important;line-height:1.35!important;color:#182e48!important;font-weight:850!important;letter-spacing:-.02em!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-progress-track{display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-step-kicker{font-size:10px!important;letter-spacing:.13em!important;color:#167d4a!important;font-weight:850!important;margin:0 0 7px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-section-title{font-size:clamp(23px,2.2vw,31px)!important;line-height:1.2!important;color:#193b2a!important;letter-spacing:-.04em!important;font-weight:850!important;margin:0 0 9px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-step>.mg-note{font-size:13px!important;line-height:1.6!important;color:#61746b!important;margin:0 0 18px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-step .mg-field label{font-size:12px!important;font-weight:800!important;color:#173b2b!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-step input:not([type="checkbox"]):not([type="radio"]),.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-step select,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-step textarea{border-radius:9px!important;border:1px solid #d6e7db!important;min-height:43px!important;box-shadow:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer{margin-top:25px!important;padding:17px 0 0!important;bottom:-30px!important;background:#fff!important;border-top:1px solid #e2eae5!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer #mg-next{background:#006b3e!important;min-width:135px!important;box-shadow:0 5px 12px #006b3e20!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-wizard-footer #mg-prev{background:#f4f9f5!important;color:#165a37!important;border:1px solid #dfeae1!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-mode-select{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;margin:15px 0 17px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-mode-card{min-height:91px!important;padding:16px!important;border-radius:12px!important;box-shadow:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-mode-card strong{font-size:14px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-mode-card small{font-size:12px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-upload-preview.is-visible{margin:4px 0 15px!important;border-radius:12px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-upload-preview-image{max-height:350px!important;object-fit:contain!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;margin:13px 0 18px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant{border-radius:11px!important;box-shadow:0 3px 12px #123d2810!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant[aria-pressed="true"]{border:2px solid #078448!important;box-shadow:0 0 0 2px #bfead0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-picture{height:190px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-info{padding:12px 13px!important;min-height:105px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-info strong{font-size:14px!important;font-weight:850!important;color:#173b2a!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-info small{font-size:12px!important;color:#607368!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-choices{background:#fff!important;border:0!important;border-top:1px solid #e3ede6!important;border-radius:0!important;padding:18px 0 0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-choices h4{font-size:15px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-options{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-options button{min-height:78px!important;border-radius:10px!important;padding:13px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-options strong{font-size:13px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-options small{font-size:11px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-layout{display:grid;grid-template-columns:minmax(0,1fr) 185px;gap:15px;align-items:start;margin:17px 0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-photo{min-width:0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-side{border:1px solid #e2ece5;border-radius:12px;background:#f8fbf9;padding:15px 12px;position:sticky;top:0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-side h4{font-size:13px;color:#193d2c;margin:0 0 12px;font-weight:850}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-side h4:not(:first-child){margin-top:20px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-side button{display:block;width:100%;border:1px solid #dce8de;background:#fff;border-radius:9px;text-align:left;padding:10px;font-size:12px;font-weight:750;margin:0 0 8px;cursor:pointer}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-side button[aria-pressed="true"]{border-color:#0c8d4b;background:#e8f6ed}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-side p{font-size:11px;line-height:1.6;color:#547160}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-stage{border-radius:12px!important;min-height:280px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-calibration{border-radius:12px!important;padding:15px!important;margin-bottom:12px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 17px;margin:15px 0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-details>.mg-field{margin:0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-details>.mg-dimensions-row{grid-column:1/-1;margin:0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-dimension-hint{font-size:11px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-in-details{margin:15px 0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(220px,1fr);gap:17px;align-items:stretch;margin:20px 0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image{min-height:350px;position:relative;border-radius:13px;overflow:hidden;background:#e4f1e9}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image span{position:absolute;bottom:14px;left:14px;background:#03472cc9;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-status{padding:21px;border-radius:13px;border:1px solid #dfebe3;background:#f4faf6}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-status h4{font-size:16px;color:#19462f;margin:0 0 18px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-status p{font-size:13px;color:#43604e;margin:0 0 13px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-note{background:#eaf5ed;border-radius:10px;padding:13px;font-size:12px;color:#47624f;line-height:1.6;margin:20px 0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-result{border:1px solid #e1ebe3;border-radius:13px;overflow:hidden;margin:17px 0;background:#fff}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-result-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:13px 15px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-result-top strong{font-size:14px;color:#19442d}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-result-top span{font-size:11px;color:#697e70}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison{display:grid;grid-template-columns:1fr 1fr;position:relative;height:320px;background:#e8f1e9}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison img{width:100%;height:100%;object-fit:cover;min-width:0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison>span{position:absolute;bottom:12px;background:#073f2ccf;color:#fff;padding:7px 11px;font-size:11px;font-weight:800;border-radius:7px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison>span:nth-of-type(1){left:12px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison>span:nth-of-type(2){right:12px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-options{display:flex;gap:10px;padding:13px 15px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-choice{border:1px solid #dbe9df;border-radius:9px;padding:11px 16px;background:#fff;color:#1b5034;font-size:12px;font-weight:750;cursor:pointer}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-choice[aria-pressed="true"]{background:#e8f7ed;border-color:#0c874b}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-result-demo-note{margin:0 15px 14px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-tabs button{border:1px solid #e0ebe3;background:#f5f8f6;color:#46614f;border-radius:9px;padding:11px 15px;font-size:12px;font-weight:750;cursor:pointer}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-tabs button[aria-selected="true"]{background:#006b3d;color:#fff;border-color:#006b3d}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-layout{display:grid;grid-template-columns:195px minmax(0,1fr);gap:15px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-library{border:1px solid #e0ebe3;border-radius:12px;padding:14px;background:#f8fbf9}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-library h4{font-size:13px;color:#1b4930;margin:0 0 14px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-item{display:flex;align-items:center;gap:7px;border:1px solid #e5ece6;border-radius:8px;padding:9px 7px;margin:0 0 7px;background:#fff;color:#405e49;font-size:12px;cursor:pointer}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview{display:flex;flex-direction:column;gap:10px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview img{width:100%;height:330px;object-fit:cover;border-radius:12px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview small{color:#607468;font-size:11px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview button{align-self:flex-end}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:18px 0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary>div{background:#f4faf6;border:1px solid #dfebe3;border-radius:12px;padding:17px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary h4{color:#1c4a31;font-size:16px;margin:0 0 10px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary p{font-size:12px;line-height:1.6;color:#5d7463}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary button{border-radius:9px;border:1px solid #d8e8dc;background:#fff;color:#145d37;padding:10px 13px;font-size:12px;font-weight:800}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary button.mg-primary{background:#006b3d;color:#fff}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-plan{background:#fff!important;border:1px solid #e1eae3!important;border-radius:13px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 195px;gap:16px;margin:20px 0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-main{border:1px solid #e0ebe3;border-radius:13px;overflow:hidden;background:#fff}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-title{padding:15px;background:#f2faf5;color:#17452e;font-size:16px;font-weight:850}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-title small{display:block;font-size:11px;color:#60816c;font-weight:500;margin-top:4px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-messages{padding:20px;min-height:270px;max-height:370px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-bot,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-user{max-width:85%;padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.6;margin:0}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-bot{background:#edf5ef;color:#294a37;align-self:flex-start}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-user{background:#d5efe0;color:#16462e;align-self:flex-end}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-questions{padding:12px;display:flex;flex-wrap:wrap;gap:7px;border-top:1px solid #e3ede5}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-questions button{border:1px solid #d8e9de;border-radius:8px;background:#fff;color:#195c39;padding:8px;font-size:11px;cursor:pointer}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-actions{border:1px solid #e1eae4;border-radius:12px;padding:15px;background:#f7fbf8}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-actions h4{font-size:14px;color:#204732;margin:0 0 13px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-actions button{display:block;width:100%;background:#fff;border:1px solid #e0ebe3;border-radius:9px;padding:11px 9px;margin:0 0 9px;text-align:left;font-size:12px;color:#205638;cursor:pointer}
+@media(max-width:1180px){.mvgreen-designer .mg-redesign-frame.mg-is-modal{grid-template-columns:170px minmax(0,1fr)!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{display:none!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding:28px 22px!important}}
+@media(max-width:680px){.mvgreen-designer .mg-redesign-frame.mg-is-modal{grid-template-columns:1fr!important;top:0!important;height:100dvh!important;width:100vw!important;border-radius:0!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding:60px 16px 20px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-grid,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-options,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-details,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-grid,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-layout,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-chat-layout,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-layout{grid-template-columns:1fr!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-picture{height:200px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-result-comparison{height:230px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-side{position:static}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview img{height:240px}.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-progress-label{font-size:15px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image{min-height:230px}}
