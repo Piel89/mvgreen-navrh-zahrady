@@ -1516,3 +1516,11 @@ body>.mvgreen-designer.mg-viewport-mounted .mg-redesign-frame.mg-is-modal .mg-re
 .mvgreen-designer .mg-photo-quality-good .mg-photo-quality-mark{background:#0a9852!important}
 .mvgreen-designer .mg-photo-quality-card strong{font-size:11px!important;line-height:1.25!important;margin-top:6px!important}
 .mvgreen-designer .mg-photo-quality-card small{font-size:10px!important;line-height:1.2!important}
+
+/* v0.6.24 – only show actual photo and quality assessment after upload. */
+.mvgreen-designer:not(.mg-has-photo) .mg-ref-photo-showcase,
+.mvgreen-designer:not(.mg-has-photo) .mg-photo-quality-guide{display:none!important}
+.mvgreen-designer .mg-photo-quality-card.is-current{border:2px solid #087447!important;box-shadow:0 0 0 2px #08744718!important}
+.mvgreen-designer .mg-photo-quality-bad.is-current,
+.mvgreen-designer .mg-photo-quality-dark.is-current{border-color:#dc5549!important;box-shadow:0 0 0 2px #dc55491a!important}
+.mvgreen-designer .mg-photo-quality-result{grid-column:1/-1!important;margin:7px 0 0!important;font-size:11px!important;line-height:1.45!important;color:#375d49!important}
