@@ -1078,3 +1078,13 @@ body.mg-designer-modal-open{overflow:hidden!important}
  .mvgreen-designer .mg-designer-backplate{display:none!important}
  .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips .mg-side-next{display:none!important}
 }
+
+/* Consistent icon alignment in the modal brand and five surface tools. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-brand-leaf .mg-professional-icon{
+ width:22px!important;height:22px!important;stroke:#007647!important;
+}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-area-kind .mg-professional-icon{
+ width:17px!important;height:17px!important;
+ vertical-align:middle!important;display:inline-block!important;
+ margin-right:7px!important;
+}
