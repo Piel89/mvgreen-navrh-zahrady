@@ -204,6 +204,27 @@ function showWizardStep(n){
 8:['Ceny jsou pouze orientační.','Nezapomeňte na dopravu a realizaci.','Stáhněte si položkový rozpočet.'],
 9:['Ptejte se průvodce na jednotlivé kroky.','Zadání lze znovu upravit.','Průvodce není živý AI chat.']};
 tips.innerHTML='<h3>'+(wizardStep===1?'Tipy pro výběr stylu':'Tipy pro lepší výsledek')+'</h3>'+ (wizardStep===0?[['camera','Foťte za denního světla.','Zahrada bude mít přirozené barvy a detaily.'],['maximize','Zachyťte co největší plochu.','Ideálně z rohu zahrady.'],['list','Označte hlavní zóny.','Trávník, záhony, terasa, cestičky.'],['settings','Nemusíte měřit přesně.','AI návrh se přizpůsobí fotografii.']].map(x=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+mgTipIcon(x[0])+'</span><div><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div></div>').join(''):(data[wizardStep]||data[1]).map((x,i)=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+mgTipIcon(['leaf','sun','check'][i%3])+'</span><div><strong>'+x+'</strong></div></div>').join(''));}
+
+ if(tips&&wizardStep===2){
+  const indicator=document.createElement('div');
+  indicator.className='mg-photo-quality-guide';
+  indicator.setAttribute('aria-label','Ukázky vhodné a nevhodné fotografie');
+  const examples=[
+   {title:'Správně',desc:'Široký záběr',mark:'✓',type:'good',image:'https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg'},
+   {title:'Příliš',desc:'blízko',mark:'✕',type:'bad',image:'https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg'},
+   {title:'Málo',desc:'světla',mark:'✕',type:'dark',image:'https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg'}
+  ];
+  examples.forEach(example=>{
+   const card=document.createElement('div');card.className='mg-photo-quality-card mg-photo-quality-'+example.type;
+   const photo=document.createElement('div');photo.className='mg-photo-quality-image';
+   const img=document.createElement('img');img.src=example.image;img.alt=example.title+' '+example.desc;img.loading='lazy';photo.appendChild(img);
+   const mark=document.createElement('span');mark.className='mg-photo-quality-mark';mark.textContent=example.mark;photo.appendChild(mark);
+   const title=document.createElement('strong');title.textContent=example.title;
+   const desc=document.createElement('small');desc.textContent=example.desc;
+   card.append(photo,title,desc);indicator.appendChild(card);
+  });
+  tips.appendChild(indicator);
+ }
  if(tips&&[1,4,5,7,8,9].includes(wizardStep)){const selectedPhoto=root.querySelector('[data-mg-style-choice][aria-pressed="true"] img');if(selectedPhoto){const photo=document.createElement('img');photo.className='mg-tips-reference-photo';photo.src=selectedPhoto.src;photo.alt='Inspirace pro vybraný styl zahrady';photo.loading='lazy';photo.dataset.mgStyle=q('mg-style-card')?.value||'english';tips.appendChild(photo);}}
  if(wizardStep>0){const main=root.querySelector('.mg-redesign-main');if(main)main.scrollTo({top:0,behavior:'instant'});}
 }
