@@ -68,7 +68,12 @@ function updateGardenPhotoQuality(){
  root.dataset.mgPhotoQuality=result.type;
  const guide=root.querySelector('.mg-photo-quality-guide');
  if(!guide)return;
- guide.querySelectorAll('.mg-photo-quality-card').forEach(card=>card.classList.toggle('is-current',card.classList.contains('mg-photo-quality-'+result.type)));
+ guide.querySelectorAll('.mg-photo-quality-card').forEach(card=>{
+  const current=card.classList.contains('mg-photo-quality-'+result.type);
+  card.classList.toggle('is-current',current);
+  card.hidden=!current;
+  card.setAttribute('aria-hidden',String(!current));
+ });
  const note=guide.querySelector('.mg-photo-quality-result');
  if(note)note.textContent=result.note;
 }
