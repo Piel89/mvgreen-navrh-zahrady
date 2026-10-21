@@ -106,7 +106,38 @@ function chooseVariant(code,applySettings=true){
 }
 root.querySelectorAll('[data-mg-variant]').forEach(button=>button.addEventListener('click',()=>{chooseVariant(button.dataset.mgVariant);autoSave()}));
 q('mg-summary').addEventListener('click',()=>{const d=getData(),min=Number(d['mg-min']),max=Number(d['mg-max']),w=Number(d['mg-width']),l=Number(d['mg-length']);if(!Number.isFinite(min)||!Number.isFinite(max)||min<0||max<min){alert('Zkontrolujte rozpočet od–do.');return}const area=w>0&&l>0?`${fmt(w*l)} m²`:'nezadána';const out=q('mg-output');out.textContent=`ZADÁNÍ NÁVRHU ZAHRADY\n\nFotografie: ${photoReady?'nahrána':'nenahrána'}\nOznačené oblasti: ${areas.length}\nMěřítko: ${metersPerPixel?'nastaveno (orientační)':'nenastaveno'}\n${areas.map((a,i)=>`${i+1}. ${a.tool==='keep'?'Zachovat':a.tool==='remove'?'Odstranit':'Změnit'}${metersPerPixel?` ≈ ${fmt(polygonArea(a.points)*metersPerPixel**2)} m²`:''}`).join('\n')}\nVarianta: ${variantOptions[d['mg-variant']]?.label||variantOptions.B.label}\nStyl: ${d['mg-style']}\nSvětlo: ${d['mg-sun']}\nCelková zadaná plocha: ${area}\nRozpočet: ${fmt(min)}–${fmt(max)} Kč\nRealizace: ${d['mg-build']}\nÚdržba: ${d['mg-maint']}\nPožadavky: ${d['mg-notes']||'neuvedeny'}\n\nVýpočty z fotografie jsou orientační. AI návrh a platby zatím nejsou dostupné.`;out.classList.remove('mg-hidden')});
-const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[]}}catch(e){}chooseVariant(q('mg-variant').value,false);updateList();
+let wizardStep=0;
+function showWizardStep(n){
+ wizardStep=Math.max(0,Math.min(4,n));
+ q('mg-welcome').hidden=wizardStep!==0;
+ root.querySelectorAll('[data-mg-step]').forEach(section=>{section.hidden=Number(section.dataset.mgStep)!==wizardStep});
+ q('mg-wizard-progress').classList.toggle('mg-hidden',wizardStep===0);
+ q('mg-wizard-footer').classList.toggle('mg-hidden',wizardStep===0);
+ if(wizardStep){
+   q('mg-progress-label').textContent='Krok '+wizardStep+' ze 4';
+   q('mg-progress-fill').style.width=(wizardStep*25)+'%';
+   q('mg-prev').textContent=wizardStep===1?'← Úvod':'← Předchozí krok';
+   q('mg-next').textContent=wizardStep===4?'✓ Hotovo':'Další krok →';
+   q('mg-step-description').textContent=['','Fotografie a měřítko','Styl zahrady','Lokalita a rozpočet','Přání a výsledek'][wizardStep];
+ }
+ root.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function setDesignMode(mode){
+ const chosen=mode==='advanced'?'advanced':'auto';
+ q('mg-design-mode').value=chosen;
+ root.querySelectorAll('[data-mg-mode]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.mgMode===chosen)));
+ root.classList.toggle('mg-automatic-mode',chosen==='auto');
+}
+root.querySelectorAll('[data-mg-mode]').forEach(btn=>btn.addEventListener('click',()=>{setDesignMode(btn.dataset.mgMode);autoSave()}));
+q('mg-start').addEventListener('click',()=>showWizardStep(1));
+q('mg-prev').addEventListener('click',()=>showWizardStep(wizardStep-1));
+q('mg-next').addEventListener('click',()=>{
+ if(wizardStep===1&&!photoReady){q('mg-photo').focus();alert('Nejprve nahrajte fotografii zahrady.');return}
+ if(wizardStep===4){showWizardStep(0);return}
+ showWizardStep(wizardStep+1);
+});
+setDesignMode('auto');
+const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[]}}catch(e){}chooseVariant(q('mg-variant').value,false);setDesignMode(q('mg-design-mode').value);updateList();
 function autoSave(){try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel}))}catch(e){}};root.addEventListener('change',e=>{if(e.target.id!=='mg-photo')autoSave()});root.addEventListener('pointerup',()=>setTimeout(autoSave,100));q('mg-save').addEventListener('click',()=>{try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel}));alert('Údaje a oblasti byly uloženy v prohlížeči. Fotografie se neukládá. Po obnovení stránky ji nahrajte znovu.')}catch(e){alert('Prohlížeč ukládání nepovolil.')}});q('mg-reset').addEventListener('click',()=>{localStorage.removeItem(key);alert('Uložené údaje byly vymazány. Aktuální formulář zůstává otevřený.')});
 syncMode();
 // Verified Czech retail listings (17 October 2026). Only matching exact cultivars and sizes.
