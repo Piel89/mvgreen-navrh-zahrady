@@ -25,7 +25,23 @@ function setPan(active){panMode=active;q('mg-mobile-pan').setAttribute('aria-pre
 function snapPoint(p,exclude=-1){if(!snapEnabled)return p;const threshold=12/zoom;let best=p,bestD=threshold;areas.forEach((a,i)=>{a.points.forEach((v,j)=>{if(i===selected&&j===exclude)return;const d=dist(p,v);if(d<bestD){bestD=d;best={...v}}});a.points.forEach((v,j)=>{if(i===selected)return;const w=a.points[(j+1)%a.points.length],dx=w.x-v.x,dy=w.y-v.y,t=Math.max(0,Math.min(1,((p.x-v.x)*dx+(p.y-v.y)*dy)/(dx*dx+dy*dy||1))),candidate={x:v.x+t*dx,y:v.y+t*dy},d=dist(p,candidate);if(d<bestD){bestD=d;best=candidate}})});return best}
 
 function finish(){if(draft.length>=3){saveHistory();areas.push({tool,points:draft.map(p=>({...p}))});selected=-1;infoOpen=-1;updateList();draft=[];draftRedo=[];hover=null;draw()}else if(draft.length){alert('Oblast potřebuje alespoň 3 body.')}}
-q('mg-photo').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;if(!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>10*1024*1024){alert('Vyberte JPG, PNG nebo WebP do 10 MB.');e.target.value='';return}const url=URL.createObjectURL(f),next=new Image();next.onload=()=>{img=next;const s=Math.min(1,1400/Math.max(next.naturalWidth,next.naturalHeight));canvas.width=Math.max(1,Math.round(next.naturalWidth*s));canvas.height=Math.max(1,Math.round(next.naturalHeight*s));photoReady=true;zoom=1;calibration=[];metersPerPixel=null;areas=[];draft=[];selected=-1;history=[],redoHistory=[],draftRedo=[],infoOpen=-1,snapEnabled=q('mg-snap').checked;spacePan=false;mode='polygon';canvas.classList.remove('mg-hidden');q('mg-placeholder').classList.add('mg-hidden');q('mg-scale-status').textContent='Měřítko není nastavené';updateList();draw();root.classList.add('mg-has-photo');updateRotateHint();URL.revokeObjectURL(url)};next.onerror=()=>{URL.revokeObjectURL(url);alert('Fotografii se nepodařilo otevřít.')};next.src=url});
+// Show the user's uploaded garden immediately on step 1 in BOTH design modes.
+const photoField=q('mg-photo').closest('.mg-field');
+const photoPreview=document.createElement('figure');
+photoPreview.id='mg-upload-preview';
+photoPreview.className='mg-upload-preview';
+photoPreview.hidden=true;
+photoPreview.innerHTML='<img id="mg-upload-preview-image" alt="Náhled nahrané fotografie zahrady"><figcaption><span>✓ Vaše fotografie je připravená</span><small>Stejný snímek použijeme pro automatický návrh i pokročilé úpravy. Plochy můžete označit v kroku 3.</small></figcaption>';
+photoField.insertAdjacentElement('afterend',photoPreview);
+function showUploadedPhotoPreview(){
+ if(!photoReady||!img)return;
+ const preview=q('mg-upload-preview-image');
+ // Reuse the decoded uploaded image directly, with no additional upload to server.
+ preview.src=canvas.toDataURL('image/jpeg',0.88);
+ photoPreview.hidden=false;
+ photoPreview.classList.add('is-visible');
+}
+q('mg-photo').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;if(!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>10*1024*1024){alert('Vyberte JPG, PNG nebo WebP do 10 MB.');e.target.value='';return}const url=URL.createObjectURL(f),next=new Image();next.onload=()=>{img=next;const s=Math.min(1,1400/Math.max(next.naturalWidth,next.naturalHeight));canvas.width=Math.max(1,Math.round(next.naturalWidth*s));canvas.height=Math.max(1,Math.round(next.naturalHeight*s));photoReady=true;zoom=1;calibration=[];metersPerPixel=null;areas=[];draft=[];selected=-1;history=[],redoHistory=[],draftRedo=[],infoOpen=-1,snapEnabled=q('mg-snap').checked;spacePan=false;mode='polygon';canvas.classList.remove('mg-hidden');q('mg-placeholder').classList.add('mg-hidden');q('mg-scale-status').textContent='Měřítko není nastavené';updateList();draw();showUploadedPhotoPreview();root.classList.add('mg-has-photo');updateRotateHint();URL.revokeObjectURL(url)};next.onerror=()=>{URL.revokeObjectURL(url);alert('Fotografii se nepodařilo otevřít.')};next.src=url});
 function chooseTool(next){if(draft.length){if(!confirm('Rozpracovaná oblast není dokončená. Přepnout režim a zahodit rozpracované body?'))return}tool=next;draft=[];draftRedo=[];selected=-1;mode='polygon';setPan(false);syncMode();root.querySelectorAll('[data-tool], [data-fs-tool]').forEach(x=>x.setAttribute('aria-pressed',String((x.dataset.tool||x.dataset.fsTool)===tool)));draw()}root.querySelectorAll('[data-tool], [data-fs-tool]').forEach(b=>b.addEventListener('click',()=>chooseTool(b.dataset.tool||b.dataset.fsTool)));
 // A CSS-fixed editor overlay avoids the browser's non-cancellable native Escape behavior.
 function isStageFullscreen(){return stage.classList.contains('mg-fullscreen-fallback')}
