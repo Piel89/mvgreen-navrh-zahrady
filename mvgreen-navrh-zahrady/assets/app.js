@@ -283,7 +283,7 @@ function openDesignerModal(){
  frame.classList.add('mg-is-modal');
  switchDesignerNavigation(true);
  const modalBrand=frame.querySelector('.mg-brand-leaf');if(modalBrand)modalBrand.innerHTML=mgTipIcon('sprout');
- document.body.classList.add('mg-designer-modal-open');
+ document.body.classList.remove('mg-designer-modal-open');
  showWizardStep(1);
  frame.querySelector('.mg-redesign-main')?.scrollTo({top:0,behavior:'instant'});
  frame.querySelector('.mg-modal-close')?.focus();
