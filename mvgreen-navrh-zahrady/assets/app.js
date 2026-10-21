@@ -169,7 +169,11 @@ function mgTipIcon(kind){
  leaf:'<path d="M20 4C11 4 5 8 5 15a5 5 0 0 0 5 5c7 0 11-6 10-16Z"/><path d="M4 21c3-6 6-9 12-12"/>',
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>',
  check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
- sprout:'<path d="M12 21v-9M12 14C5 14 3 10 4 5c6 0 8 3 8 9Zm0-2c0-6 3-8 8-8 1 5-1 8-8 8Z"/>'
+ sprout:'<path d="M12 21v-9M12 14C5 14 3 10 4 5c6 0 8 3 8 9Zm0-2c0-6 3-8 8-8 1 5-1 8-8 8Z"/>',
+ bed:'<circle cx="12" cy="11" r="2"/><path d="M12 9V4m3.5 6-1.5-3.5M14 13l3 2m-5 0v5m-2-7-3 2m2.5-5L8 6.5"/><circle cx="12" cy="11" r="6.5"/>',
+ path:'<path d="M7 2c6 4-1 7 5 11s-1 7 5 9M4 2c6 4-1 7 5 11s-1 7 5 9"/>',
+ mulch:'<path d="M4 16c0-3 3-5 5-3l3 4-2 3H5zm9-3c2-4 6-4 8 0l-1 5h-6z"/>',
+ terrace:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m6-16v16M3 12h18"/>'
  };
  return '<svg class="mg-professional-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(strokes[kind]||strokes.leaf)+'</svg>';
 }
@@ -272,6 +276,7 @@ function openDesignerModal(){
  modalBackdrop.hidden=false;
  frame.classList.add('mg-is-modal');
  switchDesignerNavigation(true);
+ const modalBrand=frame.querySelector('.mg-brand-leaf');if(modalBrand)modalBrand.innerHTML=mgTipIcon('sprout');
  document.body.classList.add('mg-designer-modal-open');
  showWizardStep(1);
  frame.querySelector('.mg-redesign-main')?.scrollTo({top:0,behavior:'instant'});
@@ -282,6 +287,7 @@ function closeDesignerModal(){
  if(!frame)return;
  frame.classList.remove('mg-is-modal');
  switchDesignerNavigation(false);
+ const modalBrand=frame.querySelector('.mg-brand-leaf');if(modalBrand)modalBrand.textContent='❧';
  modalBackdrop.hidden=true;
  document.body.classList.remove('mg-designer-modal-open');
  showWizardStep(0);
@@ -466,7 +472,7 @@ if(photoStage&&measureStep){
  const layout=document.createElement('div');layout.className='mg-measure-layout';
  const photoCol=document.createElement('div');photoCol.className='mg-measure-photo';
  const toolCol=document.createElement('aside');toolCol.className='mg-measure-side';
- toolCol.innerHTML='<h4>Nástroje</h4>'+[['Trávník','keep','lawn','🌿'],['Záhon','change','bed','🌸'],['Cestička','change','path','●'],['Mulč / štěrk','remove','mulch','◉'],['Terasa','change','terrace','▤']].map((x,i)=>'<button type="button" class="mg-ref-area-kind mg-ref-area-'+x[2]+'" data-mg-tool-link="'+x[1]+'" data-mg-area-kind="'+x[2]+'" aria-pressed="'+(i===0)+'">'+x[3]+' '+x[0]+'</button>').join('')+'<button type="button" id="mg-ref-add-zone">＋ Další zóna</button><h4>Tipy pro označení</h4><p>✓ Označte plochy co nejpřesněji.</p><p>✓ Rozdělujte větší plochy.</p><p>✓ Můžete přidat více zón.</p><p>✓ Rozměry jsou orientační.</p>';
+ toolCol.innerHTML='<h4>Nástroje</h4>'+[['Trávník','keep','lawn','leaf'],['Záhon','change','bed','bed'],['Cestička','change','path','path'],['Mulč / štěrk','remove','mulch','mulch'],['Terasa','change','terrace','terrace']].map((x,i)=>'<button type="button" class="mg-ref-area-kind mg-ref-area-'+x[2]+'" data-mg-tool-link="'+x[1]+'" data-mg-area-kind="'+x[2]+'" aria-pressed="'+(i===0)+'">'+mgTipIcon(x[3])+' '+x[0]+'</button>').join('')+'<button type="button" id="mg-ref-add-zone">＋ Další zóna</button><h4>Tipy pro označení</h4><p>✓ Označte plochy co nejpřesněji.</p><p>✓ Rozdělujte větší plochy.</p><p>✓ Můžete přidat více zón.</p><p>✓ Rozměry jsou orientační.</p>';
  const calibration=q('mg-calibrate')?.closest('.mg-calibration');
  if(calibration)photoCol.append(calibration);
  photoCol.append(photoStage);
