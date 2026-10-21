@@ -24,7 +24,7 @@ function setMode(m){mode=m;draft=[];rectStart=null;hover=null;syncMode();draw()}
 function setPan(active){panMode=active;q('mg-mobile-pan').setAttribute('aria-pressed',String(active));q('mg-crosshair').classList.toggle('mg-hidden',!active);canvas.style.touchAction=active?'auto':'none';q('mg-stage').classList.toggle('mg-panning',active);syncMode()}
 function snapPoint(p,exclude=-1){if(!snapEnabled)return p;const threshold=12/zoom;let best=p,bestD=threshold;areas.forEach((a,i)=>{a.points.forEach((v,j)=>{if(i===selected&&j===exclude)return;const d=dist(p,v);if(d<bestD){bestD=d;best={...v}}});a.points.forEach((v,j)=>{if(i===selected)return;const w=a.points[(j+1)%a.points.length],dx=w.x-v.x,dy=w.y-v.y,t=Math.max(0,Math.min(1,((p.x-v.x)*dx+(p.y-v.y)*dy)/(dx*dx+dy*dy||1))),candidate={x:v.x+t*dx,y:v.y+t*dy},d=dist(p,candidate);if(d<bestD){bestD=d;best=candidate}})});return best}
 
-function finish(){if(draft.length>=3){saveHistory();areas.push({tool,points:draft.map(p=>({...p}))});selected=-1;infoOpen=-1;updateList();draft=[];draftRedo=[];hover=null;draw()}else if(draft.length){alert('Oblast potřebuje alespoň 3 body.')}}
+function finish(){if(draft.length>=3){saveHistory();areas.push({tool,kind:areaKind,points:draft.map(p=>({...p}))});selected=-1;infoOpen=-1;updateList();draft=[];draftRedo=[];hover=null;draw()}else if(draft.length){alert('Oblast potřebuje alespoň 3 body.')}}
 // Show the user's uploaded garden immediately on step 1 in BOTH design modes.
 const photoField=q('mg-photo').closest('.mg-field');
 const photoPreview=document.createElement('figure');
@@ -431,6 +431,10 @@ showWizardStep=function(n){
  const aiTrigger=q('mg-generation-admin'),aiOriginal=q('mg-ai-test');if(aiTrigger&&aiOriginal)aiTrigger.classList.toggle('mg-hidden',aiOriginal.classList.contains('mg-hidden'));
  const summary=q('mg-budget-summary-info');
  if(summary)summary.textContent='Styl: '+(q('mg-variant-note')?.textContent||'neurčen')+' · Lokalita: '+(q('mg-locality')?.value||'nezadána')+' · Plochy: '+areas.length;
+ const selectedStyle=q('mg-style-card')?.value||'english';const name=styleChoices[selectedStyle]?.name||'Anglický trávník';
+ const styleResult=q('mg-ref-result-style');if(styleResult)styleResult.textContent=name;
+ const areaResult=q('mg-ref-result-area');if(areaResult){const area=Number(q('mg-bed-area')?.value)||0;areaResult.textContent=area>0?area.toLocaleString('cs-CZ')+' m²':'Dle zadání';}
+ const priceResult=q('mg-ref-result-price');if(priceResult)priceResult.textContent=(Number(q('mg-max')?.value)||0).toLocaleString('cs-CZ')+' Kč (limit)';
 };
 
 showWizardStep(0);
