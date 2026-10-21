@@ -158,6 +158,22 @@ function chooseVariant(code,applySettings=true,styleChoice=null){
 root.querySelectorAll('[data-mg-style-choice]').forEach(button=>button.addEventListener('click',()=>{chooseVariant(button.dataset.mgVariant,true,button.dataset.mgStyleChoice);autoSave()}));
 q('mg-summary').addEventListener('click',()=>{const d=getData(),min=Number(d['mg-min']),max=Number(d['mg-max']),w=Number(d['mg-width']),l=Number(d['mg-length']);if(!Number.isFinite(min)||!Number.isFinite(max)||min<0||max<min){alert('Zkontrolujte rozpočet od–do.');return}const area=w>0&&l>0?`${fmt(w*l)} m²`:'nezadána';const out=q('mg-output');out.textContent=`ZADÁNÍ NÁVRHU ZAHRADY\n\nFotografie: ${photoReady?'nahrána':'nenahrána'}\nOznačené oblasti: ${areas.length}\nMěřítko: ${metersPerPixel?'nastaveno (orientační)':'nenastaveno'}\n${areas.map((a,i)=>`${i+1}. ${a.tool==='keep'?'Zachovat':a.tool==='remove'?'Odstranit':'Změnit'}${metersPerPixel?` ≈ ${fmt(polygonArea(a.points)*metersPerPixel**2)} m²`:''}`).join('\n')}\nVarianta: ${variantOptions[d['mg-variant']]?.label||variantOptions.B.label}\nPreference: ${tailoredChoice}\nStyl: ${d['mg-style']}\nSvětlo: ${d['mg-sun']}\nCelková zadaná plocha: ${area}\nRozpočet: ${fmt(min)}–${fmt(max)} Kč\nRealizace: ${d['mg-build']}\nÚdržba: ${d['mg-maint']}\nPožadavky: ${d['mg-notes']||'neuvedeny'}\n\nVýpočty z fotografie jsou orientační. AI návrh a platby zatím nejsou dostupné.`;out.classList.remove('mg-hidden')});
 let wizardStep=0;
+
+/* One consistent set of small line icons, instead of mixed typographic/emoji symbols. */
+function mgTipIcon(kind){
+ const strokes={
+ camera:'<path d="M4 7h4l2-2h4l2 2h4v12H4z"/><circle cx="12" cy="13" r="3.5"/>',
+ maximize:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>',
+ list:'<path d="M4 6h3m3 0h10M4 12h3m3 0h10M4 18h3m3 0h10"/>',
+ settings:'<circle cx="12" cy="12" r="3"/><path d="m10 2-.5 2-2 1-2-.5-2 3 1.5 1.5v3l-1.5 1.5 2 3 2-.5 2 1 .5 2h4l.5-2 2-1 2 .5 2-3L19 12V9l1.5-1.5-2-3-2 .5-2-1-.5-2z"/>',
+ leaf:'<path d="M20 4C11 4 5 8 5 15a5 5 0 0 0 5 5c7 0 11-6 10-16Z"/><path d="M4 21c3-6 6-9 12-12"/>',
+ sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>',
+ check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+ sprout:'<path d="M12 21v-9M12 14C5 14 3 10 4 5c6 0 8 3 8 9Zm0-2c0-6 3-8 8-8 1 5-1 8-8 8Z"/>'
+ };
+ return '<svg class="mg-professional-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(strokes[kind]||strokes.leaf)+'</svg>';
+}
+
 function showWizardStep(n){
  wizardStep=Math.max(0,Math.min(9,n));
  q('mg-welcome').hidden=wizardStep!==0;
@@ -183,7 +199,7 @@ function showWizardStep(n){
 7:['Vybírejte rostliny podle slunce a půdy.','Plochy lze upravit ve fotografickém editoru.','Přání se zohlední při dalším návrhu.'],
 8:['Ceny jsou pouze orientační.','Nezapomeňte na dopravu a realizaci.','Stáhněte si položkový rozpočet.'],
 9:['Ptejte se průvodce na jednotlivé kroky.','Zadání lze znovu upravit.','Průvodce není živý AI chat.']};
-tips.innerHTML='<h3>'+(wizardStep===1?'Tipy pro výběr stylu':'Tipy pro lepší výsledek')+'</h3>'+ (wizardStep===0?[['camera','Foťte za denního světla.','Zahrada bude mít přirozené barvy a detaily.'],['maximize','Zachyťte co největší plochu.','Ideálně z rohu zahrady.'],['list','Označte hlavní zóny.','Trávník, záhony, terasa, cestičky.'],['settings','Nemusíte měřit přesně.','AI návrh se přizpůsobí fotografii.']].map(x=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+({camera:'📷',maximize:'◎',list:'☷',settings:'⚙'}[x[0]])+'</span><div><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div></div>').join(''):(data[wizardStep]||data[1]).map((x,i)=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+['✓','✦','◉'][i%3]+'</span><div><strong>'+x+'</strong></div></div>').join(''));}
+tips.innerHTML='<h3>'+(wizardStep===1?'Tipy pro výběr stylu':'Tipy pro lepší výsledek')+'</h3>'+ (wizardStep===0?[['camera','Foťte za denního světla.','Zahrada bude mít přirozené barvy a detaily.'],['maximize','Zachyťte co největší plochu.','Ideálně z rohu zahrady.'],['list','Označte hlavní zóny.','Trávník, záhony, terasa, cestičky.'],['settings','Nemusíte měřit přesně.','AI návrh se přizpůsobí fotografii.']].map(x=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+mgTipIcon(x[0])+'</span><div><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div></div>').join(''):(data[wizardStep]||data[1]).map((x,i)=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+mgTipIcon(['leaf','sun','check'][i%3])+'</span><div><strong>'+x+'</strong></div></div>').join(''));}
  if(tips&&[1,4,5,7,8,9].includes(wizardStep)){const selectedPhoto=root.querySelector('[data-mg-style-choice][aria-pressed="true"] img');if(selectedPhoto){const photo=document.createElement('img');photo.className='mg-tips-reference-photo';photo.src=selectedPhoto.src;photo.alt='Inspirace pro vybraný styl zahrady';photo.loading='lazy';photo.dataset.mgStyle=q('mg-style-card')?.value||'english';tips.appendChild(photo);}}
  if(wizardStep>0){const main=root.querySelector('.mg-redesign-main');if(main)main.scrollTo({top:0,behavior:'instant'});}
 }
@@ -226,6 +242,26 @@ function switchDesignerNavigation(isOpen){
   side.querySelectorAll(':scope > [data-go-step]').forEach(b=>b.hidden=false);
  }
 }
+const designerBackplate=document.createElement('div');
+designerBackplate.className='mg-designer-backplate';
+designerBackplate.setAttribute('aria-hidden','true');
+designerBackplate.hidden=true;
+root.appendChild(designerBackplate);
+function syncDesignerChrome(){
+ const frame=root.querySelector('.mg-redesign-frame');
+ if(!frame?.classList.contains('mg-is-modal')){designerBackplate.hidden=true;return;}
+ const mobile=window.matchMedia('(max-width:680px)').matches;
+ const scale=mobile?1:Math.min(1.72,window.innerWidth*.94/Math.max(1,frame.offsetWidth),window.innerHeight*.89/Math.max(1,frame.offsetHeight));
+ frame.style.setProperty('--mg-modal-scale',String(Math.max(.8,scale)));
+ const rect=frame.getBoundingClientRect();
+ const inset=mobile?0:15;
+ designerBackplate.hidden=mobile;
+ designerBackplate.style.left=(rect.left-inset)+'px';
+ designerBackplate.style.top=(rect.top-inset)+'px';
+ designerBackplate.style.width=(rect.width+inset*2)+'px';
+ designerBackplate.style.height=(rect.height+inset*2)+'px';
+}
+window.addEventListener('resize',()=>requestAnimationFrame(syncDesignerChrome));
 const modalBackdrop=document.createElement('div');
 modalBackdrop.className='mg-designer-modal-backdrop';
 modalBackdrop.hidden=true;
@@ -448,6 +484,11 @@ if(photoStage&&measureStep){
  toolCol.querySelector('#mg-ref-add-zone')?.addEventListener('click',()=>{if(!photoReady){showWizardStep(2);return}root.querySelector('[data-mg-area-kind="lawn"]')?.click();q('mg-polygon').click()});
 }
 const originalShowWizardStep=showWizardStep;
+const sideTips=root.querySelector('.mg-redesign-tips');
+sideTips?.addEventListener('click',event=>{
+ const b=event.target.closest('.mg-side-next');
+ if(b&&sideTips.contains(b))q('mg-next')?.click();
+});
 showWizardStep=function(n){
  originalShowWizardStep(n);
  const frame=root.querySelector('.mg-redesign-frame');if(frame){for(let i=0;i<=9;i++)frame.classList.toggle('mg-view-step-'+i,i===wizardStep);}
@@ -459,6 +500,16 @@ showWizardStep=function(n){
  const styleResult=q('mg-ref-result-style');if(styleResult)styleResult.textContent=name;
  const areaResult=q('mg-ref-result-area');if(areaResult){const area=Number(q('mg-bed-area')?.value)||0;areaResult.textContent=area>0?area.toLocaleString('cs-CZ')+' m²':'Dle zadání';}
  const priceResult=q('mg-ref-result-price');if(priceResult)priceResult.textContent=(Number(q('mg-max')?.value)||0).toLocaleString('cs-CZ')+' Kč (limit)';
+ // The original Next button still handles validation. This right-column button forwards its click.
+ const tips=root.querySelector('.mg-redesign-tips');
+ if(tips&&[1,2,4].includes(wizardStep)){
+  const rightNext=document.createElement('button');
+  rightNext.type='button';
+  rightNext.className='mg-side-next';
+  rightNext.innerHTML='Další krok <span aria-hidden="true">→</span>';
+  tips.appendChild(rightNext);
+ }
+ requestAnimationFrame(syncDesignerChrome);
 };
 
 showWizardStep(0);
