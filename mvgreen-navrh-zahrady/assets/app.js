@@ -442,15 +442,7 @@ if(photoSection){
   extraInput.value='';
  });
  const originalPreview=q('mg-upload-preview-image');if(originalPreview)originalPreview.addEventListener('load',()=>{visual.querySelector('img').src=originalPreview.src;});
- const modeInfo=document.createElement('div');modeInfo.className='mg-mode-explanation';modeInfo.setAttribute('role','status');modeInfo.setAttribute('aria-live','polite');
- photoSection.querySelector('.mg-mode-select').insertAdjacentElement('afterend',modeInfo);
- function updateModeInfo(){
-  const advanced=q('mg-design-mode').value==='advanced';
-  modeInfo.innerHTML=advanced?'<strong>Pokročilé úpravy</strong><p>Po nahrání fotografie pokračujte do kroku 3, kde označíte trávník, záhony, cestičky a další plochy.</p><button type="button" class="mg-mode-go-next">Pokračovat k označení ploch →</button>':'<strong>Automatický AI návrh</strong><p>Vyberte fotografii a pokračujte. Návrhář připraví další kroky bez ručního zakreslování.</p>';
-  const go=modeInfo.querySelector('.mg-mode-go-next');if(go)go.addEventListener('click',()=>{if(!photoReady){q('mg-photo').focus();alert('Nejprve nahrajte fotografii zahrady.');return}showWizardStep(3)});
- }
- photoSection.querySelectorAll('[data-mg-mode]').forEach(btn=>btn.addEventListener('click',updateModeInfo));
- updateModeInfo();
+
 }
 if(photoSection){
  const measureSection=document.createElement('section');
