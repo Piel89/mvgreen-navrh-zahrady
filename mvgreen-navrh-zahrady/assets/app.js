@@ -161,7 +161,7 @@ const legacyPlants=[
 ];
 // Catalog is bundled as a separate script loaded before this application.
 // Keep exact curated retail data only where it matches a catalog taxon.
-const normalizeLatin=s=>String(s||'').toLocaleLowerCase().replace(/[×✕]/g,'x').replace(/[„“'"’]/g,'').replace(/\\s+/g,' ').trim();
+const normalizeLatin=s=>String(s||'').toLocaleLowerCase().replace(/[×✕]/g,'x').replace(/[„“'"’]/g,'').replace(/\s+/g,' ').trim();
 const legacyByLatin=new Map(legacyPlants.map(p=>[normalizeLatin(p.latin),p]));
 const plants=(Array.isArray(window.MVGreenPlantCatalog)?window.MVGreenPlantCatalog:[]).map(entry=>{
  const legacy=legacyByLatin.get(normalizeLatin(entry.latin));
