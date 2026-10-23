@@ -1960,3 +1960,22 @@ html body #mg-fullscreen-overlay #mg-canvas:not(.mg-hidden){
 #mg-fullscreen-overlay .mg-fullscreen-bar.mg-fs-bar-hidden{display:none!important}
 /* 0.6.41: AI mode has no right tool column in fullscreen, so center the photo in the whole window */
 html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-hidden){left:50%!important}
+
+/* 0.6.47: AI safety – confirm which part of the photo may change (overlay lives on <body>). */
+.mg-mask-overlay{position:fixed;inset:0;z-index:2147483646;background:rgba(8,28,17,.72);display:flex;align-items:center;justify-content:center;padding:16px;font-family:Inter,"Segoe UI",Arial,sans-serif}
+.mg-mask-box{background:#fff;border-radius:18px;max-width:1100px;width:100%;max-height:100%;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.mg-mask-head strong{display:block;font-size:20px;color:#0f3d27;margin-bottom:4px}
+.mg-mask-head span{font-size:15px;color:#2b4434}
+.mg-mask-stage{background:#e8f1e9;border-radius:12px;overflow:hidden;display:flex;justify-content:center}
+.mg-mask-stage canvas{display:block;max-width:100%;max-height:60vh;width:auto;height:auto;touch-action:none}
+.mg-mask-tools{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.mg-mask-horizon{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#2b4434}
+.mg-mask-horizon input{accent-color:#156333;width:180px}
+.mg-mask-brush{display:flex;gap:8px}
+.mg-mask-overlay button{font:inherit;font-size:14px;font-weight:700;padding:10px 14px;border-radius:10px;border:1px solid #c9dccf;background:#fff;color:#156333;cursor:pointer;min-height:42px}
+.mg-mask-overlay button[aria-pressed=true]{background:#e4f7e7;border-color:#156333;box-shadow:inset 0 0 0 1px #156333}
+.mg-mask-overlay button.mg-primary{background:#156333;border-color:#156333;color:#fff}
+.mg-mask-overlay button:disabled{opacity:.5;cursor:not-allowed}
+.mg-mask-share{font-size:14px;color:#2b4434}
+.mg-mask-share.is-bad{color:#b42318;font-weight:600}
+.mg-mask-actions{display:flex;justify-content:flex-end;gap:10px}

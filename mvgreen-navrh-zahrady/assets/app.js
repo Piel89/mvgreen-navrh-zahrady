@@ -964,32 +964,35 @@ if(aiConfig.enabled){
     if(!photoReady)return alert('Nejprve nahrajte fotografii zahrady.');
     const automatic=q('mg-design-mode').value==='auto';
     if(!automatic&&!areas.some(a=>a.tool==='change'||a.tool==='remove'))return alert('Označte alespoň jednu oblast Změnit nebo Odstranit.');
-    if(!confirm(automatic?'Spustit placený AI TEST celého snímku? V automatickém režimu zatím nelze zaručit zachování všech staveb a detailů.':'Spustit placený test označených ploch?'))return;
-    const result=q('mg-ai-result');result.classList.remove('mg-hidden');result.textContent='AI připravuje návrh. Může to trvat několik minut…';
+    const S=window.MVGreenAISafety;
+    if(!S)return alert('Chybí bezpečnostní modul AI. Obnovte stránku.');
+    // Rule 1: the AI never gets the whole photo. Build the editable garden mask first.
+    const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
+    original.getContext('2d').drawImage(img,0,0,original.width,original.height);
+    let editMask;
+    if(automatic){
+      editMask=await S.confirmMask(original);
+      if(!editMask)return;
+    }else{
+      editMask=S.polygonMask(original.width,original.height,areas.filter(a=>a.tool==='change'||a.tool==='remove'),areas.filter(a=>a.tool==='keep'));
+    }
+    const prepared=S.prepare(original,editMask);
+    const invalid=S.validate(prepared.coverage);
+    if(invalid)return alert(invalid);
+    if(!confirm('Spustit placený AI návrh? Upraví se jen označená plocha ('+Math.round(prepared.coverage*100)+' % fotky). Dům, plot a ostatní části zůstanou beze změny.'))return;
+    const result=q('mg-ai-result');result.classList.remove('mg-hidden');result.textContent='AI připravuje návrh. Obvykle to trvá asi minutu…';
     aiButton.disabled=true;
     try{
-      // A transparent mask marks ONLY red/blue areas as editable. Green and unmarked pixels are protected.
-      const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
-      original.getContext('2d').drawImage(img,0,0,original.width,original.height);
-      const mask=document.createElement('canvas');mask.width=canvas.width;mask.height=canvas.height;
-      const mx=mask.getContext('2d');mx.fillStyle='#fff';mx.fillRect(0,0,mask.width,mask.height);
-      const edits=automatic?[{points:[{x:0,y:0},{x:canvas.width,y:0},{x:canvas.width,y:canvas.height},{x:0,y:canvas.height}]}]:areas.filter(a=>(a.tool==='change'||a.tool==='remove')&&a.points?.length>=3);
-      edits.forEach(area=>{mx.save();mx.globalCompositeOperation='destination-out';mx.beginPath();mx.moveTo(area.points[0].x,area.points[0].y);area.points.slice(1).forEach(pt=>mx.lineTo(pt.x,pt.y));mx.closePath();mx.fill();mx.restore()});
-      // Keep green areas protected even if polygons overlap.
-      (automatic?[]:areas.filter(a=>a.tool==='keep'&&a.points?.length>=3)).forEach(area=>{mx.beginPath();mx.moveTo(area.points[0].x,area.points[0].y);area.points.slice(1).forEach(pt=>mx.lineTo(pt.x,pt.y));mx.closePath();mx.fillStyle='#fff';mx.fill()});
       const data=new URLSearchParams();data.set('action','mvgreen_ai_preview');data.set('nonce',aiConfig.nonce);
-      data.set('image',original.toDataURL('image/png'));data.set('mask',mask.toDataURL('image/png'));
-      const d=getData();data.set('instructions',`Režim návrhu: ${automatic?'Automatický test celé fotografie. Zachovej stávající stavby, plot, cesty a perspektivu.':'Pokročilé úpravy označených ploch.'}; Lokalita: ${d['mg-locality']||'neuvedena'}; půda: ${d['mg-soil']}; vlhkost: ${d['mg-water']}; plán rostlin: ${lastPlan?lastPlan.items.filter(x=>x.kind==='rostlina').map(x=>x.name+' ('+x.latin+') '+x.quantity+' ks').join(', '):'nesestaven'}; Materiály: ${lastPlan?lastPlan.items.filter(x=>x.kind==='materiál').map(x=>x.name+' '+x.quantity+' '+x.unitName).join(', '):'neuvedeny'}; Nepřidávej jiné druhy rostlin ani jiný povrchový mulč; substrát je pod povrchem a nemá být viditelný; Varianta návrhu: ${variantOptions[d['mg-variant']]?.label||variantOptions.B.label}. ${variantOptions[d['mg-variant']]?.ai||variantOptions.B.ai} Zvolená konkrétní preference: ${tailoredChoice}. Respektuj ji, pokud neodporuje podmínkám a rozpočtu. Rozpočet je orientační horní limit ${d['mg-max']} Kč včetně materiálů a práce, nenavrhuj nepřiměřeně nákladné řešení. Styl: ${d['mg-style']}; slunce: ${d['mg-sun']}; realizace: ${d['mg-build']}; údržba: ${d['mg-maint']}; přání: ${d['mg-notes']||'Přirozená, udržovatelná zahrada'}`);
+      data.set('image',prepared.image);data.set('mask',prepared.mask);
+      const d=getData();data.set('instructions',`Upravuj výhradně plochu zahrady v průhledné části masky. Lokalita: ${d['mg-locality']||'neuvedena'}; půda: ${d['mg-soil']}; vlhkost: ${d['mg-water']}; plán rostlin: ${lastPlan?lastPlan.items.filter(x=>x.kind==='rostlina').map(x=>x.name+' ('+x.latin+') '+x.quantity+' ks').join(', '):'nesestaven'}; Materiály: ${lastPlan?lastPlan.items.filter(x=>x.kind==='materiál').map(x=>x.name+' '+x.quantity+' '+x.unitName).join(', '):'neuvedeny'}; Nepřidávej jiné druhy rostlin ani jiný povrchový mulč; substrát je pod povrchem a nemá být viditelný; Varianta návrhu: ${variantOptions[d['mg-variant']]?.label||variantOptions.B.label}. ${variantOptions[d['mg-variant']]?.ai||variantOptions.B.ai} Zvolená konkrétní preference: ${tailoredChoice}. Rozpočet je orientační horní limit ${d['mg-max']} Kč včetně materiálů a práce, nenavrhuj nepřiměřeně nákladné řešení. Styl: ${d['mg-style']}; slunce: ${d['mg-sun']}; údržba: ${d['mg-maint']}; přání: ${d['mg-notes']||'Přirozená, udržovatelná zahrada'}`);
       const response=await fetch(aiConfig.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});
       const json=await response.json();if(!json.success||!json.data?.image)throw new Error(json.data?.message||'AI návrh se nepodařilo vytvořit.');
-      // Hard-lock all unedited areas to the ORIGINAL photo, independent of model compliance.
       const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=json.data.image});
-      const composite=document.createElement('canvas');composite.width=canvas.width;composite.height=canvas.height;
-      const cc=composite.getContext('2d');cc.drawImage(original,0,0);
-      cc.save();cc.beginPath();edits.forEach(a=>{cc.moveTo(a.points[0].x,a.points[0].y);a.points.slice(1).forEach(pt=>cc.lineTo(pt.x,pt.y));cc.closePath()});cc.clip();cc.drawImage(aiPhoto,0,0,composite.width,composite.height);cc.restore();
-      // Restore protected green regions even when overlapping red/blue shapes.
-      cc.save();cc.beginPath();(automatic?[]:areas.filter(a=>a.tool==='keep'&&a.points?.length>=3)).forEach(a=>{cc.moveTo(a.points[0].x,a.points[0].y);a.points.slice(1).forEach(pt=>cc.lineTo(pt.x,pt.y));cc.closePath()});cc.clip();cc.drawImage(original,0,0);cc.restore();
-      const finalImage=composite.toDataURL('image/png');
+      // Rules 3–4: undo padding, reject a re-drawn scene, hard-lock everything outside the mask.
+      const done=S.finish(original,editMask,aiPhoto,prepared.box);
+      if(!done.ok)throw new Error('AI změnila i části, které měly zůstat beze změny (odchylka '+Math.round(done.drift)+'). Výsledek nebyl použit. Zkuste prosím zmenšit označenou plochu.');
+      const finalImage=done.canvas.toDataURL('image/png');
       result.replaceChildren();
       const comparison=document.createElement('div');comparison.className='mg-before-after';comparison.setAttribute('aria-label','Porovnání původní fotografie a AI návrhu');
       const before=document.createElement('img');before.src=original.toDataURL('image/png');before.alt='Před úpravou – původní zahrada';before.className='mg-before-image';
@@ -997,7 +1000,7 @@ if(aiConfig.enabled){
       const labels=document.createElement('div');labels.className='mg-comparison-labels';labels.innerHTML='<span>PŘED</span><span>PO – AI NÁVRH</span>';
       const range=document.createElement('input');range.type='range';range.min='0';range.max='100';range.value='50';range.className='mg-comparison-range';range.setAttribute('aria-label','Posunout hranici porovnání před a po');range.addEventListener('input',()=>comparison.style.setProperty('--mg-reveal',range.value+'%'));
       comparison.append(after,before,labels,range);result.append(comparison);
-      const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání stejné zahrady před úpravou a po AI návrhu. Testovací vizualizace vyžaduje kontrolu zachování staveb, proporcí a realismu.';result.append(note);
+      const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';result.append(note);
       const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
     }catch(err){result.textContent='Chyba: '+err.message;}finally{aiButton.disabled=false;}
   });

@@ -1,0 +1,259 @@
+/*
+ * MVGreen – pravidla bezpečné AI úpravy fotografie.
+ *
+ * 1) Fotka se nikdy neořezává ani nedeformuje: doplní se okraji na poměr stran, se kterým AI pracuje,
+ *    a po úpravě se okraje zase odříznou.
+ * 2) AI smí měnit jen odemčenou masku (zahradu). Okraje, dům, plot, obloha atd. zůstávají zamčené.
+ * 3) Po návratu se mimo masku vždy vrátí původní pixely (tvrdý zámek).
+ * 4) Kontrola posunu scény: když AI změní zamčené části víc, než je přípustné, výsledek se odmítne.
+ * 5) Automatický návrh masky: zelené plochy spojené se zemí pod linií horizontu, zákazník je může upravit štětcem.
+ */
+(function () {
+  'use strict';
+
+  var SIZES = [[1536, 1024], [1024, 1536], [1024, 1024]];
+  var MAX_EDITABLE = 0.7;   // nikdy neodemknout víc než 70 % fotky
+  var MIN_EDITABLE = 0.02;  // a aspoň 2 %
+  var MAX_DRIFT = 22;       // průměrná odchylka (0–255) v zamčených částech, nad níž je výsledek nepoužitelný
+
+  function pickSize(w, h) {
+    var r = w / h;
+    var best = SIZES[0], bestDiff = Infinity;
+    SIZES.forEach(function (s) {
+      var d = Math.abs(Math.log((s[0] / s[1]) / r));
+      if (d < bestDiff) { bestDiff = d; best = s; }
+    });
+    return best;
+  }
+
+  /** Letterbox: places the photo into an API-sized canvas without cropping. Returns geometry to undo it. */
+  function fitBox(w, h) {
+    var size = pickSize(w, h);
+    var scale = Math.min(size[0] / w, size[1] / h);
+    var dw = Math.round(w * scale), dh = Math.round(h * scale);
+    return { W: size[0], H: size[1], x: Math.floor((size[0] - dw) / 2), y: Math.floor((size[1] - dh) / 2), w: dw, h: dh };
+  }
+
+  function canvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+
+  /**
+   * editMask: canvas same size as the photo; alpha>0 (any opaque paint) = EDITABLE area.
+   * Returns { image, mask, box, coverage } with PNG data URLs ready for the API.
+   * API mask convention: transparent = editable, opaque = protected.
+   */
+  function prepare(photo, editMask) {
+    var w = photo.width, h = photo.height, box = fitBox(w, h);
+    var img = canvas(box.W, box.H), ic = img.getContext('2d');
+    // Neutral edge fill keeps padding from looking like content.
+    ic.fillStyle = '#7f8a80'; ic.fillRect(0, 0, box.W, box.H);
+    ic.drawImage(photo, box.x, box.y, box.w, box.h);
+
+    var m = canvas(box.W, box.H), mc = m.getContext('2d');
+    mc.fillStyle = '#fff'; mc.fillRect(0, 0, box.W, box.H);
+    // Scale the editable mask into place and punch it out (destination-out → transparent = editable).
+    var scaled = canvas(box.W, box.H), sc = scaled.getContext('2d');
+    sc.drawImage(editMask, box.x, box.y, box.w, box.h);
+    mc.globalCompositeOperation = 'destination-out';
+    mc.drawImage(scaled, 0, 0);
+    mc.globalCompositeOperation = 'source-over';
+
+    var coverage = editableShare(editMask);
+    return { image: img.toDataURL('image/png'), mask: m.toDataURL('image/png'), box: box, coverage: coverage };
+  }
+
+  function editableShare(editMask) {
+    var d = editMask.getContext('2d').getImageData(0, 0, editMask.width, editMask.height).data, n = 0, t = 0;
+    for (var i = 3; i < d.length; i += 16) { t++; if (d[i] > 127) n++; }
+    return t ? n / t : 0;
+  }
+
+  function validate(coverage) {
+    if (coverage < MIN_EDITABLE) return 'Označte prosím na fotografii plochu zahrady, kterou chcete upravit.';
+    if (coverage > MAX_EDITABLE) return 'Upravovaná plocha je příliš velká. Ponechte dům, plot, stromy a oblohu mimo označení.';
+    return '';
+  }
+
+  /** Crops the AI image back to the photo, checks drift in protected parts, and hard-locks them. */
+  function finish(photo, editMask, aiImage, box) {
+    var w = photo.width, h = photo.height;
+    var back = canvas(w, h), bc = back.getContext('2d');
+    bc.drawImage(aiImage, box.x * aiImage.width / box.W, box.y * aiImage.height / box.H,
+      box.w * aiImage.width / box.W, box.h * aiImage.height / box.H, 0, 0, w, h);
+
+    var o = photo.getContext('2d').getImageData(0, 0, w, h).data;
+    var a = bc.getImageData(0, 0, w, h);
+    var ad = a.data;
+    var md = editMask.getContext('2d').getImageData(0, 0, w, h).data;
+    var sum = 0, cnt = 0;
+    for (var i = 0; i < ad.length; i += 4) {
+      if (md[i + 3] > 127) continue;
+      if ((i >> 2) % 7 === 0) {
+        sum += (Math.abs(ad[i] - o[i]) + Math.abs(ad[i + 1] - o[i + 1]) + Math.abs(ad[i + 2] - o[i + 2])) / 3;
+        cnt++;
+      }
+    }
+    var drift = cnt ? sum / cnt : 0;
+
+    // Soft 6 px feather on the mask edge, then original pixels everywhere outside it.
+    var feather = canvas(w, h), fc = feather.getContext('2d');
+    fc.filter = 'blur(3px)'; fc.drawImage(editMask, 0, 0); fc.filter = 'none';
+    var fd = fc.getImageData(0, 0, w, h).data;
+    for (var j = 0; j < ad.length; j += 4) {
+      var k = fd[j + 3] / 255;
+      ad[j] = Math.round(ad[j] * k + o[j] * (1 - k));
+      ad[j + 1] = Math.round(ad[j + 1] * k + o[j + 1] * (1 - k));
+      ad[j + 2] = Math.round(ad[j + 2] * k + o[j + 2] * (1 - k));
+      ad[j + 3] = 255;
+    }
+    bc.putImageData(a, 0, 0);
+    return { canvas: back, drift: drift, ok: drift <= MAX_DRIFT };
+  }
+
+  /**
+   * Automatic garden mask: greens and browns below a horizon line, cleaned up.
+   * horizon: 0–1 share of height from the top; everything above it stays protected.
+   */
+  function autoMask(photo, horizon) {
+    var w = photo.width, h = photo.height;
+    var m = canvas(w, h), mc = m.getContext('2d');
+    var src = photo.getContext('2d').getImageData(0, 0, w, h).data;
+    var out = mc.createImageData(w, h), od = out.data;
+    var top = Math.round(h * horizon);
+    for (var y = top; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        var i = (y * w + x) * 4, r = src[i], g = src[i + 1], b = src[i + 2];
+        var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, s = max - min;
+        var green = g >= r && g > b + 8 && s > 18 && l > 30 && l < 220;
+        // Soil colours match brick facades in dull light, so only vegetation is pre-selected; the customer
+        // adds bare soil, gravel or mulch with the brush.
+        if (green) od[i + 3] = 255;
+      }
+    }
+    mc.putImageData(out, 0, 0);
+    // Smooth holes and specks: blur + threshold twice.
+    for (var pass = 0; pass < 2; pass++) {
+      var t = canvas(w, h), tc = t.getContext('2d');
+      tc.filter = 'blur(' + Math.max(2, Math.round(w / 220)) + 'px)'; tc.drawImage(m, 0, 0); tc.filter = 'none';
+      var td = tc.getImageData(0, 0, w, h);
+      for (var k = 3; k < td.data.length; k += 4) td.data[k] = td.data[k] > (pass ? 110 : 140) ? 255 : 0;
+      mc.clearRect(0, 0, w, h); mc.putImageData(td, 0, 0);
+    }
+    // Keep only regions connected to the bottom edge (the ground the photographer stands on).
+    keepGrounded(mc, w, h);
+    // Paint colour is irrelevant; only alpha counts.
+    mc.globalCompositeOperation = 'source-in'; mc.fillStyle = '#1b9c55'; mc.fillRect(0, 0, w, h);
+    mc.globalCompositeOperation = 'source-over';
+    return m;
+  }
+
+  function keepGrounded(mc, w, h) {
+    var img = mc.getImageData(0, 0, w, h), d = img.data, seen = new Uint8Array(w * h), stack = [];
+    for (var x = 0; x < w; x++) {
+      for (var y = h - 1; y >= h - 3; y--) { var i = y * w + x; if (d[i * 4 + 3] > 127 && !seen[i]) { seen[i] = 1; stack.push(i); } }
+    }
+    while (stack.length) {
+      var p = stack.pop(), px = p % w, py = (p / w) | 0;
+      var nb = [px > 0 ? p - 1 : -1, px < w - 1 ? p + 1 : -1, py > 0 ? p - w : -1, py < h - 1 ? p + w : -1];
+      for (var k = 0; k < 4; k++) { var q = nb[k]; if (q >= 0 && !seen[q] && d[q * 4 + 3] > 127) { seen[q] = 1; stack.push(q); } }
+    }
+    for (var j = 0; j < w * h; j++) if (!seen[j]) d[j * 4 + 3] = 0;
+    mc.putImageData(img, 0, 0);
+  }
+
+  /** Mask from polygons: change/remove areas editable, keep areas protected on top. */
+  function polygonMask(w, h, editAreas, keepAreas) {
+    var m = canvas(w, h), mc = m.getContext('2d');
+    function path(a) { mc.beginPath(); mc.moveTo(a.points[0].x, a.points[0].y); a.points.slice(1).forEach(function (p) { mc.lineTo(p.x, p.y); }); mc.closePath(); }
+    mc.fillStyle = '#1b9c55';
+    editAreas.forEach(function (a) { if (a.points && a.points.length >= 3) { path(a); mc.fill(); } });
+    mc.globalCompositeOperation = 'destination-out';
+    (keepAreas || []).forEach(function (a) { if (a.points && a.points.length >= 3) { path(a); mc.fill(); } });
+    mc.globalCompositeOperation = 'source-over';
+    return m;
+  }
+
+  /**
+   * Full-screen confirmation of the automatic mask. Resolves with the final mask canvas or null.
+   * The customer sees which parts may change and can widen/narrow them with a brush.
+   */
+  function confirmMask(photo, initialHorizon) {
+    return new Promise(function (resolve) {
+      var horizon = initialHorizon == null ? 0.42 : initialHorizon;
+      var mask = autoMask(photo, horizon);
+      var ov = document.createElement('div');
+      ov.className = 'mg-mask-overlay';
+      ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Potvrzení upravované plochy');
+      ov.innerHTML =
+        '<div class="mg-mask-box">' +
+        '<div class="mg-mask-head"><strong>Které části zahrady se smí změnit?</strong>' +
+        '<span>Zeleně zvýrazněnou plochu AI upraví. Dům, plot, stromy a obloha zůstanou přesně jako na vaší fotce.</span></div>' +
+        '<div class="mg-mask-stage"><canvas></canvas></div>' +
+        '<div class="mg-mask-tools">' +
+        '<label class="mg-mask-horizon">Hranice zahrady<input type="range" min="10" max="85" step="1"></label>' +
+        '<div class="mg-mask-brush" role="group" aria-label="Štětec">' +
+        '<button type="button" data-brush="add" aria-pressed="false">＋ Přidat plochu</button>' +
+        '<button type="button" data-brush="erase" aria-pressed="false">− Odebrat plochu</button>' +
+        '</div>' +
+        '<span class="mg-mask-share" aria-live="polite"></span>' +
+        '</div>' +
+        '<div class="mg-mask-actions"><button type="button" data-act="cancel">Zpět</button><button type="button" data-act="ok" class="mg-primary">Potvrdit plochu</button></div>' +
+        '</div>';
+      document.body.appendChild(ov);
+      var cv = ov.querySelector('canvas'), cx = cv.getContext('2d');
+      cv.width = photo.width; cv.height = photo.height;
+      var range = ov.querySelector('input[type=range]'); range.value = Math.round(horizon * 100);
+      var share = ov.querySelector('.mg-mask-share');
+      var brush = '';
+
+      function render() {
+        cx.clearRect(0, 0, cv.width, cv.height);
+        cx.drawImage(photo, 0, 0);
+        var tint = canvas(cv.width, cv.height), tc = tint.getContext('2d');
+        tc.drawImage(mask, 0, 0);
+        tc.globalCompositeOperation = 'source-in'; tc.fillStyle = 'rgba(40,200,110,0.45)'; tc.fillRect(0, 0, cv.width, cv.height);
+        cx.drawImage(tint, 0, 0);
+        // Dim the protected part slightly so the difference is obvious.
+        var dim = canvas(cv.width, cv.height), dc = dim.getContext('2d');
+        dc.fillStyle = 'rgba(10,20,15,0.35)'; dc.fillRect(0, 0, cv.width, cv.height);
+        dc.globalCompositeOperation = 'destination-out'; dc.drawImage(mask, 0, 0);
+        cx.drawImage(dim, 0, 0);
+        var c = editableShare(mask), msg = validate(c);
+        share.textContent = 'Upravuje se ' + Math.round(c * 100) + ' % fotky' + (msg ? ' – ' + msg : '');
+        share.classList.toggle('is-bad', !!msg);
+        ov.querySelector('[data-act=ok]').disabled = !!msg;
+      }
+      range.addEventListener('input', function () { mask = autoMask(photo, range.value / 100); render(); });
+      ov.querySelectorAll('[data-brush]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          brush = brush === b.dataset.brush ? '' : b.dataset.brush;
+          ov.querySelectorAll('[data-brush]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.brush === brush)); });
+          cv.style.cursor = brush ? 'crosshair' : 'default';
+        });
+      });
+      var painting = false;
+      function paint(e) {
+        if (!brush) return;
+        var r = cv.getBoundingClientRect();
+        var x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height;
+        var mc = mask.getContext('2d'), rad = Math.max(10, cv.width / 30);
+        mc.globalCompositeOperation = brush === 'erase' ? 'destination-out' : 'source-over';
+        mc.fillStyle = '#1b9c55'; mc.beginPath(); mc.arc(x, y, rad, 0, Math.PI * 2); mc.fill();
+        mc.globalCompositeOperation = 'source-over';
+        render();
+      }
+      cv.addEventListener('pointerdown', function (e) { if (!brush) return; painting = true; try { cv.setPointerCapture(e.pointerId); } catch (er) {} paint(e); });
+      cv.addEventListener('pointermove', function (e) { if (painting) paint(e); });
+      ['pointerup', 'pointercancel'].forEach(function (ev) { cv.addEventListener(ev, function () { painting = false; }); });
+      function close(v) { ov.remove(); resolve(v); }
+      ov.querySelector('[data-act=cancel]').addEventListener('click', function () { close(null); });
+      ov.querySelector('[data-act=ok]').addEventListener('click', function () { close(mask); });
+      render();
+    });
+  }
+
+  window.MVGreenAISafety = {
+    prepare: prepare, finish: finish, validate: validate, autoMask: autoMask,
+    polygonMask: polygonMask, confirmMask: confirmMask, editableShare: editableShare,
+    limits: { MAX_EDITABLE: MAX_EDITABLE, MIN_EDITABLE: MIN_EDITABLE, MAX_DRIFT: MAX_DRIFT }
+  };
+})();
