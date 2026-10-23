@@ -18,7 +18,8 @@ function mvgreen_poptavka_services() {
 }
 
 function mvgreen_poptavka_recipient() {
-    return apply_filters('mvgreen_poptavka_recipient', get_option('admin_email'));
+    // Inquiries go to the business mailbox, not the WordPress admin e-mail.
+    return apply_filters('mvgreen_poptavka_recipient', get_option('mvgreen_poptavka_email', 'mvgreen@seznam.cz'));
 }
 
 add_action('init', function () {
