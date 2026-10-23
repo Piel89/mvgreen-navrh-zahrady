@@ -124,3 +124,11 @@
  body.mvg-has-callbar{padding-bottom:84px}
 }
 @media (prefers-reduced-motion:reduce){.mvg-photos img,.mvg-ba__knob{transition:none}}
+/* Ceník – čisté řádky bez rámečků šablony (Astra přidává vlastní okraje tabulek). */
+.mvg-site .mvg-price table,.mvg-site .mvg-price tbody,.mvg-site .mvg-price tr,.mvg-site .mvg-price td{border:0!important;background:none!important;margin:0}
+.mvg-site .mvg-price table{width:100%;border-collapse:separate!important;border-spacing:0;font-size:15px;table-layout:auto}
+.mvg-site .mvg-price tr+tr td{border-top:1px dashed #dbe6dd!important}
+.mvg-site .mvg-price td{padding:12px 0!important;vertical-align:baseline;color:#2b4434;line-height:1.4}
+.mvg-site .mvg-price td:last-child{text-align:right;font-weight:800;color:#156333;white-space:nowrap;padding-left:18px!important}
+.mvg-site .mvg-price tr:hover td{color:#0f3d27}
+.mvg-site .mvg-price .mvg-note{margin-top:auto!important;padding:12px 14px;border-radius:10px;background:#f4f9f5}

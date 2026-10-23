@@ -2048,3 +2048,8 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-plan-offer p{color:#dfeee4;margin:6px 0 12px}
 .mvgreen-designer .mg-plan-offer a{color:#fff;font-weight:700}
 .mvgreen-designer .mg-plan-offer a.mg-primary{display:inline-block;background:#3fbf6f;color:#06270f;padding:10px 16px;border-radius:9px;text-decoration:none;margin-right:10px}
+/* Tabulky v návrhu – bez rámečků šablony. */
+.mvgreen-designer .mg-plan-legend,.mvgreen-designer .mg-plan-legend th,.mvgreen-designer .mg-plan-legend td,.mvgreen-designer .mg-plan-legend tr{border:0!important}
+.mvgreen-designer .mg-plan-legend{border-collapse:separate!important;border-spacing:0;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px #e3ebe3}
+.mvgreen-designer .mg-plan-legend tbody tr+tr td,.mvgreen-designer .mg-plan-legend tbody tr+tr th,.mvgreen-designer .mg-plan-legend tfoot th{border-top:1px solid #edf2ee!important}
+.mvgreen-designer .mg-plan-legend thead th{border-bottom:1px solid #e3ebe3!important}
