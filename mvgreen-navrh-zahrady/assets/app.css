@@ -2032,3 +2032,10 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-plan-totals{font-weight:700;color:#0f3d27;margin:8px 0}
 .mvgreen-designer .mg-angle-img{display:block;width:100%;border-radius:10px;margin-top:10px}
 @media (max-width:640px){.mvgreen-designer .mg-plan-legend{font-size:12px}.mvgreen-designer .mg-plan-legend th:nth-child(3),.mvgreen-designer .mg-plan-legend td:nth-child(3){white-space:nowrap}}
+.mvgreen-designer .mg-plan-photo{display:block;width:100%;border-radius:10px;margin:6px 0 14px}
+.mvgreen-designer .mg-plan-beds{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:10px}
+.mvgreen-designer .mg-plan-beds li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid #e3ebe3;border-radius:10px;background:#f8fbf8;font-size:14px;line-height:1.5}
+.mvgreen-designer .mg-plan-beds small{color:#5a6f61}
+.mvgreen-designer .mg-plan-box h5{margin:16px 0 4px;font-size:15px;color:#0f3d27}
+.mvgreen-designer .mg-plan-details{margin-top:14px}
+.mvgreen-designer .mg-plan-details summary{cursor:pointer;font-weight:700;color:#156333}

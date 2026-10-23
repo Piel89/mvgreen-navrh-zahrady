@@ -32,8 +32,23 @@
    * opts: {width, length} zadané zákazníkem (mají přednost), title
    * Vrací {svg, legend:[...], totals}
    */
+  /** Grid 0–100 expected; models sometimes answer in metres – rescale those. Beds get stable numbers. */
+  function prepare(plan) {
+    if (plan._ready) return plan;
+    var W = +(plan.site && plan.site.width_m) || 0, D = +(plan.site && plan.site.depth_m) || 0, mx = 0, my = 0;
+    (plan.elements || []).forEach(function (e) { (e.polygon || []).forEach(function (p) { mx = Math.max(mx, +p[0] || 0); my = Math.max(my, +p[1] || 0); }); });
+    if (W && D && mx <= W + 0.5 && my <= D + 0.5 && Math.max(mx, my) <= 60) {
+      (plan.elements || []).forEach(function (e) { e.polygon = (e.polygon || []).map(function (p) { return [p[0] / W * 100, p[1] / D * 100]; }); });
+    }
+    var n = 0;
+    (plan.elements || []).forEach(function (e) { if (e.type === 'bed' && e.polygon && e.polygon.length >= 3) e._no = ++n; });
+    plan._ready = true;
+    return plan;
+  }
+
   function build(plan, opts) {
     opts = opts || {};
+    prepare(plan);
     var W = +opts.width > 0 ? +opts.width : Math.max(3, +(plan.site && plan.site.width_m) || 15);
     var D = +opts.length > 0 ? +opts.length : Math.max(3, +(plan.site && plan.site.depth_m) || 10);
     var measured = +opts.width > 0 && +opts.length > 0;
@@ -77,7 +92,7 @@
       shapes += '<polygon points="' + p.map(function (q) { return X(q[0]) + ',' + Y(q[1]); }).join(' ') + '" fill="' + (fillOf[e.type] || st.fill) + '" stroke="' + st.stroke + '" stroke-width="' + (e.type === 'bed' ? 2 : 1.5) + '" stroke-linejoin="round"/>';
       if (e.type === 'lawn') totals.lawn += a;
       if (e.type === 'bed') {
-        bedNo++; totals.bed += a;
+        bedNo = e._no || bedNo + 1; totals.bed += a;
         (e.plants || []).forEach(function (pl) { totals.plants += +pl.count || 0; });
         labels += '<g><circle cx="' + X(cen[0]) + '" cy="' + Y(cen[1]) + '" r="13" fill="#0f3d27" stroke="#fff" stroke-width="2"/><text x="' + X(cen[0]) + '" y="' + (+Y(cen[1]) + 4.5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">' + bedNo + '</text></g>';
         legend.push({ no: bedNo, type: st.name, label: e.label || ('Záhon ' + bedNo), area: fmtM2(a), plants: e.plants || [], isNew: e.is_new !== false });
@@ -122,5 +137,48 @@
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
 
-  window.MVGreenPlan = { build: build, legendHtml: legendHtml, downloadPng: downloadPng };
+  /** Numbered markers drawn straight into the design photo (main deliverable for non-gardeners). */
+  function annotatePhoto(src, plan) {
+    prepare(plan);
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        var x = c.getContext('2d'); x.drawImage(img, 0, 0);
+        var r = Math.max(16, Math.round(c.width / 55));
+        (plan.elements || []).forEach(function (e) {
+          if (!e._no || !e.photo_point || e.photo_point.length < 2) return;
+          var px = clamp(e.photo_point[0]) / 100 * c.width, py = clamp(e.photo_point[1]) / 100 * c.height;
+          x.beginPath(); x.arc(px, py, r * 1.25, 0, Math.PI * 2); x.fillStyle = 'rgba(255,255,255,.9)'; x.fill();
+          x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fillStyle = '#0f3d27'; x.fill();
+          x.fillStyle = '#fff'; x.font = '700 ' + Math.round(r * 1.15) + 'px Inter, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+          x.fillText(String(e._no), px, py + r * 0.06);
+        });
+        resolve(c.toDataURL('image/jpeg', 0.9));
+      };
+      img.onerror = function () { reject(new Error('Obrázek se nepodařilo načíst.')); };
+      img.src = src;
+    });
+  }
+
+  /** Beds with their plants (matches the numbers in the photo) + one combined shopping list. */
+  function bedsHtml(plan, opts) {
+    var r = build(plan, opts || {});
+    var beds = r.legend.filter(function (l) { return l.no; });
+    var shop = {};
+    (plan.elements || []).forEach(function (e) {
+      if (!e.is_new) return;
+      (e.plants || []).forEach(function (p) { var k = String(p.name || '').trim(); if (k) shop[k] = (shop[k] || 0) + (+p.count || 0); });
+    });
+    var bedRows = beds.map(function (l) {
+      return '<li><span class="mg-plan-no">' + l.no + '</span><div><strong>' + esc(l.label) + '</strong> <small>≈ ' + esc(l.area) + '</small><br>' +
+        (l.plants.length ? l.plants.map(function (p) { return esc(p.name) + ' – ' + (+p.count || 0) + ' ks'; }).join(', ') : 'bez výsadby') + '</div></li>';
+    }).join('');
+    var shopRows = Object.keys(shop).sort().map(function (k) { return '<tr><td>' + esc(k) + '</td><td>' + shop[k] + ' ks</td></tr>'; }).join('');
+    return (bedRows ? '<ol class="mg-plan-beds">' + bedRows + '</ol>' : '<p class="mg-note">Na fotografii nejsou žádné nové záhony.</p>') +
+      (shopRows ? '<h5>🛒 Nákupní seznam rostlin</h5><table class="mg-plan-legend"><tbody>' + shopRows + '</tbody></table>' : '') +
+      '<p class="mg-note">Počty kusů jsou orientační podle velikosti záhonů na fotografii. Přesné množství upřesníme při zaměření na místě.</p>';
+  }
+
+  window.MVGreenPlan = { build: build, legendHtml: legendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare };
 })();

@@ -989,19 +989,25 @@ function mgScaled(src,maxW,type,quality){return new Promise((res,rej)=>{const i=
 async function mgAjax(action,fields){const ai=window.MVGreenAI||{};const data=new URLSearchParams();data.set('action',action);data.set('nonce',ai.nonce);Object.entries(fields).forEach(([k,v])=>data.set(k,v==null?'':String(v)));const r=await fetch(ai.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});const j=await r.json().catch(()=>({}));if(!j.success)throw new Error(j.data?.message||'Požadavek se nezdařil.');return j.data}
 async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d){
   const P=window.MVGreenPlan;
-  const planBox=document.createElement('section');planBox.className='mg-plan-box';planBox.innerHTML='<h4>📐 Půdorys zahrady</h4><p class="mg-note">Převádíme návrh na pohled shora…</p>';host.append(planBox);
+  const planBox=document.createElement('section');planBox.className='mg-plan-box';planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><p class="mg-note">Připravujeme seznam záhonů a rostlin…</p>';host.append(planBox);
   let planText='';
   try{
     if(!P)throw new Error('Chybí modul půdorysu. Obnovte stránku.');
     const img=await mgScaled(finalImage,1280,'image/jpeg',0.86),bef=await mgScaled(beforeImage,768,'image/jpeg',0.7);
     const res=await mgAjax('mvgreen_ai_plan',{image:img,before:bef,plants:(brief?.plants||[]).map(p=>p.name+(p.latin?' ('+p.latin+')':'')).join('; '),style:(styleChoices[d['mg-style-card']]?.name||''),width:d['mg-width'],length:d['mg-length']});
-    const built=P.build(res.plan,{width:d['mg-width'],length:d['mg-length']});
+    const dims={width:d['mg-width'],length:d['mg-length']};
+    const built=P.build(res.plan,dims);
     planText=(res.plan.elements||[]).map(e=>e.label+' ('+e.type+')').join(', ');
-    planBox.innerHTML='<h4>📐 Půdorys zahrady</h4><div class="mg-plan-svg">'+built.svg+'</div>'+P.legendHtml(built);
-    const dl=document.createElement('button');dl.type='button';dl.textContent='⬇ Stáhnout půdorys (PNG)';dl.addEventListener('click',()=>P.downloadPng(built.svg,'mvgreen-pudorys.png'));planBox.append(dl);
-  }catch(e){planBox.innerHTML='<h4>📐 Půdorys zahrady</h4><p class="mg-note">Půdorys se nepodařilo vytvořit: '+String(e.message).replace(/[<>&]/g,'')+'</p>'}
+    const numbered=await P.annotatePhoto(finalImage,res.plan);
+    planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><img class="mg-plan-photo" alt="Návrh s očíslovanými záhony" src="'+numbered+'">'+P.bedsHtml(res.plan,dims)+
+      '<details class="mg-plan-details"><summary>📐 Orientační půdorys (pohled shora)</summary><div class="mg-plan-svg">'+built.svg+'</div>'+P.legendHtml(built)+'</details>';
+    const row=document.createElement('div');row.className='mg-actions';
+    const dl1=document.createElement('a');dl1.href=numbered;dl1.download='mvgreen-navrh-cisla.jpg';dl1.textContent='⬇ Uložit fotku s čísly';dl1.className='mg-ai-download';
+    const dl2=document.createElement('button');dl2.type='button';dl2.textContent='⬇ Stáhnout půdorys (PNG)';dl2.addEventListener('click',()=>P.downloadPng(built.svg,'mvgreen-pudorys.png'));
+    row.append(dl1,dl2);planBox.append(row);
+  }catch(e){planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><p class="mg-note">Seznam záhonů se nepodařilo vytvořit: '+String(e.message).replace(/[<>&]/g,'')+'</p>'}
   const angles=document.createElement('section');angles.className='mg-angle-box';
-  angles.innerHTML='<h4>🔭 Jiný pohled na stejný návrh</h4><p class="mg-note">Ilustrační pohled – AI smí mírně změnit úhel kamery, proporce domu a zahrady zůstávají. Každý pohled je další placený AI pokus.</p><div class="mg-actions"><button type="button" data-view="raised">Mírně vyšší pohled</button><button type="button" data-view="aerial">Ptačí perspektiva</button></div><div class="mg-angle-out"></div>';
+  angles.innerHTML='<h4>🔭 Jiný pohled (jen pro správce)</h4><p class="mg-note">Ilustrační pohled – AI smí mírně změnit úhel kamery, proporce domu a zahrady zůstávají. Každý pohled je další placený AI pokus.</p><div class="mg-actions"><button type="button" data-view="raised">Mírně vyšší pohled</button><button type="button" data-view="aerial">Ptačí perspektiva</button></div><div class="mg-angle-out"></div>';
   host.append(angles);
   angles.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',async()=>{
     const out=angles.querySelector('.mg-angle-out');

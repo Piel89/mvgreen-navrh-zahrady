@@ -25,11 +25,12 @@ function mvgreen_plan_schema() {
                 'type' => 'array',
                 'items' => [
                     'type' => 'object', 'additionalProperties' => false,
-                    'required' => ['type', 'label', 'polygon', 'plants', 'is_new'],
+                    'required' => ['type', 'label', 'polygon', 'photo_point', 'plants', 'is_new'],
                     'properties' => [
                         'type' => ['type' => 'string', 'enum' => ['house', 'terrace', 'lawn', 'bed', 'path', 'gravel', 'fence', 'hedge', 'tree', 'shrub', 'slope', 'other']],
                         'label' => ['type' => 'string'],
                         'polygon' => ['type' => 'array', 'items' => $point, 'description' => 'Body v mřížce 0–100 (x zleva doprava, y od domu dolů k fotografovi). Strom/keř = 1 bod.'],
+                        'photo_point' => ['type' => 'array', 'items' => ['type' => 'number'], 'description' => 'Kde je střed prvku na fotografii PO: [x, y] v procentech 0–100 šířky a výšky fotky.'],
                         'is_new' => ['type' => 'boolean', 'description' => 'true = nový prvek z návrhu, false = stávající'],
                         'plants' => [
                             'type' => 'array',
@@ -70,16 +71,18 @@ add_action('wp_ajax_mvgreen_ai_plan', function () {
 
     $dims = ($width > 0 && $length > 0) ? "Zákazník zadal rozměry upravované plochy: šířka {$width} m, hloubka {$length} m – použij je." : 'Rozměry nejsou zadané – odhadni je podle domu (běžné okno ~1,2 m, dveře ~2,1 m, podlaží ~2,8 m).';
     $prompt = "Jsi zahradní architekt. Dostáváš fotografii zahrady PO realizaci návrhu" . ($before ? ' a pro srovnání i PŘED' : '') . ". "
-        . "Převeď zahradu na PŮDORYS (pohled shora). Dům je nahoře (y=0), fotograf dole (y=100), x zleva doprava 0–100 tak, jak to vidí fotograf. "
-        . "Zakresli: dům (jen pruh u horního okraje), terasu, trávník, každý záhon zvlášť jako polygon, cesty, plot, stávající stromy a velké keře (1 bod). "
-        . "Polygony se nesmí překrývat kromě stromů. Zachovej skutečné poměry a polohu prvků z fotografie – nic si nevymýšlej, co na fotce není. "
-        . "U každého NOVÉHO záhonu uveď rostliny a reálný počet kusů pro jeho plochu (trvalky 5–7 ks/m², traviny 3–5 ks/m², keře 1 ks/1–2 m²). "
+        . "1) U KAŽDÉHO prvku urči photo_point = střed prvku na fotografii PO v procentech (x 0–100 zleva, y 0–100 shora). "
+        . "2) Převeď zahradu na PŮDORYS (pohled shora) v mřížce 0–100 – NIKDY ne v metrech: dům nahoře (y=0), fotograf dole (y=100), x zleva doprava tak, jak to vidí fotograf. "
+        . "Zakresli dům (jen pruh u horního okraje), terasu, trávník, cesty, plot, stávající stromy a velké keře (1 bod). "
+        . "ZÁHON (type bed, is_new true) zakresli JEN tam, kde je na fotografii PO skutečně vidět nová výsadba, která na fotce PŘED není. Nic si nevymýšlej. "
+        . "Polygony se nesmí překrývat kromě stromů a keřů. "
+        . "U každého nového záhonu uveď rostliny, které jsou v něm na fotce vidět, a reálný počet kusů pro jeho plochu (trvalky 5–7 ks/m², traviny 3–5 ks/m², keře 1 ks na 1–2 m²). "
         . "Používej jen tyto rostliny z návrhu: {$plants}. Styl: {$style}. {$dims} "
-        . "Popisky česky a krátce (např. „Záhon u terasy“, „Trávník“). Do notes napiš 1–2 věty, co je odhad.";
+        . "Šedé pruhy na okraji obrázku ignoruj. Popisky česky a krátce (např. „Záhon u svahu“, „Trávník“). Do notes napiš 1–2 věty, co je odhad.";
 
     $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $image, 'detail' => 'high']]];
     if ($before) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => 'low']];
-    $model = defined('MVGREEN_OPENAI_PLAN_MODEL') ? MVGREEN_OPENAI_PLAN_MODEL : 'gpt-4.1-mini';
+    $model = defined('MVGREEN_OPENAI_PLAN_MODEL') ? MVGREEN_OPENAI_PLAN_MODEL : 'gpt-4.1';
     $body = [
         'model' => $model,
         'messages' => [['role' => 'user', 'content' => $content]],
