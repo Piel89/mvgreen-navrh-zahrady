@@ -165,8 +165,11 @@
         if (m && m[i + 3] < 128) continue;
         var r = a[i], g = a[i + 1], bl = a[i + 2];
         var diff = (Math.abs(r - b[i]) + Math.abs(g - b[i + 1]) + Math.abs(bl - b[i + 2])) / 3;
-        var lawn = g > r + 10 && g > bl + 10;
-        if (diff > 28 && !lawn) hit[k] = 1;
+        // Nový trávník je hladký a zelený; záhon je pestrý nebo členitý (traviny, keříky, mulč).
+        var xr = (k % W) < W - 1 ? i + 4 : i - 4, yd = k < W * (H - 1) ? i + W * 4 : i - W * 4;
+        var tex = Math.abs(g - a[xr + 1]) + Math.abs(g - a[yd + 1]) + Math.abs(r - a[xr]) + Math.abs(bl - a[yd + 2]);
+        var lawn = g > r + 10 && g > bl + 10 && tex < 30;
+        if (diff > 24 && !lawn) hit[k] = 1;
       }
       // Uzavření: zaplnit mezery mezi rostlinami (rozmazání 3×3 dvakrát).
       for (var pass = 0; pass < 3; pass++) {
@@ -200,7 +203,7 @@
           }
         }
       }
-      comps = comps.filter(function (c) { return c.n >= W * H * 0.006; }).map(function (c) {
+      comps = comps.filter(function (c) { return c.n >= W * H * 0.004; }).map(function (c) {
         // Číslo dát doprostřed obrysu, ale na skutečný pixel záhonu (ne do mezery).
         return { x: c.sx / c.n / W * 100, y: c.sy / c.n / H * 100, share: c.n / (W * H) };
       });
