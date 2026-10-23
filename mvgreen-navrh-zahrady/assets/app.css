@@ -709,7 +709,7 @@ body.mg-designer-modal-open{overflow:hidden!important}
 /* Step 4 — information / budget / conditions. */
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 [data-mg-step="4"]{position:relative}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-reference-details{width:57%!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices{position:absolute;top:78px;left:60%;width:38%;border:1px solid #e5ebe5;border-radius:10px;padding:13px;background:#fff}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices{position:static;float:right;margin:0 0 12px 2%;width:38%;box-sizing:border-box;border:1px solid #e5ebe5;border-radius:10px;padding:13px;background:#fff}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices h4{font-size:14px;margin:0 0 12px;color:#1b3642}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices h4:not(:first-child){margin-top:18px}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-ref-budget-choices button{display:block;width:100%;text-align:left;background:#fff;border:1px solid #d9e5dc;border-radius:7px;margin-bottom:7px;padding:10px;font-size:12px;color:#284b35}
@@ -2014,3 +2014,21 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-chip__dot--purple{background:#8a5cc7}.mvgreen-designer .mg-chip__dot--white{background:#fff}.mvgreen-designer .mg-chip__dot--pink{background:#e889b5}
 .mvgreen-designer .mg-chip__dot--yellow{background:#f2c230}.mvgreen-designer .mg-chip__dot--red{background:#c8382e}.mvgreen-designer .mg-chip__dot--green{background:#3f8f4f}
 @media(max-width:640px){.mvgreen-designer .mg-shoot-guide__cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mg-mask-overlay .mg-mask-hint{display:block;margin-top:6px;padding:8px 12px;border-radius:10px;background:#fff7e0;color:#5a4300;font-size:14px}
+
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-plan{clear:both}
+/* 0.6.50: center the photo in automatic mode (step 3). */
+.mvgreen-designer.mg-automatic-mode .mg-stage{text-align:center}
+.mvgreen-designer.mg-automatic-mode .mg-stage canvas#mg-canvas{display:block;margin-left:auto!important;margin-right:auto!important}
+/* 0.6.50: půdorys a jiné pohledy */
+.mvgreen-designer .mg-plan-box,.mvgreen-designer .mg-angle-box{margin-top:22px;padding:18px;border:1px solid #dce8dd;border-radius:14px;background:#fff}
+.mvgreen-designer .mg-plan-box h4,.mvgreen-designer .mg-angle-box h4{margin:0 0 10px;color:#0f3d27;font-size:18px}
+.mvgreen-designer .mg-plan-svg svg{display:block;width:100%;height:auto;border-radius:10px;border:1px solid #e3ebe3}
+.mvgreen-designer .mg-plan-legend{width:100%;border-collapse:collapse;margin:14px 0 6px;font-size:14px}
+.mvgreen-designer .mg-plan-legend th,.mvgreen-designer .mg-plan-legend td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid #e6eee6}
+.mvgreen-designer .mg-plan-legend th{background:#f4f9f5;color:#0f3d27}
+.mvgreen-designer .mg-plan-legend em{font-style:normal;font-size:11px;background:#e5f6ea;color:#156333;border-radius:8px;padding:1px 6px;margin-left:4px}
+.mvgreen-designer .mg-plan-no{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#0f3d27;color:#fff;font-weight:700;font-size:12px}
+.mvgreen-designer .mg-plan-totals{font-weight:700;color:#0f3d27;margin:8px 0}
+.mvgreen-designer .mg-angle-img{display:block;width:100%;border-radius:10px;margin-top:10px}
+@media (max-width:640px){.mvgreen-designer .mg-plan-legend{font-size:12px}.mvgreen-designer .mg-plan-legend th:nth-child(3),.mvgreen-designer .mg-plan-legend td:nth-child(3){white-space:nowrap}}

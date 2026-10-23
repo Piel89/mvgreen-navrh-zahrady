@@ -208,6 +208,15 @@ const styleChoices={
  'flowers':{variant:'B',style:'Venkovská',name:'Okrasné záhony'},
  'low-care':{variant:'C',style:'Nenáročná na údržbu',name:'Minimum údržby'}
 };
+// Per-style layout for the AI brief: how much lawn stays, how much is planted.
+const styleLayout={
+ 'english':{max:4,layout:'Zachovej asi 85–90 % označené plochy jako souvislý trávník. Přidej nejvýš 1–2 úzké jednoduché záhony podél domu nebo plotu (šířka do 1 m). Žádné stromy ani velké keře.'},
+ 'lawn-beds':{max:6,layout:'Trávník zůstane asi na 60–70 % označené plochy. Po okrajích a podél domu vytvoř souvislé záhony s trvalkami, travinami a 1–3 nízkými keři.',hint:'Chcete osázet i pruh u domu nebo terasy? Přidejte ho štětcem „＋ Přidat plochu“.'},
+ 'modern':{max:6,layout:'Trávník asi na 50–60 % plochy s čistými rovnými hranami. Geometrické záhony s okrasnými travinami, kamenivem nebo mulčem a 1–2 solitérními keři.',hint:'Pro moderní zahradu přidejte štětcem „＋ Přidat plochu“ i pruh u domu nebo terasy – tam se záhony hodí nejvíc.'},
+ 'natural':{max:9,layout:'Trávník jen menší část (asi 30–40 % plochy), zbytek bohaté přírodní výsadby: vrstvené trvalky a traviny, skupiny keřů a 1–2 menší stromy na okrajích. Plynulé měkké hrany záhonů.',hint:'Přírodní zahrada potřebuje víc místa pro výsadbu. Přidejte štětcem „＋ Přidat plochu“ pruh u domu, terasy i u plotu.'},
+ 'flowers':{max:9,layout:'Trávník jen menší část (asi 30–40 % plochy). Velké kvetoucí záhony s trvalkami v několika výškových patrech, okrasné keře a 1 menší okrasný strom. Barevná zahrada po celou sezonu.',hint:'Pro okrasné záhony přidejte štětcem „＋ Přidat plochu“ i místa u domu a terasy, kde mají být květiny.'},
+ 'low-care':{max:5,layout:'Menší trávník (asi 40–50 % plochy), zbytek odolné keře a půdopokryvné rostliny v mulči nebo kamenivu. Jednoduché tvary, nic náročného na péči.',hint:'Místa, kde nechcete sekat (u domu, u plotu), přidejte štětcem „＋ Přidat plochu“.'}
+};
 function chooseVariant(code,applySettings=true,styleChoice=null){
  const selected=variantOptions[code]?code:'B';
  const wanted=styleChoice||q('mg-style-card').value;
@@ -507,7 +516,7 @@ if(detailStep&&styleStep){
  conditions.querySelectorAll('[data-mg-moisture]').forEach(b=>b.addEventListener('click',()=>{q('mg-water').value=b.dataset.mgMoisture;conditions.querySelectorAll('[data-mg-moisture]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));autoSave()}));
  const budgetPanel=document.createElement('div');budgetPanel.className='mg-ref-budget-choices';
  budgetPanel.innerHTML='<h4>Rozpočet (orientačně)</h4>'+[['50000','Do 50 000 Kč'],['150000','50–150 000 Kč'],['300000','Nad 150 000 Kč']].map((x,i)=>'<button type="button" data-mg-budget-choice="'+x[0]+'" aria-pressed="'+(i===1)+'">◉ &nbsp;'+x[1]+'</button>').join('')+'<h4>Další informace</h4><ul><li>Chci zahradu s minimem údržby</li><li>Mám děti / domácí mazlíčky</li><li>Chci jedlé rostliny</li><li>Zajímá mě automatická závlaha</li><li>Preferuji přírodní vzhled</li></ul>';
- detailStep.insertBefore(budgetPanel,detailStep.querySelector('.mg-plan'));
+ detailStep.insertBefore(budgetPanel,detailFields); // floats right beside the fields (no absolute overlap)
  budgetPanel.querySelectorAll('[data-mg-budget-choice]').forEach(b=>b.addEventListener('click',()=>{q('mg-max').value=b.dataset.mgBudgetChoice;budgetPanel.querySelectorAll('[data-mg-budget-choice]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));autoSave()}));
  const styleControl=q('mg-style')?.closest('.mg-field');
  if(styleControl){styleControl.classList.add('mg-hidden');styleStep.appendChild(styleControl);}
@@ -974,6 +983,38 @@ q('mg-location-lookup').addEventListener('click',async()=>{
 });
 q('mg-locality').addEventListener('input',()=>{const place=q('mg-locality').value.trim().slice(0,120);q('mg-suppliers').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('zahradnictví '+place)});
 
+
+// Půdorys a pohled z jiného úhlu – navazuje na hotový AI návrh (jen pro správce v testu).
+function mgScaled(src,maxW,type,quality){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,maxW/i.naturalWidth);const c=document.createElement('canvas');c.width=Math.round(i.naturalWidth*k);c.height=Math.round(i.naturalHeight*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL(type||'image/jpeg',quality||0.85))};i.onerror=()=>rej(new Error('Obrázek se nepodařilo načíst.'));i.src=src})}
+async function mgAjax(action,fields){const ai=window.MVGreenAI||{};const data=new URLSearchParams();data.set('action',action);data.set('nonce',ai.nonce);Object.entries(fields).forEach(([k,v])=>data.set(k,v==null?'':String(v)));const r=await fetch(ai.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});const j=await r.json().catch(()=>({}));if(!j.success)throw new Error(j.data?.message||'Požadavek se nezdařil.');return j.data}
+async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d){
+  const P=window.MVGreenPlan;
+  const planBox=document.createElement('section');planBox.className='mg-plan-box';planBox.innerHTML='<h4>📐 Půdorys zahrady</h4><p class="mg-note">Převádíme návrh na pohled shora…</p>';host.append(planBox);
+  let planText='';
+  try{
+    if(!P)throw new Error('Chybí modul půdorysu. Obnovte stránku.');
+    const img=await mgScaled(finalImage,1280,'image/jpeg',0.86),bef=await mgScaled(beforeImage,768,'image/jpeg',0.7);
+    const res=await mgAjax('mvgreen_ai_plan',{image:img,before:bef,plants:(brief?.plants||[]).map(p=>p.name+(p.latin?' ('+p.latin+')':'')).join('; '),style:(styleChoices[d['mg-style-card']]?.name||''),width:d['mg-width'],length:d['mg-length']});
+    const built=P.build(res.plan,{width:d['mg-width'],length:d['mg-length']});
+    planText=(res.plan.elements||[]).map(e=>e.label+' ('+e.type+')').join(', ');
+    planBox.innerHTML='<h4>📐 Půdorys zahrady</h4><div class="mg-plan-svg">'+built.svg+'</div>'+P.legendHtml(built);
+    const dl=document.createElement('button');dl.type='button';dl.textContent='⬇ Stáhnout půdorys (PNG)';dl.addEventListener('click',()=>P.downloadPng(built.svg,'mvgreen-pudorys.png'));planBox.append(dl);
+  }catch(e){planBox.innerHTML='<h4>📐 Půdorys zahrady</h4><p class="mg-note">Půdorys se nepodařilo vytvořit: '+String(e.message).replace(/[<>&]/g,'')+'</p>'}
+  const angles=document.createElement('section');angles.className='mg-angle-box';
+  angles.innerHTML='<h4>🔭 Jiný pohled na stejný návrh</h4><p class="mg-note">Ilustrační pohled – AI smí mírně změnit úhel kamery, proporce domu a zahrady zůstávají. Každý pohled je další placený AI pokus.</p><div class="mg-actions"><button type="button" data-view="raised">Mírně vyšší pohled</button><button type="button" data-view="aerial">Ptačí perspektiva</button></div><div class="mg-angle-out"></div>';
+  host.append(angles);
+  angles.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',async()=>{
+    const out=angles.querySelector('.mg-angle-out');
+    if(!confirm('Spustit další placený AI pokus – '+b.textContent+'?'))return;
+    angles.querySelectorAll('[data-view]').forEach(x=>x.disabled=true);out.textContent='AI připravuje pohled. Obvykle to trvá asi minutu…';
+    try{const png=await mgScaled(finalImage,1536,'image/png');const r=await mgAjax('mvgreen_ai_angle',{image:png,view:b.dataset.view,plan:planText});
+      out.innerHTML='';const im=document.createElement('img');im.src=r.image;im.alt='Ilustrační pohled: '+b.textContent;im.className='mg-angle-img';out.append(im);
+      const cap=document.createElement('p');cap.className='mg-note';cap.textContent='Ilustrační pohled ('+b.textContent.toLowerCase()+'). Skutečný stav ukazuje porovnání s vaší fotografií výše.';out.append(cap);
+      const a=document.createElement('a');a.href=r.image;a.download='mvgreen-pohled-'+b.dataset.view+'.png';a.textContent='⬇ Uložit pohled';a.className='mg-ai-download';out.append(a);
+    }catch(e){out.textContent='Chyba: '+e.message}finally{angles.querySelectorAll('[data-view]').forEach(x=>x.disabled=false)}
+  }));
+}
+window.MVGreenPlanAndAngles=mgPlanAndAngles;
 // Admin-only paid preview. Never send the API key to the browser.
 const aiConfig=window.MVGreenAI||{};
 const aiButton=q('mg-ai-test');
@@ -990,7 +1031,7 @@ if(aiConfig.enabled){
     original.getContext('2d').drawImage(img,0,0,original.width,original.height);
     let editMask;
     if(automatic){
-      editMask=await S.confirmMask(original);
+      editMask=await S.confirmMask(original,null,(styleLayout[q('mg-style-card').value]||{}).hint||'');
       if(!editMask)return;
     }else{
       editMask=S.polygonMask(original.width,original.height,areas.filter(a=>a.tool==='change'||a.tool==='remove'),areas.filter(a=>a.tool==='keep'));
@@ -1004,7 +1045,7 @@ if(aiConfig.enabled){
     try{
       const data=new URLSearchParams();data.set('action','mvgreen_ai_preview');data.set('nonce',aiConfig.nonce);
       data.set('image',prepared.image);data.set('mask',prepared.mask);
-      const d=getData();const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,{styleLabel:(variantOptions[d['mg-variant']]||variantOptions.B).label+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai});data.set('instructions',brief.text);
+      const d=getData();const sl=styleLayout[d['mg-style-card']]||styleLayout['lawn-beds'];const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,{styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max});data.set('instructions',brief.text);
       const response=await fetch(aiConfig.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});
       const json=await response.json();if(!json.success||!json.data?.image)throw new Error(json.data?.message||'AI návrh se nepodařilo vytvořit.');
       const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=json.data.image});
@@ -1031,6 +1072,8 @@ if(aiConfig.enabled){
       if(brief.rejected.length){const why=document.createElement('p');why.className='mg-note';why.textContent='Do návrhu jsme nedali: '+brief.rejected.join(', ')+' – pro vaše podmínky (slunce, vlhkost, zálivka) se nehodí. Použili jsme vhodnější rostliny.';result.append(why);}
       const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';result.append(used);
       const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
+      const extras=document.createElement('div');extras.className='mg-ai-extras';result.append(extras);
+      mgPlanAndAngles(extras,finalImage,original.toDataURL('image/jpeg',0.8),brief,d);
     }catch(err){result.textContent='Chyba: '+err.message;}finally{aiButton.disabled=false;}
   });
 }

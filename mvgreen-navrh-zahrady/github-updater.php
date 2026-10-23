@@ -5,10 +5,24 @@ if (!defined('ABSPATH')) exit;
 function mvgreen_github_update_meta() {
     $cached = get_transient('mvgreen_github_update_meta');
     if (is_array($cached) && !wp_doing_cron() && !(is_admin() && (isset($_GET['force-check']) || isset($_GET['force_check'])))) return $cached;
-    $response = wp_remote_get('https://raw.githubusercontent.com/Piel89/mvgreen-navrh-zahrady/main/version.json?nocache=' . floor(time() / 60), ['timeout' => 12, 'headers' => ['Accept' => 'application/json'], 'cache-control' => 'no-cache']);
-    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) return false;
-    $data = json_decode(wp_remote_retrieve_body($response), true);
-    if (!is_array($data) || empty($data['version']) || !preg_match('/^\d+\.\d+\.\d+$/', $data['version'])) return false;
+    // Primary: raw file. Fallback: GitHub contents API (different CDN). Errors are kept for diagnosis.
+    $data = null; $errors = [];
+    $sources = [
+        'raw' => 'https://raw.githubusercontent.com/Piel89/mvgreen-navrh-zahrady/main/version.json?nocache=' . floor(time() / 60),
+        'api' => 'https://api.github.com/repos/Piel89/mvgreen-navrh-zahrady/contents/version.json?ref=main',
+    ];
+    foreach ($sources as $kind => $url) {
+        $response = wp_remote_get($url, ['timeout' => 12, 'headers' => ['Accept' => $kind === 'api' ? 'application/vnd.github+json' : 'application/json', 'User-Agent' => 'MVGreen-Updater', 'Cache-Control' => 'no-cache']]);
+        if (is_wp_error($response)) { $errors[] = $kind . ': ' . $response->get_error_message(); continue; }
+        $code = wp_remote_retrieve_response_code($response);
+        if ($code !== 200) { $errors[] = $kind . ': HTTP ' . $code; continue; }
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        if ($kind === 'api' && is_array($body) && isset($body['content'])) $body = json_decode(base64_decode($body['content']), true);
+        if (is_array($body) && !empty($body['version']) && preg_match('/^\d+\.\d+\.\d+$/', $body['version'])) { $data = $body; break; }
+        $errors[] = $kind . ': neplatná odpověď';
+    }
+    update_option('mvgreen_update_last_check', ['time' => time(), 'version' => $data['version'] ?? null, 'errors' => $errors], false);
+    if (!$data) return false;
     set_transient('mvgreen_github_update_meta', $data, 5 * MINUTE_IN_SECONDS);
     return $data;
 }
@@ -48,3 +62,9 @@ add_filter('upgrader_source_selection', function ($source, $remote_source, $upgr
     if (!file_exists($nested . 'mvgreen-navrh-zahrady.php')) return new WP_Error('mvgreen_update_layout', 'GitHub balíček neobsahuje očekávaný plugin.');
     return $nested;
 }, 10, 4);
+
+// Admin diagnostics: /wp-admin/admin-ajax.php?action=mvgreen_update_status
+add_action('wp_ajax_mvgreen_update_status', function () {
+    if (!current_user_can('update_plugins')) wp_send_json_error([], 403);
+    wp_send_json_success(['last' => get_option('mvgreen_update_last_check'), 'cached' => get_transient('mvgreen_github_update_meta')]);
+});

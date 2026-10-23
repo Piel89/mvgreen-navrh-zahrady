@@ -109,10 +109,11 @@
 
     // Soft 6 px feather on the mask edge, then original pixels everywhere outside it.
     var feather = canvas(w, h), fc = feather.getContext('2d');
-    fc.filter = 'blur(3px)'; fc.drawImage(editMask, 0, 0); fc.filter = 'none';
+    fc.filter = 'blur(' + Math.max(4, Math.round(w / 150)) + 'px)'; fc.drawImage(editMask, 0, 0); fc.filter = 'none';
     var fd = fc.getImageData(0, 0, w, h).data;
     for (var j = 0; j < ad.length; j += 4) {
-      var k = fd[j + 3] / 255;
+      // Inward feather: 0 exactly at the mask edge (no AI pixels leak out), 1 inside → soft seam.
+      var k = Math.max(0, (fd[j + 3] - 128) / 127); k = k * k * (3 - 2 * k);
       ad[j] = Math.round(ad[j] * k + o[j] * (1 - k));
       ad[j + 1] = Math.round(ad[j + 1] * k + o[j + 1] * (1 - k));
       ad[j + 2] = Math.round(ad[j + 2] * k + o[j + 2] * (1 - k));
@@ -132,11 +133,20 @@
     var src = photo.getContext('2d').getImageData(0, 0, w, h).data;
     var out = mc.createImageData(w, h), od = out.data;
     var top = Math.round(h * horizon);
-    for (var y = top; y < h; y++) {
+    // Soft horizon: above the line only smooth (lawn-like, low texture) greens may continue, so a lawn
+    // reaching further back is not cut by a straight line while tree foliage (rough texture) stays out.
+    var ext = Math.max(0, top - Math.round(h * 0.2)), st = Math.max(2, Math.round(w / 500));
+    for (var y = ext; y < h; y++) {
       for (var x = 0; x < w; x++) {
         var i = (y * w + x) * 4, r = src[i], g = src[i + 1], b = src[i + 2];
         var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, s = max - min;
         var green = g >= r && g > b + 8 && s > 18 && l > 30 && l < 220;
+        if (green && y < top) {
+          var x2 = Math.min(w - 1, x + st), y2 = Math.min(h - 1, y + st), x0 = Math.max(0, x - st), y0 = Math.max(0, y - st);
+          var gA = src[(y * w + x2) * 4 + 1], gB = src[(y2 * w + x) * 4 + 1], gC = src[(y * w + x0) * 4 + 1], gD = src[(y0 * w + x) * 4 + 1];
+          var rough = Math.abs(gA - g) + Math.abs(gB - g) + Math.abs(gC - g) + Math.abs(gD - g);
+          green = rough < 34 && l > 70;
+        }
         // Soil colours match brick facades in dull light, so only vegetation is pre-selected; the customer
         // adds bare soil, gravel or mulch with the brush.
         if (green) od[i + 3] = 255;
@@ -152,6 +162,15 @@
       mc.clearRect(0, 0, w, h); mc.putImageData(td, 0, 0);
     }
     // Keep only regions connected to the bottom edge (the ground the photographer stands on).
+    keepGrounded(mc, w, h);
+    // Fill holes (bald patches, shadows) inside the lawn so no old patches stay in the new garden.
+    fillHoles(mc, w, h, top);
+    // Smooth the outline into calm curves – a ragged edge looks like a cut-out.
+    var sm = canvas(w, h), smc = sm.getContext('2d');
+    smc.filter = 'blur(' + Math.max(3, Math.round(w / 110)) + 'px)'; smc.drawImage(m, 0, 0); smc.filter = 'none';
+    var sd = smc.getImageData(0, 0, w, h);
+    for (var z = 3; z < sd.data.length; z += 4) sd.data[z] = sd.data[z] > 128 ? 255 : 0;
+    mc.clearRect(0, 0, w, h); mc.putImageData(sd, 0, 0);
     keepGrounded(mc, w, h);
     // Paint colour is irrelevant; only alpha counts.
     mc.globalCompositeOperation = 'source-in'; mc.fillStyle = '#1b9c55'; mc.fillRect(0, 0, w, h);
@@ -173,6 +192,20 @@
     mc.putImageData(img, 0, 0);
   }
 
+  /** Non-mask regions that cannot be reached from the sky (top edge / sides above the horizon) are holes. */
+  function fillHoles(mc, w, h, top) {
+    var img = mc.getImageData(0, 0, w, h), d = img.data, seen = new Uint8Array(w * h), stack = [];
+    function seed(i) { if (!seen[i] && d[i * 4 + 3] <= 127) { seen[i] = 1; stack.push(i); } }
+    for (var x = 0; x < w; x++) seed(x);
+    for (var y = 0; y < Math.min(h, top + Math.round(h * 0.15)); y++) { seed(y * w); seed(y * w + w - 1); }
+    while (stack.length) {
+      var p = stack.pop(), px = p % w, py = (p / w) | 0;
+      if (px > 0) seed(p - 1); if (px < w - 1) seed(p + 1); if (py > 0) seed(p - w); if (py < h - 1) seed(p + w);
+    }
+    for (var j = 0; j < w * h; j++) if (!seen[j]) d[j * 4 + 3] = 255;
+    mc.putImageData(img, 0, 0);
+  }
+
   /** Mask from polygons: change/remove areas editable, keep areas protected on top. */
   function polygonMask(w, h, editAreas, keepAreas) {
     var m = canvas(w, h), mc = m.getContext('2d');
@@ -189,7 +222,7 @@
    * Full-screen confirmation of the automatic mask. Resolves with the final mask canvas or null.
    * The customer sees which parts may change and can widen/narrow them with a brush.
    */
-  function confirmMask(photo, initialHorizon) {
+  function confirmMask(photo, initialHorizon, hint) {
     return new Promise(function (resolve) {
       var horizon = initialHorizon == null ? 0.42 : initialHorizon;
       var mask = autoMask(photo, horizon);
@@ -199,7 +232,8 @@
       ov.innerHTML =
         '<div class="mg-mask-box">' +
         '<div class="mg-mask-head"><strong>Které části zahrady se smí změnit?</strong>' +
-        '<span>Zeleně zvýrazněnou plochu AI upraví. Dům, plot, stromy a obloha zůstanou přesně jako na vaší fotce.</span></div>' +
+        '<span>Zeleně zvýrazněnou plochu AI upraví. Dům, plot, stromy a obloha zůstanou přesně jako na vaší fotce.</span>' +
+        (hint ? '<span class="mg-mask-hint">💡 ' + String(hint).replace(/[<>&]/g, '') + '</span>' : '') + '</div>' +
         '<div class="mg-mask-stage"><canvas></canvas></div>' +
         '<div class="mg-mask-tools">' +
         '<label class="mg-mask-horizon">Hranice zahrady<input type="range" min="10" max="85" step="1"></label>' +

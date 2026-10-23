@@ -147,7 +147,7 @@
    * Picks the plants the AI is allowed to draw: customer favourites that fit the site first,
    * then the plan, then curated plants for the conditions. Max 6 species for a coherent look.
    */
-  function choosePlants(d, curated, lastPlan) {
+  function choosePlants(d, curated, lastPlan, opts) {
     var sun = d['mg-sun'], water = d['mg-water'] || 'normal', irr = String(d['mg-irrigation'] || '1');
     var fits = function (p) {
       var sunOk = sun === 'Různé podmínky' || !sun || (p.sun || []).indexOf(sun) >= 0;
@@ -163,7 +163,7 @@
     // Favourites may repeat a genus; everything else adds variety (one cultivar per genus).
     function add(p, why) {
       var key = (p.latin || '').toLowerCase(), g = genus(p);
-      if (!key || seen[key] || chosen.length >= 6) return;
+      if (!key || seen[key] || chosen.length >= (opts && opts.max || 6)) return;
       if (why !== 'oblíbená' && genera[g]) return;
       seen[key] = 1; genera[g] = 1;
       chosen.push({ name: p.name, latin: p.latin, height: p.height, why: why });
@@ -182,7 +182,7 @@
   }
 
   function buildInstructions(d, curated, lastPlan, extra) {
-    var pick = choosePlants(d, curated, lastPlan);
+    var pick = choosePlants(d, curated, lastPlan, { max: extra.maxPlants || 6 });
     var colorNames = { purple: 'fialová', white: 'bílá', pink: 'růžová', yellow: 'žlutá', red: 'červená', green: 'převážně zelená' };
     var cols = (d['mg-fav-colors'] || '').split(',').filter(Boolean).map(function (c) { return colorNames[c]; }).filter(Boolean);
     var irr = ['automatická závlaha je k dispozici', 'zalévá se ručně', 'zahrada se nezalévá – jen suchomilné rostliny'][+(d['mg-irrigation'] || 1)] || 'zalévá se ručně';
@@ -193,6 +193,8 @@
       cols.length ? 'BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '',
       'PODMÍNKY: ' + ({ 'Slunce': 'plné slunce', 'Polostín': 'polostín', 'Stín': 'stín' }[d['mg-sun']] || 'různé oslunění') + '; půda ' + ({ dry: 'suchá', wet: 'vlhká' }[d['mg-water']] || 'běžně vlhká') + '; ' + irr + '; lokalita ' + (d['mg-locality'] || 'Domažlicko') + (d['mg-altitude'] ? ', ' + d['mg-altitude'] + ' m n. m' : '') + '.',
       'ÚDRŽBA: ' + (d['mg-maint'] || 'nízká') + '. Rozpočet do ' + (d['mg-max'] || '50000') + ' Kč – žádné drahé prvky (jezírka, pergoly, zídky, terasy).',
+      extra.layout ? 'ROZVRŽENÍ: ' + extra.layout : '',
+      'NAVÁZÁNÍ: nové záhony a rostliny ukonči s odstupem od okraje upravované plochy; u okraje nech pruh trávníku nebo mulče, aby výsledek plynule navazoval na původní fotografii. Nikdy neusekávej rostliny okrajem plochy.',
       'ZÁHONY: jasné okraje, nastýlané kůrou nebo štěrkem, rostliny ve skupinách po 3–7 kusech, ne náhodně rozházené. Trávník hustý a rovnoměrný, ale přirozený, ne umělý.',
       d['mg-notes'] ? 'PŘÁNÍ ZÁKAZNÍKA: ' + d['mg-notes'] : '',
       'ZAKÁZÁNO: měnit dům, okna, střechu, plot, cesty, terén, stromy, oblohu a úhel pohledu; přidávat lidi, zvířata, nábytek, text, vodoznaky nebo nové stavby.'
