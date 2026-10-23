@@ -2039,3 +2039,12 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-plan-box h5{margin:16px 0 4px;font-size:15px;color:#0f3d27}
 .mvgreen-designer .mg-plan-details{margin-top:14px}
 .mvgreen-designer .mg-plan-details summary{cursor:pointer;font-weight:700;color:#156333}
+.mvgreen-designer .mg-plan-shop td:nth-child(2),.mvgreen-designer .mg-plan-shop td:nth-child(3),.mvgreen-designer .mg-plan-shop th:nth-child(3){white-space:nowrap}
+.mvgreen-designer .mg-plan-shop small{color:#5a6f61}
+.mvgreen-designer .mg-plan-shop tfoot th{background:#eaf6ee;color:#0f3d27}
+.mvgreen-designer .mg-plan-care th{width:130px;background:#f4f9f5;vertical-align:top}
+.mvgreen-designer .mg-plan-care ul{margin:0;padding-left:18px}
+.mvgreen-designer .mg-plan-offer{margin:16px 0;padding:16px 18px;border-radius:12px;background:#0f3d27;color:#fff}
+.mvgreen-designer .mg-plan-offer p{color:#dfeee4;margin:6px 0 12px}
+.mvgreen-designer .mg-plan-offer a{color:#fff;font-weight:700}
+.mvgreen-designer .mg-plan-offer a.mg-primary{display:inline-block;background:#3fbf6f;color:#06270f;padding:10px 16px;border-radius:9px;text-decoration:none;margin-right:10px}

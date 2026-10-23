@@ -176,9 +176,62 @@
     }).join('');
     var shopRows = Object.keys(shop).sort().map(function (k) { return '<tr><td>' + esc(k) + '</td><td>' + shop[k] + ' ks</td></tr>'; }).join('');
     return (bedRows ? '<ol class="mg-plan-beds">' + bedRows + '</ol>' : '<p class="mg-note">Na fotografii nejsou žádné nové záhony.</p>') +
-      (shopRows ? '<h5>🛒 Nákupní seznam rostlin</h5><table class="mg-plan-legend"><tbody>' + shopRows + '</tbody></table>' : '') +
       '<p class="mg-note">Počty kusů jsou orientační podle velikosti záhonů na fotografii. Přesné množství upřesníme při zaměření na místě.</p>';
   }
 
-  window.MVGreenPlan = { build: build, legendHtml: legendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare };
+
+  // Orientační maloobchodní ceny (Kč s DPH) podle skupiny – jediné místo k úpravě.
+  var PRICES = { flowers: [70, 130, 'trvalka v květináči 9–11 cm'], grasses: [90, 180, 'travina v květináči 1–2 l'], shrubs: [180, 380, 'keř v kontejneru 2–3 l'], trees: [900, 2500, 'strom 150–200 cm'] };
+  var MULCH_M2 = [70, 110]; // kůra 5 cm + netkaná textilie / m²
+  function categoryOf(name) {
+    // Malé polokeře (levandule, šalvěj…) se prodávají a sázejí jako trvalky.
+    if (/levandul|šalvěj|yzop|tymián|mateřídouš/i.test(String(name))) return 'flowers';
+    var cat = window.MVGreenPlantCatalog || [], n = String(name || '').toLowerCase().replace(/[„“"].*$/, '').trim();
+    for (var i = 0; i < cat.length; i++) { var c = String(cat[i].name || '').toLowerCase(); if (c && (n.indexOf(c) === 0 || c.indexOf(n) === 0)) return cat[i].category; }
+    if (/tráv|kostřav|ostřic|miskant|vousat|dochan/.test(n)) return 'grasses';
+    if (/keř|tavolník|zimolez|hortenzi|levandul|zákula|dřišťál/.test(n)) return 'shrubs';
+    return 'flowers';
+  }
+  function kc(v) { return Math.round(v / 10) * 10 >= 1000 ? (Math.round(v / 100) * 100).toLocaleString('cs-CZ') : String(Math.round(v / 10) * 10); }
+
+  /** Nákupní seznam s orientační cenou + nabídka MVGreen. */
+  function shoppingHtml(plan, opts) {
+    var r = build(plan, opts || {}), shop = {}, lo = 0, hi = 0;
+    (plan.elements || []).forEach(function (e) {
+      if (!e.is_new) return;
+      (e.plants || []).forEach(function (p) { var k = String(p.name || '').trim(); if (k) shop[k] = (shop[k] || 0) + (+p.count || 0); });
+    });
+    var rows = Object.keys(shop).sort().map(function (k) {
+      var pr = PRICES[categoryOf(k)] || PRICES.flowers, n = shop[k];
+      lo += n * pr[0]; hi += n * pr[1];
+      return '<tr><td>' + esc(k) + '<br><small>' + pr[2] + '</small></td><td>' + n + ' ks</td><td>' + kc(n * pr[0]) + '–' + kc(n * pr[1]) + ' Kč</td></tr>';
+    }).join('');
+    if (!rows) return '';
+    var bed = r.totals.bed, mlo = bed * MULCH_M2[0], mhi = bed * MULCH_M2[1];
+    if (bed > 0) rows += '<tr><td>Mulčovací kůra a textilie<br><small>≈ ' + fmtM2(bed) + ' záhonů</small></td><td></td><td>' + kc(mlo) + '–' + kc(mhi) + ' Kč</td></tr>';
+    lo += mlo; hi += mhi;
+    return '<h5>🛒 Nákupní seznam s orientační cenou</h5><table class="mg-plan-legend mg-plan-shop"><thead><tr><th>Položka</th><th>Množství</th><th>Cena</th></tr></thead><tbody>' + rows +
+      '</tbody><tfoot><tr><th>Materiál celkem</th><th></th><th>' + kc(lo) + '–' + kc(hi) + ' Kč</th></tr></tfoot></table>' +
+      '<p class="mg-note">Ceny jsou orientační ceny zahradnictví s DPH, bez práce a dopravy.</p>' +
+      '<div class="mg-plan-offer"><strong>Nechte práci na nás</strong><p>MV GREEN připraví plochy, založí nebo obnoví trávník, odveze starý materiál a postará se o pravidelnou údržbu. Pošlete nám tento návrh a do 1–2 dnů dostanete nezávaznou cenovou nabídku.</p>' +
+      '<a class="mg-primary" href="/kontakty/#poptavka">Chci nabídku na realizaci</a> <a href="https://wa.me/420723339650">nebo napište na WhatsApp</a></div>';
+  }
+
+  /** Kalendář péče na jednu stránku podle skupin rostlin v návrhu (trávník vždy). */
+  function careHtml(plan) {
+    var has = { flowers: 0, grasses: 0, shrubs: 0, trees: 0 }, lav = false;
+    (plan.elements || []).forEach(function (e) { (e.plants || []).forEach(function (p) { has[categoryOf(p.name)] = 1; if (/levandul/i.test(p.name)) lav = true; }); });
+    var rows = [
+      ['Březen–duben', ['Trávník: vyhrabat, první sekání, jarní hnojení' + '', has.grasses ? 'Traviny: sestřihnout suché listy 10–15 cm nad zemí' : '', has.flowers ? 'Trvalky: odstranit loňské stonky, doplnit mulč' : '', lav ? 'Levandule: lehce zastřihnout do tvaru (ne do starého dřeva)' : '', has.shrubs ? 'Keře: tvarovací řez jarních nekvetoucích keřů' : '']],
+      ['Květen–červen', ['Trávník: sekat 1× týdně, výška 4–5 cm', 'Záhony: plít, v suchu zalévat ráno nebo večer', has.flowers ? 'Trvalky: odstraňovat odkvetlé květy' : '']],
+      ['Červenec–srpen', ['Trávník: v horku sekat výš, zalévat méně často a vydatně', lav ? 'Levandule: po odkvětu sestřihnout květní stonky' : '', 'Záhony: hlídat zálivku nových rostlin']],
+      ['Září–říjen', ['Trávník: podzimní hnojení, případně vertikutace a dosev', has.flowers ? 'Trvalky: nechat semeníky na zimu pro ptáky, nemocné části odstranit' : '', has.shrubs || has.trees ? 'Nejlepší čas na dosadbu keřů a stromů' : '']],
+      ['Listopad–únor', ['Trávník: shrabat listí, poslední sekání', has.grasses ? 'Traviny: nestříhat – chrání trs přes zimu' : '', 'Nářadí: nabrousit a připravit na sezonu']]
+    ];
+    return '<h5>📅 Kalendář péče</h5><table class="mg-plan-legend mg-plan-care"><tbody>' + rows.map(function (r) {
+      return '<tr><th>' + r[0] + '</th><td><ul>' + r[1].filter(Boolean).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></td></tr>';
+    }).join('') + '</tbody></table>';
+  }
+
+  window.MVGreenPlan = { build: build, legendHtml: legendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare, shoppingHtml: shoppingHtml, careHtml: careHtml };
 })();
