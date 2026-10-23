@@ -1932,3 +1932,6 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fullscreen-fallback{
 html body #mg-fullscreen-overlay #mg-canvas:not(.mg-hidden){
  display:block!important;visibility:visible!important;opacity:1!important;
 }
+
+/* 0.6.40: overlay is outside .mvgreen-designer, keep the hidden helper working there */
+#mg-fullscreen-overlay .mg-hidden{display:none!important}
