@@ -89,15 +89,15 @@ add_action('wp_ajax_mvgreen_ai_plan', function () {
         'headers' => ['Authorization' => 'Bearer ' . MVGREEN_OPENAI_API_KEY, 'Content-Type' => 'application/json'],
         'body' => wp_json_encode($body), 'timeout' => 120,
     ]);
-    if (is_wp_error($response)) wp_send_json_error(['message' => 'Spojení s AI selhalo: ' . $response->get_error_message()], 502);
+    if (is_wp_error($response)) wp_send_json_error(['message' => 'Spojení s AI selhalo: ' . $response->get_error_message()], 200);
     $status = wp_remote_retrieve_response_code($response);
     $json = json_decode(wp_remote_retrieve_body($response), true);
     if ($status < 200 || $status >= 300) {
-        wp_send_json_error(['message' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.'], 502);
+        wp_send_json_error(['message' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.'], 200);
     }
     $text = $json['choices'][0]['message']['content'] ?? '';
     $plan = json_decode($text, true);
-    if (!is_array($plan) || empty($plan['elements'])) wp_send_json_error(['message' => 'AI nevrátila použitelný půdorys.'], 502);
+    if (!is_array($plan) || empty($plan['elements'])) wp_send_json_error(['message' => 'AI nevrátila použitelný půdorys.'], 200);
     wp_send_json_success(['plan' => $plan, 'model' => $model]);
 });
 
@@ -147,11 +147,11 @@ add_action('wp_ajax_mvgreen_ai_angle', function () {
         'body' => $body, 'timeout' => 240,
     ]);
     delete_transient('mvgreen_ai_preview_lock');
-    if (is_wp_error($response)) wp_send_json_error(['message' => 'Spojení s AI selhalo: ' . $response->get_error_message()], 502);
+    if (is_wp_error($response)) wp_send_json_error(['message' => 'Spojení s AI selhalo: ' . $response->get_error_message()], 200);
     $json = json_decode(wp_remote_retrieve_body($response), true);
     $code = wp_remote_retrieve_response_code($response);
     if ($code < 200 || $code >= 300 || empty($json['data'][0]['b64_json'])) {
-        wp_send_json_error(['message' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI nevrátila obrázek.'], 502);
+        wp_send_json_error(['message' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI nevrátila obrázek.'], 200);
     }
     $up = wp_upload_dir();
     $dir = trailingslashit($up['basedir']) . 'mvgreen-ai-log';

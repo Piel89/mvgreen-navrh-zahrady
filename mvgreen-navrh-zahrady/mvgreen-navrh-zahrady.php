@@ -2,19 +2,19 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.50
+ * Version: 0.6.51
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
 if (!defined('ABSPATH')) exit;
 add_shortcode('mvgreen_navrh_zahrady', function () {
     wp_enqueue_style('mvgreen-reference-font', 'https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;600;700;800;900&display=swap', [], null);
-    wp_enqueue_style('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.css', ['mvgreen-reference-font'], '0.6.50');
-    wp_enqueue_script('mvgreen-plants-805', plugin_dir_url(__FILE__) . 'assets/catalog-805.js', [], '0.6.50', true);
-    wp_enqueue_script('mvgreen-ai-safety', plugin_dir_url(__FILE__) . 'assets/ai-safety.js', [], '0.6.50', true);
-    wp_enqueue_script('mvgreen-brief', plugin_dir_url(__FILE__) . 'assets/garden-brief.js', [], '0.6.50', true);
-    wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], '0.6.50', true);
-    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-brief', 'mvgreen-plan'], '0.6.50', true);
+    wp_enqueue_style('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.css', ['mvgreen-reference-font'], '0.6.51');
+    wp_enqueue_script('mvgreen-plants-805', plugin_dir_url(__FILE__) . 'assets/catalog-805.js', [], '0.6.51', true);
+    wp_enqueue_script('mvgreen-ai-safety', plugin_dir_url(__FILE__) . 'assets/ai-safety.js', [], '0.6.51', true);
+    wp_enqueue_script('mvgreen-brief', plugin_dir_url(__FILE__) . 'assets/garden-brief.js', [], '0.6.51', true);
+    wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], '0.6.51', true);
+    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-brief', 'mvgreen-plan'], '0.6.51', true);
     wp_add_inline_script('mvgreen-designer', 'window.MVGreenAI = '.wp_json_encode(['ajaxUrl'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('mvgreen_ai_test'),'enabled'=>current_user_can('manage_options')]).';', 'before');
     // Use the exact WordPress site logo; supports classic and block themes.
     $mvgreen_logo_id = (int) get_theme_mod('custom_logo', 0);
@@ -52,7 +52,7 @@ add_action('wp_ajax_mvgreen_ai_preview', function () {
     $original_bytes = $decode_png($image);
     $mask_bytes = $decode_png($mask);
     if (!$original_bytes || !$mask_bytes) wp_send_json_error(['message'=>'Neplatná fotografie nebo maska.'], 400);
-    if (!function_exists('getimagesizefromstring')) wp_send_json_error(['message'=>'Server nepodporuje kontrolu obrázků.'], 500);
+    if (!function_exists('getimagesizefromstring')) wp_send_json_error(['message'=>'Server nepodporuje kontrolu obrázků.'], 200);
     $image_info = @getimagesizefromstring($original_bytes);
     $mask_info = @getimagesizefromstring($mask_bytes);
     if (!$image_info || !$mask_info || $image_info[0] !== $mask_info[0] || $image_info[1] !== $mask_info[1] || $image_info[2] !== IMAGETYPE_PNG || $mask_info[2] !== IMAGETYPE_PNG) {
@@ -106,12 +106,12 @@ add_action('wp_ajax_mvgreen_ai_preview', function () {
         'body'=>$parts, 'timeout'=>240
     ]);
     delete_transient('mvgreen_ai_preview_lock');
-    if (is_wp_error($response)) wp_send_json_error(['message'=>'Spojení s AI selhalo: '.$response->get_error_message()], 502);
+    if (is_wp_error($response)) wp_send_json_error(['message'=>'Spojení s AI selhalo: '.$response->get_error_message()], 200);
     $status = wp_remote_retrieve_response_code($response);
     $json = json_decode(wp_remote_retrieve_body($response), true);
     if ($status<200 || $status>=300) {
         $message = isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.';
-        wp_send_json_error(['message'=>$message], 502);
+        wp_send_json_error(['message'=>$message], 200);
     }
     if (!empty($json['data'][0]['b64_json'])) {
         // Keep every paid output (input, mask, result) so a rejected result can be reviewed without paying again.
@@ -130,7 +130,7 @@ add_action('wp_ajax_mvgreen_ai_preview', function () {
         }
         wp_send_json_success(['image'=>'data:image/png;base64,'.$json['data'][0]['b64_json']]);
     }
-    wp_send_json_error(['message'=>'AI nevrátila obrázek. Kredit mohl být účtován. Před opakováním zkontrolujte účet.'], 502);
+    wp_send_json_error(['message'=>'AI nevrátila obrázek. Kredit mohl být účtován. Před opakováním zkontrolujte účet.'], 200);
 });
 // Admin-adjustable daily cap for paid AI tests (Settings REST API, admins only). Default 1.
 add_action('init', function () {
