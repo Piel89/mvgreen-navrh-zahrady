@@ -1040,7 +1040,11 @@ if(aiConfig.enabled){
     original.getContext('2d').drawImage(img,0,0,original.width,original.height);
     let editMask;
     if(automatic){
-      editMask=await S.confirmMask(original,null,(styleLayout[q('mg-style-card').value]||{}).hint||'');
+      {
+        const styleHint=(styleLayout[q('mg-style-card').value]||{}).hint||'';
+        const clutterHint='Je na fotce nepořádek, který chcete odstranit (větve, kamení, suť)? Přimalujte tu plochu štětcem „＋ Přidat plochu“ – jinak ji AI nechá beze změny.';
+        editMask=await S.confirmMask(original,null,[styleHint,clutterHint].filter(Boolean).join(' '));
+      }
       if(!editMask)return;
     }else{
       editMask=S.polygonMask(original.width,original.height,areas.filter(a=>a.tool==='change'||a.tool==='remove'),areas.filter(a=>a.tool==='keep'));
