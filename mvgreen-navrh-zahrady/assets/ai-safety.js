@@ -77,22 +77,35 @@
   function finish(photo, editMask, aiImage, box) {
     var w = photo.width, h = photo.height;
     var back = canvas(w, h), bc = back.getContext('2d');
-    bc.drawImage(aiImage, box.x * aiImage.width / box.W, box.y * aiImage.height / box.H,
+    // Raw AI pixels (may contain transparency outside the mask).
+    var raw = canvas(w, h), rc = raw.getContext('2d');
+    rc.drawImage(aiImage, box.x * aiImage.width / box.W, box.y * aiImage.height / box.H,
       box.w * aiImage.width / box.W, box.h * aiImage.height / box.H, 0, 0, w, h);
+    // Composite over the original so transparent AI pixels keep the real photo.
+    bc.drawImage(photo, 0, 0);
+    bc.drawImage(raw, 0, 0);
 
     var o = photo.getContext('2d').getImageData(0, 0, w, h).data;
+    var rd = rc.getImageData(0, 0, w, h).data;
     var a = bc.getImageData(0, 0, w, h);
     var ad = a.data;
     var md = editMask.getContext('2d').getImageData(0, 0, w, h).data;
-    var sum = 0, cnt = 0;
+    // Guard band: ignore a few px around the mask edge (resampling blurs the boundary).
+    var guard = canvas(w, h), gc = guard.getContext('2d');
+    gc.filter = 'blur(' + Math.max(4, Math.round(w / 300)) + 'px)'; gc.drawImage(editMask, 0, 0); gc.filter = 'none';
+    var gd = gc.getImageData(0, 0, w, h).data;
+    var sum = 0, cnt = 0, insideOpaque = 0, insideCnt = 0;
     for (var i = 0; i < ad.length; i += 4) {
-      if (md[i + 3] > 127) continue;
-      if ((i >> 2) % 7 === 0) {
-        sum += (Math.abs(ad[i] - o[i]) + Math.abs(ad[i + 1] - o[i + 1]) + Math.abs(ad[i + 2] - o[i + 2])) / 3;
-        cnt++;
-      }
+      if ((i >> 2) % 7 !== 0) continue;
+      if (md[i + 3] > 127) { insideCnt++; if (rd[i + 3] > 127) insideOpaque++; continue; }
+      if (gd[i + 3] > 8) continue;
+      if (rd[i + 3] < 128) continue; // transparent = AI left it alone
+      sum += (Math.abs(rd[i] - o[i]) + Math.abs(rd[i + 1] - o[i + 1]) + Math.abs(rd[i + 2] - o[i + 2])) / 3;
+      cnt++;
     }
     var drift = cnt ? sum / cnt : 0;
+    // AI returned nothing usable inside the garden area.
+    var emptyInside = insideCnt > 0 && insideOpaque / insideCnt < 0.5;
 
     // Soft 6 px feather on the mask edge, then original pixels everywhere outside it.
     var feather = canvas(w, h), fc = feather.getContext('2d');
@@ -106,7 +119,7 @@
       ad[j + 3] = 255;
     }
     bc.putImageData(a, 0, 0);
-    return { canvas: back, drift: drift, ok: drift <= MAX_DRIFT };
+    return { canvas: back, raw: raw, drift: drift, emptyInside: emptyInside, ok: drift <= MAX_DRIFT && !emptyInside };
   }
 
   /**

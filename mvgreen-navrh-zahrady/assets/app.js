@@ -1010,7 +1010,15 @@ if(aiConfig.enabled){
       const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=json.data.image});
       // Rules 3–4: undo padding, reject a re-drawn scene, hard-lock everything outside the mask.
       const done=S.finish(original,editMask,aiPhoto,prepared.box);
-      if(!done.ok)throw new Error('AI změnila i části, které měly zůstat beze změny (odchylka '+Math.round(done.drift)+'). Výsledek nebyl použit. Zkuste prosím zmenšit označenou plochu.');
+      if(!done.ok){
+        // Admin-only diagnostics: show what the AI actually returned (never shown as a result).
+        result.replaceChildren();
+        const msg=document.createElement('p');msg.textContent=done.emptyInside?'AI nevrátila žádnou úpravu zahrady. Výsledek nebyl použit.':'AI změnila i části, které měly zůstat beze změny (odchylka '+Math.round(done.drift)+'). Výsledek nebyl použit.';result.append(msg);
+        const det=document.createElement('details');det.innerHTML='<summary>Diagnostika pro správce – co AI vrátila</summary>';
+        const rawImg=document.createElement('img');rawImg.src=aiPhoto.src;rawImg.alt='Odmítnutý výstup AI';rawImg.style.cssText='max-width:100%;margin-top:8px;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/16px 16px';det.append(rawImg);
+        const dl=document.createElement('a');dl.href=aiPhoto.src;dl.download='mvgreen-ai-odmitnuto.png';dl.textContent='⬇ Stáhnout odmítnutý výstup';dl.style.display='block';det.append(dl);
+        result.append(det);window.__mvgLastAi=aiPhoto.src;return;
+      }
       const finalImage=done.canvas.toDataURL('image/png');
       result.replaceChildren();
       const comparison=document.createElement('div');comparison.className='mg-before-after';comparison.setAttribute('aria-label','Porovnání původní fotografie a AI návrhu');
