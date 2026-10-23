@@ -44,6 +44,15 @@
     var used = {};
     (plan.elements || []).forEach(function (e) { if (e.type === 'bed' && +e.no > 0 && !used[+e.no]) { e._no = +e.no; used[e._no] = 1; n = Math.max(n, e._no); } });
     (plan.elements || []).forEach(function (e) { if (e.type === 'bed' && !e._no && e.polygon && e.polygon.length >= 3 && !plan._markers) e._no = ++n; });
+    // Počet kusů nesmí přesáhnout reálnou hustotu výsadby pro plochu záhonu.
+    var Wm = +(plan.site && plan.site.width_m) || 15, Dm = +(plan.site && plan.site.depth_m) || 10;
+    (plan.elements || []).forEach(function (e) {
+      if (e.type === 'bed' && e.polygon && e.polygon.length >= 3) e.area_m2 = areaGrid(pts(e)) / 10000 * Wm * Dm;
+      if (e.type !== 'bed' || !e.plants || !e.plants.length || !(+e.area_m2 > 0)) return;
+      var cap = 0, sum = 0;
+      e.plants.forEach(function (p) { var c = categoryOf(p.name), d = c === 'grasses' ? 5 : c === 'shrubs' ? 1 : c === 'trees' ? 0.2 : 7; sum += +p.count || 0; cap += (+p.count || 0) / d; });
+      if (cap > +e.area_m2) { var k = +e.area_m2 / cap; e.plants.forEach(function (p) { p.count = Math.max(1, Math.round((+p.count || 0) * k)); }); }
+    });
     plan._ready = true;
     return plan;
   }
@@ -168,16 +177,33 @@
         }
         hit = nx;
       }
-      var seen = new Int32Array(W * H), comps = [], id = 0, minArea = W * H * 0.004;
+      var seen = new Int32Array(W * H), comps = [], id = 0, minArea = W * H * 0.003;
       for (var p = 0; p < W * H; p++) {
         if (!hit[p] || seen[p]) continue;
-        id++; var st = [p], cnt = 0, sx = 0, sy = 0; seen[p] = id;
+        id++; var st = [p], cnt = 0, sx = 0, sy = 0, x0 = W, y0 = H, x1 = 0, y1 = 0; seen[p] = id;
         while (st.length) {
           var q = st.pop(), qx = q % W, qy = (q / W) | 0; cnt++; sx += qx; sy += qy;
+          if (qx < x0) x0 = qx; if (qx > x1) x1 = qx; if (qy < y0) y0 = qy; if (qy > y1) y1 = qy;
           [q - 1, q + 1, q - W, q + W].forEach(function (t) { if (t >= 0 && t < W * H && hit[t] && !seen[t] && Math.abs((t % W) - qx) <= 1) { seen[t] = id; st.push(t); } });
         }
-        if (cnt >= minArea) comps.push({ x: sx / cnt / W * 100, y: sy / cnt / H * 100, share: cnt / (W * H) });
+        if (cnt >= minArea) comps.push({ n: cnt, sx: sx, sy: sy, x0: x0, y0: y0, x1: x1, y1: y1 });
       }
+      // Části jednoho záhonu (přerušené trsy) spojit, když se jejich obrysy téměř dotýkají.
+      var gap = Math.round(W * 0.04), merged = true;
+      while (merged) {
+        merged = false;
+        for (var u = 0; u < comps.length && !merged; u++) for (var v = u + 1; v < comps.length && !merged; v++) {
+          var A = comps[u], B = comps[v];
+          if (A.x0 - gap <= B.x1 && B.x0 - gap <= A.x1 && A.y0 - gap <= B.y1 && B.y0 - gap <= A.y1) {
+            A.n += B.n; A.sx += B.sx; A.sy += B.sy; A.x0 = Math.min(A.x0, B.x0); A.y0 = Math.min(A.y0, B.y0); A.x1 = Math.max(A.x1, B.x1); A.y1 = Math.max(A.y1, B.y1);
+            comps.splice(v, 1); merged = true;
+          }
+        }
+      }
+      comps = comps.filter(function (c) { return c.n >= W * H * 0.006; }).map(function (c) {
+        // Číslo dát doprostřed obrysu, ale na skutečný pixel záhonu (ne do mezery).
+        return { x: c.sx / c.n / W * 100, y: c.sy / c.n / H * 100, share: c.n / (W * H) };
+      });
       comps.sort(function (u, v) { return v.share - u.share; });
       return comps.slice(0, 6).sort(function (u, v) { return u.x - v.x; });
     });
