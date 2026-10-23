@@ -64,8 +64,8 @@ add_shortcode('mvgreen_poptavka', function () {
     <?php wp_nonce_field('mvgreen_poptavka', 'mvg_nonce'); ?>
     <div class="mvg-pp-hp" aria-hidden="true"><label>Nevyplňujte<input type="text" name="mvg_web" tabindex="-1" autocomplete="off"></label></div>
     <div class="mvg-pp-row">
-      <label>Jméno <span>*</span><input type="text" name="mvg_name" required maxlength="100" autocomplete="name"></label>
-      <label>Telefon <span>*</span><input type="tel" name="mvg_phone" required maxlength="30" autocomplete="tel" inputmode="tel"></label>
+      <label><span class="mvg-pp-lab">Jméno <b class="mvg-req">*</b></span><input type="text" name="mvg_name" required maxlength="100" autocomplete="name"></label>
+      <label><span class="mvg-pp-lab">Telefon <b class="mvg-req">*</b></span><input type="tel" name="mvg_phone" required maxlength="30" autocomplete="tel" inputmode="tel"></label>
     </div>
     <div class="mvg-pp-row">
       <label>E-mail<input type="email" name="mvg_email" maxlength="120" autocomplete="email"></label>
@@ -94,7 +94,7 @@ add_shortcode('mvgreen_poptavka', function () {
 .mvg-poptavka{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#12261b}
 .mvg-poptavka form{display:flex;flex-direction:column;gap:14px;margin:0}
 .mvg-poptavka label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:#2b4434}
-.mvg-poptavka label span{color:#b42318}
+.mvg-poptavka .mvg-req{color:#b42318;font-weight:700}
 .mvg-poptavka input[type=text],.mvg-poptavka input[type=tel],.mvg-poptavka input[type=email],.mvg-poptavka textarea{font:inherit;font-weight:500;font-size:15px;color:#12261b;background:#fff;padding:12px 14px;border:1px solid #d3e1d7;border-radius:10px;width:100%;box-sizing:border-box;margin:0}
 .mvg-poptavka input:focus,.mvg-poptavka textarea:focus{outline:2px solid #156333;outline-offset:1px;border-color:#156333}
 .mvg-pp-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
@@ -246,6 +246,10 @@ function mvgreen_poptavka_handle() {
         '',
         'Fotky: ' . count($saved),
     ];
+    if ($saved) {
+        $uploads = wp_upload_dir();
+        foreach ($saved as $p) $lines[] = str_replace(trailingslashit($uploads['basedir']), trailingslashit($uploads['baseurl']), $p);
+    }
     $body = implode("\n", $lines);
 
     // Always keep a copy in the admin, so no lead is lost if e-mail delivery fails.
