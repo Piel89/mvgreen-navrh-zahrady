@@ -217,7 +217,7 @@ function mvgreen_poptavka_handle() {
             $check = wp_check_filetype_and_ext($tmp, $orig, ['jpg|jpeg|jpe' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'heic' => 'image/heic', 'heif' => 'image/heif']);
             if (empty($check['type'])) mvgreen_poptavka_redirect($back, 'chyba-fotky');
             if (!wp_mkdir_p($target)) mvgreen_poptavka_redirect($back, 'chyba-fotky');
-            if (!file_exists($target . '/index.html')) file_put_contents($target . '/index.html', '');
+            mvgreen_harden_upload_dir($target);
             $ext = $check['ext'] ?: 'jpg';
             $dest = $target . '/foto-' . $n . '-' . wp_generate_password(8, false, false) . '.' . $ext;
             if (!@move_uploaded_file($tmp, $dest)) mvgreen_poptavka_redirect($back, 'chyba-fotky');

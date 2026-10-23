@@ -73,6 +73,7 @@ add_filter('upgrader_source_selection', function ($source, $remote_source, $upgr
 // Admin diagnostics: /wp-admin/admin-ajax.php?action=mvgreen_update_status
 add_action('wp_ajax_mvgreen_update_status', function () {
     if (!current_user_can('update_plugins')) wp_send_json_error([], 403);
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
     $t = get_site_transient('update_plugins');
     $b = plugin_basename(__DIR__ . '/mvgreen-navrh-zahrady.php');
     wp_send_json_success(['last' => get_option('mvgreen_update_last_check'), 'cached' => get_transient('mvgreen_github_update_meta'),

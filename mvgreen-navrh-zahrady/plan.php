@@ -110,6 +110,7 @@ add_action('wp_ajax_mvgreen_ai_plan', function () {
 // Poslední uložený AI výstup (pro správce – nový půdorys bez dalšího placeného obrázku).
 add_action('wp_ajax_mvgreen_ai_last', function () {
     if (!current_user_can('manage_options')) wp_send_json_error([], 403);
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
     wp_send_json_success(['stem' => get_option('mvgreen_ai_last_log')]);
 });
 
