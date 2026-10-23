@@ -82,7 +82,7 @@ add_action('wp_ajax_mvgreen_ai_plan', function () {
 
     $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $image, 'detail' => 'high']]];
     if ($before) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => 'low']];
-    $model = defined('MVGREEN_OPENAI_PLAN_MODEL') ? MVGREEN_OPENAI_PLAN_MODEL : 'gpt-4.1';
+    $model = defined('MVGREEN_OPENAI_PLAN_MODEL') ? MVGREEN_OPENAI_PLAN_MODEL : 'gpt-4.1-mini';
     $body = [
         'model' => $model,
         'messages' => [['role' => 'user', 'content' => $content]],
