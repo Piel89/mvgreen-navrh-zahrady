@@ -5,11 +5,11 @@ if (!defined('ABSPATH')) exit;
 function mvgreen_github_update_meta() {
     $cached = get_transient('mvgreen_github_update_meta');
     if (is_array($cached) && !wp_doing_cron() && !(is_admin() && (isset($_GET['force-check']) || isset($_GET['force_check'])))) return $cached;
-    // Primary: raw file. Fallback: GitHub contents API (different CDN). Errors are kept for diagnosis.
+    // Primary: GitHub contents API (fresh; raw CDN caches ~5 min and ignores the query). Fallback: raw file. Errors are kept for diagnosis.
     $data = null; $errors = [];
     $sources = [
-        'raw' => 'https://raw.githubusercontent.com/Piel89/mvgreen-navrh-zahrady/main/version.json?nocache=' . floor(time() / 60),
         'api' => 'https://api.github.com/repos/Piel89/mvgreen-navrh-zahrady/contents/version.json?ref=main',
+        'raw' => 'https://raw.githubusercontent.com/Piel89/mvgreen-navrh-zahrady/main/version.json?nocache=' . floor(time() / 60),
     ];
     foreach ($sources as $kind => $url) {
         $response = wp_remote_get($url, ['timeout' => 12, 'headers' => ['Accept' => $kind === 'api' ? 'application/vnd.github+json' : 'application/json', 'User-Agent' => 'MVGreen-Updater', 'Cache-Control' => 'no-cache']]);
