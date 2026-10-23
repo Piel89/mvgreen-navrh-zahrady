@@ -11,7 +11,14 @@ function mvgreen_github_update_meta() {
         'api' => 'https://api.github.com/repos/Piel89/mvgreen-navrh-zahrady/contents/version.json?ref=main',
         'raw' => 'https://raw.githubusercontent.com/Piel89/mvgreen-navrh-zahrady/main/version.json?nocache=' . floor(time() / 60),
     ];
-    foreach ($sources as $kind => $url) {
+    // 0) Nejspolehlivější: přesměrování github.com/.../releases/latest na tag vX.Y.Z (bez API limitu a bez CDN cache).
+    $head = wp_remote_head('https://github.com/Piel89/mvgreen-navrh-zahrady/releases/latest', ['timeout' => 12, 'redirection' => 0, 'headers' => ['User-Agent' => 'MVGreen-Updater']]);
+    if (!is_wp_error($head)) {
+        $loc = wp_remote_retrieve_header($head, 'location');
+        if (is_string($loc) && preg_match('~/tag/v?(\d+\.\d+\.\d+)$~', $loc, $mm)) $data = ['version' => $mm[1]];
+        else $errors[] = 'release: HTTP ' . wp_remote_retrieve_response_code($head);
+    } else $errors[] = 'release: ' . $head->get_error_message();
+    foreach ($data ? [] : $sources as $kind => $url) {
         $response = wp_remote_get($url, ['timeout' => 12, 'headers' => ['Accept' => $kind === 'api' ? 'application/vnd.github+json' : 'application/json', 'User-Agent' => 'MVGreen-Updater', 'Cache-Control' => 'no-cache']]);
         if (is_wp_error($response)) { $errors[] = $kind . ': ' . $response->get_error_message(); continue; }
         $code = wp_remote_retrieve_response_code($response);
