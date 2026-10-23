@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) exit;
 function mvgreen_github_update_meta() {
     $cached = get_transient('mvgreen_github_update_meta');
     if (is_array($cached) && !wp_doing_cron() && !(is_admin() && (isset($_GET['force-check']) || isset($_GET['force_check'])))) return $cached;
-    $response = wp_remote_get('https://raw.githubusercontent.com/Piel89/mvgreen-navrh-zahrady/main/version.json', ['timeout' => 12, 'headers' => ['Accept' => 'application/json'], 'cache-control' => 'no-cache']);
+    $response = wp_remote_get('https://raw.githubusercontent.com/Piel89/mvgreen-navrh-zahrady/main/version.json?nocache=' . floor(time() / 60), ['timeout' => 12, 'headers' => ['Accept' => 'application/json'], 'cache-control' => 'no-cache']);
     if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) return false;
     $data = json_decode(wp_remote_retrieve_body($response), true);
     if (!is_array($data) || empty($data['version']) || !preg_match('/^\d+\.\d+\.\d+$/', $data['version'])) return false;
