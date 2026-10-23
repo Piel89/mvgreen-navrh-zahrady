@@ -987,18 +987,21 @@ q('mg-locality').addEventListener('input',()=>{const place=q('mg-locality').valu
 // Půdorys a pohled z jiného úhlu – navazuje na hotový AI návrh (jen pro správce v testu).
 function mgScaled(src,maxW,type,quality){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,maxW/i.naturalWidth);const c=document.createElement('canvas');c.width=Math.round(i.naturalWidth*k);c.height=Math.round(i.naturalHeight*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL(type||'image/jpeg',quality||0.85))};i.onerror=()=>rej(new Error('Obrázek se nepodařilo načíst.'));i.src=src})}
 async function mgAjax(action,fields){const ai=window.MVGreenAI||{};const data=new URLSearchParams();data.set('action',action);data.set('nonce',ai.nonce);Object.entries(fields).forEach(([k,v])=>data.set(k,v==null?'':String(v)));const r=await fetch(ai.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});const j=await r.json().catch(()=>({}));if(!j.success)throw new Error(j.data?.message||'Požadavek se nezdařil.');return j.data}
-async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d){
+async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask){
   const P=window.MVGreenPlan;
   const planBox=document.createElement('section');planBox.className='mg-plan-box';planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><p class="mg-note">Připravujeme seznam záhonů a rostlin…</p>';host.append(planBox);
   let planText='';
   try{
     if(!P)throw new Error('Chybí modul půdorysu. Obnovte stránku.');
-    const img=await mgScaled(finalImage,1280,'image/jpeg',0.86),bef=await mgScaled(beforeImage,768,'image/jpeg',0.7);
-    const res=await mgAjax('mvgreen_ai_plan',{image:img,before:bef,plants:(brief?.plants||[]).map(p=>p.name+(p.latin?' ('+p.latin+')':'')).join('; '),style:(styleChoices[d['mg-style-card']]?.name||''),width:d['mg-width'],length:d['mg-length']});
+    // Záhony najdeme sami porovnáním PŘED/PO (přesná poloha), AI k nim jen doplní rostliny a plochu.
+    const points=await P.detectBeds(beforeImage,finalImage,editMask||null);
+    const numbered=points.length?await P.drawMarkers(finalImage,points):finalImage;
+    const img=await mgScaled(numbered,1280,'image/jpeg',0.86),bef=await mgScaled(beforeImage,768,'image/jpeg',0.7);
+    const res=await mgAjax('mvgreen_ai_plan',{image:img,before:bef,markers:points.length,plants:(brief?.plants||[]).map(p=>p.name+(p.latin?' ('+p.latin+')':'')).join('; '),style:(styleChoices[d['mg-style-card']]?.name||''),width:d['mg-width'],length:d['mg-length']});
     const dims={width:d['mg-width'],length:d['mg-length']};
+    res.plan._markers=points.length;
     const built=P.build(res.plan,dims);
     planText=(res.plan.elements||[]).map(e=>e.label+' ('+e.type+')').join(', ');
-    const numbered=await P.annotatePhoto(finalImage,res.plan);
     planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><img class="mg-plan-photo" alt="Návrh s očíslovanými záhony" src="'+numbered+'">'+P.bedsHtml(res.plan,dims)+P.shoppingHtml(res.plan,dims)+P.careHtml(res.plan)+
       '<details class="mg-plan-details"><summary>📐 Orientační půdorys (pohled shora)</summary><div class="mg-plan-svg">'+built.svg+'</div>'+P.legendHtml(built)+'</details>';
     const row=document.createElement('div');row.className='mg-actions';
@@ -1079,7 +1082,7 @@ if(aiConfig.enabled){
       const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';result.append(used);
       const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
       const extras=document.createElement('div');extras.className='mg-ai-extras';result.append(extras);
-      mgPlanAndAngles(extras,finalImage,original.toDataURL('image/jpeg',0.8),brief,d);
+      mgPlanAndAngles(extras,finalImage,original.toDataURL('image/jpeg',0.8),brief,d,editMask);
     }catch(err){result.textContent='Chyba: '+err.message;}finally{aiButton.disabled=false;}
   });
 }

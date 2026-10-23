@@ -41,7 +41,9 @@
       (plan.elements || []).forEach(function (e) { e.polygon = (e.polygon || []).map(function (p) { return [p[0] / W * 100, p[1] / D * 100]; }); });
     }
     var n = 0;
-    (plan.elements || []).forEach(function (e) { if (e.type === 'bed' && e.polygon && e.polygon.length >= 3) e._no = ++n; });
+    var used = {};
+    (plan.elements || []).forEach(function (e) { if (e.type === 'bed' && +e.no > 0 && !used[+e.no]) { e._no = +e.no; used[e._no] = 1; n = Math.max(n, e._no); } });
+    (plan.elements || []).forEach(function (e) { if (e.type === 'bed' && !e._no && e.polygon && e.polygon.length >= 3 && !plan._markers) e._no = ++n; });
     plan._ready = true;
     return plan;
   }
@@ -135,6 +137,72 @@
       var a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = name || 'mvgreen-pudorys.png'; document.body.appendChild(a); a.click(); a.remove();
     };
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+
+  /**
+   * Najde nové záhony porovnáním fotky PŘED a PO: místa, kde přibyla ne-trávníková výsadba
+   * (květy, mulč, traviny), uvnitř upravované plochy. Vrací body v % fotky, zleva doprava.
+   */
+  function detectBeds(beforeSrc, afterSrc, maskCanvas) {
+    function load(src) { return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = src; }); }
+    return Promise.all([load(beforeSrc), load(afterSrc)]).then(function (im) {
+      var W = 320, H = Math.round(im[1].naturalHeight / im[1].naturalWidth * W);
+      function px(img) { var c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d'); x.drawImage(img, 0, 0, W, H); return x.getImageData(0, 0, W, H).data; }
+      var b = px(im[0]), a = px(im[1]), m = null;
+      if (maskCanvas) { var mc = document.createElement('canvas'); mc.width = W; mc.height = H; var mx = mc.getContext('2d'); mx.drawImage(maskCanvas, 0, 0, W, H); m = mx.getImageData(0, 0, W, H).data; }
+      var hit = new Uint8Array(W * H);
+      for (var i = 0, k = 0; k < W * H; k++, i += 4) {
+        if (m && m[i + 3] < 128) continue;
+        var r = a[i], g = a[i + 1], bl = a[i + 2];
+        var diff = (Math.abs(r - b[i]) + Math.abs(g - b[i + 1]) + Math.abs(bl - b[i + 2])) / 3;
+        var lawn = g > r + 10 && g > bl + 10;
+        if (diff > 28 && !lawn) hit[k] = 1;
+      }
+      // Uzavření: zaplnit mezery mezi rostlinami (rozmazání 3×3 dvakrát).
+      for (var pass = 0; pass < 3; pass++) {
+        var nx = new Uint8Array(W * H);
+        for (var y = 1; y < H - 1; y++) for (var x = 1; x < W - 1; x++) {
+          var s = 0; for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) s += hit[(y + dy) * W + x + dx];
+          nx[y * W + x] = s >= (pass < 2 ? 3 : 5) ? 1 : 0;
+        }
+        hit = nx;
+      }
+      var seen = new Int32Array(W * H), comps = [], id = 0, minArea = W * H * 0.004;
+      for (var p = 0; p < W * H; p++) {
+        if (!hit[p] || seen[p]) continue;
+        id++; var st = [p], cnt = 0, sx = 0, sy = 0; seen[p] = id;
+        while (st.length) {
+          var q = st.pop(), qx = q % W, qy = (q / W) | 0; cnt++; sx += qx; sy += qy;
+          [q - 1, q + 1, q - W, q + W].forEach(function (t) { if (t >= 0 && t < W * H && hit[t] && !seen[t] && Math.abs((t % W) - qx) <= 1) { seen[t] = id; st.push(t); } });
+        }
+        if (cnt >= minArea) comps.push({ x: sx / cnt / W * 100, y: sy / cnt / H * 100, share: cnt / (W * H) });
+      }
+      comps.sort(function (u, v) { return v.share - u.share; });
+      return comps.slice(0, 6).sort(function (u, v) { return u.x - v.x; });
+    });
+  }
+
+  /** Čísla podle nalezených záhonů (detectBeds) – přesná poloha, nezávislá na AI. */
+  function drawMarkers(src, points) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        var x = c.getContext('2d'); x.drawImage(img, 0, 0);
+        var r = Math.max(16, Math.round(c.width / 55));
+        points.forEach(function (pt, i) {
+          var px = pt.x / 100 * c.width, py = pt.y / 100 * c.height;
+          x.beginPath(); x.arc(px, py, r * 1.25, 0, Math.PI * 2); x.fillStyle = 'rgba(255,255,255,.92)'; x.fill();
+          x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fillStyle = '#0f3d27'; x.fill();
+          x.fillStyle = '#fff'; x.font = '700 ' + Math.round(r * 1.15) + 'px Inter, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+          x.fillText(String(i + 1), px, py + r * 0.06);
+        });
+        resolve(c.toDataURL('image/jpeg', 0.9));
+      };
+      img.onerror = function () { reject(new Error('Obrázek se nepodařilo načíst.')); };
+      img.src = src;
+    });
   }
 
   /** Numbered markers drawn straight into the design photo (main deliverable for non-gardeners). */
@@ -233,5 +301,5 @@
     }).join('') + '</tbody></table>';
   }
 
-  window.MVGreenPlan = { build: build, legendHtml: legendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare, shoppingHtml: shoppingHtml, careHtml: careHtml };
+  window.MVGreenPlan = { build: build, legendHtml: legendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare, detectBeds: detectBeds, drawMarkers: drawMarkers, shoppingHtml: shoppingHtml, careHtml: careHtml };
 })();

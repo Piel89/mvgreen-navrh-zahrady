@@ -25,9 +25,10 @@ function mvgreen_plan_schema() {
                 'type' => 'array',
                 'items' => [
                     'type' => 'object', 'additionalProperties' => false,
-                    'required' => ['type', 'label', 'polygon', 'photo_point', 'plants', 'is_new'],
+                    'required' => ['type', 'no', 'label', 'polygon', 'photo_point', 'plants', 'is_new'],
                     'properties' => [
                         'type' => ['type' => 'string', 'enum' => ['house', 'terrace', 'lawn', 'bed', 'path', 'gravel', 'fence', 'hedge', 'tree', 'shrub', 'slope', 'other']],
+                        'no' => ['type' => 'integer', 'description' => 'U záhonu číslo kroužku z fotografie, jinak 0.'],
                         'label' => ['type' => 'string'],
                         'polygon' => ['type' => 'array', 'items' => $point, 'description' => 'Body v mřížce 0–100 (x zleva doprava, y od domu dolů k fotografovi). Strom/keř = 1 bod.'],
                         'photo_point' => ['type' => 'array', 'items' => ['type' => 'number'], 'description' => 'Kde je střed prvku na fotografii PO: [x, y] v procentech 0–100 šířky a výšky fotky.'],
@@ -67,6 +68,7 @@ add_action('wp_ajax_mvgreen_ai_plan', function () {
     $style = isset($_POST['style']) ? sanitize_text_field(wp_unslash($_POST['style'])) : '';
     $width = isset($_POST['width']) ? (float) $_POST['width'] : 0;
     $length = isset($_POST['length']) ? (float) $_POST['length'] : 0;
+    $markers = isset($_POST['markers']) ? max(0, min(9, (int) $_POST['markers'])) : 0;
     update_option($key, $used + 1, false);
 
     $dims = ($width > 0 && $length > 0) ? "Zákazník zadal rozměry upravované plochy: šířka {$width} m, hloubka {$length} m – použij je." : 'Rozměry nejsou zadané – odhadni je podle domu (běžné okno ~1,2 m, dveře ~2,1 m, podlaží ~2,8 m).';
@@ -74,9 +76,10 @@ add_action('wp_ajax_mvgreen_ai_plan', function () {
         . "1) U KAŽDÉHO prvku urči photo_point = střed prvku na fotografii PO v procentech (x 0–100 zleva, y 0–100 shora). "
         . "2) Převeď zahradu na PŮDORYS (pohled shora) v mřížce 0–100 – NIKDY ne v metrech: dům nahoře (y=0), fotograf dole (y=100), x zleva doprava tak, jak to vidí fotograf. "
         . "Zakresli dům (jen pruh u horního okraje), terasu, trávník, cesty, plot, stávající stromy a velké keře (1 bod). "
-        . "ZÁHON (type bed, is_new true) zakresli JEN tam, kde je na fotografii PO skutečně vidět nová výsadba, která na fotce PŘED není. Nic si nevymýšlej. "
+        . ($markers ? "Na fotografii PO jsou bílo-zelené kroužky s čísly 1–{$markers}; každý označuje jeden nový záhon. Vrať PŘESNĚ {$markers} prvků type bed s no = číslem kroužku a is_new true – žádné jiné záhony nepřidávej. Kroužky samotné nejsou součástí zahrady. "
+            : "ZÁHON (type bed, is_new true) zakresli JEN tam, kde je na fotografii PO skutečně vidět nová výsadba, která na fotce PŘED není. Nic si nevymýšlej. ")
         . "Polygony se nesmí překrývat kromě stromů a keřů. "
-        . "U každého nového záhonu uveď rostliny, které jsou v něm na fotce vidět, a reálný počet kusů pro jeho plochu (trvalky 5–7 ks/m², traviny 3–5 ks/m², keře 1 ks na 1–2 m²). "
+        . "U každého nového záhonu uveď rostliny, které jsou v něm na fotce vidět, a reálný počet kusů pro jeho plochu (trvalky 5–7 ks/m², traviny 3–5 ks/m², keře 1 ks na 1–2 m²; nejvýš 4 druhy na menší záhon). Počet kusů musí odpovídat ploše záhonu. "
         . "Používej jen tyto rostliny z návrhu: {$plants}. Styl: {$style}. {$dims} "
         . "Šedé pruhy na okraji obrázku ignoruj. Popisky česky a krátce (např. „Záhon u svahu“, „Trávník“). Do notes napiš 1–2 věty, co je odhad.";
 
