@@ -1935,3 +1935,28 @@ html body #mg-fullscreen-overlay #mg-canvas:not(.mg-hidden){
 
 /* 0.6.40: overlay is outside .mvgreen-designer, keep the hidden helper working there */
 #mg-fullscreen-overlay .mg-hidden{display:none!important}
+
+/* 0.6.41: the ⛶ button must not take horizontal space next to the photo (photo was shifted right and its right edge clipped) */
+.mvgreen-designer .mg-stage:not(.mg-fullscreen-fallback) > #mg-photo-fullscreen{margin-left:0!important;margin-right:-44px!important}
+
+/* 0.6.41: fullscreen overlay lives outside .mvgreen-designer, so the theme's button styles leaked in. Use the MVGreen editor look. */
+#mg-fullscreen-overlay .mg-fullscreen-bar button,
+#mg-fullscreen-overlay .mg-fs-area-kinds button,
+#mg-fullscreen-overlay #mg-exit-fullscreen{
+ background:#e8f1e9!important;color:#1d5a3b!important;border:1px solid #d7e2dc!important;border-radius:9px!important;
+ font:650 14px/1.3 Inter,"Segoe UI",Arial,sans-serif!important;text-transform:none!important;letter-spacing:normal!important;
+ padding:10px 14px!important;box-shadow:none!important;cursor:pointer;min-height:42px;
+}
+#mg-fullscreen-overlay .mg-fullscreen-bar button:hover,
+#mg-fullscreen-overlay .mg-fs-area-kinds button:hover{background:#dcebdf!important}
+#mg-fullscreen-overlay .mg-fullscreen-bar button[aria-pressed="true"],
+#mg-fullscreen-overlay .mg-fs-area-kinds button[aria-pressed="true"]{
+ background:#e4f7e7!important;color:#156333!important;border-color:#156333!important;box-shadow:inset 0 0 0 1px #156333!important;
+}
+#mg-fullscreen-overlay #mg-exit-fullscreen{background:#fff!important;box-shadow:0 2px 9px #0002!important}
+#mg-fullscreen-overlay .mg-fullscreen-bar{gap:6px}
+#mg-fullscreen-overlay .mg-fs-area-kinds{gap:6px}
+#mg-fullscreen-overlay .mg-fs-area-kinds strong{color:#193a2b;font:800 13px/1.3 Inter,"Segoe UI",Arial,sans-serif}
+#mg-fullscreen-overlay .mg-fullscreen-bar.mg-fs-bar-hidden{display:none!important}
+/* 0.6.41: AI mode has no right tool column in fullscreen, so center the photo in the whole window */
+html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-hidden){left:50%!important}

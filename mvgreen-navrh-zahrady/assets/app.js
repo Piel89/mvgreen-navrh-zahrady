@@ -101,6 +101,7 @@ function updateCanvasLayout(){
  const fittedWidth=Math.min(availableWidth,availableHeight*canvas.width/canvas.height);
  const finalWidth=Math.max(1,fittedWidth*zoom);
  const finalHeight=finalWidth*canvas.height/canvas.width;
+ stage.classList.toggle('mg-fs-no-tools',full&&!fullToolsWidth);
  if(full){stage.style.setProperty('--mg-fs-photo-width',finalWidth+'px');stage.style.setProperty('--mg-fs-photo-height',finalHeight+'px');}
  canvas.style.setProperty('width',finalWidth+'px','important');
  canvas.style.setProperty('height',finalHeight+'px','important');
@@ -658,6 +659,7 @@ function refreshStep3Controls(){
  if(step3Tools)step3Tools.classList.toggle('mg-step3-tools-collapsed',!advanced);
  const fullKinds=fullscreenKinds;
  if(fullKinds)fullKinds.hidden=!advanced;
+ step3PhotoStage?.querySelector('.mg-fullscreen-bar')?.classList.toggle('mg-fs-bar-hidden',!advanced);
 }
 step3Toggle.addEventListener('click',()=>{
  const advanced=q('mg-design-mode')?.value==='advanced';
