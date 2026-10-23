@@ -76,7 +76,7 @@ add_action('wp_ajax_mvgreen_ai_plan', function () {
         . "1) U KAŽDÉHO prvku urči photo_point = střed prvku na fotografii PO v procentech (x 0–100 zleva, y 0–100 shora). "
         . "2) Převeď zahradu na PŮDORYS (pohled shora) v mřížce 0–100 – NIKDY ne v metrech: dům nahoře (y=0), fotograf dole (y=100), x zleva doprava tak, jak to vidí fotograf. "
         . "Zakresli dům (jen pruh u horního okraje), terasu, trávník, cesty, plot, stávající stromy a velké keře (1 bod). "
-        . ($markers ? "Na fotografii PO jsou bílo-zelené kroužky s čísly 1–{$markers}; každý označuje jeden nový záhon. Vrať PŘESNĚ {$markers} prvků type bed s no = číslem kroužku a is_new true – žádné jiné záhony nepřidávej. Kroužky samotné nejsou součástí zahrady. "
+        . ($markers ? "Na fotografii PO jsou bílo-zelené kroužky s čísly 1–{$markers}; každý označuje jeden NOVÝ záhon z návrhu (i když na stejném místě dřív rostlo něco jiného). Vrať PŘESNĚ {$markers} prvků type bed s no = číslem kroužku a is_new true, u každého VŽDY s rostlinami, které jsou v něm na fotce PO vidět – žádné jiné záhony nepřidávej. Popisek podle polohy, např. „Záhon vlevo u trávníku“. Kroužky samotné nejsou součástí zahrady. "
             : "ZÁHON (type bed, is_new true) zakresli JEN tam, kde je na fotografii PO skutečně vidět nová výsadba, která na fotce PŘED není. Nic si nevymýšlej. ")
         . "Polygony se nesmí překrývat kromě stromů a keřů. "
         . "U každého nového záhonu uveď rostliny, které jsou v něm na fotce vidět, a reálný počet kusů pro jeho plochu (trvalky 5–7 ks/m², traviny 3–5 ks/m², keře 1 ks na 1–2 m²; nejvýš 4 druhy na menší záhon). Počet kusů musí odpovídat ploše záhonu. "
