@@ -1041,7 +1041,7 @@ async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask,extr
     const built=P.build(res.plan,dims);
     planText=(res.plan.elements||[]).map(e=>e.label+' ('+e.type+')').join(', ');
     planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><img class="mg-plan-photo" alt="Návrh s očíslovanými záhony" src="'+numbered+'">'+P.bedsHtml(res.plan,dims)+P.shoppingHtml(res.plan,dims)+P.careHtml(res.plan)+
-      '<details class="mg-plan-details"><summary>📐 Orientační půdorys (pohled shora)</summary><div class="mg-plan-svg">'+built.svg+'</div>'+P.legendHtml(built)+'</details>';
+      '<details class="mg-plan-details"><summary>📐 Orientační půdorys (pohled shora)</summary><div class="mg-plan-svg">'+built.svg+'</div>'+P.plantLegendHtml(built)+P.legendHtml(built)+'</details>';
     const row=document.createElement('div');row.className='mg-actions';
     const dl1=document.createElement('a');dl1.href=numbered;dl1.download='mvgreen-navrh-cisla.jpg';dl1.textContent='⬇ Uložit fotku s čísly';dl1.className='mg-ai-download';
     const dl2=document.createElement('button');dl2.type='button';dl2.textContent='⬇ Stáhnout půdorys (PNG)';dl2.addEventListener('click',()=>P.downloadPng(built.svg,'mvgreen-pudorys.png'));

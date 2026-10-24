@@ -26,6 +26,28 @@
     return [x / p.length, y / p.length];
   }
   function fmtM2(v) { return v >= 10 ? Math.round(v) + ' m²' : (Math.round(v * 10) / 10).toString().replace('.', ',') + ' m²'; }
+  function pointInPoly(pt, poly) {
+    var x = pt[0], y = pt[1], inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+  /** Deterministic (seeded) point inside a polygon, for scattering individual plant markers. */
+  function scatterPoint(poly, rnd) {
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    poly.forEach(function (q) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); });
+    for (var tries = 0; tries < 20; tries++) {
+      var pt = [x0 + rnd() * (x1 - x0), y0 + rnd() * (y1 - y0)];
+      if (pointInPoly(pt, poly)) return pt;
+    }
+    return centroid(poly); // narrow/sliver polygon – bbox sampling missed, fall back to its middle
+  }
+  function seededRng(seed) {
+    return function () { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  }
+  var PLANT_DOT_COLOR = { flowers: '#d6458f', grasses: '#c9a227', shrubs: '#2f6a33', trees: '#6b4423' };
 
   /**
    * plan: {site:{width_m,depth_m}, elements:[...], notes}
@@ -82,7 +104,8 @@
       '</defs>';
     var fillOf = { bed: 'url(#mgp-bed)', lawn: 'url(#mgp-lawn)', gravel: 'url(#mgp-gravel)', house: 'url(#mgp-house)', slope: 'url(#mgp-slope)' };
 
-    var shapes = '', labels = '', legend = [], bedNo = 0, totals = { lawn: 0, bed: 0, plants: 0 };
+    var shapes = '', plantShapes = '', labels = '', legend = [], bedNo = 0, totals = { lawn: 0, bed: 0, plants: 0 };
+    var plantNo = {}, plantSeq = 0, plantLegend = [];
     els.forEach(function (e) {
       var st = STYLE[e.type], p = pts(e);
       if (e.type === 'fence' && p.length >= 2) {
@@ -112,6 +135,26 @@
         (e.plants || []).forEach(function (pl) { totals.plants += +pl.count || 0; });
         labels += '<g><circle cx="' + X(cen[0]) + '" cy="' + Y(cen[1]) + '" r="13" fill="#0f3d27" stroke="#fff" stroke-width="2"/><text x="' + X(cen[0]) + '" y="' + (+Y(cen[1]) + 4.5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">' + bedNo + '</text></g>';
         legend.push({ no: bedNo, type: st.name, label: e.label || ('Záhon ' + bedNo), area: fmtM2(a), plants: e.plants || [], isNew: e.is_new !== false });
+        // Scatter one small, individually-numbered dot per plant inside the bed outline (same
+        // number reused for every specimen of a species, as on a real planting plan), plus a
+        // side legend decoding each number to a plant name – a flat brown polygon alone doesn't
+        // show what's actually going in the ground. Capped per species so a dense groundcover
+        // (e.g. 35 ks) doesn't turn into visual noise; the real count stays in the legend and
+        // the shopping list.
+        var rnd = seededRng(Math.round((e._no || bedNo) * 97 + cen[0] * 10 + cen[1]));
+        (e.plants || []).forEach(function (pl) {
+          var name = String(pl.name || '').trim(); if (!name) return;
+          var cat = categoryOf(name);
+          if (!plantNo[name]) { plantNo[name] = ++plantSeq; plantLegend.push({ no: plantNo[name], name: name, cat: cat, count: 0 }); }
+          var entry = plantLegend[plantNo[name] - 1]; entry.count += +pl.count || 0;
+          var dotColor = PLANT_DOT_COLOR[cat] || PLANT_DOT_COLOR.flowers;
+          var dots = Math.max(1, Math.min(8, Math.round(+pl.count || 1)));
+          for (var di = 0; di < dots; di++) {
+            var pt = scatterPoint(p, rnd);
+            plantShapes += '<circle cx="' + X(pt[0]) + '" cy="' + Y(pt[1]) + '" r="6" fill="' + dotColor + '" stroke="#fff" stroke-width="1.2"/>' +
+              '<text x="' + X(pt[0]) + '" y="' + (+Y(pt[1]) + 2.6) + '" text-anchor="middle" font-size="7.5" font-weight="700" fill="#fff">' + plantNo[name] + '</text>';
+          }
+        });
       } else {
         var big = areaGrid(p) > 120;
         if (big) labels += '<text x="' + X(cen[0]) + '" y="' + Y(cen[1]) + '" text-anchor="middle" font-size="13" font-weight="600" fill="#1f3a2a" paint-order="stroke" stroke="#ffffffcc" stroke-width="3">' + esc(e.label || st.name) + (e.type === 'lawn' || e.type === 'terrace' ? ' · ' + fmtM2(a) : '') + '</text>';
@@ -128,8 +171,9 @@
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + VW + ' ' + VH + '" width="100%" role="img" aria-label="Půdorys zahrady" font-family="Inter,Segoe UI,Arial,sans-serif">' + defs +
       '<rect width="' + VW + '" height="' + VH + '" fill="#fbfcf9"/>' +
       '<rect x="' + pad + '" y="' + pad + '" width="' + inner + '" height="' + (100 * sy).toFixed(1) + '" fill="#f1f4ec" stroke="#cfd8c8"/>' +
-      shapes + labels + scale + '</svg>';
-    return { svg: svg, legend: legend, totals: totals, width: W, depth: D, measured: measured, notes: plan.notes || '' };
+      shapes + plantShapes + labels + scale + '</svg>';
+    plantLegend.sort(function (u, v) { return u.no - v.no; });
+    return { svg: svg, legend: legend, plantLegend: plantLegend, totals: totals, width: W, depth: D, measured: measured, notes: plan.notes || '' };
   }
 
   function legendHtml(r) {
@@ -140,6 +184,17 @@
     return '<table class="mg-plan-legend"><thead><tr><th></th><th>Prvek</th><th>Plocha</th><th>Rostliny</th></tr></thead><tbody>' + rows + '</tbody></table>' +
       '<p class="mg-plan-totals">Trávník ' + fmtM2(r.totals.lawn) + ' · záhony ' + fmtM2(r.totals.bed) + ' · rostlin celkem ' + r.totals.plants + ' ks</p>' +
       '<p class="mg-note">Půdorys je převedený z fotografie, proto jsou plochy orientační' + (r.measured ? '' : ' (bez zadaných rozměrů jde o odhad podle domu)') + '. Přesné rozměry si prosím ověřte přímo na zahradě. ' + esc(r.notes) + '</p>';
+  }
+
+  /** Legenda k číslům jednotlivých rostlin vyznačeným tečkami v půdorysu (viz build()). */
+  function plantLegendHtml(r) {
+    if (!r.plantLegend || !r.plantLegend.length) return '';
+    var catName = { flowers: 'trvalka / květina', grasses: 'travina', shrubs: 'keř', trees: 'strom' };
+    var rows = r.plantLegend.map(function (pl) {
+      return '<tr><td><span class="mg-plan-no" style="background:' + (PLANT_DOT_COLOR[pl.cat] || PLANT_DOT_COLOR.flowers) + '">' + pl.no + '</span></td><td><strong>' + esc(pl.name) + '</strong><br><small>' + (catName[pl.cat] || '') + '</small></td><td>' + pl.count + ' ks</td></tr>';
+    }).join('');
+    return '<h5>🌼 Legenda rostlin v půdorysu</h5><table class="mg-plan-legend mg-plan-plants"><thead><tr><th></th><th>Rostlina</th><th>Počet</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<p class="mg-note">Číslo a barva tečky v půdorysu odpovídají řádku v této legendě. Přesné rozmístění v záhonu je orientační.</p>';
   }
 
   /** Stáhne SVG jako PNG. */
@@ -353,5 +408,5 @@
     }).join('') + '</tbody></table>';
   }
 
-  window.MVGreenPlan = { build: build, legendHtml: legendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare, detectBeds: detectBeds, drawMarkers: drawMarkers, shoppingHtml: shoppingHtml, careHtml: careHtml };
+  window.MVGreenPlan = { build: build, legendHtml: legendHtml, plantLegendHtml: plantLegendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare, detectBeds: detectBeds, drawMarkers: drawMarkers, shoppingHtml: shoppingHtml, careHtml: careHtml };
 })();

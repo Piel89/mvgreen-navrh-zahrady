@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.70
+ * Version: 0.6.71
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
