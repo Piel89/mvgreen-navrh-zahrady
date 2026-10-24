@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.76
+ * Version: 0.6.77
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.76');
+define('MVGREEN_VERSION', '0.6.77');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -135,6 +135,10 @@ $mvgreen_ai_preview_handle = function () {
     if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message'=>'Jiný návrh se právě vytváří.'], 429);
     // Lock is acquired before counting the attempt; duplicate clicks cannot start parallel paid calls.
     set_transient('mvgreen_ai_preview_lock', 1, 240);
+    // Non-admin success is tied to a specific mvgreen_kod post (the code just redeemed) so the
+    // finished result can be saved durably against it and e-mailed – see mvgreen_save_result_and_notify
+    // below. Admin tests have no code/post and are never persisted or e-mailed.
+    $result_post_id = 0;
     if ($is_admin) {
         update_option($daily_key, $used_today + 1, false);
     } else {
@@ -143,6 +147,7 @@ $mvgreen_ai_preview_handle = function () {
             delete_transient('mvgreen_ai_preview_lock');
             wp_send_json_error(['message'=>$redeem->get_error_message()], 400);
         }
+        $result_post_id = (int) $redeem;
     }
     $prompt = "Toto je SKUTEČNÁ fotografie konkrétní zahrady. Proveď pouze lokální retuš uvnitř průhledné oblasti masky; mimo ni nesmí být změněn ani jeden pixel. Nevytvářej novou scénu, neměň dům, střechu, okna, fasádu, plot, terén, svah, stromy, oblohu ani úhel pohledu. Šedé okraje fotografie ponech šedé. Uprav přiloženou SKUTEČNOU fotografii zahrady jako realistickou fotografickou retuš, nikoliv jako nový obraz. ZACHOVEJ identický úhel kamery, kompozici, geometrii, stávající stromy, dům, plot, pozadí, oblohu, perspektivu a osvětlení. UPRAVUJ POUZE průhledné oblasti masky. Ostatní pixely ponech bez změny. Nové rostliny musí mít věrohodné měřítko, přirozenou strukturu a stíny odpovídající scéně. Žádný malovaný, ilustrativní, CGI, pohádkový ani přehnaně stylizovaný vzhled. Vhodné pro realistickou fotografii skutečně realizovatelné zahrady. Nezobrazuj žádné barevné značky ani text. Zadání: " . $instructions;
     // WordPress HTTP API does not build multipart files automatically; compose a bounded body.
@@ -188,6 +193,11 @@ $mvgreen_ai_preview_handle = function () {
             sort($log);
             while (count($log) > 60) @unlink(array_shift($log));
             update_option('mvgreen_ai_last_log', trailingslashit($up['baseurl']) . 'mvgreen-ai-log/' . $stem, false);
+        }
+        // Durable per-customer copy (never rotated/deleted like the debug log above) plus the
+        // "don't lose your design" e-mail – only for a real paid code, never for admin tests.
+        if ($result_post_id && function_exists('mvgreen_save_result_and_notify')) {
+            mvgreen_save_result_and_notify($result_post_id, $json['data'][0]['b64_json']);
         }
         wp_send_json_success(['image'=>'data:image/png;base64,'.$json['data'][0]['b64_json']]);
     }

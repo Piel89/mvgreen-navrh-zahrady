@@ -334,6 +334,42 @@ function mvgreen_activate_code($post_id) {
     }
 }
 
+/**
+ * Trvale uloží hotový AI návrh k zákazníkovu kódu a pošle e-mail s odkazem zpět na výsledek –
+ * pojistka proti tomu, že zákazník o návrh přijde při pádu stránky/prohlížeče. Ukládá se mimo
+ * mvgreen-ai-log (ten se rotuje a po 60 souborech maže), do vlastní nerotované složky, takže
+ * výsledek zůstává dostupný natrvalo. Chyba uložení nebo e-mailu požadavek nezastaví – živý
+ * výsledek dostane zákazník v prohlížeči tak jako tak, tohle je jen záložní kanál.
+ */
+function mvgreen_save_result_and_notify($post_id, $b64_image) {
+    $bytes = base64_decode((string) $b64_image, true);
+    if (!$bytes) return;
+    $up = wp_upload_dir();
+    $dir = trailingslashit($up['basedir']) . 'mvgreen-ai-vysledky';
+    if (!wp_mkdir_p($dir)) return;
+    if (function_exists('mvgreen_harden_upload_dir')) mvgreen_harden_upload_dir($dir);
+    // Filename built only from the (already-integer) post ID and a random server-side suffix –
+    // never from user input – so there is no path-traversal or overwrite surface here.
+    $filename = 'navrh-' . (int) $post_id . '-' . wp_generate_password(12, false, false) . '.png';
+    if (@file_put_contents($dir . '/' . $filename, $bytes) === false) return;
+    update_post_meta($post_id, '_mvg_result_url', trailingslashit($up['baseurl']) . 'mvgreen-ai-vysledky/' . $filename);
+    update_post_meta($post_id, '_mvg_result_at', time());
+
+    $email = get_post_meta($post_id, '_mvg_email', true);
+    $code = get_post_field('post_title', $post_id);
+    if (!$email || !is_email($email) || !$code) return;
+    // Same-origin page the request came from (the designer page itself) – same reasoning as the
+    // existing AJAX purchase flow above, which already treats the referer as reliable here.
+    $page = wp_get_referer() ?: home_url('/');
+    $page = strtok($page, '#'); // drop any fragment before appending the query arg
+    $link = add_query_arg('mvg', rawurlencode($code), $page);
+    $subject = 'MV GREEN – váš návrh zahrady je hotový';
+    $body = "Dobrý den,\n\nváš AI návrh zahrady je hotový a uložený, ať o něj nepřijdete.\n\n"
+        . "Otevřete si ho zde:\n" . $link . "\n\n"
+        . "Pokud by se odkaz neotevřel, stačí na stránce s návrhářem zahrady zadat svůj kód " . $code . ".\n\nMV GREEN";
+    wp_mail($email, $subject, $body);
+}
+
 /* ---------------------------------------------------------------------- *
  * Veřejné AJAX endpointy pro návrhář (assets/app.js)
  * ---------------------------------------------------------------------- */
@@ -353,6 +389,29 @@ function mvgreen_kod_check_handle() {
     $left = (int) get_post_meta($post->ID, '_mvg_uses_left', true);
     if ($left <= 0) wp_send_json_error(['message' => 'Tento kód je už vyčerpaný.']);
     wp_send_json_success(['left' => $left]);
+}
+
+/**
+ * Vrátí už jednou vygenerovaný návrh podle kódu – čistě pro čtení, žádné použití kódu se tím
+ * nečerpá (na rozdíl od mvgreen_redeem_code_use). Pojistka pro zákazníka: i po pádu stránky
+ * nebo prohlížeče, nebo z odkazu v e-mailu, se dá návrh znovu zobrazit.
+ */
+add_action('wp_ajax_nopriv_mvgreen_ai_result', 'mvgreen_ai_result_handle');
+add_action('wp_ajax_mvgreen_ai_result', 'mvgreen_ai_result_handle');
+
+function mvgreen_ai_result_handle() {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (mvgreen_code_rate_limited()) wp_send_json_error(['message' => 'Příliš mnoho pokusů. Zkuste to prosím za chvíli.']);
+    $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
+    $post = mvgreen_find_code_post($code);
+    // Same generic message as mvgreen_kod_check_handle for any invalid/unpaid code – this adds no
+    // new way to tell a real code from a fake one beyond what that endpoint already reveals.
+    if (!$post || get_post_meta($post->ID, '_mvg_status', true) !== 'paid') {
+        wp_send_json_error(['message' => 'Neplatný nebo nezaplacený kód.']);
+    }
+    $url = get_post_meta($post->ID, '_mvg_result_url', true);
+    if (!$url) wp_send_json_error(['message' => 'Návrh pro tento kód ještě není hotový.']);
+    wp_send_json_success(['image' => $url, 'at' => (int) get_post_meta($post->ID, '_mvg_result_at', true)]);
 }
 
 /** Vytvoří platbu přímo z návrháře (AJAX), aby nebylo nutné opouštět stránku před přesměrováním na GoPay. */

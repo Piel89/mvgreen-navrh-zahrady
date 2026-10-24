@@ -534,7 +534,7 @@ function makeReferenceStep(number,title,description){
 const resultStep=root.querySelector('[data-mg-step="6"]');
 const generationStep=makeReferenceStep(5,'Co přesně chcete','Popište, co si na zahradě přejete, a poté vytvořte AI návrh – kódem z e-mailu nebo platbou.');
 generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img id="mg-generation-preview-img" src="" alt="Vaše nahraná fotografie zahrady"><span>Vaše fotografie</span></div><div class="mg-generation-status"><h4>Co se právě děje?</h4><div class="mg-generation-progress" id="mg-generation-progress" hidden><div class="mg-progress-track"><div class="mg-generation-progress-fill" id="mg-generation-progress-fill" style="width:4%"></div></div><p class="mg-generation-progress-label" id="mg-generation-progress-label">Připraveno ke generování</p></div><p>✓ Analyzujeme vaši fotografii</p><p>✓ Rozpoznáváme plochy</p><p>✓ Vybíráme vhodné rostliny</p><p>✓ Připravujeme vizualizace</p><p>✓ Tvoříme doporučení</p>'
-  +'<div class="mg-buy-panel" id="mvg-koupit"><h4>Získejte svůj AI návrh</h4><p class="mg-note">Máte kód z e-mailu? Zadejte ho a vygenerujeme váš návrh.</p><div class="mg-buy-row"><input type="text" id="mg-kod-input" placeholder="Kód z e-mailu (např. AB12C-3DE45)" maxlength="11" autocomplete="off"><input type="email" id="mg-kod-email" placeholder="váš e-mail" autocomplete="email" required><button type="button" id="mg-kod-use" class="mg-primary">Vytvořit AI návrh</button></div><p class="mg-note">E-mail uvádíte pro případ, že by bylo potřeba vás ke kódu nebo návrhu kontaktovat. Hotový návrh se nezasílá automaticky e-mailem – zobrazí se přímo tady v kroku Výsledky návrhu.</p><p class="mg-note" id="mg-kod-status"></p>'
+  +'<div class="mg-buy-panel" id="mvg-koupit"><h4>Získejte svůj AI návrh</h4><p class="mg-note">Máte kód z e-mailu? Zadejte ho a vygenerujeme váš návrh.</p><div class="mg-buy-row"><input type="text" id="mg-kod-input" placeholder="Kód z e-mailu (např. AB12C-3DE45)" maxlength="11" autocomplete="off"><input type="email" id="mg-kod-email" placeholder="váš e-mail" autocomplete="email" required><button type="button" id="mg-kod-use" class="mg-primary">Vytvořit AI návrh</button></div><p class="mg-note">Hotový návrh se uloží k vašemu kódu a nepřijdete o něj, i kdyby stránka spadla nebo se zavřel prohlížeč. Odkaz na něj pošleme i e-mailem – na adresu, kterou jste zadali při nákupu kódu. Návrh se navíc rovnou zobrazí přímo tady v kroku Výsledky návrhu.</p><p class="mg-note" id="mg-kod-status"></p>'
   +'<details class="mg-buy-new"><summary>Nemáte kód? Koupit AI návrh za 89 Kč</summary><div class="mg-buy-row"><input type="email" id="mg-buy-email" placeholder="váš e-mail" autocomplete="email"><button type="button" id="mg-buy-submit" class="mg-primary">Zaplatit 89 Kč</button></div><label class="mg-buy-consent"><input type="checkbox" id="mg-buy-consent"> Souhlasím, aby plnění (vygenerování návrhu) začalo ihned po zaplacení, a beru na vědomí, že tím u vyčerpaných použití ztrácím právo na odstoupení od smlouvy do 14 dnů. <a href="/obchodni-podminky/" target="_blank" rel="noopener">Obchodní podmínky</a></label><p class="mg-note" id="mg-buy-status"></p></details>'
   +'<button type="button" id="mg-kod-simulate" class="mg-secondary mg-hidden">🧪 Správce: vytvořit testovací kód</button></div></div></div>';
 resultStep.insertAdjacentElement('beforebegin',generationStep);
@@ -737,6 +737,33 @@ root.querySelectorAll('[data-welcome-variant]').forEach(btn=>btn.addEventListene
 const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){tailoredChoice=typeof d.tailoredChoice==='string'?d.tailoredChoice:'';for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[]}}catch(e){}chooseVariant(q('mg-variant').value,false);updateList();
 function autoSave(){try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice}))}catch(e){}};root.addEventListener('change',e=>{if(e.target.id!=='mg-photo')autoSave()});root.addEventListener('pointerup',()=>setTimeout(autoSave,100));q('mg-save').addEventListener('click',()=>{try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice}));alert('Údaje a oblasti byly uloženy v prohlížeči. Fotografie se neukládá. Po obnovení stránky ji nahrajte znovu.')}catch(e){alert('Prohlížeč ukládání nepovolil.')}});q('mg-reset').addEventListener('click',()=>{localStorage.removeItem(key);alert('Uložené údaje byly vymazány. Aktuální formulář zůstává otevřený.')});
 syncMode();
+// Pojistka: pokud má návštěvník v URL (?mvg=KOD, z e-mailu) nebo uloženo v prohlížeči (z dřívější
+// návštěvy) kód s už hotovým návrhem, načteme a zobrazíme ho rovnou – i bez nahrané fotografie,
+// takže to přežije pád stránky/prohlížeče. URL má přednost před localStorage (odkaz z e-mailu je
+// úmyslná akce návštěvníka). Bez uloženého kódu nic nedělá – běžný první návštěvník nic nepozná.
+async function restorePersistedResult(){
+ let code='',fromUrl=false;
+ try{code=(new URL(window.location.href)).searchParams.get('mvg')||'';if(code)fromUrl=true}catch(e){}
+ if(!code){try{code=localStorage.getItem(resultCodeKey)||''}catch(e){}}
+ code=(code||'').trim().toUpperCase();
+ if(!code)return;
+ try{
+  const r=await mgAjax('mvgreen_ai_result',{code});
+  try{localStorage.setItem(resultCodeKey,code)}catch(e){}
+  const result=q('mg-ai-result');
+  result.classList.remove('mg-hidden');result.replaceChildren();
+  const note=document.createElement('p');note.className='mg-note';note.textContent='Toto je váš dříve vytvořený návrh (kód '+code+').';result.append(note);
+  const img=document.createElement('img');img.src=r.image;img.alt='Váš dříve vytvořený AI návrh zahrady';img.className='mg-after-image';img.style.maxWidth='100%';result.append(img);
+  const link=document.createElement('a');link.href=r.image;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
+  showWizardStep(6);
+ }catch(err){
+  // A code pasted from an e-mail link that's no longer valid deserves a short explanation; a code
+  // merely left over in localStorage from an old visit should fail completely silently.
+  if(fromUrl){const result=q('mg-ai-result');result.classList.remove('mg-hidden');result.textContent='Návrh pro tento kód se nepodařilo najít: '+err.message;}
+  try{localStorage.removeItem(resultCodeKey)}catch(e){}
+ }
+}
+restorePersistedResult();
 // Verified Czech retail listings (17 October 2026). Only matching exact cultivars and sizes.
 const legacyPlants=[
 {name:'Levandule úzkolistá „Munstead“',latin:'Lavandula angustifolia Munstead',sun:['Slunce'],water:['dry','normal'],soil:['sand','normal'],cold:5,density:6,price:89,priceType:'exact',size:'květináč 9 cm',bloom:'červen–srpen',height:'30–40 cm',source:'https://eshop.starkl.com/lavandula-angustifolia-blue',verified:'2026-10-17'},
@@ -1023,6 +1050,10 @@ window.MVGreenPlanAndAngles=mgPlanAndAngles;
 // jednorázovým kódem z e-mailu (payments.php) – obě cesty jdou přes tutéž funkci níže.
 const aiConfig=window.MVGreenAI||{};
 const aiButton=q('mg-ai-test');
+// Separate localStorage key from the general form draft (mvgreen-designer-draft-v3) – this one
+// only ever holds the customer's redeemed code, so a saved AI result can be found again after a
+// crash/refresh even though the photo itself is never kept in the browser.
+const resultCodeKey='mvgreen-result-code';
 
 async function runAiGeneration(trigger,extraFields,confirmText){
   if(!photoReady)return alert('Nejprve nahrajte fotografii zahrady.');
@@ -1066,6 +1097,13 @@ async function runAiGeneration(trigger,extraFields,confirmText){
       window.__mvgLastAi=aiPhoto.src;return;
     }
     const finalImage=done.canvas.toDataURL('image/png');
+    // Pojistka: server už tenhle výsledek uložil natrvalo ke kódu a poslal odkaz e-mailem (viz
+    // mvgreen_save_result_and_notify). Prohlížeč si kód zapamatuje taky, ať se po návratu nebo
+    // obnovení stránky návrh sám znovu najde přes mvgreen_ai_result (viz restorePersistedResult).
+    if(extraFields&&extraFields.code){
+     try{localStorage.setItem(resultCodeKey,extraFields.code)}catch(e){}
+     try{const url=new URL(window.location.href);url.searchParams.set('mvg',extraFields.code);history.replaceState(null,'',url)}catch(e){}
+    }
     result.replaceChildren();
     const comparison=document.createElement('div');comparison.className='mg-before-after';comparison.setAttribute('aria-label','Porovnání původní fotografie a AI návrhu');
     const before=document.createElement('img');before.src=original.toDataURL('image/png');before.alt='Před úpravou – původní zahrada';before.className='mg-before-image';
@@ -1093,9 +1131,9 @@ if(kodUse){
   kodUse.addEventListener('click',()=>{
     const code=(kodInput.value||'').trim().toUpperCase();
     if(!code){kodStatus.textContent='Zadejte prosím kód z e-mailu.';return;}
-    // The e-mail here is required for symmetry with the paid path and as a contact point, but –
-    // same as the paid path – nothing currently e-mails the finished design automatically; the
-    // field's own note next to it says so plainly, and this isn't sent anywhere by this click.
+    // This field is a contact point only – the result is already e-mailed automatically to the
+    // address captured when the code was purchased (_mvg_email on the mvgreen_kod post), so this
+    // re-typed value is intentionally never sent to the server here.
     const email=(kodEmail?.value||'').trim();
     if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){kodStatus.textContent='Zadejte prosím platný e-mail.';return;}
     kodStatus.textContent='';
