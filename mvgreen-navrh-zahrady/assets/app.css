@@ -2023,4 +2023,12 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-mask-step-status{margin:0;font-size:15px;color:#2b4434}
 .mvgreen-designer .mg-mask-preview-wrap{width:100%;max-width:460px}
 .mvgreen-designer .mg-mask-preview-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid #dce8dd;box-shadow:0 6px 18px #15633314}
+
+/* "Co přesně chcete" (step 5): the free-text wishes field is easy to overlook among the other form
+   fields, so it gets a brief glowing/pulsing highlight until the customer notices and uses it. */
+@keyframes mg-notes-pulse{0%,100%{box-shadow:0 0 0 0 #156333a6,0 4px 16px #1563331f}50%{box-shadow:0 0 0 7px #15633300,0 4px 16px #1563332e}}
+.mvgreen-designer .mg-notes-spotlight{border-radius:14px;padding:12px;margin:0 -12px 17px;background:#f3faf4}
+.mvgreen-designer .mg-notes-spotlight label{color:#0f3d27!important;font-weight:800!important}
+.mvgreen-designer .mg-notes-spotlight textarea{border:2px solid #156333!important;animation:mg-notes-pulse 1.8s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.mvgreen-designer .mg-notes-spotlight textarea{animation:none;box-shadow:0 0 0 3px #15633340}}
 .mvgreen-designer #mg-kod-status,.mvgreen-designer #mg-buy-status{min-height:1em}
