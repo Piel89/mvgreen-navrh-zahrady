@@ -1088,7 +1088,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const comparison=document.createElement('div');comparison.className='mg-before-after';comparison.setAttribute('aria-label','Porovnání původní fotografie a AI návrhu');
     const before=document.createElement('img');before.src=original.toDataURL('image/png');before.alt='Před úpravou – původní zahrada';before.className='mg-before-image';
     const after=document.createElement('img');after.src=finalImage;after.alt='Po úpravě – AI návrh';after.className='mg-after-image';
-    const labels=document.createElement('div');labels.className='mg-comparison-labels';labels.innerHTML='<span>PŘED</span><span>PO – AI NÁVRH</span>';
+    const labels=document.createElement('div');labels.className='mg-comparison-labels';labels.innerHTML='<span>PŘED</span><span>PO – AI NÁVRHU</span>';
     const range=document.createElement('input');range.type='range';range.min='0';range.max='100';range.value='50';range.className='mg-comparison-range';range.setAttribute('aria-label','Posunout hranici porovnání před a po');range.addEventListener('input',()=>comparison.style.setProperty('--mg-reveal',range.value+'%'));
     comparison.append(after,before,labels,range);result.append(comparison);
     const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';result.append(note);
