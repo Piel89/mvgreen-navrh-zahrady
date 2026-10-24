@@ -277,12 +277,18 @@
    * Full-screen confirmation of the editable area. Resolves with the final mask canvas or null.
    * opts.blank starts from nothing (manual mode: the customer paints what to change from scratch)
    * instead of the automatic horizon-based guess; the brush then defaults to "add" so the first
-   * touch already paints, and the horizon slider – meaningless with nothing pre-filled – is hidden.
+   * touch already paints.
    * opts.initialMask re-opens the brush loaded with an already-confirmed mask (adjust mode: the
    * customer adds to or removes from what they marked before, instead of starting over); like
-   * blank mode it hides the horizon slider (it would silently replace the hand-painted area) and
-   * shows the brush-size control, but leaves no brush pre-selected so the first touch can't
-   * accidentally erase or extend before the customer picks +/−.
+   * blank mode it shows the brush-size control, but leaves no brush pre-selected so the first touch
+   * can't accidentally erase or extend before the customer picks +/−.
+   *
+   * In every mode a "Hranice zahrady" line now also acts as a hard lock boundary: while the lock
+   * checkbox is on (default), nothing above the line can be painted editable, however sloppily the
+   * brush stroke overshoots – the customer never has to carefully trace around a fence or house
+   * wall, they just paint over the object they want changed and anything above the line is
+   * automatically excluded. Unchecking the lock allows painting anywhere, for the rarer case where
+   * the customer genuinely does want to change something above the line (a shed, part of the house).
    */
   function confirmMask(photo, initialHorizon, hint, opts) {
     return new Promise(function (resolve) {
@@ -293,6 +299,7 @@
       if (initial) { mask = canvas(photo.width, photo.height); mask.getContext('2d').drawImage(initial, 0, 0); }
       else mask = blank ? canvas(photo.width, photo.height) : autoMask(photo, horizon);
       var freehand = blank || !!initial;
+      var locked = true;
       var ov = document.createElement('div');
       ov.className = 'mg-mask-overlay';
       ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Potvrzení upravované plochy');
@@ -303,7 +310,8 @@
         (hint ? '<span class="mg-mask-hint">💡 ' + String(hint).replace(/[<>&]/g, '') + '</span>' : '') + '</div>' +
         '<div class="mg-mask-stage"><canvas></canvas></div>' +
         '<div class="mg-mask-tools">' +
-        (freehand ? '' : '<label class="mg-mask-horizon">Hranice zahrady<input type="range" min="10" max="85" step="1"></label>') +
+        '<label class="mg-mask-horizon">Hranice zahrady<input type="range" min="10" max="85" step="1"></label>' +
+        '<label class="mg-mask-lock"><input type="checkbox" class="mg-mask-lock-toggle" checked> 🔒 Chránit oblast nad čarou (plot, dům, obloha) – zaškrtnuto = tam nejde kreslit</label>' +
         '<div class="mg-mask-brush" role="group" aria-label="Štětec">' +
         '<button type="button" data-brush="add" aria-pressed="false">＋ Přidat plochu</button>' +
         '<button type="button" data-brush="erase" aria-pressed="false">− Odebrat plochu</button>' +
@@ -317,9 +325,27 @@
       var cv = ov.querySelector('canvas'), cx = cv.getContext('2d');
       cv.width = photo.width; cv.height = photo.height;
       var range = ov.querySelector('.mg-mask-horizon input[type=range]'); if (range) range.value = Math.round(horizon * 100);
+      var lockToggle = ov.querySelector('.mg-mask-lock-toggle');
       var sizeRange = ov.querySelector('.mg-mask-size-range'); var sizeMul = 1;
       var share = ov.querySelector('.mg-mask-share');
       var brush = blank ? 'add' : '';
+
+      // "Locked" must always truthfully mean nothing above the line is currently editable, from the
+      // very first frame – autoMask's own soft horizon-extension can paint a little above the line,
+      // and a mask handed in via opts.initialMask (re-adjusting a previously confirmed area) may
+      // have content up there from before this lock existed. Clipping on open keeps that promise
+      // simple and always true, rather than letting the hatch overlay show "locked" over content
+      // that's quietly still part of the submitted mask underneath it. If a customer genuinely had
+      // something marked up there, unchecking the lock and repainting it is one click away.
+      if (locked) clipMaskToLock();
+
+      function clipMaskToLock() {
+        var mc = mask.getContext('2d'), topPx = horizon * cv.height;
+        mc.save();
+        mc.globalCompositeOperation = 'destination-out';
+        mc.fillStyle = '#000'; mc.fillRect(0, 0, cv.width, topPx);
+        mc.restore();
+      }
 
       function render() {
         cx.clearRect(0, 0, cv.width, cv.height);
@@ -333,12 +359,39 @@
         dc.fillStyle = 'rgba(10,20,15,0.35)'; dc.fillRect(0, 0, cv.width, cv.height);
         dc.globalCompositeOperation = 'destination-out'; dc.drawImage(mask, 0, 0);
         cx.drawImage(dim, 0, 0);
+        var topPx = horizon * cv.height;
+        if (locked) {
+          // Grey hatch wash over the locked zone – visually unmistakable from the plain "not marked
+          // but could be" dim above, since it genuinely cannot be painted while this is on.
+          cx.save();
+          cx.beginPath(); cx.rect(0, 0, cv.width, topPx); cx.clip();
+          cx.fillStyle = 'rgba(90,90,90,0.38)'; cx.fillRect(0, 0, cv.width, topPx);
+          cx.strokeStyle = 'rgba(255,255,255,0.22)'; cx.lineWidth = Math.max(1, cv.width / 400);
+          var step = Math.max(10, cv.width / 40);
+          for (var lx = -topPx; lx < cv.width + topPx; lx += step) { cx.beginPath(); cx.moveTo(lx, 0); cx.lineTo(lx + topPx, topPx); cx.stroke(); }
+          cx.restore();
+        }
+        cx.save();
+        cx.strokeStyle = locked ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)';
+        cx.setLineDash([7, 5]); cx.lineWidth = Math.max(2, cv.width / 400);
+        cx.beginPath(); cx.moveTo(0, topPx); cx.lineTo(cv.width, topPx); cx.stroke();
+        cx.restore();
         var c = editableShare(mask), msg = validate(c);
         share.textContent = 'Upravuje se ' + Math.round(c * 100) + ' % fotky' + (msg ? ' – ' + msg : '');
         share.classList.toggle('is-bad', !!msg);
         ov.querySelector('[data-act=ok]').disabled = !!msg;
       }
-      if (range) range.addEventListener('input', function () { mask = autoMask(photo, range.value / 100); render(); });
+      if (range) range.addEventListener('input', function () {
+        horizon = range.value / 100;
+        if (!freehand) mask = autoMask(photo, horizon);
+        if (locked) clipMaskToLock();
+        render();
+      });
+      if (lockToggle) lockToggle.addEventListener('change', function () {
+        locked = lockToggle.checked;
+        if (locked) clipMaskToLock();
+        render();
+      });
       if (sizeRange) sizeRange.addEventListener('input', function () { sizeMul = sizeRange.value / 100; });
       ov.querySelectorAll('[data-brush]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -349,9 +402,17 @@
       });
       var painting = false, lastX = null, lastY = null;
       function stamp(x, y, rad) {
-        var mc = mask.getContext('2d');
-        mc.globalCompositeOperation = brush === 'erase' ? 'destination-out' : 'source-over';
-        mc.fillStyle = '#1b9c55'; mc.beginPath(); mc.arc(x, y, rad, 0, Math.PI * 2); mc.fill();
+        var mc = mask.getContext('2d'), erase = brush === 'erase';
+        mc.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
+        mc.fillStyle = '#1b9c55';
+        // Locked + adding: clip the paint to below the line so an "add" stroke that overshoots onto
+        // a protected object (a fence, say) never registers above it, however sloppy the stroke –
+        // the customer doesn't have to trace carefully around protected edges. Erasing is always
+        // allowed everywhere (it can only shrink the editable area, never breach the lock).
+        var clip = !erase && locked;
+        if (clip) { mc.save(); mc.beginPath(); mc.rect(0, horizon * cv.height, cv.width, cv.height - horizon * cv.height); mc.clip(); }
+        mc.beginPath(); mc.arc(x, y, rad, 0, Math.PI * 2); mc.fill();
+        if (clip) mc.restore();
         mc.globalCompositeOperation = 'source-over';
       }
       function paint(e) {

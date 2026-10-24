@@ -624,17 +624,19 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-thumbs-images{display:flex;gap:5px}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-thumbs-images img{width:58px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #dce6dc}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-redesign-tips .mg-tips-reference-photo{height:155px!important;object-fit:cover!important}
-/* Steps 4 and 5–7 occupy the full content area; their own right panels are inside the screen. */
+/* Steps 4 and 5–8 occupy the full content area; their own right panels are inside the screen. */
 @media(min-width:1181px){
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4,
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5,
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6,
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7{grid-template-columns:220px minmax(0,1fr)!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8{grid-template-columns:220px minmax(0,1fr)!important}
 }
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-redesign-tips,
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-redesign-tips,
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-redesign-tips,
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-redesign-tips{display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-redesign-tips,
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-redesign-tips{display:none!important}
 /* Legacy area-tool colors (dormant old canvas, kept inert at the unused step-9 slot). */
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-measure-layout{grid-template-columns:minmax(0,1fr) 240px!important;gap:18px!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-measure-side{background:#fff!important;border:1px solid #e1eae4!important}
@@ -661,29 +663,30 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-sun-options button[aria-pressed="true"],.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-moisture-options button[aria-pressed="true"]{background:#e9f8ed;border-color:#156333;font-weight:800}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-sun-options button span{display:block;font-size:18px}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-budget-in-details{display:none!important}
-/* Step 5 — centered generation preview and status. */
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-grid{grid-template-columns:1.4fr .9fr!important;gap:18px!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-image{min-height:370px!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-status{background:#f3faf5!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-status p{padding:8px 0!important;font-size:13px!important}
-/* Step 7 — overview at left, line-item budget at right (was step 8; step 7 used to be the plant/
-   material/lighting checklist step, removed – dead and duplicate of step 5's free-text wishes). */
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-budget-summary{width:49%;display:block!important;margin:12px 0!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-budget-summary>div:nth-child(2){display:none!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table{position:absolute;top:78px;left:53%;width:45%;padding:14px;border:1px solid #e1ebe3;border-radius:11px;background:#fff}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 [data-mg-step="7"]{position:relative;min-height:470px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table h4{font-size:16px;margin:0 0 14px;color:#213c2c}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table>div{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #e8eee8;font-size:12px;color:#47614f}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table .mg-ref-budget-total{font-size:15px;font-weight:900;color:#153d2a}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table p{font-size:11px;line-height:1.5;color:#627869}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table button{width:100%}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-plan-details{margin-top:20px;max-width:50%;font-size:12px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-plan-details summary{cursor:pointer;font-weight:800;color:#156333}
+/* Step 6 — centered generation preview and status (was step 5; step 5 is now the bed/path sketch). */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-generation-grid{grid-template-columns:1.4fr .9fr!important;gap:18px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-generation-image{min-height:370px!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-generation-status{background:#f3faf5!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-generation-status p{padding:8px 0!important;font-size:13px!important}
+/* Step 8 — overview at left, line-item budget at right (was step 7, before the bed/path sketch step
+   was inserted; step 7 used to be the plant/material/lighting checklist step, removed – dead and
+   duplicate of the free-text wishes step). */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary{width:49%;display:block!important;margin:12px 0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary>div:nth-child(2){display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table{position:absolute;top:78px;left:53%;width:45%;padding:14px;border:1px solid #e1ebe3;border-radius:11px;background:#fff}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 [data-mg-step="8"]{position:relative;min-height:470px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table h4{font-size:16px;margin:0 0 14px;color:#213c2c}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table>div{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #e8eee8;font-size:12px;color:#47614f}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table .mg-ref-budget-total{font-size:15px;font-weight:900;color:#153d2a}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table p{font-size:11px;line-height:1.5;color:#627869}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table button{width:100%}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details{margin-top:20px;max-width:50%;font-size:12px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details summary{cursor:pointer;font-weight:800;color:#156333}
 @media(max-width:1180px){
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-measure-layout{grid-template-columns:1fr!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-reference-details,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-budget-summary{width:100%!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table{position:static!important;width:auto!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-plan-details{max-width:100%}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-reference-details,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary{width:100%!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table{position:static!important;width:auto!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details{max-width:100%}
 }
 
 /* 0.6.6 – reference colors for the five area types; applies only to the nine-step designer. */
@@ -1882,6 +1885,8 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mg-mask-tools{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
 .mg-mask-horizon{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#2b4434}
 .mg-mask-horizon input{accent-color:#156333;width:180px}
+.mg-mask-lock{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#50605a;width:100%;flex-basis:100%}
+.mg-mask-lock input{accent-color:#156333;width:17px;height:17px;flex-shrink:0}
 .mg-mask-brush{display:flex;gap:8px}
 .mg-mask-overlay button{font:inherit;font-size:14px;font-weight:700;padding:10px 14px;border-radius:10px;border:1px solid #c9dccf;background:#fff;color:#156333;cursor:pointer;min-height:42px}
 .mg-mask-overlay button[aria-pressed=true]{background:#e4f7e7;border-color:#156333;box-shadow:inset 0 0 0 1px #156333}
@@ -2004,6 +2009,21 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-mask-step-buttons{display:flex;flex-wrap:wrap;gap:10px}
 .mvgreen-designer .mg-mask-preview-wrap{width:100%;max-width:460px}
 .mvgreen-designer .mg-mask-preview-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid #dce8dd;box-shadow:0 6px 18px #15633314}
+
+/* Step 5 "Umístění záhonu a cesty": an optional, rough red/blue line sketch over the customer's own
+   photo (green mask tint included once step 4 is confirmed). Not the filled-area brush of step 4 –
+   the canvas just follows the drag as a thin line, since this is only ever an approximate "roughly
+   here" hint for the AI, never a precise shape or size. */
+.mvgreen-designer .mg-bedpath-body{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.mvgreen-designer .mg-bedpath-stage{position:relative;width:100%;max-width:620px;border-radius:14px;overflow:hidden;background:#e4f1e9;min-height:160px;display:flex;align-items:center;justify-content:center}
+.mvgreen-designer .mg-bedpath-stage img{display:block;width:100%;height:auto}
+.mvgreen-designer .mg-bedpath-stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.mvgreen-designer .mg-bedpath-empty{padding:30px 16px;color:#5a6f63;font-size:13px;text-align:center}
+.mvgreen-designer .mg-bedpath-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.mvgreen-designer .mg-bedpath-tools button{border-radius:9px;border:1px solid #d9e5dc;background:#fff;padding:10px 16px;font-size:13px;font-weight:700;color:#2b4434;cursor:pointer}
+.mvgreen-designer .mg-bedpath-tools [data-bp-tool="bed"][aria-pressed="true"]{background:#fdeceb;border-color:#e5312f;color:#a3201d}
+.mvgreen-designer .mg-bedpath-tools [data-bp-tool="path"][aria-pressed="true"]{background:#eaf1fd;border-color:#2f6fe5;color:#1d4aa3}
+.mvgreen-designer #mg-bedpath-clear{background:#f4f6f4;color:#5a6f63}
 
 /* "Co přesně chcete" (step 5): the free-text wishes field is easy to overlook among the other form
    fields, so it gets a brief glowing/pulsing highlight until the customer notices and uses it. */

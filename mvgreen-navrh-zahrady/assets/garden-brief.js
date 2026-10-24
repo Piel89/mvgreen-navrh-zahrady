@@ -187,6 +187,16 @@
     var colorNames = { purple: 'fialová', white: 'bílá', pink: 'růžová', yellow: 'žlutá', red: 'červená', green: 'převážně zelená' };
     var cols = (d['mg-fav-colors'] || '').split(',').filter(Boolean).map(function (c) { return colorNames[c]; }).filter(Boolean);
     var irr = ['automatická závlaha je k dispozici', 'zalévá se ručně', 'zahrada se nezalévá – jen suchomilné rostliny'][+(d['mg-irrigation'] || 1)] || 'zalévá se ručně';
+    // Rough bed/path placement from the optional wizard step "Umístění záhonu a cesty" (app.js) –
+    // a few percent-of-photo coordinates per hint type, already capped there. Worded explicitly as
+    // approximate position only, never an exact shape or size, matching what the customer actually
+    // drew (a quick freehand line, not a traced outline).
+    var bedHints = (extra.bedHints || []).slice(0, 4);
+    var pathHints = (extra.pathHints || []).slice(0, 4);
+    var hintParts = [];
+    if (bedHints.length) hintParts.push('záhon zhruba u: ' + bedHints.join(', '));
+    if (pathHints.length) hintParts.push('cesta zhruba u: ' + pathHints.join(', '));
+    var hintLine = hintParts.length ? 'ORIENTAČNÍ UMÍSTĚNÍ ZÁHONU/CESTY OD ZÁKAZNÍKA (jen velmi hrubá poloha, NE přesný tvar ani rozměr; souřadnice v % šířky/výšky fotografie od levého horního rohu): ' + hintParts.join('; ') + '.' : '';
     var lines = [
       'ÚKOL: Realisticky dosázej a uprav pouze plochu zahrady v průhledné části masky. Výsledek musí vypadat jako fotografie stejné zahrady po realizaci, ne jako vizualizace. NEJVYŠŠÍ PRIORITA ZE VŠEHO: v upravované ploše nesmí po úpravě zůstat vidět žádný nepořádek ani stavební materiál či nářadí – viz pravidlo POŘÁDEK níže. Návrh, který tohle nesplní, je nepoužitelný, i kdyby byl jinak hezký.',
       'STYL: ' + String(extra.styleLabel || d['mg-style'] || 'přirozená zahrada').replace(/^[A-C] – /, '') + '. ' + (extra.styleAi || ''),
@@ -195,6 +205,7 @@
       'PODMÍNKY: ' + ({ 'Slunce': 'plné slunce', 'Polostín': 'polostín', 'Stín': 'stín' }[d['mg-sun']] || 'různé oslunění') + '; půda ' + ({ dry: 'suchá', wet: 'vlhká' }[d['mg-water']] || 'běžně vlhká') + '; ' + irr + '; lokalita ' + (d['mg-locality'] || 'Domažlicko') + (d['mg-altitude'] ? ', ' + d['mg-altitude'] + ' m n. m' : '') + '.',
       'ÚDRŽBA: ' + (d['mg-maint'] || 'nízká') + '. Rozpočet do ' + (d['mg-max'] || '50000') + ' Kč – žádné drahé prvky (jezírka, pergoly, zídky, terasy).',
       extra.layout ? 'ROZVRŽENÍ: ' + extra.layout : '',
+      hintLine,
       'NAVÁZÁNÍ: nové záhony a rostliny ukonči s odstupem od okraje upravované plochy; u okraje nech pruh trávníku nebo mulče, aby výsledek plynule navazoval na původní fotografii. Nikdy neusekávej rostliny okrajem plochy.',
       'DOKONČI CELOU ODEMČENOU PLOCHU: zákazník odemčenou plochu maloval štětcem od ruky, takže její okraj může být nepravidelný a v rohu nebo podél hrany může zůstat drobná nedotažená mezera. I přesto uprav odemčenou plochu celou, beze zbytku, až po samý okraj – žádné místo uvnitř ní, ani v rohu, ani těsně u hranice, nesmí zůstat jako neupravený kousek původní fotky. Výsledek musí působit jako jeden souvislý, uzavřený a profesionálně dokončený celek, nikdy jako plocha s nedodělaným koutkem.',
       'ZÁHONY: nové záhony veď jako pruh těsně podél hranice upravované plochy – u domu, plotu, zdi, stromu nebo cesty. ZÁSADNĚ NEDĚLEJ záhon jako samostatný ostrůvek nebo velký oblouk zasahující doprostřed trávníku – majitel chce mít uprostřed zahrady souvislou otevřenou plochu trávníku, kterou lze normálně sekat. Jasné okraje, nastýlané kůrou nebo štěrkem, rostliny ve skupinách po 3–7 kusech, ne náhodně rozházené. Trávník hustý a rovnoměrný, ale přirozený, ne umělý.',
@@ -207,7 +218,16 @@
       d['mg-notes'] ? 'PŘÁNÍ ZÁKAZNÍKA: ' + String(d['mg-notes']).slice(0, 1200) : '',
       'ZAKÁZÁNO: měnit dům, okna, střechu, plot, cesty, terén, stromy, oblohu a úhel pohledu; přidávat lidi, zvířata, nábytek, text, vodoznaky nebo nové stavby.'
     ];
-    return { text: lines.filter(Boolean).join('\n'), plants: pick.plants, rejected: pick.rejected };
+    var text = lines.filter(Boolean).join('\n');
+    // Safety net: in rare worst-case combinations (meadow style with up to 9 plant slots, every
+    // optional field maxed out, a full 1200-char customer-notes field) the fixed instruction text
+    // above can already sit within roughly 100 characters of the server's 6000-char cap
+    // (mvgreen-navrh-zahrady.php, strlen($instructions)>6000) with no hint line at all. This hint
+    // line is optional and best-effort – the AI design works fine without it – so rather than risk
+    // tipping a request over that cap, drop it (never the customer's own notes or plant list) when
+    // there is no safe room left for it.
+    if (hintLine && text.length > 5900) text = lines.filter(function (l) { return l && l !== hintLine; }).join('\n');
+    return { text: text, plants: pick.plants, rejected: pick.rejected };
   }
 
   window.MVGreenBrief = {
