@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const root=document.querySelector('[data-mvgreen-designer]');if(!root)return;
-root.innerHTML=`<div class="mg-shell"><header class="mg-head"><h2>🌿 MVGreen – Navrhni si zahradu</h2><p>Navrhněte svou zahradu jednoduše, krok za krokem.</p></header><div class="mg-body"><section class="mg-welcome" id="mg-welcome"><div class="mg-welcome-copy"><span class="mg-eyebrow">🌿 MVGreen · Navrhni si zahradu</span><h2>Podívejte se, jak krásná může být právě vaše zahrada.</h2><p>Nahrajte vlastní fotografii, zvolte styl zahrady a rozpočet. S návrhem vám pomůže AI — bez hodin složitého kreslení.</p><button type="button" id="mg-start" class="mg-primary mg-start">🌱 Začít s návrhem →</button><small>Vaše fotografie. Váš styl. Váš rozpočet.</small></div><div class="mg-welcome-image mg-hero-comparison" aria-label="Ukázka proměny zahrady před a po úpravě"><img class="mg-hero-after" src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="PO: návrh zahrady s okrasnými trávami, levandulí a cestičkou" fetchpriority="high"><img class="mg-hero-before" src="https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg" alt="PŘED: původní zahrada před úpravou"><span class="mg-hero-image-label" aria-live="polite"><span class="mg-hero-label-after">PO – AI návrh zahrady</span><span class="mg-hero-label-before">PŘED – původní zahrada</span></span><button type="button" class="mg-hero-touch-toggle" aria-pressed="false" aria-label="Zobrazit původní zahradu před úpravou">Zobrazit PŘED ↔ PO</button></div><div class="mg-welcome-styles" aria-label="Inspirace pro váš návrh"><button type="button" data-welcome-variant="A"><img loading="lazy" src="https://images.pexels.com/photos/479814/pexels-photo-479814.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Udržovaný zelený trávník"><strong>Anglický trávník</strong><small>Hustý a krásně zelený trávník s čistými liniemi</small></button><button type="button" data-welcome-variant="B"><img loading="lazy" src="https://images.pexels.com/photos/12220735/pexels-photo-12220735.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Zahrada s trávníkem a výsadbou"><strong>Trávník a výsadba</strong><small>Kombinace trávníku, záhonů a okrasných rostlin</small></button><button type="button" data-welcome-variant="B"><img loading="lazy" src="https://images.pexels.com/photos/33752181/pexels-photo-33752181.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Moderní minimalistická zahrada se zelení a čistými liniemi"><strong>Moderní zahrada</strong><small>Elegantní, moderní a nadčasová</small></button><button type="button" data-welcome-variant="C"><img loading="lazy" src="https://images.pexels.com/photos/34909157/pexels-photo-34909157.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=850" alt="Nenáročná zahrada se štěrkem, kameny a suchomilnými rostlinami"><strong>Zahrada s minimální údržbou</strong><small>Krásná zahrada s minimem práce</small></button></div></section><div class="mg-wizard-progress mg-hidden" id="mg-wizard-progress"><span id="mg-progress-label">Krok 1 ze 4</span><div class="mg-progress-track"><span id="mg-progress-fill"></span></div></div><section class="mg-wizard-step" data-mg-step="2" hidden><div class="mg-step-kicker">02 / 09 · VAŠE FOTOGRAFIE</div><h3 class="mg-section-title">Nahrajte fotografii zahrady</h3><p class="mg-note">Nahrajte fotografii a vyberte, jak budete pokračovat.</p><div class="mg-mode-heading"><strong>Vyberte způsob tvorby návrhu</strong><small>Vaše volba určí postup v následujících krocích. Můžete ji později změnit.</small></div><div class="mg-mode-select" role="group" aria-label="Způsob návrhu"><button type="button" class="mg-mode-card" data-mg-mode="auto" aria-pressed="true"><strong>✨ Automatický AI návrh</strong><small>AI navrhne zahradu podle fotografie a vašich požadavků. Bez ručního zakreslování.</small></button><button type="button" class="mg-mode-card" data-mg-mode="advanced" aria-pressed="false"><strong>✏️ Pokročilé úpravy</strong><small>Prstem nebo myší vymalujete, co chcete v zahradě změnit. Zbytek zůstane přesně jako na fotce.</small></button></div><input type="hidden" id="mg-design-mode" value="auto"><div class="mg-field"><label for="mg-photo">2. Fotografie zahrady</label><input id="mg-photo" type="file" accept="image/jpeg,image/png,image/webp"><p class="mg-note">JPG, PNG nebo WebP, max. 10 MB. Fotografie zůstává ve vašem prohlížeči.</p></div><div class="mg-calibration"><strong>📏 Zpřesněte rozměry zahrady</strong><p class="mg-note">Díky jedné známé vzdálenosti lépe odhadneme plochu trávníku a záhonů, počet rostlin i orientační rozpočet. Označte dva body, například konce plotu, a zadejte skutečnou vzdálenost. Měření z fotografie zůstává orientační.</p><div class="mg-scale-controls"><button type="button" id="mg-calibrate">📏 Změřit známou vzdálenost</button><span id="mg-scale-status">Měřítko není nastavené</span></div><p class="mg-measure-hint">Neznáte rozměr? Můžete pokračovat i bez něj, výměry a cenový odhad však budou méně přesné.</p></div><div class="mg-stage" id="mg-stage"><button type="button" id="mg-photo-fullscreen" class="mg-photo-fullscreen" aria-label="Otevřít fotografii na celou obrazovku" title="Celá obrazovka">⛶</button><div id="mg-rotate-hint" class="mg-rotate-hint mg-hidden" role="status" aria-live="polite"><span aria-hidden="true">📱↻</span> Otočte telefon na šířku pro pohodlnější kreslení.</div><button type="button" id="mg-exit-fullscreen" class="mg-exit-fullscreen">✕ Zavřít</button><span id="mg-placeholder">Nahrajte fotografii zahrady.</span><canvas id="mg-canvas" class="mg-hidden" tabindex="0" aria-label="Zakreslení oblastí zahrady"></canvas><div id="mg-crosshair" class="mg-crosshair mg-hidden" aria-hidden="true">＋</div><div class="mg-fullscreen-bar" role="toolbar" aria-label="Kreslení na celé obrazovce"><button type="button" id="mg-fs-undo">↶ Zpět</button><button type="button" id="mg-fs-redo">↷ Vpřed</button><button type="button" data-fs-tool="keep" aria-pressed="true">🟢 Zachovat</button><button type="button" data-fs-tool="remove" aria-pressed="false">🔴 Odstranit</button><button type="button" data-fs-tool="change" aria-pressed="false">🔵 Změnit</button></div></div><div class="mg-below-photo"><label class="mg-check"><input type="checkbox" id="mg-snap" checked> Automaticky dotahovat a přichytávat body a hrany</label><div class="mg-tools"><button type="button" data-tool="keep" aria-pressed="true">🟢 Zachovat</button><button type="button" data-tool="remove" aria-pressed="false">🔴 Odstranit</button><button type="button" data-tool="change" aria-pressed="false">🔵 Změnit</button></div></div><div class="mg-editor-actions"><div class="mg-mode-tabs" role="group" aria-label="Režim editoru"><button type="button" id="mg-tab-draw" aria-pressed="true">✏️ Kreslit</button><button type="button" id="mg-select" aria-pressed="false">↖ Upravit</button><button type="button" id="mg-tab-pan" aria-pressed="false">✥ Posouvat</button></div><div class="mg-draw-tools" id="mg-draw-tools"><button type="button" id="mg-polygon" class="mg-primary">Mnohoúhelník</button><button type="button" id="mg-rectangle">▭ Obdélník</button><button type="button" id="mg-finish">✓ Dokončit</button><button type="button" id="mg-cancel">Zrušit kreslení</button></div><div class="mg-quick-tools"><button type="button" id="mg-undo">↶ Zpět</button><button type="button" id="mg-redo">↷ Znovu</button><button type="button" id="mg-zoom-out" aria-label="Oddálit">−</button><button type="button" id="mg-zoom-reset">100 %</button><button type="button" id="mg-zoom-in" aria-label="Přiblížit">＋</button><button type="button" id="mg-settings-toggle" aria-expanded="false">⚙ Nastavení ▾</button></div><div id="mg-settings-panel" class="mg-settings-panel mg-hidden"><button type="button" id="mg-fullscreen">⛶ Celá obrazovka</button><button type="button" id="mg-clear">Vymazat všechny oblasti</button><span class="mg-zoom-tip">PC: Ctrl + kolečko přibližuje, mezerník dočasně posouvá. Esc vrací poslední bod.</span></div><p id="mg-mode-hint" class="mg-mode-hint" aria-live="polite">Klikáním označte rohy oblasti. Dvojklikem ji dokončíte.</p></div><div class="mg-mobile-controls"><button type="button" id="mg-mobile-pan">✥ Posouvat fotografii</button><button type="button" id="mg-mobile-point">＋ Přidat bod pod křížem</button><span>Pro přesné body posuňte fotografii pod zaměřovací kříž.</span></div><p class="mg-note">Vyberte barvu a rovnou kreslete další oblasti. Klikáním přidávejte body, dvojklikem nebo tlačítkem Dokončit oblast uzavřete. Hotové body lze táhnout, celou plochu posouvat. Kliknutím na hranu přidáte bod. Rozměry jsou přibližné a závisí na měřítku a perspektivě fotografie.</p><div id="mg-area-list" class="mg-area-list" aria-live="polite"></div></section><section class="mg-wizard-step" data-mg-step="1" hidden><div class="mg-step-kicker">01 / 09 · STYL ZAHRADY</div><h3 class="mg-section-title">1 Výběr stylu zahrady</h3><p class="mg-note">Vyberte styl, který se vám nejvíce líbí. Později ho můžeme upravit nebo kombinovat.</p><div class="mg-variant-grid" role="group" aria-label="Výběr ze šesti stylů zahrady"><button type="button" class="mg-variant" data-mg-variant="A" data-mg-style-choice="english" aria-pressed="true"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/479814/pexels-photo-479814.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Anglický trávník – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Anglický trávník</strong><small>Hustý a krásný trávník s čistými liniemi.</small></span></button><button type="button" class="mg-variant" data-mg-variant="B" data-mg-style-choice="lawn-beds" aria-pressed="false"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/12220735/pexels-photo-12220735.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Trávník a výsadba – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Trávník a výsadba</strong><small>Kombinace trávníku, záhonů a okrasných rostlin.</small></span></button><button type="button" class="mg-variant" data-mg-variant="B" data-mg-style-choice="modern" aria-pressed="false"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/33752181/pexels-photo-33752181.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Moderní zahrada – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Moderní zahrada</strong><small>Elegantní, moderní a nadčasová.</small></span></button><button type="button" class="mg-variant" data-mg-variant="B" data-mg-style-choice="natural" aria-pressed="false"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/8919730/pexels-photo-8919730.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Přírodní zahrada – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Přírodní zahrada</strong><small>Přirozený vzhled s trvalkami a keři.</small></span></button><button type="button" class="mg-variant" data-mg-variant="B" data-mg-style-choice="flowers" aria-pressed="false"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/16050153/pexels-photo-16050153.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Okrasné záhony – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Okrasné záhony</strong><small>Barevné květy po celý rok.</small></span></button><button type="button" class="mg-variant" data-mg-variant="C" data-mg-style-choice="low-care" aria-pressed="false"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/34909157/pexels-photo-34909157.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Minimum údržby – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Minimum údržby</strong><small>Krásná zahrada s minimem práce.</small></span></button></div><input type="hidden" id="mg-variant" value="A"><input type="hidden" id="mg-style-card" value="english"><input type="hidden" id="mg-fav-colors"><input type="hidden" id="mg-fav-plants"><input type="hidden" id="mg-irrigation" value="1"><p class="mg-note mg-variant-note" id="mg-variant-note" role="status">Vybráno: Anglický trávník</p><div class="mg-grid"><details class="mg-style-subvariants"><summary>Upravit výběr – 3 podvarianty stylu</summary><div id="mg-tailored-choices" class="mg-tailored-choices" aria-live="polite"></div></details><div class="mg-field"><label for="mg-style">Styl zahrady</label><select id="mg-style"><option>Moderní</option><option>Přírodní</option><option>Venkovská</option><option>Minimalistická</option><option>Nenáročná na údržbu</option></select></div><div class="mg-hidden mg-preference-internal" aria-hidden="true"><select id="mg-preference"><option value="auto">✨ Nechám výběr na AI</option><option value="mix">🌿 Kombinaci rostlin</option><option value="grasses">🌾 Okrasné traviny</option><option value="flowers">🌸 Kvetoucí trvalky</option><option value="shrubs">🌳 Okrasné keře</option><option value="trees">🌲 Stromy</option></select></div><div class="mg-field"><label for="mg-sun">Sluneční podmínky</label><select id="mg-sun"><option>Slunce</option><option>Polostín</option><option>Stín</option><option>Různé podmínky</option></select></div><div class="mg-field mg-optional-field"><label for="mg-width">Šířka upravované plochy (m)</label><input id="mg-width" type="number" min="0.1" max="10000" step="0.1" placeholder="např. 10"></div><div class="mg-field mg-optional-field"><label for="mg-length">Délka upravované plochy (m)</label><input id="mg-length" type="number" min="0.1" max="10000" step="0.1" placeholder="např. 15"></div><div class="mg-field mg-advanced-hidden"><label for="mg-min">Rozpočet od (Kč)</label><input id="mg-min" type="number" min="0" step="1000" value="10000"></div><div class="mg-field mg-optional-field"><label for="mg-build">Způsob realizace</label><select id="mg-build"><option>Svépomocí</option><option>Zahradnickou firmou</option><option>Zatím nevím</option></select></div><div class="mg-field"><label for="mg-maint">Požadovaná údržba</label><select id="mg-maint"><option>Nízká</option><option>Střední</option><option>Nevadí vyšší</option></select></div></div></section><section class="mg-wizard-step" data-mg-step="4" hidden><div class="mg-step-kicker">04 / 09 · DETAILY ZAHRADY</div><h3 class="mg-section-title">Zahrada podle vašich podmínek</h3><p class="mg-note">Rozpočet je orientační horní hranice, které se návrh snaží přiblížit bez překročení.</p><div class="mg-field"><label for="mg-max">Maximální rozpočet (Kč)</label><input id="mg-max" type="number" min="0" step="1000" value="50000"></div><p class="mg-note">Řekněte nám, kde zahrada je a kolik do ní chcete investovat.</p><section class="mg-plan" aria-label="Plán rostlin a rozpočtu"><h3>🌱 Rostliny a orientační rozpočet</h3><p class="mg-note">Bezplatný orientační návrh bez volání AI. Přesnou mrazovou polohu, půdu a ceny je nutné ověřit na místě.</p><div class="mg-grid"><div class="mg-field"><label for="mg-locality">Obec / oblast zahrady</label><input id="mg-locality" placeholder="např. Domažlice"></div><div class="mg-field mg-optional-field"><label for="mg-altitude">Nadmořská výška (m, lze opravit)</label><input id="mg-altitude" type="number" min="0" max="1600" placeholder="Zjistíme podle obce"><small id="mg-location-status" role="status">Po zadání obce klikněte na Zjistit nadmořskou výšku.</small><button type="button" id="mg-location-lookup">⛰️ Zjistit nadmořskou výšku</button></div><div class="mg-field"><label for="mg-soil">Půda</label><select id="mg-soil"><option value="unknown">Nevím</option><option value="normal">Běžná propustná</option><option value="clay">Jílovitá / těžká</option><option value="sand">Písčitá / lehká</option></select></div><div class="mg-field"><label for="mg-water">Vlhkost půdy</label><select id="mg-water"><option value="normal">Běžná</option><option value="dry">Suchá</option><option value="wet">Vlhká</option></select></div><div class="mg-field"><label for="mg-bed-area">Plocha nových výsadeb (m²)</label><input id="mg-bed-area" type="number" min="0" max="10000" step="0.5" placeholder="např. 20"></div><div class="mg-field mg-advanced-hidden"><label for="mg-distance">Doprava – vzdálenost jedním směrem (km)</label><input id="mg-distance" type="number" min="0" max="500" step="1" value="15"></div><div class="mg-field mg-advanced-hidden"><label for="mg-transport-rate">Doprava (Kč/km, obě cesty)</label><input id="mg-transport-rate" type="number" min="0" max="200" step="1" value="18"></div><div class="mg-field mg-advanced-hidden"><label for="mg-labor-rate">Výsadba firmou (Kč/m²)</label><input id="mg-labor-rate" type="number" min="0" max="5000" step="10" value="350"></div><div class="mg-field mg-advanced-hidden"><label for="mg-soil-depth">Vrstva substrátu (cm)</label><input id="mg-soil-depth" type="number" min="0" max="50" step="1" value="8"></div><div class="mg-field mg-advanced-hidden"><label for="mg-mulch-depth">Vrstva mulče (cm)</label><input id="mg-mulch-depth" type="number" min="0" max="30" step="1" value="5"></div><div class="mg-field mg-advanced-hidden"><label for="mg-reserve">Rezerva rozpočtu</label><select id="mg-reserve"><option value="10">10 %</option><option value="15" selected>15 %</option><option value="20">20 %</option></select></div></div><div class="mg-actions"><button type="button" id="mg-plan-create" class="mg-primary">🌿 Navrhnout rostliny zdarma</button><button type="button" id="mg-plan-download">⬇ Stáhnout plán (CSV)</button></div><div id="mg-plan-output" class="mg-plan-output mg-hidden" aria-live="polite"></div><p class="mg-note">Rostliny a ceny jsou orientační. Před realizací ověřte konkrétní kultivary a podmínky na zahradě.</p><a id="mg-suppliers" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/zahradnictv%C3%AD/">Vyhledat zahradnictví v okolí ↗</a></section></section><section class="mg-wizard-step" data-mg-step="6" hidden><div class="mg-step-kicker">06 / 09 · VÝSLEDKY NÁVRHU</div><h3 class="mg-section-title">Váš návrh zahrady</h3><p class="mg-note">Máte téměř hotovo. Doplňte poslední přání a zkontrolujte zadání. AI vizualizace je nyní dostupná v testovacím režimu správci webu.</p><div class="mg-result-intro"><div class="mg-result-intro-photo" role="img" aria-label="Ukázka AI návrhu zahrady"></div><div class="mg-result-intro-copy"><strong>Ze skutečné fotografie k vysněné zahradě</strong><p>Váš styl, skutečné podmínky a rozpočet. Výsledný návrh můžete dále upravovat.</p><span>🌿 Návrh přizpůsobený vaší zahradě</span></div></div><div class="mg-field"><label for="mg-notes">Co si na zahradě přejete?</label><textarea id="mg-notes" rows="3" maxlength="500" placeholder="Např.: cesta z kačírku podél plotu, záhon s levandulí u domu, mulč v tmavě hnědé barvě…"></textarea></div><div class="mg-hint">🔒 Při placeném AI testu se fotografie a vyznačené oblasti odešlou službě OpenAI. Bez spuštění testu se nic neodesílá. Textové údaje a geometrie oblastí lze uložit v tomto prohlížeči. Fotografie se neukládá. Po obnovení stránky ji znovu nahrajte.</div><div class="mg-actions"><button type="button" class="mg-primary" id="mg-summary">Zobrazit zadání</button><button type="button" id="mg-ai-test" class="mg-primary mg-hidden">✨ Vytvořit testovací AI návrh (placené API)</button><button type="button" id="mg-save">Uložit údaje v prohlížeči</button><button type="button" id="mg-reset">Vymazat uložené údaje</button></div><div id="mg-ai-result" class="mg-ai-result mg-hidden" aria-live="polite"></div><div id="mg-output" class="mg-result mg-hidden" role="status"></div></section><div class="mg-wizard-footer mg-hidden" id="mg-wizard-footer"><button type="button" id="mg-prev">← Předchozí krok</button><span id="mg-step-description"></span><button type="button" id="mg-next" class="mg-primary">Další krok →</button></div></div></div>`;
+root.innerHTML=`<div class="mg-shell"><header class="mg-head"><h2>🌿 MVGreen – Navrhni si zahradu</h2><p>Navrhněte svou zahradu jednoduše, krok za krokem.</p></header><div class="mg-body"><section class="mg-welcome" id="mg-welcome"><div class="mg-welcome-copy"><span class="mg-eyebrow">🌿 MVGreen · Navrhni si zahradu</span><h2>Podívejte se, jak krásná může být právě vaše zahrada.</h2><p>Nahrajte vlastní fotografii, zvolte styl zahrady a rozpočet. S návrhem vám pomůže AI — bez hodin složitého kreslení.</p><button type="button" id="mg-start" class="mg-primary mg-start">🌱 Začít s návrhem →</button><small>Vaše fotografie. Váš styl. Váš rozpočet.</small></div><div class="mg-welcome-image mg-hero-comparison" aria-label="Ukázka proměny zahrady před a po úpravě"><img class="mg-hero-after" src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="PO: návrh zahrady s okrasnými trávami, levandulí a cestičkou" fetchpriority="high"><img class="mg-hero-before" src="https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg" alt="PŘED: původní zahrada před úpravou"><span class="mg-hero-image-label" aria-live="polite"><span class="mg-hero-label-after">PO – AI návrh zahrady</span><span class="mg-hero-label-before">PŘED – původní zahrada</span></span><button type="button" class="mg-hero-touch-toggle" aria-pressed="false" aria-label="Zobrazit původní zahradu před úpravou">Zobrazit PŘED ↔ PO</button></div><div class="mg-welcome-styles" aria-label="Inspirace pro váš návrh"><button type="button" data-welcome-variant="A"><img loading="lazy" src="https://images.pexels.com/photos/479814/pexels-photo-479814.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Udržovaný zelený trávník"><strong>Anglický trávník</strong><small>Hustý a krásně zelený trávník s čistými liniemi</small></button><button type="button" data-welcome-variant="B"><img loading="lazy" src="https://images.pexels.com/photos/12220735/pexels-photo-12220735.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Zahrada s trávníkem a výsadbou"><strong>Trávník a výsadba</strong><small>Kombinace trávníku, záhonů a okrasných rostlin</small></button><button type="button" data-welcome-variant="B"><img loading="lazy" src="https://images.pexels.com/photos/33752181/pexels-photo-33752181.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Moderní minimalistická zahrada se zelení a čistými liniemi"><strong>Moderní zahrada</strong><small>Elegantní, moderní a nadčasová</small></button><button type="button" data-welcome-variant="C"><img loading="lazy" src="https://images.pexels.com/photos/34909157/pexels-photo-34909157.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=850" alt="Nenáročná zahrada se štěrkem, kameny a suchomilnými rostlinami"><strong>Zahrada s minimální údržbou</strong><small>Krásná zahrada s minimem práce</small></button></div></section><div class="mg-wizard-progress mg-hidden" id="mg-wizard-progress"><span id="mg-progress-label">Krok 1 ze 4</span><div class="mg-progress-track"><span id="mg-progress-fill"></span></div></div><section class="mg-wizard-step" data-mg-step="3" hidden><div class="mg-step-kicker">03 / 08 · VAŠE FOTOGRAFIE</div><h3 class="mg-section-title">Nahrajte fotografii zahrady</h3><p class="mg-note">Nahrajte fotografii své zahrady. V dalším kroku vyznačíte plochu, kterou chcete upravit.</p><div class="mg-field"><label for="mg-photo">2. Fotografie zahrady</label><input id="mg-photo" type="file" accept="image/jpeg,image/png,image/webp"><p class="mg-note">JPG, PNG nebo WebP, max. 10 MB. Fotografie zůstává ve vašem prohlížeči.</p></div><div class="mg-calibration"><strong>📏 Zpřesněte rozměry zahrady</strong><p class="mg-note">Díky jedné známé vzdálenosti lépe odhadneme plochu trávníku a záhonů, počet rostlin i orientační rozpočet. Označte dva body, například konce plotu, a zadejte skutečnou vzdálenost. Měření z fotografie zůstává orientační.</p><div class="mg-scale-controls"><button type="button" id="mg-calibrate">📏 Změřit známou vzdálenost</button><span id="mg-scale-status">Měřítko není nastavené</span></div><p class="mg-measure-hint">Neznáte rozměr? Můžete pokračovat i bez něj, výměry a cenový odhad však budou méně přesné.</p></div><div class="mg-stage" id="mg-stage"><button type="button" id="mg-photo-fullscreen" class="mg-photo-fullscreen" aria-label="Otevřít fotografii na celou obrazovku" title="Celá obrazovka">⛶</button><div id="mg-rotate-hint" class="mg-rotate-hint mg-hidden" role="status" aria-live="polite"><span aria-hidden="true">📱↻</span> Otočte telefon na šířku pro pohodlnější kreslení.</div><button type="button" id="mg-exit-fullscreen" class="mg-exit-fullscreen">✕ Zavřít</button><span id="mg-placeholder">Nahrajte fotografii zahrady.</span><canvas id="mg-canvas" class="mg-hidden" tabindex="0" aria-label="Zakreslení oblastí zahrady"></canvas><div id="mg-crosshair" class="mg-crosshair mg-hidden" aria-hidden="true">＋</div><div class="mg-fullscreen-bar" role="toolbar" aria-label="Kreslení na celé obrazovce"><button type="button" id="mg-fs-undo">↶ Zpět</button><button type="button" id="mg-fs-redo">↷ Vpřed</button><button type="button" data-fs-tool="keep" aria-pressed="true">🟢 Zachovat</button><button type="button" data-fs-tool="remove" aria-pressed="false">🔴 Odstranit</button><button type="button" data-fs-tool="change" aria-pressed="false">🔵 Změnit</button></div></div><div class="mg-below-photo"><label class="mg-check"><input type="checkbox" id="mg-snap" checked> Automaticky dotahovat a přichytávat body a hrany</label><div class="mg-tools"><button type="button" data-tool="keep" aria-pressed="true">🟢 Zachovat</button><button type="button" data-tool="remove" aria-pressed="false">🔴 Odstranit</button><button type="button" data-tool="change" aria-pressed="false">🔵 Změnit</button></div></div><div class="mg-editor-actions"><div class="mg-mode-tabs" role="group" aria-label="Režim editoru"><button type="button" id="mg-tab-draw" aria-pressed="true">✏️ Kreslit</button><button type="button" id="mg-select" aria-pressed="false">↖ Upravit</button><button type="button" id="mg-tab-pan" aria-pressed="false">✥ Posouvat</button></div><div class="mg-draw-tools" id="mg-draw-tools"><button type="button" id="mg-polygon" class="mg-primary">Mnohoúhelník</button><button type="button" id="mg-rectangle">▭ Obdélník</button><button type="button" id="mg-finish">✓ Dokončit</button><button type="button" id="mg-cancel">Zrušit kreslení</button></div><div class="mg-quick-tools"><button type="button" id="mg-undo">↶ Zpět</button><button type="button" id="mg-redo">↷ Znovu</button><button type="button" id="mg-zoom-out" aria-label="Oddálit">−</button><button type="button" id="mg-zoom-reset">100 %</button><button type="button" id="mg-zoom-in" aria-label="Přiblížit">＋</button><button type="button" id="mg-settings-toggle" aria-expanded="false">⚙ Nastavení ▾</button></div><div id="mg-settings-panel" class="mg-settings-panel mg-hidden"><button type="button" id="mg-fullscreen">⛶ Celá obrazovka</button><button type="button" id="mg-clear">Vymazat všechny oblasti</button><span class="mg-zoom-tip">PC: Ctrl + kolečko přibližuje, mezerník dočasně posouvá. Esc vrací poslední bod.</span></div><p id="mg-mode-hint" class="mg-mode-hint" aria-live="polite">Klikáním označte rohy oblasti. Dvojklikem ji dokončíte.</p></div><div class="mg-mobile-controls"><button type="button" id="mg-mobile-pan">✥ Posouvat fotografii</button><button type="button" id="mg-mobile-point">＋ Přidat bod pod křížem</button><span>Pro přesné body posuňte fotografii pod zaměřovací kříž.</span></div><p class="mg-note">Vyberte barvu a rovnou kreslete další oblasti. Klikáním přidávejte body, dvojklikem nebo tlačítkem Dokončit oblast uzavřete. Hotové body lze táhnout, celou plochu posouvat. Kliknutím na hranu přidáte bod. Rozměry jsou přibližné a závisí na měřítku a perspektivě fotografie.</p><div id="mg-area-list" class="mg-area-list" aria-live="polite"></div></section><section class="mg-wizard-step" data-mg-step="1" hidden><div class="mg-step-kicker">01 / 08 · STYL ZAHRADY</div><h3 class="mg-section-title">1 Výběr stylu zahrady</h3><p class="mg-note">Vyberte styl, který se vám nejvíce líbí. Později ho můžeme upravit nebo kombinovat.</p><div class="mg-variant-grid" role="group" aria-label="Výběr z pěti stylů zahrady"><button type="button" class="mg-variant" data-mg-variant="A" data-mg-style-choice="english" aria-pressed="true"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/479814/pexels-photo-479814.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Anglický trávník – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Anglický trávník</strong><small>Hustý a krásný trávník s čistými liniemi.</small></span></button><button type="button" class="mg-variant" data-mg-variant="B" data-mg-style-choice="lawn-beds" aria-pressed="false"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/12220735/pexels-photo-12220735.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Trávník a výsadba – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Trávník a výsadba</strong><small>Kombinace trávníku, záhonů a okrasných rostlin.</small></span></button><button type="button" class="mg-variant" data-mg-variant="B" data-mg-style-choice="modern" aria-pressed="false"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/33752181/pexels-photo-33752181.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Moderní zahrada – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Moderní zahrada</strong><small>Elegantní, moderní a nadčasová.</small></span></button><button type="button" class="mg-variant" data-mg-variant="B" data-mg-style-choice="meadow" aria-pressed="false"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/570041/pexels-photo-570041.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Luční zahrada – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Luční zahrada</strong><small>Pestrá louka s planými květinami a trávami.</small></span></button><button type="button" class="mg-variant" data-mg-variant="C" data-mg-style-choice="low-care" aria-pressed="false"><span class="mg-variant-picture"><img loading="lazy" src="https://images.pexels.com/photos/34909157/pexels-photo-34909157.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=1200" alt="Minimum údržby – inspirativní fotografie zahrady"></span><span class="mg-variant-info"><strong>Minimum údržby</strong><small>Krásná zahrada s minimem práce.</small></span></button></div><input type="hidden" id="mg-variant" value="A"><input type="hidden" id="mg-style-card" value="english"><input type="hidden" id="mg-fav-colors"><input type="hidden" id="mg-fav-plants"><input type="hidden" id="mg-irrigation" value="1"><p class="mg-note mg-variant-note" id="mg-variant-note" role="status">Vybráno: Anglický trávník</p><div class="mg-grid"><details class="mg-style-subvariants"><summary>Upravit výběr – 3 podvarianty stylu</summary><div id="mg-tailored-choices" class="mg-tailored-choices" aria-live="polite"></div></details><div class="mg-field"><label for="mg-style">Styl zahrady</label><select id="mg-style"><option>Moderní</option><option>Přírodní</option><option>Venkovská</option><option>Minimalistická</option><option>Nenáročná na údržbu</option></select></div><div class="mg-hidden mg-preference-internal" aria-hidden="true"><select id="mg-preference"><option value="auto">✨ Nechám výběr na AI</option><option value="mix">🌿 Kombinaci rostlin</option><option value="grasses">🌾 Okrasné traviny</option><option value="flowers">🌸 Kvetoucí trvalky</option><option value="shrubs">🌳 Okrasné keře</option><option value="trees">🌲 Stromy</option></select></div><div class="mg-field"><label for="mg-sun">Sluneční podmínky</label><select id="mg-sun"><option>Slunce</option><option>Polostín</option><option>Stín</option><option>Různé podmínky</option></select></div><div class="mg-field mg-optional-field"><label for="mg-width">Šířka upravované plochy (m)</label><input id="mg-width" type="number" min="0.1" max="10000" step="0.1" placeholder="např. 10"></div><div class="mg-field mg-optional-field"><label for="mg-length">Délka upravované plochy (m)</label><input id="mg-length" type="number" min="0.1" max="10000" step="0.1" placeholder="např. 15"></div><div class="mg-field mg-advanced-hidden"><label for="mg-min">Rozpočet od (Kč)</label><input id="mg-min" type="number" min="0" step="1000" value="10000"></div><div class="mg-field mg-optional-field"><label for="mg-build">Způsob realizace</label><select id="mg-build"><option>Svépomocí</option><option>Zahradnickou firmou</option><option>Zatím nevím</option></select></div><div class="mg-field"><label for="mg-maint">Požadovaná údržba</label><select id="mg-maint"><option>Nízká</option><option>Střední</option><option>Nevadí vyšší</option></select></div></div></section><section class="mg-wizard-step" data-mg-step="2" hidden><div class="mg-step-kicker">02 / 08 · DETAILY ZAHRADY</div><h3 class="mg-section-title">Zahrada podle vašich podmínek</h3><p class="mg-note">Rozpočet je orientační horní hranice, které se návrh snaží přiblížit bez překročení.</p><div class="mg-field"><label for="mg-max">Maximální rozpočet (Kč)</label><input id="mg-max" type="number" min="0" step="1000" value="50000"></div><p class="mg-note">Řekněte nám, kde zahrada je a kolik do ní chcete investovat.</p><section class="mg-plan" aria-label="Plán rostlin a rozpočtu"><h3>🌱 Rostliny a orientační rozpočet</h3><p class="mg-note">Bezplatný orientační návrh bez volání AI. Přesnou mrazovou polohu, půdu a ceny je nutné ověřit na místě.</p><div class="mg-grid"><div class="mg-field"><label for="mg-locality">Obec / oblast zahrady</label><input id="mg-locality" placeholder="např. Domažlice"></div><div class="mg-field mg-optional-field"><label for="mg-altitude">Nadmořská výška (m, lze opravit)</label><input id="mg-altitude" type="number" min="0" max="1600" placeholder="Zjistíme podle obce"><small id="mg-location-status" role="status">Po zadání obce klikněte na Zjistit nadmořskou výšku.</small><button type="button" id="mg-location-lookup">⛰️ Zjistit nadmořskou výšku</button></div><div class="mg-field"><label for="mg-soil">Půda</label><select id="mg-soil"><option value="unknown">Nevím</option><option value="normal">Běžná propustná</option><option value="clay">Jílovitá / těžká</option><option value="sand">Písčitá / lehká</option></select></div><div class="mg-field"><label for="mg-water">Vlhkost půdy</label><select id="mg-water"><option value="normal">Běžná</option><option value="dry">Suchá</option><option value="wet">Vlhká</option></select></div><div class="mg-field"><label for="mg-bed-area">Plocha nových výsadeb (m²)</label><input id="mg-bed-area" type="number" min="0" max="10000" step="0.5" placeholder="např. 20"></div><div class="mg-field mg-advanced-hidden"><label for="mg-distance">Doprava – vzdálenost jedním směrem (km)</label><input id="mg-distance" type="number" min="0" max="500" step="1" value="15"></div><div class="mg-field mg-advanced-hidden"><label for="mg-transport-rate">Doprava (Kč/km, obě cesty)</label><input id="mg-transport-rate" type="number" min="0" max="200" step="1" value="18"></div><div class="mg-field mg-advanced-hidden"><label for="mg-labor-rate">Výsadba firmou (Kč/m²)</label><input id="mg-labor-rate" type="number" min="0" max="5000" step="10" value="350"></div><div class="mg-field mg-advanced-hidden"><label for="mg-soil-depth">Vrstva substrátu (cm)</label><input id="mg-soil-depth" type="number" min="0" max="50" step="1" value="8"></div><div class="mg-field mg-advanced-hidden"><label for="mg-mulch-depth">Vrstva mulče (cm)</label><input id="mg-mulch-depth" type="number" min="0" max="30" step="1" value="5"></div><div class="mg-field mg-advanced-hidden"><label for="mg-reserve">Rezerva rozpočtu</label><select id="mg-reserve"><option value="10">10 %</option><option value="15" selected>15 %</option><option value="20">20 %</option></select></div></div><div class="mg-actions"><button type="button" id="mg-plan-create" class="mg-primary">🌿 Navrhnout rostliny zdarma</button><button type="button" id="mg-plan-download">⬇ Stáhnout plán (CSV)</button></div><div id="mg-plan-output" class="mg-plan-output mg-hidden" aria-live="polite"></div><p class="mg-note">Rostliny a ceny jsou orientační. Před realizací ověřte konkrétní kultivary a podmínky na zahradě.</p><a id="mg-suppliers" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/zahradnictv%C3%AD/">Vyhledat zahradnictví v okolí ↗</a></section></section><section class="mg-wizard-step" data-mg-step="6" hidden><div class="mg-step-kicker">06 / 08 · VÝSLEDKY NÁVRHU</div><h3 class="mg-section-title">Váš návrh zahrady</h3><p class="mg-note">Jakmile v předchozím kroku vytvoříte AI návrh, zobrazí se zde.</p><div class="mg-field"><label for="mg-notes">Co si na zahradě přejete?</label><textarea id="mg-notes" rows="3" maxlength="500" placeholder="Např.: cesta z kačírku podél plotu, záhon s levandulí u domu, mulč v tmavě hnědé barvě…"></textarea></div><div class="mg-hint">🔒 Při vytvoření AI návrhu se fotografie a vyznačená plocha odešlou službě OpenAI. Bez spuštění generování se nic neodesílá. Textové údaje lze uložit v tomto prohlížeči. Fotografie se neukládá. Po obnovení stránky ji znovu nahrajte.</div><div class="mg-actions"><button type="button" class="mg-primary" id="mg-summary">Zobrazit zadání</button><button type="button" id="mg-ai-test" class="mg-primary mg-hidden">✨ Vytvořit testovací AI návrh (placené API)</button><button type="button" id="mg-save">Uložit údaje v prohlížeči</button><button type="button" id="mg-reset">Vymazat uložené údaje</button></div><div id="mg-ai-result" class="mg-ai-result mg-hidden" aria-live="polite"></div><div id="mg-output" class="mg-result mg-hidden" role="status"></div></section><div class="mg-wizard-footer mg-hidden" id="mg-wizard-footer"><button type="button" id="mg-prev">← Předchozí krok</button><span id="mg-step-description"></span><button type="button" id="mg-next" class="mg-primary">Další krok →</button></div></div></div>`;
 const q=id=>root.querySelector('#'+id)||document.getElementById(id),canvas=q('mg-canvas'),ctx=canvas.getContext('2d');
 const colors={keep:'#20ad53',remove:'#e43d3d',change:'#168af0'};
 // Five distinct garden surfaces match the approved nine-screen reference.
@@ -82,7 +82,6 @@ function showUploadedPhotoPreview(){
  const preview=q('mg-upload-preview-image');
  // Reuse the decoded uploaded image directly, with no additional upload to server.
  preview.src=canvas.toDataURL('image/jpeg',0.88);
- const beforeResult=q('mg-result-before');if(beforeResult){beforeResult.src=preview.src;beforeResult.alt='Vaše nahraná fotografie zahrady před návrhem';}
  photoPreview.hidden=false;
  photoPreview.classList.add('is-visible');
  updateGardenPhotoQuality();
@@ -96,7 +95,9 @@ function updateCanvasLayout(){
  if(!photoReady||!canvas.width||!canvas.height)return;
  const full=isStageFullscreen();
  const mobile=window.innerWidth<=740;
- const fullToolsWidth=full&&!mobile&&q('mg-design-mode')?.value==='advanced'?210:0;
+ // There is only one design flow now (no auto/advanced distinction), so the old extra tools
+ // column used only in the retired "advanced" fullscreen canvas never applies.
+ const fullToolsWidth=0;
  const availableWidth=Math.max(1,full?window.innerWidth-fullToolsWidth-48:stage.clientWidth-24);
  const availableHeight=full?Math.max(1,window.innerHeight-(mobile?200:125)):Infinity;
  const fittedWidth=Math.min(availableWidth,availableHeight*canvas.width/canvas.height);
@@ -185,7 +186,7 @@ q('mg-fs-undo').addEventListener('click',undo);q('mg-fs-redo').addEventListener(
 root.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;if(e.key==='Escape'){if(isStageFullscreen()||draft.length){e.preventDefault();e.stopPropagation();if(draft.length)undo()}return}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();if(e.shiftKey)redo();else undo()}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo()}});
 document.addEventListener('keydown',e=>{if(!root.isConnected)return;if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;if(isStageFullscreen()&&!root.contains(e.target)&&(e.ctrlKey||e.metaKey)){const k=e.key.toLowerCase();if(k==='z'){e.preventDefault();if(e.shiftKey)redo();else undo();return}if(k==='y'){e.preventDefault();redo();return}}if(e.key==='Escape'&&(isStageFullscreen()||draft.length)){e.preventDefault();e.stopImmediatePropagation();if(draft.length)undo()}if(e.code==='Space'&&document.activeElement===canvas){e.preventDefault();spacePan=true}});document.addEventListener('keyup',e=>{if(e.code==='Space')spacePan=false});
 q('mg-clear').addEventListener('click',()=>{if(!confirm('Smazat všechny zakreslené oblasti?'))return;saveHistory();areas=[];selected=-1;infoOpen=-1;draft=[];updateList();draw()});
-const ids=['mg-design-mode','mg-variant','mg-style-card','mg-style','mg-preference','mg-sun','mg-width','mg-length','mg-min','mg-max','mg-build','mg-maint','mg-notes','mg-locality','mg-altitude','mg-soil','mg-water','mg-bed-area','mg-reserve','mg-distance','mg-transport-rate','mg-labor-rate','mg-soil-depth','mg-mulch-depth','mg-fav-colors','mg-fav-plants','mg-irrigation'];const getData=()=>Object.fromEntries(ids.map(id=>[id,q(id).value]));
+const ids=['mg-variant','mg-style-card','mg-style','mg-preference','mg-sun','mg-width','mg-length','mg-min','mg-max','mg-build','mg-maint','mg-notes','mg-locality','mg-altitude','mg-soil','mg-water','mg-bed-area','mg-reserve','mg-distance','mg-transport-rate','mg-labor-rate','mg-soil-depth','mg-mulch-depth','mg-fav-colors','mg-fav-plants','mg-irrigation'];const getData=()=>Object.fromEntries(ids.map(id=>[id,q(id).value]));
 const variantOptions={A:{label:'A – Anglický trávník',style:'Minimalistická',preference:'auto',ai:'HLAVNÍM PRVKEM je souvislý, hustý realistický anglický trávník. Zachovej co největší travnatou plochu, čisté hrany a případně jen úzké jednoduché záhony. Nenahrazuj velký trávník množstvím rostlin.'},B:{label:'B – Trávník a výsadba',style:'Moderní',preference:'mix',ai:'HLAVNÍM PRVKEM je velká souvislá travnatá plocha a reprezentativní okrajové výsadby trvalek, travin, keřů podle skutečného místa. Nezaplňuj celý trávník záhony.'},C:{label:'C – Minimum údržby',style:'Nenáročná na údržbu',preference:'auto',ai:'Navrhni realizovatelnou nenáročnou zahradu: menší jednoduché travnaté plochy, odolné druhy, vhodný mulč či kamenivo a praktické cesty. Nepoužívej zbytečně složité výsadby.'}};
 const tailoredChoices={
  A:{title:'Co chcete s trávníkem udělat?',choices:[['Nový trávník','Založit nový hustý trávník'],['Renovace trávníku','Zlepšit současný porost'],['Trávník s okraji','Trávník a jednoduché záhony']]},
@@ -204,8 +205,7 @@ const styleChoices={
  'english':{variant:'A',style:'Minimalistická',name:'Anglický trávník'},
  'lawn-beds':{variant:'B',style:'Moderní',name:'Trávník a výsadba'},
  'modern':{variant:'B',style:'Moderní',name:'Moderní zahrada'},
- 'natural':{variant:'B',style:'Přírodní',name:'Přírodní zahrada'},
- 'flowers':{variant:'B',style:'Venkovská',name:'Okrasné záhony'},
+ 'meadow':{variant:'B',style:'Luční',name:'Luční zahrada'},
  'low-care':{variant:'C',style:'Nenáročná na údržbu',name:'Minimum údržby'}
 };
 // Per-style layout for the AI brief: how much lawn stays, how much is planted.
@@ -213,8 +213,7 @@ const styleLayout={
  'english':{max:4,layout:'Zachovej asi 85–90 % označené plochy jako souvislý trávník. Přidej nejvýš 1–2 úzké jednoduché záhony podél domu nebo plotu (šířka do 1 m). Žádné stromy ani velké keře.'},
  'lawn-beds':{max:6,layout:'Trávník zůstane asi na 60–70 % označené plochy. Po okrajích a podél domu vytvoř souvislé záhony s trvalkami, travinami a 1–3 nízkými keři.',hint:'Chcete osázet i pruh u domu nebo terasy? Přidejte ho štětcem „＋ Přidat plochu“.'},
  'modern':{max:6,layout:'Trávník asi na 50–60 % plochy s čistými rovnými hranami. Geometrické záhony s okrasnými travinami, kamenivem nebo mulčem a 1–2 solitérními keři.',hint:'Pro moderní zahradu přidejte štětcem „＋ Přidat plochu“ i pruh u domu nebo terasy – tam se záhony hodí nejvíc.'},
- 'natural':{max:9,layout:'Trávník jen menší část (asi 30–40 % plochy), zbytek bohaté přírodní výsadby: vrstvené trvalky a traviny, skupiny keřů a 1–2 menší stromy na okrajích. Plynulé měkké hrany záhonů.',hint:'Přírodní zahrada potřebuje víc místa pro výsadbu. Přidejte štětcem „＋ Přidat plochu“ pruh u domu, terasy i u plotu.'},
- 'flowers':{max:9,layout:'Trávník jen menší část (asi 30–40 % plochy). Velké kvetoucí záhony s trvalkami v několika výškových patrech, okrasné keře a 1 menší okrasný strom. Barevná zahrada po celou sezonu.',hint:'Pro okrasné záhony přidejte štětcem „＋ Přidat plochu“ i místa u domu a terasy, kde mají být květiny.'},
+ 'meadow':{max:9,layout:'Většinu nebo celou označenou plochu přeměň na pestrou květnatou louku: hustý přirozený mix lučních trvalek a letniček (vlčí máky, chrpy, kopretiny, řimbaba, jetel apod.) prorostlý vyššími okrasnými trávami, v nepravidelných přírodních skupinách – žádné řady ani geometrické záhony. Tráva se nestříhá naakorát, nejvýš jedna neformální sečená pěšina nebo malé posezení, pokud je na ploše místo.',hint:'Pro luční zahradu označte štětcem i větší plochu trávníku, který se má přeměnit v louku.'},
  'low-care':{max:5,layout:'Menší trávník (asi 40–50 % plochy), zbytek odolné keře a půdopokryvné rostliny v mulči nebo kamenivu. Jednoduché tvary, nic náročného na péči.',hint:'Místa, kde nechcete sekat (u domu, u plotu), přidejte štětcem „＋ Přidat plochu“.'}
 };
 function chooseVariant(code,applySettings=true,styleChoice=null){
@@ -236,6 +235,9 @@ function chooseVariant(code,applySettings=true,styleChoice=null){
 root.querySelectorAll('[data-mg-style-choice]').forEach(button=>button.addEventListener('click',()=>{chooseVariant(button.dataset.mgVariant,true,button.dataset.mgStyleChoice);autoSave()}));
 q('mg-summary').addEventListener('click',()=>{const d=getData(),min=Number(d['mg-min']),max=Number(d['mg-max']),w=Number(d['mg-width']),l=Number(d['mg-length']);if(!Number.isFinite(min)||!Number.isFinite(max)||min<0||max<min){alert('Zkontrolujte rozpočet od–do.');return}const area=w>0&&l>0?`${fmt(w*l)} m²`:'nezadána';const out=q('mg-output');out.textContent=`ZADÁNÍ NÁVRHU ZAHRADY\n\nFotografie: ${photoReady?'nahrána':'nenahrána'}\nOznačené oblasti: ${areas.length}\nMěřítko: ${metersPerPixel?'nastaveno (orientační)':'nenastaveno'}\n${areas.map((a,i)=>`${i+1}. ${a.tool==='keep'?'Zachovat':a.tool==='remove'?'Odstranit':'Změnit'}${metersPerPixel?` ≈ ${fmt(polygonArea(a.points)*metersPerPixel**2)} m²`:''}`).join('\n')}\nVarianta: ${variantOptions[d['mg-variant']]?.label||variantOptions.B.label}\nPreference: ${tailoredChoice}\nStyl: ${d['mg-style']}\nSvětlo: ${d['mg-sun']}\nCelková zadaná plocha: ${area}\nRozpočet: ${fmt(min)}–${fmt(max)} Kč\nRealizace: ${d['mg-build']}\nÚdržba: ${d['mg-maint']}\nPožadavky: ${d['mg-notes']||'neuvedeny'}\n\nVýpočty z fotografie jsou orientační. AI návrh a platby zatím nejsou dostupné.`;out.classList.remove('mg-hidden')});
 let wizardStep=0;
+// The single confirmed edit mask from step 4 ("Označení plochy"), reused as-is by runAiGeneration –
+// generation never reopens the mask-confirmation overlay itself. Already grown via S.growMask when set.
+let confirmedEditMask=null;
 
 /* One consistent set of small line icons, instead of mixed typographic/emoji symbols. */
 function mgTipIcon(kind){
@@ -257,34 +259,29 @@ function mgTipIcon(kind){
 }
 
 function showWizardStep(n){
- // Step 3's old polygon/category marking canvas is retired for both design modes (see
- // runAiGeneration): marking what to change now happens with a single brush right before
- // generating. Any remaining caller that still asks for step 3 lands on the results step instead.
- if(n===3)n=6;
- wizardStep=Math.max(0,Math.min(9,n));
+ wizardStep=Math.max(0,Math.min(8,n));
  q('mg-welcome').hidden=wizardStep!==0;
  root.querySelectorAll('[data-mg-step]').forEach(section=>{section.hidden=Number(section.dataset.mgStep)!==wizardStep});
  q('mg-wizard-progress').classList.toggle('mg-hidden',wizardStep===0);
  q('mg-wizard-footer').classList.toggle('mg-hidden',wizardStep===0);
  if(wizardStep){
-   q('mg-progress-label').textContent=wizardStep+' '+['','Výběr stylu zahrady','Fotografie zahrady','Měření a označení ploch','Detaily zahrady','Vytvoření návrhu','Výsledky návrhu','Detailní úpravy','Přehled a rozpočet','Průvodce a další kroky'][wizardStep];
-   q('mg-progress-fill').style.width=(wizardStep*100/9)+'%';
+   q('mg-progress-label').textContent=wizardStep+' '+['',...designerStepNames][wizardStep];
+   q('mg-progress-fill').style.width=(wizardStep*100/8)+'%';
    q('mg-prev').textContent=wizardStep===1?'← Zpět':'← Zpět';
-   q('mg-next').textContent=wizardStep===9?'✓ Dokončit':'Další krok →';
-   q('mg-step-description').textContent=['','Výběr stylu zahrady','Nahrání fotografie','Měření a plochy','Detaily a podmínky','Generování návrhu','Výsledné varianty','Úpravy návrhu','Rozpočet a souhrn','Další kroky'][wizardStep];
+   q('mg-next').textContent=wizardStep===8?'✓ Dokončit':'Další krok →';
+   q('mg-step-description').textContent=['','Výběr stylu zahrady','Detaily a podmínky','Nahrání fotografie','Vyznačení plochy','Popis přání a vytvoření návrhu','Výsledný návrh','Úpravy návrhu','Rozpočet a souhrn'][wizardStep];
  }
- const side=root.querySelector('.mg-redesign-side');if(side)side.querySelectorAll('[data-go-step]').forEach(b=>{const inNine=!!b.closest('.mg-nine-step-nav');b.classList.toggle('is-active',Number(b.dataset.goStep)===(inNine?wizardStep:(wizardStep<=1?1:wizardStep<=3?2:wizardStep===4?4:6)));b.disabled=false});
+ const side=root.querySelector('.mg-redesign-side');if(side)side.querySelectorAll('[data-go-step]').forEach(b=>{b.classList.toggle('is-active',Number(b.dataset.goStep)===wizardStep);b.disabled=false});
  const tips=root.querySelector('.mg-redesign-tips');if(tips){const data={
 0:['Vyberte si zahradu, kterou chcete proměnit.','Připravte fotografii skutečného prostoru.','Návrh můžete později upravit.'],
 1:['Zamyslete se, jak chcete zahradu využívat.','Zvolte styl podle času na údržbu.','Vybírejte rostliny podle vaší lokality.','Styl můžete kdykoliv změnit.'],
-2:['Fotografujte za denního světla.','Zachyťte celý prostor včetně domu a plotu.','Vyberte ostrý snímek bez zbytečných překážek.'],
-3:['Znáte délku plotu? Označte dva body pro lepší odhad ploch.','Trávník a záhony označte samostatně.','Rozměry z fotografie jsou pouze orientační.'],
-4:['Zadejte obec a skutečné podmínky pozemku.','Rozpočet je orientační limit, nikoli závazná nabídka.','Čím přesnější údaje, tím použitelnější odhad.'],
-5:['Prohlédněte si postup zpracování zadání.','AI test může spustit pouze oprávněný správce.','Ukázková fotografie není výsledkem vašeho návrhu.'],
-6:['Výsledek AI je dostupný jen po skutečném generování.','Porovnání PŘED a PO je zatím ukázkové.','Vyberte preferovanou variantu zadání.'],
+2:['Zadejte obec a skutečné podmínky pozemku.','Rozpočet je orientační limit, nikoli závazná nabídka.','Čím přesnější údaje, tím použitelnější odhad.'],
+3:['Fotografujte za denního světla.','Zachyťte celý prostor včetně domu a plotu.','Vyberte ostrý snímek bez zbytečných překážek.'],
+4:['Vymalujte štětcem plochu, kterou chcete v zahradě změnit.','Co nevymalujete, zůstane přesně jako na fotce.','Plochu můžete před vytvořením návrhu kdykoliv upravit znovu.'],
+5:['Popište přesně, co si na zahradě přejete.','Placený AI návrh může spustit zákazník kódem z e-mailu nebo platbou.','Vytvoření návrhu obvykle trvá asi minutu.'],
+6:['Výsledek AI je dostupný až po skutečném vytvoření návrhu.','Posuňte jezdec pro porovnání PŘED a PO.','Výsledek si můžete stáhnout jako obrázek.'],
 7:['Vybírejte rostliny podle slunce a půdy.','Plochy lze upravit ve fotografickém editoru.','Přání se zohlední při dalším návrhu.'],
-8:['Ceny jsou pouze orientační.','Nezapomeňte na dopravu a realizaci.','Stáhněte si položkový rozpočet.'],
-9:['Ptejte se průvodce na jednotlivé kroky.','Zadání lze znovu upravit.','Průvodce není živý AI chat.']};
+8:['Ceny jsou pouze orientační.','Nezapomeňte na dopravu a realizaci.','Stáhněte si položkový rozpočet.']};
 tips.innerHTML='<h3>'+(wizardStep===1?'Tipy pro výběr stylu':'Tipy pro lepší výsledek')+'</h3>'+ (wizardStep===0?[['camera','Foťte za denního světla.','Zahrada bude mít přirozené barvy a detaily.'],['maximize','Zachyťte co největší plochu.','Ideálně z rohu zahrady.'],['list','Označte hlavní zóny.','Trávník, záhony, terasa, cestičky.'],['settings','Nemusíte měřit přesně.','AI návrh se přizpůsobí fotografii.']].map(x=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+mgTipIcon(x[0])+'</span><div><strong>'+x[1]+'</strong><small>'+x[2]+'</small></div></div>').join(''):(data[wizardStep]||data[1]).map((x,i)=>'<div class="mg-tip-card"><span class="mg-tip-icon" aria-hidden="true">'+mgTipIcon(['leaf','sun','check'][i%3])+'</span><div><strong>'+x+'</strong></div></div>').join(''));}
 
  if(false){ // replaced by .mg-shoot-guide in the main column (garden-brief.js)
@@ -309,32 +306,26 @@ tips.innerHTML='<h3>'+(wizardStep===1?'Tipy pro výběr stylu':'Tipy pro lepší
   tips.appendChild(indicator);
   if(photoReady)updateGardenPhotoQuality();
  }
- if(tips&&[1,4,5,7,8,9].includes(wizardStep)){const selectedPhoto=root.querySelector('[data-mg-style-choice][aria-pressed="true"] img');if(selectedPhoto){const photo=document.createElement('img');photo.className='mg-tips-reference-photo';photo.src=selectedPhoto.src;photo.alt='Inspirace pro vybraný styl zahrady';photo.loading='lazy';photo.dataset.mgStyle=q('mg-style-card')?.value||'english';tips.appendChild(photo);}}
+ if(tips&&[1,2,5,7,8].includes(wizardStep)){const selectedPhoto=root.querySelector('[data-mg-style-choice][aria-pressed="true"] img');if(selectedPhoto){const photo=document.createElement('img');photo.className='mg-tips-reference-photo';photo.src=selectedPhoto.src;photo.alt='Inspirace pro vybraný styl zahrady';photo.loading='lazy';photo.dataset.mgStyle=q('mg-style-card')?.value||'english';tips.appendChild(photo);}}
  if(wizardStep>0){const main=root.querySelector('.mg-redesign-main');if(main)main.scrollTo({top:0,behavior:'instant'});}
 }
-function setDesignMode(mode){
- const chosen=mode==='advanced'?'advanced':'auto';
- q('mg-design-mode').value=chosen;
- root.querySelectorAll('[data-mg-mode]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.mgMode===chosen)));
- root.classList.toggle('mg-automatic-mode',chosen==='auto');
- if(q('mg-placeholder'))q('mg-placeholder').textContent='Po nahrání se zde zobrazí vaše fotografie. Pro přesnější odhad můžete označit známou vzdálenost.';
-}
-root.querySelectorAll('[data-mg-mode]').forEach(btn=>btn.addEventListener('click',()=>{setDesignMode(btn.dataset.mgMode);autoSave()}));
+if(q('mg-placeholder'))q('mg-placeholder').textContent='Po nahrání se zde zobrazí vaše fotografie.';
 q('mg-start').addEventListener('click',()=>openDesignerModal());
-q('mg-prev').addEventListener('click',()=>{if(wizardStep<=1)closeDesignerModal();else showWizardStep(wizardStep===4?2:wizardStep-1)});
+q('mg-prev').addEventListener('click',()=>{if(wizardStep<=1)closeDesignerModal();else showWizardStep(wizardStep-1)});
 q('mg-next').addEventListener('click',()=>{
- if(wizardStep===2&&!photoReady){q('mg-photo').focus();alert('Nejprve nahrajte fotografii zahrady.');return}
- if(wizardStep===9){closeDesignerModal();return}
- // Step 3's old marking canvas is retired: both modes now mark what to change with a single brush
- // in one quick step right before generation (S.confirmMask), so step 03 is always skipped here.
- showWizardStep(wizardStep===2?4:wizardStep+1);
+ if(wizardStep===3&&!photoReady){q('mg-photo').focus();alert('Nejprve nahrajte fotografii zahrady.');return}
+ if(wizardStep===4&&!confirmedEditMask){alert('Nejprve vyznačte na fotografii plochu, kterou chcete upravit.');return}
+ if(wizardStep===8){closeDesignerModal();return}
+ showWizardStep(wizardStep+1);
 });
-setDesignMode('auto');
+// One shared list of step names used both for the always-visible nine-slot… now eight-slot
+// sidebar nav and for the progress-bar label below (previously duplicated verbatim in both places).
+const designerStepNames=['Styl zahrady','Detaily zahrady','Fotografie zahrady','Označení plochy','Co přesně chcete','Výsledky návrhu','Možné úpravy','Přehled a rozpočet'];
 const shell=root.querySelector('.mg-shell');
 if(shell){
  const frame=document.createElement('div');frame.className='mg-redesign-frame';
  const side=document.createElement('nav');side.className='mg-redesign-side';side.setAttribute('aria-label','Průběh návrhu');
- side.innerHTML='<div class="mg-redesign-brand"><span class="mg-brand-leaf">❧</span><strong>MVGreen</strong><small>Navrhni si zahradu</small></div>'+('<div class="mg-nine-step-nav" aria-label="Všech devět kroků návrhu">'+['Styl zahrady','Fotografie zahrady','Měření a plochy','Detaily zahrady','Generování návrhu','Výsledky návrhu','Úpravy návrhu','Přehled a rozpočet','Chatový průvodce'].map((name,i)=>'<button type="button" data-go-step="'+(i+1)+'"><span>'+(i+1)+'</span>'+name+'</button>').join('')+'</div>')+'<div class="mg-sidebar-story"><h2>Začněte svůj<br>návrh zahrady</h2><p>Vyberte styl, který vám nejvíce vyhovuje.</p></div><div class="mg-sidebar-benefits"><div><span>◷</span><p><strong>Rychlý výsledek</strong><small>do 1–2 minut (orientačně)</small></p></div><div><span>❧</span><p><strong>Reálné rostliny</strong><small>pro vaši lokalitu</small></p></div><div><span>▤</span><p><strong>Orientační rozpočet</strong><small>hned ve výsledku</small></p></div><div><span>✦</span><p><strong>Možnost úprav</strong><small>dle vašich preferencí</small></p></div></div><div class="mg-sidebar-quote"><span>❝</span><p>Vaše zahrada. Váš styl. Váš návrh.</p><small>MVGreen – Navrhni si zahradu</small></div>';
+ side.innerHTML='<div class="mg-redesign-brand"><span class="mg-brand-leaf">❧</span><strong>MVGreen</strong><small>Navrhni si zahradu</small></div>'+('<div class="mg-nine-step-nav" aria-label="Všech osm kroků návrhu">'+designerStepNames.map((name,i)=>'<button type="button" data-go-step="'+(i+1)+'"><span>'+(i+1)+'</span>'+name+'</button>').join('')+'</div>')+'<div class="mg-sidebar-story"><h2>Začněte svůj<br>návrh zahrady</h2><p>Vyberte styl, který vám nejvíce vyhovuje.</p></div><div class="mg-sidebar-benefits"><div><span>◷</span><p><strong>Rychlý výsledek</strong><small>do 1–2 minut (orientačně)</small></p></div><div><span>❧</span><p><strong>Reálné rostliny</strong><small>pro vaši lokalitu</small></p></div><div><span>▤</span><p><strong>Orientační rozpočet</strong><small>hned ve výsledku</small></p></div><div><span>✦</span><p><strong>Možnost úprav</strong><small>dle vašich preferencí</small></p></div></div><div class="mg-sidebar-quote"><span>❝</span><p>Vaše zahrada. Váš styl. Váš návrh.</p><small>MVGreen – Navrhni si zahradu</small></div>';
  const main=document.createElement('div');main.className='mg-redesign-main';
  const tips=document.createElement('aside');tips.className='mg-redesign-tips';tips.setAttribute('aria-label','Tipy pro návrh');
  shell.parentNode.insertBefore(frame,shell);frame.append(side,main,tips);main.append(shell);
@@ -351,14 +342,13 @@ if(shell){
   header.replaceChildren(official,tagline);
   header.classList.add('mg-has-official-logo');
  }
- side.addEventListener('click',e=>{const b=e.target.closest('[data-go-step]');if(!b||!side.contains(b))return;const n=Number(b.dataset.goStep);if(n===0){closeDesignerModal();return}if(n>2&&!photoReady){showWizardStep(2);q('mg-photo').focus();return}if(!frame.classList.contains('mg-is-modal'))openDesignerModal();showWizardStep(n)});
+ side.addEventListener('click',e=>{const b=e.target.closest('[data-go-step]');if(!b||!side.contains(b))return;const n=Number(b.dataset.goStep);if(n===0){closeDesignerModal();return}if(n>3&&!photoReady){showWizardStep(3);q('mg-photo').focus();return}if(!frame.classList.contains('mg-is-modal'))openDesignerModal();showWizardStep(n)});
 }
-// Keep the approved four-item welcome sidebar unchanged; show all nine steps only inside the designer.
-const designerStepNames=['Styl zahrady','Fotografie zahrady','Měření a plochy','Detaily zahrady','Generování návrhu','Výsledky návrhu','Úpravy návrhu','Přehled a rozpočet','Chatový průvodce'];
+// Keep the approved four-item welcome sidebar unchanged; show all eight steps only inside the designer.
 function switchDesignerNavigation(isOpen){
- // One persistent nine-step sidebar for both the welcome screen and the editor.
+ // One persistent eight-step sidebar for both the welcome screen and the editor.
  const nav=root.querySelector('.mg-redesign-side .mg-nine-step-nav');
- if(nav)nav.setAttribute('aria-label',isOpen?'Navigace mezi devíti kroky':'Přehled devíti kroků návrhu');
+ if(nav)nav.setAttribute('aria-label',isOpen?'Navigace mezi osmi kroky':'Přehled osmi kroků návrhu');
 }
 const designerBackplate=document.createElement('div');
 designerBackplate.className='mg-designer-backplate';
@@ -436,7 +426,7 @@ function applyScaleDimensionEstimate(){
  const hint=q('mg-dimension-hint');if(hint)hint.textContent='Orientačně dopočítáno z měřítka fotografie. Perspektiva může rozměry zkreslit; hodnoty můžete ručně opravit.';}
 }
 // Keep both related dimension fields side-by-side in the conditions step.
-const conditionsSection=root.querySelector('[data-mg-step="4"]');
+const conditionsSection=root.querySelector('[data-mg-step="2"]');
 if(conditionsSection){
  const dimensions=document.createElement('div');dimensions.className='mg-dimensions-row';
  const heading=document.createElement('p');heading.className='mg-dimension-hint';heading.id='mg-dimension-hint';heading.textContent='Pokud v kroku měření nastavíte měřítko, doplníme orientační rozměry. Můžete je kdykoli opravit.';
@@ -444,11 +434,11 @@ if(conditionsSection){
  if(first&&second){dimensions.append(first,second);conditionsSection.insertBefore(dimensions,conditionsSection.querySelector('.mg-plan'));conditionsSection.insertBefore(heading,dimensions);}
 }
 // Move the existing photo editor to its own step without recreating its controls or losing listeners.
-const photoSection=root.querySelector('[data-mg-step="2"]');
+const photoSection=root.querySelector('[data-mg-step="3"]');
 if(photoSection){
  const visual=document.createElement('div');visual.className='mg-ref-photo-showcase';
  visual.innerHTML='<img class="mg-ref-photo-showcase-img" src="https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg" alt="Ukázková fotografie zahrady">';
- photoSection.insertBefore(visual,photoSection.querySelector('.mg-mode-select'));
+ photoSection.insertBefore(visual,photoSection.querySelector('.mg-field'));
  const thumbs=document.createElement('div');thumbs.className='mg-ref-photo-thumbs';
  thumbs.innerHTML='<div class="mg-ref-thumbs-images" aria-label="Nahrané fotografie"></div><button type="button" class="mg-add-more-photos">＋ Přidat další fotografii</button><input type="file" class="mg-extra-photos-input" accept="image/jpeg,image/png,image/webp" multiple hidden>';
  const field=q('mg-photo')?.closest('.mg-field');if(field)field.appendChild(thumbs);
@@ -488,11 +478,16 @@ if(photoSection){
 
 }
 if(photoSection){
+ // This section (the old polygon/category marking canvas plus the distance calibration tool) is
+ // intentionally retired and dormant – it is never shown as a numbered wizard step any more (marking
+ // what to change now happens with a single brush in the new "Označení plochy" step instead). It
+ // keeps a non-numeric dataset.mgStep precisely so it can never collide with – or accidentally be
+ // shown for – the real numbered step that now uses this same old "3" slot (Fotografie zahrady).
  const measureSection=document.createElement('section');
  measureSection.className='mg-wizard-step mg-measure-step';
- measureSection.dataset.mgStep='3';
+ measureSection.dataset.mgStep='dormant-measure';
  measureSection.hidden=true;
- measureSection.innerHTML='<div class="mg-step-kicker">03 / 09 · MĚŘENÍ A PLOCHY</div><h3 class="mg-section-title">Označte plochy na fotografii</h3><p class="mg-note">Změřte známou vzdálenost a podle potřeby označte trávník, záhony a další části zahrady. V automatickém režimu můžete pokračovat i bez zakreslování.</p>';
+ measureSection.innerHTML='<div class="mg-step-kicker">MĚŘENÍ A PLOCHY (NEPOUŽÍVÁ SE)</div><h3 class="mg-section-title">Označte plochy na fotografii</h3><p class="mg-note">Tento krok se již nepoužívá. Plochu, kterou chcete změnit, nyní označíte štětcem v kroku „Označení plochy“.</p>';
  const calibration=photoSection.querySelector('.mg-calibration');
  if(calibration){
    let el=calibration;
@@ -502,7 +497,7 @@ if(photoSection){
 }
 
 /* Reference-inspired steps 4–9. Existing photo editor and cost engine remain wired. */
-const detailStep=root.querySelector('[data-mg-step="4"]');
+const detailStep=root.querySelector('[data-mg-step="2"]');
 const styleStep=root.querySelector('[data-mg-step="1"]');
 if(detailStep&&styleStep){
  const detailFields=document.createElement('div');
@@ -533,13 +528,13 @@ function makeReferenceStep(number,title,description){
  el.className='mg-wizard-step mg-reference-step';
  el.dataset.mgStep=String(number);
  el.hidden=true;
- el.innerHTML='<div class="mg-step-kicker">'+String(number).padStart(2,'0')+' / 09 · MVGREEN NÁVRH ZAHRADY</div><h3 class="mg-section-title">'+title+'</h3><p class="mg-note">'+description+'</p>';
+ el.innerHTML='<div class="mg-step-kicker">'+String(number).padStart(2,'0')+' / 08 · MVGREEN NÁVRH ZAHRADY</div><h3 class="mg-section-title">'+title+'</h3><p class="mg-note">'+description+'</p>';
  return el;
 }
 const resultStep=root.querySelector('[data-mg-step="6"]');
-const generationStep=makeReferenceStep(5,'Vytváříme váš návrh…','Na základě vaší fotografie, zvoleného stylu a podmínek připravíme zadání pro vizualizaci.');
-generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img id="mg-generation-preview-img" src="" alt="Vaše nahraná fotografie zahrady"><span>Vaše fotografie</span></div><div class="mg-generation-status"><h4>Co se právě děje?</h4><div class="mg-generation-progress" id="mg-generation-progress" hidden><div class="mg-progress-track"><div class="mg-generation-progress-fill" id="mg-generation-progress-fill" style="width:4%"></div></div><p class="mg-generation-progress-label" id="mg-generation-progress-label">Připraveno ke generování</p></div><p>✓ Analyzujeme vaši fotografii</p><p>✓ Rozpoznáváme plochy</p><p>✓ Vybíráme vhodné rostliny</p><p>✓ Připravujeme vizualizace</p><p>✓ Tvoříme doporučení</p><button type="button" id="mg-generation-admin" class="mg-primary mg-hidden">✨ Spustit testovací AI návrh</button>'
-  +'<div class="mg-buy-panel" id="mvg-koupit"><h4>Získejte svůj AI návrh</h4><p class="mg-note">Máte kód z e-mailu? Zadejte ho a vygenerujeme váš návrh.</p><div class="mg-buy-row"><input type="text" id="mg-kod-input" placeholder="Kód z e-mailu (např. AB12C-3DE45)" maxlength="11" autocomplete="off"><button type="button" id="mg-kod-use" class="mg-primary">Vytvořit AI návrh</button></div><p class="mg-note" id="mg-kod-status"></p>'
+const generationStep=makeReferenceStep(5,'Co přesně chcete','Popište, co si na zahradě přejete, a poté vytvořte AI návrh – kódem z e-mailu nebo platbou.');
+generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img id="mg-generation-preview-img" src="" alt="Vaše nahraná fotografie zahrady"><span>Vaše fotografie</span></div><div class="mg-generation-status"><h4>Co se právě děje?</h4><div class="mg-generation-progress" id="mg-generation-progress" hidden><div class="mg-progress-track"><div class="mg-generation-progress-fill" id="mg-generation-progress-fill" style="width:4%"></div></div><p class="mg-generation-progress-label" id="mg-generation-progress-label">Připraveno ke generování</p></div><p>✓ Analyzujeme vaši fotografii</p><p>✓ Rozpoznáváme plochy</p><p>✓ Vybíráme vhodné rostliny</p><p>✓ Připravujeme vizualizace</p><p>✓ Tvoříme doporučení</p>'
+  +'<div class="mg-buy-panel" id="mvg-koupit"><h4>Získejte svůj AI návrh</h4><p class="mg-note">Máte kód z e-mailu? Zadejte ho a vygenerujeme váš návrh.</p><div class="mg-buy-row"><input type="text" id="mg-kod-input" placeholder="Kód z e-mailu (např. AB12C-3DE45)" maxlength="11" autocomplete="off"><input type="email" id="mg-kod-email" placeholder="váš e-mail" autocomplete="email" required><button type="button" id="mg-kod-use" class="mg-primary">Vytvořit AI návrh</button></div><p class="mg-note">E-mail uvádíte pro případ, že by bylo potřeba vás ke kódu nebo návrhu kontaktovat. Hotový návrh se nezasílá automaticky e-mailem – zobrazí se přímo tady v kroku Výsledky návrhu.</p><p class="mg-note" id="mg-kod-status"></p>'
   +'<details class="mg-buy-new"><summary>Nemáte kód? Koupit AI návrh za 89 Kč</summary><div class="mg-buy-row"><input type="email" id="mg-buy-email" placeholder="váš e-mail" autocomplete="email"><button type="button" id="mg-buy-submit" class="mg-primary">Zaplatit 89 Kč</button></div><label class="mg-buy-consent"><input type="checkbox" id="mg-buy-consent"> Souhlasím, aby plnění (vygenerování návrhu) začalo ihned po zaplacení, a beru na vědomí, že tím u vyčerpaných použití ztrácím právo na odstoupení od smlouvy do 14 dnů. <a href="/obchodni-podminky/" target="_blank" rel="noopener">Obchodní podmínky</a></label><p class="mg-note" id="mg-buy-status"></p></details>'
   +'<button type="button" id="mg-kod-simulate" class="mg-secondary mg-hidden">🧪 Správce: vytvořit testovací kód</button></div></div></div>';
 resultStep.insertAdjacentElement('beforebegin',generationStep);
@@ -552,11 +547,57 @@ if(genPreviewImg&&uploadPreviewForGen){
  if(uploadPreviewForGen.src)genPreviewImg.src=uploadPreviewForGen.src;
  uploadPreviewForGen.addEventListener('load',()=>{genPreviewImg.src=uploadPreviewForGen.src;});
 }
-const actualAiButton=q('mg-ai-test');
-const adminButton=q('mg-generation-admin');
-if(actualAiButton&&adminButton){
- adminButton.addEventListener('click',()=>actualAiButton.click());
+// Step 4 ("Označení plochy") – a dedicated step for marking exactly which part of the garden photo
+// the AI design is allowed to change. It shows the single-brush mask-confirmation overlay
+// (ai-safety.js) on entry (see the showWizardStep wrapper below); confirming it stores the result
+// (already grown via S.growMask) in confirmedEditMask, which runAiGeneration later reuses as-is
+// without ever reopening this overlay itself. Re-entering this step offers the button again so the
+// customer can redo the marking from scratch (confirmMask always starts from a blank mask).
+const maskStep=makeReferenceStep(4,'Označení plochy','Vyznačte štětcem plochu zahrady, kterou chcete AI návrhem změnit. Co nevyznačíte, zůstane přesně jako na vaší fotografii.');
+maskStep.innerHTML+='<div class="mg-mask-step-body"><p class="mg-mask-step-status" id="mg-mask-status">Plocha ještě není vyznačena.</p><button type="button" class="mg-primary" id="mg-mask-open">✏️ Označit plochu na fotografii</button></div>';
+generationStep.insertAdjacentElement('beforebegin',maskStep);
+function updateMaskStatus(){
+ const status=q('mg-mask-status'),btn=q('mg-mask-open');
+ if(!status||!btn)return;
+ if(confirmedEditMask){status.textContent='✓ Plocha je vyznačena. Můžete pokračovat, nebo ji vyznačit znovu.';btn.textContent='✏️ Vyznačit plochu znovu';}
+ else{status.textContent='Plocha ještě není vyznačena.';btn.textContent='✏️ Označit plochu na fotografii';}
 }
+async function openMaskConfirmation(){
+ if(!photoReady){showWizardStep(3);return;}
+ const S=window.MVGreenAISafety;
+ if(!S)return alert('Chybí bezpečnostní modul AI. Obnovte stránku.');
+ const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
+ original.getContext('2d').drawImage(img,0,0,original.width,original.height);
+ const styleKey=q('mg-style-card')?.value||'english';
+ const hint=(styleLayout[styleKey]&&styleLayout[styleKey].hint)||'Vymalujte plochu, kterou chcete v zahradě změnit. Dům, plot, stromy a obloha zůstanou beze změny.';
+ const mask=await S.confirmMask(original,null,hint,{blank:true});
+ if(mask)confirmedEditMask=S.growMask(mask);
+ updateMaskStatus();
+}
+q('mg-mask-open').addEventListener('click',()=>openMaskConfirmation());
+// Consolidate "Co přesně chcete" (step 5): the notes field, the privacy hint, and the
+// summary/admin-test/save/reset actions + their output used to live on the static results step
+// (step 6) even though that step no longer shows anything but the real AI result. Move those
+// existing nodes (not copies – so their ids and delegated listeners keep working) in front of the
+// generation-status grid and buy/redeem panel that already live here.
+const notesField=resultStep.querySelector('.mg-field');
+const hintBox=resultStep.querySelector('.mg-hint');
+const actionsBox=resultStep.querySelector('.mg-actions');
+const outputBox=q('mg-output');
+const generationHeader=generationStep.querySelector('p.mg-note');
+if(notesField&&generationHeader)generationHeader.insertAdjacentElement('afterend',notesField);
+const notesStarters=document.createElement('div');
+notesStarters.className='mg-notes-starters';
+notesStarters.innerHTML=['Chci hlavně nízkou údržbu zahrady.','Mám domácí mazlíčky, prosím bez jedovatých rostlin.','Chtěl/a bych místo na posezení nebo pergolu.','Potřebuji víc soukromí před sousedy nebo ulicí.'].map(t=>'<button type="button" class="mg-secondary" data-mg-note-starter="'+t.replace(/"/g,'&quot;')+'">'+t+'</button>').join('');
+if(notesField)notesField.insertAdjacentElement('afterend',notesStarters);
+notesStarters.querySelectorAll('[data-mg-note-starter]').forEach(btn=>btn.addEventListener('click',()=>{
+ const el=q('mg-notes');if(!el)return;
+ el.value+=(el.value?'\n':'')+btn.dataset.mgNoteStarter;
+ autoSave();
+}));
+if(hintBox)notesStarters.insertAdjacentElement('afterend',hintBox);
+if(actionsBox)(hintBox||notesStarters).insertAdjacentElement('afterend',actionsBox);
+if(outputBox&&actionsBox)actionsBox.insertAdjacentElement('afterend',outputBox);
 // Simulated but honestly-paced progress bar: a single AI image-edit call has no real progress events,
 // so this estimates elapsed-time progress through named stages and always finishes at 100% – it tells
 // the customer "still working, here's roughly how far along" rather than implying exact completion %.
@@ -581,24 +622,11 @@ function startGenerationProgress(){
   setTimeout(()=>{wrap.hidden=true;fill.style.width='4%';},700);
  }};
 }
-const resultDemo=document.createElement('div');
-resultDemo.className='mg-reference-result';
-resultDemo.innerHTML='<div class="mg-reference-result-top"><strong>Návrh zahrady – varianta 1</strong><span>Ilustrace – nejedná se o vygenerovaný návrh zákazníka</span></div><div class="mg-result-comparison"><img id="mg-result-before" src="https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg" alt="Ukázková původní zahrada"><img src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="Ukázková vizualizace zahrady"><span>PŘED</span><span>PO – ukázka</span><input type="range" id="mg-demo-reveal" min="0" max="100" value="50" aria-label="Porovnat původní fotografii a ilustrační návrh"></div><div class="mg-result-options"><button type="button" class="mg-reference-choice" aria-pressed="true" data-mg-demo-variant="1">Varianta 1</button><button type="button" class="mg-reference-choice" aria-pressed="false" data-mg-demo-variant="2">Varianta 2</button><button type="button" class="mg-reference-choice" aria-pressed="false" data-mg-demo-variant="3">Varianta 3</button></div><p class="mg-note" id="mg-result-demo-note">Varianty jsou zatím pouze výběrem zadání. Nové vizualizace se automaticky nevytvářejí.</p></div>';
-resultStep.insertBefore(resultDemo,resultStep.querySelector('.mg-result-intro'));
-resultStep.querySelector('.mg-result-intro')?.classList.add('mg-hidden');
-const resultLayout=document.createElement('div');resultLayout.className='mg-ref-results-layout';
- const resultMain=document.createElement('div');resultMain.className='mg-ref-result-main';
- const resultAside=document.createElement('aside');resultAside.className='mg-ref-result-aside';
- resultAside.innerHTML='<h4>O této variantě</h4><p>♧ &nbsp; Styl: <strong id="mg-ref-result-style">Anglický trávník</strong></p><p>▤ &nbsp; Celková plocha: <strong id="mg-ref-result-area">Dle zadání</strong></p><p>✿ &nbsp; Hlavní prvky: Trávník, záhony, terasa</p><p>☀ &nbsp; Orientace: podle zadaných podmínek</p><p>◉ &nbsp; Odhadovaná cena: <strong id="mg-ref-result-price">Orientační</strong></p><h4>Další možnosti</h4><button type="button" data-mg-result-action="edit">✎ &nbsp; Upravit prvky</button><button type="button" data-mg-result-action="style">▦ &nbsp; Změnit styl</button><button type="button" data-mg-result-action="save">↓ &nbsp; Stáhnout obrázek</button>';
- resultDemo.parentNode.insertBefore(resultLayout,resultDemo);resultLayout.append(resultMain,resultAside);resultMain.append(resultDemo);
- resultAside.querySelector('[data-mg-result-action="edit"]').addEventListener('click',()=>showWizardStep(7));
- resultAside.querySelector('[data-mg-result-action="style"]').addEventListener('click',()=>showWizardStep(1));
- resultAside.querySelector('[data-mg-result-action="save"]').addEventListener('click',()=>{const image=q('mg-result-before');if(!image?.src)return;const a=document.createElement('a');a.href=image.src;a.download='mvgreen-puvodni-fotografie.jpg';a.click()});
- q('mg-demo-reveal')?.addEventListener('input',e=>e.target.parentElement.style.setProperty('--mg-demo-reveal',e.target.value+'%'));
-root.querySelectorAll('[data-mg-demo-variant]').forEach(btn=>btn.addEventListener('click',()=>{
- root.querySelectorAll('[data-mg-demo-variant]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
- q('mg-result-demo-note').textContent='Vybrána varianta '+btn.dataset.mgDemoVariant+'. Pro skutečnou novou vizualizaci je nutné spustit dostupné AI generování.';
-}));
+// The fake "Varianta 1/2/3" demo (illustration photos presented as if they were the customer's
+// own design, with a draggable before/after slider and a sidebar claiming a style/area/price that
+// was never actually computed from their garden) is intentionally gone. Step 6 now shows only the
+// real #mg-ai-result once it exists; until then, the step's own intro text above is the honest
+// empty/pending state ("Jakmile v předchozím kroku vytvoříte AI návrh, zobrazí se zde.").
 const editStep=makeReferenceStep(7,'Detailní úpravy návrhu','Vyberte prvky, které chcete doplnit, a podle potřeby označte změny přímo na své fotografii.');
 editStep.innerHTML+='<div class="mg-edit-tabs" role="tablist" aria-label="Kategorie úprav">'+['Rostliny','Materiály','Prvky','Osvětlení','Nábytek'].map((t,i)=>'<button type="button" role="tab" data-mg-edit-tab="'+i+'" aria-selected="'+(i===0)+'">'+t+'</button>').join('')+'</div><div class="mg-edit-layout"><div class="mg-edit-library" id="mg-edit-library"></div><div class="mg-edit-preview"><img src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="Ilustrační zahradní návrh"><small>Ukázková fotografie. Co chcete změnit, vymalujete štětcem přímo před vytvořením návrhu.</small><button type="button" class="mg-primary" id="mg-open-editor">✏️ Upravit a vytvořit návrh znovu</button></div></div>';
 resultStep.insertAdjacentElement('afterend',editStep);
@@ -608,7 +636,10 @@ function showEditCategory(i){
  q('mg-edit-library').innerHTML='<h4>Vybrané prvky</h4>'+editItems[i].map(t=>'<label class="mg-edit-item"><input type="checkbox" value="'+t+'"><span>🌿 '+t+'</span></label>').join('')+'<p class="mg-note">Volby slouží jako seznam přání – doplňte je do pole Poznámky. Co chcete změnit, vymalujete štětcem tlačítkem vpravo.</p>';
 }
 root.querySelectorAll('[data-mg-edit-tab]').forEach(b=>b.addEventListener('click',()=>showEditCategory(Number(b.dataset.mgEditTab))));
-q('mg-open-editor').addEventListener('click',()=>showWizardStep(3));
+// "Upravit a vytvořit návrh znovu" – this button's real job is to let the customer repaint what
+// should change before generating again, so it goes to the mask-marking step ("Označení plochy"),
+// not back to the photo-upload step.
+q('mg-open-editor').addEventListener('click',()=>showWizardStep(4));
 showEditCategory(0);
 const editTips=document.createElement('aside');editTips.className='mg-ref-edit-tips';
 editTips.innerHTML='<h4>Tipy k rostlinám</h4><p>✿ &nbsp; Vybírejte rostliny podle slunce a půdy.</p><p>✿ &nbsp; Zohledněte péči a dobu květu.</p><p>✿ &nbsp; Doporučujeme kombinace pro celoroční vzhled.</p><div class="mg-ref-edit-thumbnails">'+Array.from({length:3},()=>'<img src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="Inspirace pro výsadbu">').join('')+'</div><button type="button" id="mg-ref-add-plant">＋ Přidat rostlinu</button>';
@@ -628,32 +659,19 @@ budgetStep.prepend(budgetSummary);
  const planDetails=document.createElement('details');planDetails.className='mg-ref-plan-details';planDetails.innerHTML='<summary>Podrobné nastavení a výpočet rostlin</summary>';planDetails.append(budgetPlan);budgetStep.append(planDetails);
  refBudgetTable.querySelector('#mg-ref-budget-real').addEventListener('click',()=>{planDetails.open=true;q('mg-plan-create').click()});
 
-q('mg-budget-show-summary').addEventListener('click',()=>{q('mg-summary').click();showWizardStep(6);});
+// "Zobrazit celé zadání" triggers the same summary click as the "Zobrazit zadání" button, whose
+// output (#mg-output) now lives on step 5 ("Co přesně chcete") alongside it, not on the results
+// step – so this must land back on step 5, not step 6.
+q('mg-budget-show-summary').addEventListener('click',()=>{q('mg-summary').click();showWizardStep(5);});
 q('mg-budget-create').addEventListener('click',()=>q('mg-plan-create').click());
-const chatStep=makeReferenceStep(9,'Chatový průvodce a další kroky','Potřebujete něco vysvětlit nebo se vrátit k úpravám?');
-chatStep.innerHTML+='<div class="mg-chat-layout"><div class="mg-chat-main"><div class="mg-chat-title">🌿 MVGreen – průvodce návrhem <small>Jednoduchá nápověda, nikoli živý AI chat</small></div><div id="mg-chat-messages" class="mg-chat-messages" aria-live="polite"><p class="mg-chat-bot">Dobrý den! Mohu vám poradit, kde upravit styl, rozměry nebo rozpočet. Vyberte téma níže.</p></div><div class="mg-chat-questions"><button type="button" data-mg-question="style">Jak změnit styl?</button><button type="button" data-mg-question="measure">Jak změřit zahradu?</button><button type="button" data-mg-question="budget">Kde najdu rozpočet?</button></div></div><aside class="mg-chat-actions"><h4>Další možnosti</h4><button type="button" data-mg-goto="7">✏️ Upravit návrh</button><button type="button" data-mg-goto="8">▤ Přehled a rozpočet</button><button type="button" data-mg-goto="6">🌱 Výsledky návrhu</button><p class="mg-note">AI chat ani odesílání dotazů zatím nejsou aktivní.</p></aside></div>';
-budgetStep.insertAdjacentElement('afterend',chatStep);
-const chatComposer=document.createElement('form');chatComposer.className='mg-ref-chat-composer';
-chatComposer.innerHTML='<input type="text" maxlength="500" placeholder="Napište svou otázku..." aria-label="Vaše otázka"><button type="submit" aria-label="Odeslat otázku">➤</button>';
-q('mg-chat-messages')?.parentNode.append(chatComposer);
-chatComposer.addEventListener('submit',e=>{e.preventDefault();const input=chatComposer.querySelector('input'),value=input.value.trim();if(!value)return;const messages=q('mg-chat-messages'),u=document.createElement('p'),a=document.createElement('p');u.className='mg-chat-user';u.textContent=value;a.className='mg-chat-bot';a.textContent=/rozpoč|cen/i.test(value)?'Orientační rozpočet najdete v kroku 8.':/rostlin|výsad/i.test(value)?'Rostliny a úpravy můžete vybírat v kroku 7.':/fotograf|snímek/i.test(value)?'Fotografii nahrajete v kroku 2.':'Mohu poradit s navigací v návrháři. Pro odbornou radu kontaktujte MVGreen.';messages.append(u,a);messages.scrollTop=messages.scrollHeight;input.value=''});
-const chatActions=root.querySelector('.mg-chat-actions');
-if(chatActions){chatActions.insertAdjacentHTML('beforeend','<h4>Užitečné odkazy</h4><p>✿ &nbsp; Jak správně fotit?</p><p>✿ &nbsp; Jak vybrat rostliny?</p><p>✿ &nbsp; Příklady realizací</p><p>✿ &nbsp; Často kladené otázky</p>');}
-const answers={style:['Jak změnit styl?','Klikněte vlevo na Styl zahrady a vyberte jeden ze šesti stylů a jeho podvariantu.',1],measure:['Jak změřit zahradu?','V kroku Měření a plochy označte na fotografii dva body se známou vzdáleností. Výpočet je orientační.',3],budget:['Kde najdu rozpočet?','Otevřete Přehled a rozpočet a stiskněte Vypočítat rozpočet.',8]};
-root.querySelectorAll('[data-mg-question]').forEach(b=>b.addEventListener('click',()=>{
- const a=answers[b.dataset.mgQuestion],box=q('mg-chat-messages');
- const user=document.createElement('p');user.className='mg-chat-user';user.textContent=a[0];
- const reply=document.createElement('p');reply.className='mg-chat-bot';reply.textContent=a[1];
- box.append(user,reply);box.scrollTop=box.scrollHeight;
-}));
-root.querySelectorAll('[data-mg-goto]').forEach(b=>b.addEventListener('click',()=>showWizardStep(Number(b.dataset.mgGoto))));
+// The old step 9 "Chatový průvodce" (a scripted, not-actually-AI chat FAQ) is retired entirely –
+// its content doesn't need to survive the restructuring.
 
-// Reference order: step 1 style selection, step 2 photo upload, step 3 measurements.
-const uploadStep=root.querySelector('[data-mg-step="2"]');
+// Reference order: step 1 style selection, step 2 details, step 3 photo upload. The upload
+// preview figure already sits right after the photo field (see photoPreview above) – there is no
+// mode-select card any more to reposition it in front of, so this now only relabels the field.
+const uploadStep=root.querySelector('[data-mg-step="3"]');
 if(uploadStep){
- const preview=q('mg-upload-preview');
- const modeSelect=uploadStep.querySelector('.mg-mode-select');
- if(preview&&modeSelect)modeSelect.insertAdjacentElement('beforebegin',preview);
  const uploadLabel=q('mg-photo')?.closest('.mg-field')?.querySelector('label');
  if(uploadLabel)uploadLabel.textContent='Vybrat fotografii zahrady';
 }
@@ -663,10 +681,10 @@ if(progress){
  badge.id='mg-progress-badge';badge.className='mg-progress-badge';badge.textContent='1';
  progress.insertBefore(badge,progress.firstChild);
 }
-// Step 3's old polygon/category marking canvas (toolCol, area-kind linking, the advanced-mode
-// toggle, the fullscreen area-kind picker) is retired – see runAiGeneration and showWizardStep's
-// n===3 redirect. The photo stage and the measuring-distance calibration stay exactly where the
-// static markup already puts them, inside step 2, instead of being relocated into step 3.
+// The old polygon/category marking canvas (toolCol, area-kind linking, the advanced-mode toggle,
+// the fullscreen area-kind picker) is retired – marking what to change now happens with a single
+// brush in step 4 ("Označení plochy") instead, via openMaskConfirmation. These leftover toolbar
+// elements still sit inside the static photo-step markup (now data-mg-step="3"), so just hide them.
 const measureStep=root.querySelector('[data-mg-step="3"]');
 ['.mg-below-photo','.mg-editor-actions','.mg-mobile-controls','#mg-area-list','.mg-fullscreen-bar'].forEach(sel=>{
  const el=(measureStep||root).querySelector(sel)||q('mg-stage')?.querySelector(sel);
@@ -683,18 +701,21 @@ sideTips?.addEventListener('click',event=>{
 });
 showWizardStep=function(n){
  originalShowWizardStep(n);
- const frame=root.querySelector('.mg-redesign-frame');if(frame){for(let i=0;i<=9;i++)frame.classList.toggle('mg-view-step-'+i,i===wizardStep);}
+ const frame=root.querySelector('.mg-redesign-frame');if(frame){for(let i=0;i<=8;i++)frame.classList.toggle('mg-view-step-'+i,i===wizardStep);}
  const badge=q('mg-progress-badge');if(badge)badge.textContent=String(wizardStep);
- const aiTrigger=q('mg-generation-admin'),aiOriginal=q('mg-ai-test');if(aiTrigger&&aiOriginal)aiTrigger.classList.toggle('mg-hidden',aiOriginal.classList.contains('mg-hidden'));
  const summary=q('mg-budget-summary-info');
  if(summary)summary.textContent='Styl: '+(q('mg-variant-note')?.textContent||'neurčen')+' · Lokalita: '+(q('mg-locality')?.value||'nezadána');
- const selectedStyle=q('mg-style-card')?.value||'english';const name=styleChoices[selectedStyle]?.name||'Anglický trávník';
- const styleResult=q('mg-ref-result-style');if(styleResult)styleResult.textContent=name;
- const areaResult=q('mg-ref-result-area');if(areaResult){const area=Number(q('mg-bed-area')?.value)||0;areaResult.textContent=area>0?area.toLocaleString('cs-CZ')+' m²':'Dle zadání';}
- const priceResult=q('mg-ref-result-price');if(priceResult)priceResult.textContent=(Number(q('mg-max')?.value)||0).toLocaleString('cs-CZ')+' Kč (limit)';
+ // Step 4 ("Označení plochy") needs a photo first, and opens the mask-confirmation overlay itself
+ // every time it's entered (confirming it stores the mask in confirmedEditMask for runAiGeneration
+ // to reuse; cancelling leaves any previously confirmed mask untouched).
+ if(wizardStep===4){
+  if(!photoReady){showWizardStep(3);return;}
+  updateMaskStatus();
+  openMaskConfirmation();
+ }
  // The original Next button still handles validation. This right-column button forwards its click.
  const tips=root.querySelector('.mg-redesign-tips');
- if(tips&&[1,2,4].includes(wizardStep)){
+ if(tips&&[1,2,3].includes(wizardStep)){
   const rightNext=document.createElement('button');
   rightNext.type='button';
   rightNext.className='mg-side-next';
@@ -713,7 +734,7 @@ if(heroComparison){
  sync();
 }
 root.querySelectorAll('[data-welcome-variant]').forEach(btn=>btn.addEventListener('click',()=>{chooseVariant(btn.dataset.welcomeVariant);openDesignerModal()}));
-const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){tailoredChoice=typeof d.tailoredChoice==='string'?d.tailoredChoice:'';for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[]}}catch(e){}chooseVariant(q('mg-variant').value,false);setDesignMode(q('mg-design-mode').value);updateList();
+const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){tailoredChoice=typeof d.tailoredChoice==='string'?d.tailoredChoice:'';for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[]}}catch(e){}chooseVariant(q('mg-variant').value,false);updateList();
 function autoSave(){try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice}))}catch(e){}};root.addEventListener('change',e=>{if(e.target.id!=='mg-photo')autoSave()});root.addEventListener('pointerup',()=>setTimeout(autoSave,100));q('mg-save').addEventListener('click',()=>{try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice}));alert('Údaje a oblasti byly uloženy v prohlížeči. Fotografie se neukládá. Po obnovení stránky ji nahrajte znovu.')}catch(e){alert('Prohlížeč ukládání nepovolil.')}});q('mg-reset').addEventListener('click',()=>{localStorage.removeItem(key);alert('Uložené údaje byly vymazány. Aktuální formulář zůstává otevřený.')});
 syncMode();
 // Verified Czech retail listings (17 October 2026). Only matching exact cultivars and sizes.
@@ -1005,29 +1026,15 @@ const aiButton=q('mg-ai-test');
 
 async function runAiGeneration(trigger,extraFields,confirmText){
   if(!photoReady)return alert('Nejprve nahrajte fotografii zahrady.');
-  const automatic=q('mg-design-mode').value==='auto';
   const S=window.MVGreenAISafety;
   if(!S)return alert('Chybí bezpečnostní modul AI. Obnovte stránku.');
-  // Rule 1: the AI never gets the whole photo. Build the editable garden mask first.
+  // Generation reuses exactly the area the customer already marked in step 4 ("Označení plochy") –
+  // it never reopens that mask-confirmation overlay. The mask was already grown via S.growMask at
+  // confirmation time, so it is used here exactly as stored.
+  if(!confirmedEditMask)return alert('Nejprve vyznačte na fotografii plochu, kterou chcete upravit (krok „Označení plochy“).');
   const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
   original.getContext('2d').drawImage(img,0,0,original.width,original.height);
-  const clutterHint='Je na fotce nepořádek, který chcete odstranit (větve, kamení, suť)? Přimalujte tu plochu štětcem „＋ Přidat plochu“ – jinak ji AI nechá beze změny.';
-  let editMask;
-  if(automatic){
-    const styleHint=(styleLayout[q('mg-style-card').value]||{}).hint||'';
-    editMask=await S.confirmMask(original,null,[styleHint,clutterHint].filter(Boolean).join(' '));
-  }else{
-    // Manual mode: one unified "paint what to change" brush, same as automatic mode's
-    // widen/narrow brush but starting from nothing – no categories, no polygons, no vertices.
-    // Material, colour, plants or path style go in the free-text Poznámky field in the next step.
-    const manualHint='Vymalujte štětcem plochu, kterou chcete v zahradě změnit – záhon, cestičku, mulč nebo cokoliv jiného. Co nevymalujete, zůstane přesně jako na fotce. Materiál, barvu, rostliny nebo styl popište dole v poli Poznámky.';
-    editMask=await S.confirmMask(original,null,[manualHint,clutterHint].filter(Boolean).join(' '),{blank:true});
-  }
-  if(!editMask)return;
-  // Grow the confirmed mask by a small margin so a stroke that falls a bit short of a corner or an
-  // adjoining edge doesn't leave that sliver as a raw, unedited patch of the original photo. The same
-  // grown mask is used below for both the AI request and the hard-lock check on the result.
-  editMask=S.growMask(editMask);
+  const editMask=confirmedEditMask;
   const prepared=S.prepare(original,editMask);
   const invalid=S.validate(prepared.coverage);
   if(invalid)return alert(invalid);
@@ -1081,11 +1088,16 @@ if(aiConfig.enabled){
 }
 
 // Veřejný tok: kód z e-mailu odemkne vygenerování (server kód ověří a atomicky vyčerpá).
-const kodInput=q('mg-kod-input'),kodUse=q('mg-kod-use'),kodStatus=q('mg-kod-status');
+const kodInput=q('mg-kod-input'),kodEmail=q('mg-kod-email'),kodUse=q('mg-kod-use'),kodStatus=q('mg-kod-status');
 if(kodUse){
   kodUse.addEventListener('click',()=>{
     const code=(kodInput.value||'').trim().toUpperCase();
     if(!code){kodStatus.textContent='Zadejte prosím kód z e-mailu.';return;}
+    // The e-mail here is required for symmetry with the paid path and as a contact point, but –
+    // same as the paid path – nothing currently e-mails the finished design automatically; the
+    // field's own note next to it says so plainly, and this isn't sent anywhere by this click.
+    const email=(kodEmail?.value||'').trim();
+    if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){kodStatus.textContent='Zadejte prosím platný e-mail.';return;}
     kodStatus.textContent='';
     runAiGeneration(kodUse,{code},cov=>'Vytvořit AI návrh pomocí vašeho kódu? Upraví se jen označená plocha ('+cov+' % fotky). Kód se tím vyčerpá.')
       .catch(()=>{});
