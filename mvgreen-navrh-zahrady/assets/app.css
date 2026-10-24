@@ -2053,3 +2053,16 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-plan-legend{border-collapse:separate!important;border-spacing:0;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px #e3ebe3}
 .mvgreen-designer .mg-plan-legend tbody tr+tr td,.mvgreen-designer .mg-plan-legend tbody tr+tr th,.mvgreen-designer .mg-plan-legend tfoot th{border-top:1px solid #edf2ee!important}
 .mvgreen-designer .mg-plan-legend thead th{border-bottom:1px solid #e3ebe3!important}
+
+/* Nákup AI návrhu / zadání kódu (veřejný tok) */
+.mvgreen-designer .mg-buy-panel{margin-top:20px;padding-top:18px;border-top:1px solid #dfebe3}
+.mvgreen-designer .mg-buy-panel h4{font-size:15px;color:#19462f;margin:0 0 8px}
+.mvgreen-designer .mg-buy-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.mvgreen-designer .mg-buy-row input{flex:1 1 180px;min-width:0}
+.mvgreen-designer .mg-buy-row button{flex:0 0 auto;white-space:nowrap}
+.mvgreen-designer .mg-buy-new{margin-top:14px;font-size:13px}
+.mvgreen-designer .mg-buy-new summary{cursor:pointer;font-weight:700;color:#1d5a3b;padding:4px 0}
+.mvgreen-designer .mg-buy-consent{display:flex!important;align-items:flex-start;gap:8px;font-weight:500!important;font-size:12.5px;color:#47624f;margin:10px 0}
+.mvgreen-designer .mg-buy-consent input{width:auto!important;margin-top:2px;flex:0 0 auto}
+.mvgreen-designer .mg-buy-consent a{color:#156333}
+.mvgreen-designer #mg-kod-status,.mvgreen-designer #mg-buy-status{min-height:1em}

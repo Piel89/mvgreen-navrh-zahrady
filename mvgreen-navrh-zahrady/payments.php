@@ -145,10 +145,17 @@ function mvgreen_gopay_token() {
     return $json['access_token'];
 }
 
-/** Vytvoří platbu u GoPay. Vrací pole s 'id' a 'gw_url', nebo WP_Error. */
-function mvgreen_gopay_create_payment($amount_kc, $order_number, $email, $description) {
+/**
+ * Vytvoří platbu u GoPay. Vrací pole s 'id' a 'gw_url', nebo WP_Error.
+ * $back_url se vrátí zpátky v return_url jako parametr: po zaplacení GoPay přesměruje
+ * prohlížeč zpět na náš web, ale "referer" v tu chvíli ukazuje na GoPay, ne na naši
+ * stránku – proto se cílová adresa posílá GoPay předem v URL, ne přes wp_get_referer().
+ */
+function mvgreen_gopay_create_payment($amount_kc, $order_number, $email, $description, $back_url = '') {
     $token = mvgreen_gopay_token();
     if (!$token) return new WP_Error('gopay_auth', 'Platební bránu se nepodařilo kontaktovat.');
+    $return_url = admin_url('admin-post.php?action=mvgreen_gopay_return');
+    if ($back_url) $return_url = add_query_arg('mvg_back', rawurlencode($back_url), $return_url);
     $payload = [
         'target' => ['type' => 'ACCOUNT', 'goid' => MVGREEN_GOPAY_GOID],
         'amount' => (int) round($amount_kc * 100),
@@ -157,7 +164,7 @@ function mvgreen_gopay_create_payment($amount_kc, $order_number, $email, $descri
         'order_description' => $description,
         'items' => [['name' => $description, 'amount' => (int) round($amount_kc * 100), 'count' => 1]],
         'callback' => [
-            'return_url' => admin_url('admin-post.php?action=mvgreen_gopay_return'),
+            'return_url' => $return_url,
             'notification_url' => admin_url('admin-post.php?action=mvgreen_gopay_notify'),
         ],
         'lang' => 'CS',
@@ -218,6 +225,7 @@ function mvgreen_buy_handle() {
 
     $email = sanitize_email(wp_unslash($_POST['mvg_email'] ?? ''));
     if (!$email || !is_email($email)) mvgreen_buy_redirect($back, 'chyba-email');
+    if (empty($_POST['mvg_consent'])) mvgreen_buy_redirect($back, 'chyba-udaje');
 
     $package_id = isset($_POST['mvg_package']) ? sanitize_key(wp_unslash($_POST['mvg_package'])) : '1';
     $package = mvgreen_package($package_id);
@@ -241,7 +249,7 @@ function mvgreen_buy_handle() {
     update_post_meta($post_id, '_mvg_status', 'pending');
     update_post_meta($post_id, '_mvg_order_number', $order_number);
 
-    $payment = mvgreen_gopay_create_payment((int) $package['price'], $order_number, $email, $package['label']);
+    $payment = mvgreen_gopay_create_payment((int) $package['price'], $order_number, $email, $package['label'], $back);
     if (is_wp_error($payment)) {
         update_post_meta($post_id, '_mvg_status', 'canceled');
         mvgreen_buy_redirect($back, 'chyba-platba');
@@ -262,15 +270,17 @@ add_action('admin_post_nopriv_mvgreen_gopay_return', 'mvgreen_gopay_return_handl
 add_action('admin_post_mvgreen_gopay_return', 'mvgreen_gopay_return_handle');
 
 function mvgreen_gopay_return_handle() {
-    $back = wp_validate_redirect(wp_get_referer(), home_url('/'));
+    // Referer v tuto chvíli ukazuje na GoPay, ne na náš web – cílovou adresu jsme si
+    // proto poslali GoPay předem v return_url (viz mvgreen_gopay_create_payment).
+    $back = isset($_GET['mvg_back']) ? rawurldecode(wp_unslash($_GET['mvg_back'])) : '';
+    $back = wp_validate_redirect($back, home_url('/'));
     $gopay_id = isset($_GET['id']) ? sanitize_text_field(wp_unslash($_GET['id'])) : '';
     $status = 'cekame';
     if ($gopay_id && preg_match('~^\d+$~', $gopay_id)) {
         $posts = get_posts(['post_type' => 'mvgreen_kod', 'meta_key' => '_mvg_gopay_id', 'meta_value' => $gopay_id, 'numberposts' => 1, 'post_status' => 'any']);
         if ($posts && get_post_meta($posts[0]->ID, '_mvg_status', true) === 'paid') $status = 'diky';
     }
-    $home = wp_validate_redirect($back, home_url('/'));
-    wp_safe_redirect(add_query_arg('mvg_platba', $status, $home) . '#mvg-koupit');
+    wp_safe_redirect(add_query_arg('mvg_platba', $status, $back) . '#mvg-koupit');
     exit;
 }
 
@@ -359,6 +369,7 @@ function mvgreen_kod_buy_handle() {
 
     $email = sanitize_email(wp_unslash($_POST['email'] ?? ''));
     if (!$email || !is_email($email)) wp_send_json_error(['message' => 'Zadejte prosím platný e-mail.']);
+    if (empty($_POST['consent'])) wp_send_json_error(['message' => 'Potvrďte prosím souhlas se zahájením plnění před odesláním platby.']);
     if (!mvgreen_gopay_configured()) wp_send_json_error(['message' => 'Platby zatím nejsou spuštěné. Zkuste to prosím později.']);
 
     $package = mvgreen_package('1');
@@ -374,7 +385,8 @@ function mvgreen_kod_buy_handle() {
     update_post_meta($post_id, '_mvg_status', 'pending');
     update_post_meta($post_id, '_mvg_order_number', $order_number);
 
-    $payment = mvgreen_gopay_create_payment((int) $package['price'], $order_number, $email, $package['label']);
+    $back = wp_get_referer() ?: home_url('/'); // same-origin AJAX request – referer is reliable here
+    $payment = mvgreen_gopay_create_payment((int) $package['price'], $order_number, $email, $package['label'], $back);
     if (is_wp_error($payment)) {
         update_post_meta($post_id, '_mvg_status', 'canceled');
         wp_send_json_error(['message' => 'Platbu se nepodařilo vytvořit. Zkuste to prosím znovu.']);

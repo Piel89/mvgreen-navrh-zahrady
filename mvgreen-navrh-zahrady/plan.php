@@ -49,14 +49,23 @@ function mvgreen_plan_schema() {
     ];
 }
 
-add_action('wp_ajax_mvgreen_ai_plan', function () {
-    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Pouze správce webu může vytvořit půdorys.'], 403);
+add_action('wp_ajax_mvgreen_ai_plan', 'mvgreen_ai_plan_handle');
+add_action('wp_ajax_nopriv_mvgreen_ai_plan', 'mvgreen_ai_plan_handle');
+function mvgreen_ai_plan_handle() {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
+    // Admin testuje zdarma. Veřejnost potřebuje platný (zaplacený) kód, ale tento
+    // levný rozbor fotky už zakoupené použití nečerpá – to dělá jen mvgreen_ai_preview/angle.
+    if (!current_user_can('manage_options')) {
+        if (!function_exists('mvgreen_find_code_post')) wp_send_json_error(['message' => 'Půdorys zatím není dostupný.'], 503);
+        if (mvgreen_code_rate_limited()) wp_send_json_error(['message' => 'Příliš mnoho pokusů. Zkuste to prosím za chvíli.'], 429);
+        $code_post = mvgreen_find_code_post(isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '');
+        if (!$code_post || get_post_meta($code_post->ID, '_mvg_status', true) !== 'paid') wp_send_json_error(['message' => 'Neplatný nebo nezaplacený kód.'], 403);
+    }
     if (!defined('MVGREEN_OPENAI_API_KEY') || !MVGREEN_OPENAI_API_KEY) wp_send_json_error(['message' => 'Chybí MVGREEN_OPENAI_API_KEY.'], 400);
-    // Levné volání, přesto denní strop proti chybám ve smyčce.
+    // Levné volání, přesto denní strop proti chybám ve smyčce (sdílený mezi správcem a veřejností).
     $key = 'mvgreen_plan_daily_' . gmdate('Ymd');
     $used = (int) get_option($key, 0);
-    if ($used >= 20) wp_send_json_error(['message' => 'Dnešní limit půdorysů byl vyčerpán.'], 429);
+    if ($used >= 300) wp_send_json_error(['message' => 'Dnešní limit půdorysů byl vyčerpán.'], 429);
 
     $image = isset($_POST['image']) ? wp_unslash($_POST['image']) : '';
     if (!preg_match('~^data:image/(jpeg|png);base64,[A-Za-z0-9+/=]+$~D', $image) || strlen($image) > 6000000) {
@@ -105,9 +114,11 @@ add_action('wp_ajax_mvgreen_ai_plan', function () {
     $plan = json_decode($text, true);
     if (!is_array($plan) || empty($plan['elements'])) wp_send_json_error(['message' => 'AI nevrátila použitelný půdorys.'], 200);
     wp_send_json_success(['plan' => $plan, 'model' => $model]);
-});
+}
 
 // Poslední uložený AI výstup (pro správce – nový půdorys bez dalšího placeného obrázku).
+// Zůstává přísně admin-only: ukládá se do jediné, webu společné volby, takže by
+// veřejnému zákazníkovi mohla ukázat fotografii z návrhu někoho jiného.
 add_action('wp_ajax_mvgreen_ai_last', function () {
     if (!current_user_can('manage_options')) wp_send_json_error([], 403);
     check_ajax_referer('mvgreen_ai_test', 'nonce');
@@ -118,14 +129,24 @@ add_action('wp_ajax_mvgreen_ai_last', function () {
  * Pohled z jiného úhlu (ptačí perspektiva) – volitelný placený obrázek. AI tu má volnost úhlu,
  * proto se výsledek vždy označuje jako ilustrační pohled, ne jako upravená fotografie.
  */
-add_action('wp_ajax_mvgreen_ai_angle', function () {
-    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Pouze správce webu.'], 403);
+add_action('wp_ajax_mvgreen_ai_angle', 'mvgreen_ai_angle_handle');
+add_action('wp_ajax_nopriv_mvgreen_ai_angle', 'mvgreen_ai_angle_handle');
+function mvgreen_ai_angle_handle() {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
     if (!defined('MVGREEN_OPENAI_API_KEY') || !MVGREEN_OPENAI_API_KEY) wp_send_json_error(['message' => 'Chybí MVGREEN_OPENAI_API_KEY.'], 400);
-    $daily_limit = max(0, min(20, (int) get_option('mvgreen_ai_daily_limit', 1)));
-    $daily_key = 'mvgreen_ai_daily_' . gmdate('Ymd');
-    $used_today = (int) get_option($daily_key, 0);
-    if ($daily_limit === 0 || $used_today >= $daily_limit) wp_send_json_error(['message' => 'Dnešní limit placených AI pokusů byl vyčerpán.'], 429);
+    $is_admin = current_user_can('manage_options');
+    $code = '';
+    if ($is_admin) {
+        $daily_limit = max(0, min(20, (int) get_option('mvgreen_ai_daily_limit', 1)));
+        $daily_key = 'mvgreen_ai_daily_' . gmdate('Ymd');
+        $used_today = (int) get_option($daily_key, 0);
+        if ($daily_limit === 0 || $used_today >= $daily_limit) wp_send_json_error(['message' => 'Dnešní limit placených AI pokusů byl vyčerpán.'], 429);
+    } else {
+        if (!function_exists('mvgreen_redeem_code_use')) wp_send_json_error(['message' => 'Zatím není dostupné.'], 503);
+        if (mvgreen_code_rate_limited()) wp_send_json_error(['message' => 'Příliš mnoho pokusů. Zkuste to prosím za chvíli.'], 429);
+        $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
+        if ($code === '') wp_send_json_error(['message' => 'Zadejte prosím kód z e-mailu.'], 400);
+    }
     if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message' => 'Jiný návrh se právě vytváří.'], 429);
     $image = isset($_POST['image']) ? wp_unslash($_POST['image']) : '';
     if (!preg_match('~^data:image/png;base64,([A-Za-z0-9+/=]+)$~D', $image, $m)) wp_send_json_error(['message' => 'Neplatný obrázek.'], 400);
@@ -135,7 +156,15 @@ add_action('wp_ajax_mvgreen_ai_angle', function () {
     // Pořadí ve výrazu níže: aerial = ptačí perspektiva, raised = mírně zvednutý pohled (výchozí).
     $plan = isset($_POST['plan']) ? sanitize_textarea_field(wp_unslash($_POST['plan'])) : '';
     set_transient('mvgreen_ai_preview_lock', 1, 240);
-    update_option($daily_key, $used_today + 1, false);
+    if ($is_admin) {
+        update_option($daily_key, $used_today + 1, false);
+    } else {
+        $redeem = mvgreen_redeem_code_use($code);
+        if (is_wp_error($redeem)) {
+            delete_transient('mvgreen_ai_preview_lock');
+            wp_send_json_error(['message' => $redeem->get_error_message()], 400);
+        }
+    }
     $angle = $view === 'aerial'
         ? 'z ptačí perspektivy – kamera asi 8 m vysoko a šikmo shora (cca 45°) z rohu zahrady, aby bylo vidět rozmístění trávníku a záhonů'
         : 'ze STEJNÉHO místa a STEJNÝM směrem jako původní fotografie, jen kamera je zvednutá asi do 3 m a mírně skloněná dolů, aby byla lépe vidět plocha zahrady. Úhel změň jen málo; proporce domu, vzdálenosti a velikosti všech prvků musí odpovídat skutečnosti';
@@ -156,12 +185,15 @@ add_action('wp_ajax_mvgreen_ai_angle', function () {
     delete_transient('mvgreen_ai_preview_lock');
     if (is_wp_error($response)) wp_send_json_error(['message' => 'Spojení s AI selhalo: ' . $response->get_error_message()], 200);
     $json = json_decode(wp_remote_retrieve_body($response), true);
-    $code = wp_remote_retrieve_response_code($response);
-    if ($code < 200 || $code >= 300 || empty($json['data'][0]['b64_json'])) {
+    $http_status = wp_remote_retrieve_response_code($response);
+    if ($http_status < 200 || $http_status >= 300 || empty($json['data'][0]['b64_json'])) {
         wp_send_json_error(['message' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI nevrátila obrázek.'], 200);
     }
     $up = wp_upload_dir();
     $dir = trailingslashit($up['basedir']) . 'mvgreen-ai-log';
-    if (wp_mkdir_p($dir)) @file_put_contents($dir . '/' . gmdate('Ymd-His') . '-' . wp_generate_password(10, false, false) . '-uhel-' . $view . '.png', base64_decode($json['data'][0]['b64_json']));
+    if (wp_mkdir_p($dir)) {
+        if (function_exists('mvgreen_harden_upload_dir')) mvgreen_harden_upload_dir($dir);
+        @file_put_contents($dir . '/' . gmdate('Ymd-His') . '-' . wp_generate_password(10, false, false) . '-uhel-' . $view . '.png', base64_decode($json['data'][0]['b64_json']));
+    }
     wp_send_json_success(['image' => 'data:image/png;base64,' . $json['data'][0]['b64_json']]);
-});
+}

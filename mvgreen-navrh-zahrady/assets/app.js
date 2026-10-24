@@ -533,7 +533,10 @@ function makeReferenceStep(number,title,description){
 }
 const resultStep=root.querySelector('[data-mg-step="6"]');
 const generationStep=makeReferenceStep(5,'Vytváříme váš návrh…','Na základě vaší fotografie, zvoleného stylu a podmínek připravíme zadání pro vizualizaci.');
-generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="Ilustrační ukázka návrhu zahrady"><span>Ukázka vzhledu návrhu</span></div><div class="mg-generation-status"><h4>Co se právě děje?</h4><p>✓ Analyzujeme vaši fotografii</p><p>✓ Rozpoznáváme plochy</p><p>✓ Vybíráme vhodné rostliny</p><p>✓ Připravujeme vizualizace</p><p>✓ Tvoříme doporučení</p><div class="mg-reference-note">Ukázka procesu. Automatické AI generování zatím není dostupné všem návštěvníkům.</div><button type="button" id="mg-generation-admin" class="mg-primary mg-hidden">✨ Spustit testovací AI návrh</button></div></div>';
+generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="Ilustrační ukázka návrhu zahrady"><span>Ukázka vzhledu návrhu</span></div><div class="mg-generation-status"><h4>Co se právě děje?</h4><p>✓ Analyzujeme vaši fotografii</p><p>✓ Rozpoznáváme plochy</p><p>✓ Vybíráme vhodné rostliny</p><p>✓ Připravujeme vizualizace</p><p>✓ Tvoříme doporučení</p><button type="button" id="mg-generation-admin" class="mg-primary mg-hidden">✨ Spustit testovací AI návrh</button>'
+  +'<div class="mg-buy-panel" id="mvg-koupit"><h4>Získejte svůj AI návrh</h4><p class="mg-note">Máte kód z e-mailu? Zadejte ho a vygenerujeme váš návrh.</p><div class="mg-buy-row"><input type="text" id="mg-kod-input" placeholder="Kód z e-mailu (např. AB12C-3DE45)" maxlength="11" autocomplete="off"><button type="button" id="mg-kod-use" class="mg-primary">Vytvořit AI návrh</button></div><p class="mg-note" id="mg-kod-status"></p>'
+  +'<details class="mg-buy-new"><summary>Nemáte kód? Koupit AI návrh za 89 Kč</summary><div class="mg-buy-row"><input type="email" id="mg-buy-email" placeholder="váš e-mail" autocomplete="email"><button type="button" id="mg-buy-submit" class="mg-primary">Zaplatit 89 Kč</button></div><label class="mg-buy-consent"><input type="checkbox" id="mg-buy-consent"> Souhlasím, aby plnění (vygenerování návrhu) začalo ihned po zaplacení, a beru na vědomí, že tím u vyčerpaných použití ztrácím právo na odstoupení od smlouvy do 14 dnů. <a href="/obchodni-podminky/" target="_blank" rel="noopener">Obchodní podmínky</a></label><p class="mg-note" id="mg-buy-status"></p></details>'
+  +'<button type="button" id="mg-kod-simulate" class="mg-secondary mg-hidden">🧪 Správce: vytvořit testovací kód</button></div></div></div>';
 resultStep.insertAdjacentElement('beforebegin',generationStep);
 const actualAiButton=q('mg-ai-test');
 const adminButton=q('mg-generation-admin');
@@ -987,7 +990,8 @@ q('mg-locality').addEventListener('input',()=>{const place=q('mg-locality').valu
 // Půdorys a pohled z jiného úhlu – navazuje na hotový AI návrh (jen pro správce v testu).
 function mgScaled(src,maxW,type,quality){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,maxW/i.naturalWidth);const c=document.createElement('canvas');c.width=Math.round(i.naturalWidth*k);c.height=Math.round(i.naturalHeight*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL(type||'image/jpeg',quality||0.85))};i.onerror=()=>rej(new Error('Obrázek se nepodařilo načíst.'));i.src=src})}
 async function mgAjax(action,fields){const ai=window.MVGreenAI||{};const data=new URLSearchParams();data.set('action',action);data.set('nonce',ai.nonce);Object.entries(fields).forEach(([k,v])=>data.set(k,v==null?'':String(v)));const r=await fetch(ai.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});const j=await r.json().catch(()=>({}));if(!j.success)throw new Error(j.data?.message||'Požadavek se nezdařil.');return j.data}
-async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask){
+async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask,extraFields){
+  extraFields=extraFields||{};
   const P=window.MVGreenPlan;
   const planBox=document.createElement('section');planBox.className='mg-plan-box';planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><p class="mg-note">Připravujeme seznam záhonů a rostlin…</p>';host.append(planBox);
   let planText='';
@@ -997,7 +1001,8 @@ async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask){
     const points=await P.detectBeds(beforeImage,finalImage,editMask||null);
     const numbered=points.length?await P.drawMarkers(finalImage,points):finalImage;
     const img=await mgScaled(numbered,1280,'image/jpeg',0.86),bef=await mgScaled(beforeImage,768,'image/jpeg',0.7);
-    const res=await mgAjax('mvgreen_ai_plan',{image:img,before:bef,markers:points.length,plants:(brief?.plants||[]).map(p=>p.name+(p.latin?' ('+p.latin+')':'')).join('; '),style:(styleChoices[d['mg-style-card']]?.name||''),width:d['mg-width'],length:d['mg-length']});
+    // Rozbor fotky je u zakoupeného návrhu zdarma navíc – nečerpá další použití kódu.
+    const res=await mgAjax('mvgreen_ai_plan',Object.assign({image:img,before:bef,markers:points.length,plants:(brief?.plants||[]).map(p=>p.name+(p.latin?' ('+p.latin+')':'')).join('; '),style:(styleChoices[d['mg-style-card']]?.name||''),width:d['mg-width'],length:d['mg-length']},extraFields));
     const dims={width:d['mg-width'],length:d['mg-length']};
     res.plan._markers=points.length;
     const built=P.build(res.plan,dims);
@@ -1009,6 +1014,9 @@ async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask){
     const dl2=document.createElement('button');dl2.type='button';dl2.textContent='⬇ Stáhnout půdorys (PNG)';dl2.addEventListener('click',()=>P.downloadPng(built.svg,'mvgreen-pudorys.png'));
     row.append(dl1,dl2);planBox.append(row);
   }catch(e){planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><p class="mg-note">Seznam záhonů se nepodařilo vytvořit: '+String(e.message).replace(/[<>&]/g,'')+'</p>'}
+  // Jiný pohled je další placený AI snímek (stejná cenová třída jako hlavní návrh) – u balíčku
+  // na 1 použití by si ho zákazník nemohl vyzkoušet, proto zůstává jen pro test správce.
+  if(!aiConfig.enabled)return;
   const angles=document.createElement('section');angles.className='mg-angle-box';
   angles.innerHTML='<h4>🔭 Jiný pohled (jen pro správce)</h4><p class="mg-note">Ilustrační pohled – AI smí mírně změnit úhel kamery, proporce domu a zahrady zůstávají. Každý pohled je další placený AI pokus.</p><div class="mg-actions"><button type="button" data-view="raised">Mírně vyšší pohled</button><button type="button" data-view="aerial">Ptačí perspektiva</button></div><div class="mg-angle-out"></div>';
   host.append(angles);
@@ -1024,70 +1032,134 @@ async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask){
   }));
 }
 window.MVGreenPlanAndAngles=mgPlanAndAngles;
-// Admin-only paid preview. Never send the API key to the browser.
+// Správce testuje zdarma (denní limit). Veřejnost platí přes GoPay a odemkne generování
+// jednorázovým kódem z e-mailu (payments.php) – obě cesty jdou přes tutéž funkci níže.
 const aiConfig=window.MVGreenAI||{};
 const aiButton=q('mg-ai-test');
-if(aiConfig.enabled){
-  aiButton.classList.remove('mg-hidden');
-  aiButton.addEventListener('click',async()=>{
-    if(!photoReady)return alert('Nejprve nahrajte fotografii zahrady.');
-    const automatic=q('mg-design-mode').value==='auto';
-    if(!automatic&&!areas.some(a=>a.tool==='change'||a.tool==='remove'))return alert('Označte alespoň jednu oblast Změnit nebo Odstranit.');
-    const S=window.MVGreenAISafety;
-    if(!S)return alert('Chybí bezpečnostní modul AI. Obnovte stránku.');
-    // Rule 1: the AI never gets the whole photo. Build the editable garden mask first.
-    const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
-    original.getContext('2d').drawImage(img,0,0,original.width,original.height);
-    let editMask;
-    if(automatic){
-      {
-        const styleHint=(styleLayout[q('mg-style-card').value]||{}).hint||'';
-        const clutterHint='Je na fotce nepořádek, který chcete odstranit (větve, kamení, suť)? Přimalujte tu plochu štětcem „＋ Přidat plochu“ – jinak ji AI nechá beze změny.';
-        editMask=await S.confirmMask(original,null,[styleHint,clutterHint].filter(Boolean).join(' '));
-      }
-      if(!editMask)return;
-    }else{
-      editMask=S.polygonMask(original.width,original.height,areas.filter(a=>a.tool==='change'||a.tool==='remove'),areas.filter(a=>a.tool==='keep'));
-    }
-    const prepared=S.prepare(original,editMask);
-    const invalid=S.validate(prepared.coverage);
-    if(invalid)return alert(invalid);
-    if(!confirm('Spustit placený AI návrh? Upraví se jen označená plocha ('+Math.round(prepared.coverage*100)+' % fotky). Dům, plot a ostatní části zůstanou beze změny.'))return;
-    const result=q('mg-ai-result');result.classList.remove('mg-hidden');result.textContent='AI připravuje návrh. Obvykle to trvá asi minutu…';
-    aiButton.disabled=true;
-    try{
-      const data=new URLSearchParams();data.set('action','mvgreen_ai_preview');data.set('nonce',aiConfig.nonce);
-      data.set('image',prepared.image);data.set('mask',prepared.mask);
-      const d=getData();const sl=styleLayout[d['mg-style-card']]||styleLayout['lawn-beds'];const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,{styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max});data.set('instructions',brief.text);
-      const response=await fetch(aiConfig.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});
-      const json=await response.json();if(!json.success||!json.data?.image)throw new Error(json.data?.message||'AI návrh se nepodařilo vytvořit.');
-      const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=json.data.image});
-      // Rules 3–4: undo padding, reject a re-drawn scene, hard-lock everything outside the mask.
-      const done=S.finish(original,editMask,aiPhoto,prepared.box);
-      if(!done.ok){
+
+async function runAiGeneration(trigger,extraFields,confirmText){
+  if(!photoReady)return alert('Nejprve nahrajte fotografii zahrady.');
+  const automatic=q('mg-design-mode').value==='auto';
+  if(!automatic&&!areas.some(a=>a.tool==='change'||a.tool==='remove'))return alert('Označte alespoň jednu oblast Změnit nebo Odstranit.');
+  const S=window.MVGreenAISafety;
+  if(!S)return alert('Chybí bezpečnostní modul AI. Obnovte stránku.');
+  // Rule 1: the AI never gets the whole photo. Build the editable garden mask first.
+  const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
+  original.getContext('2d').drawImage(img,0,0,original.width,original.height);
+  let editMask;
+  if(automatic){
+    const styleHint=(styleLayout[q('mg-style-card').value]||{}).hint||'';
+    const clutterHint='Je na fotce nepořádek, který chcete odstranit (větve, kamení, suť)? Přimalujte tu plochu štětcem „＋ Přidat plochu“ – jinak ji AI nechá beze změny.';
+    editMask=await S.confirmMask(original,null,[styleHint,clutterHint].filter(Boolean).join(' '));
+    if(!editMask)return;
+  }else{
+    editMask=S.polygonMask(original.width,original.height,areas.filter(a=>a.tool==='change'||a.tool==='remove'),areas.filter(a=>a.tool==='keep'));
+  }
+  const prepared=S.prepare(original,editMask);
+  const invalid=S.validate(prepared.coverage);
+  if(invalid)return alert(invalid);
+  if(!confirm(confirmText(Math.round(prepared.coverage*100))))return;
+  const result=q('mg-ai-result');result.classList.remove('mg-hidden');result.textContent='AI připravuje návrh. Obvykle to trvá asi minutu…';
+  trigger.disabled=true;
+  try{
+    const data=new URLSearchParams();data.set('action','mvgreen_ai_preview');data.set('nonce',aiConfig.nonce);
+    data.set('image',prepared.image);data.set('mask',prepared.mask);
+    Object.entries(extraFields||{}).forEach(([k,v])=>data.set(k,v==null?'':String(v)));
+    const d=getData();const sl=styleLayout[d['mg-style-card']]||styleLayout['lawn-beds'];const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,{styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max});data.set('instructions',brief.text);
+    const response=await fetch(aiConfig.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});
+    const json=await response.json();if(!json.success||!json.data?.image)throw new Error(json.data?.message||'AI návrh se nepodařilo vytvořit.');
+    const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=json.data.image});
+    // Rules 3–4: undo padding, reject a re-drawn scene, hard-lock everything outside the mask.
+    const done=S.finish(original,editMask,aiPhoto,prepared.box);
+    if(!done.ok){
+      result.replaceChildren();
+      const msg=document.createElement('p');msg.textContent=done.emptyInside?'AI nevrátila žádnou úpravu zahrady. Výsledek nebyl použit.':'AI změnila i části, které měly zůstat beze změny (odchylka '+Math.round(done.drift)+'). Výsledek nebyl použit.';result.append(msg);
+      if(aiConfig.enabled){
         // Admin-only diagnostics: show what the AI actually returned (never shown as a result).
-        result.replaceChildren();
-        const msg=document.createElement('p');msg.textContent=done.emptyInside?'AI nevrátila žádnou úpravu zahrady. Výsledek nebyl použit.':'AI změnila i části, které měly zůstat beze změny (odchylka '+Math.round(done.drift)+'). Výsledek nebyl použit.';result.append(msg);
         const det=document.createElement('details');det.innerHTML='<summary>Diagnostika pro správce – co AI vrátila</summary>';
         const rawImg=document.createElement('img');rawImg.src=aiPhoto.src;rawImg.alt='Odmítnutý výstup AI';rawImg.style.cssText='max-width:100%;margin-top:8px;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/16px 16px';det.append(rawImg);
         const dl=document.createElement('a');dl.href=aiPhoto.src;dl.download='mvgreen-ai-odmitnuto.png';dl.textContent='⬇ Stáhnout odmítnutý výstup';dl.style.display='block';det.append(dl);
-        result.append(det);window.__mvgLastAi=aiPhoto.src;return;
+        result.append(det);
       }
-      const finalImage=done.canvas.toDataURL('image/png');
-      result.replaceChildren();
-      const comparison=document.createElement('div');comparison.className='mg-before-after';comparison.setAttribute('aria-label','Porovnání původní fotografie a AI návrhu');
-      const before=document.createElement('img');before.src=original.toDataURL('image/png');before.alt='Před úpravou – původní zahrada';before.className='mg-before-image';
-      const after=document.createElement('img');after.src=finalImage;after.alt='Po úpravě – AI návrh';after.className='mg-after-image';
-      const labels=document.createElement('div');labels.className='mg-comparison-labels';labels.innerHTML='<span>PŘED</span><span>PO – AI NÁVRH</span>';
-      const range=document.createElement('input');range.type='range';range.min='0';range.max='100';range.value='50';range.className='mg-comparison-range';range.setAttribute('aria-label','Posunout hranici porovnání před a po');range.addEventListener('input',()=>comparison.style.setProperty('--mg-reveal',range.value+'%'));
-      comparison.append(after,before,labels,range);result.append(comparison);
-      const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';result.append(note);
-      if(brief.rejected.length){const why=document.createElement('p');why.className='mg-note';why.textContent='Do návrhu jsme nedali: '+brief.rejected.join(', ')+' – pro vaše podmínky (slunce, vlhkost, zálivka) se nehodí. Použili jsme vhodnější rostliny.';result.append(why);}
-      const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';result.append(used);
-      const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
-      const extras=document.createElement('div');extras.className='mg-ai-extras';result.append(extras);
-      mgPlanAndAngles(extras,finalImage,original.toDataURL('image/jpeg',0.8),brief,d,editMask);
-    }catch(err){result.textContent='Chyba: '+err.message;}finally{aiButton.disabled=false;}
+      window.__mvgLastAi=aiPhoto.src;return;
+    }
+    const finalImage=done.canvas.toDataURL('image/png');
+    result.replaceChildren();
+    const comparison=document.createElement('div');comparison.className='mg-before-after';comparison.setAttribute('aria-label','Porovnání původní fotografie a AI návrhu');
+    const before=document.createElement('img');before.src=original.toDataURL('image/png');before.alt='Před úpravou – původní zahrada';before.className='mg-before-image';
+    const after=document.createElement('img');after.src=finalImage;after.alt='Po úpravě – AI návrh';after.className='mg-after-image';
+    const labels=document.createElement('div');labels.className='mg-comparison-labels';labels.innerHTML='<span>PŘED</span><span>PO – AI NÁVRH</span>';
+    const range=document.createElement('input');range.type='range';range.min='0';range.max='100';range.value='50';range.className='mg-comparison-range';range.setAttribute('aria-label','Posunout hranici porovnání před a po');range.addEventListener('input',()=>comparison.style.setProperty('--mg-reveal',range.value+'%'));
+    comparison.append(after,before,labels,range);result.append(comparison);
+    const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';result.append(note);
+    if(brief.rejected.length){const why=document.createElement('p');why.className='mg-note';why.textContent='Do návrhu jsme nedali: '+brief.rejected.join(', ')+' – pro vaše podmínky (slunce, vlhkost, zálivka) se nehodí. Použili jsme vhodnější rostliny.';result.append(why);}
+    const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';result.append(used);
+    const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
+    const extras=document.createElement('div');extras.className='mg-ai-extras';result.append(extras);
+    mgPlanAndAngles(extras,finalImage,original.toDataURL('image/jpeg',0.8),brief,d,editMask,extraFields);
+  }catch(err){result.textContent='Chyba: '+err.message;}finally{trigger.disabled=false;}
+}
+
+if(aiConfig.enabled){
+  aiButton.classList.remove('mg-hidden');
+  aiButton.addEventListener('click',()=>runAiGeneration(aiButton,{},cov=>'Spustit placený AI návrh? Upraví se jen označená plocha ('+cov+' % fotky). Dům, plot a ostatní části zůstanou beze změny.'));
+}
+
+// Veřejný tok: kód z e-mailu odemkne vygenerování (server kód ověří a atomicky vyčerpá).
+const kodInput=q('mg-kod-input'),kodUse=q('mg-kod-use'),kodStatus=q('mg-kod-status');
+if(kodUse){
+  kodUse.addEventListener('click',()=>{
+    const code=(kodInput.value||'').trim().toUpperCase();
+    if(!code){kodStatus.textContent='Zadejte prosím kód z e-mailu.';return;}
+    kodStatus.textContent='';
+    runAiGeneration(kodUse,{code},cov=>'Vytvořit AI návrh pomocí vašeho kódu? Upraví se jen označená plocha ('+cov+' % fotky). Kód se tím vyčerpá.')
+      .catch(()=>{});
   });
 }
+const buyEmail=q('mg-buy-email'),buySubmit=q('mg-buy-submit'),buyConsent=q('mg-buy-consent'),buyStatus=q('mg-buy-status');
+if(buySubmit){
+  buySubmit.addEventListener('click',async()=>{
+    buyStatus.textContent='';
+    const email=(buyEmail.value||'').trim();
+    if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){buyStatus.textContent='Zadejte prosím platný e-mail.';return;}
+    if(!buyConsent.checked){buyStatus.textContent='Potvrďte prosím souhlas se zahájením plnění.';return;}
+    buySubmit.disabled=true;buyStatus.textContent='Přesměrováváme na platbu…';
+    try{
+      const r=await mgAjax('mvgreen_kod_buy',{email,consent:'1'});
+      if(r.redirect)window.location.href=r.redirect;
+    }catch(e){buyStatus.textContent='Chyba: '+e.message;buySubmit.disabled=false;}
+  });
+}
+// Správce: rychlé vytvoření testovacího kódu (funguje jen v GoPay sandboxu, viz payments.php).
+const kodSimulate=q('mg-kod-simulate');
+if(kodSimulate&&aiConfig.enabled){
+  kodSimulate.classList.remove('mg-hidden');
+  kodSimulate.addEventListener('click',async()=>{
+    kodSimulate.disabled=true;
+    try{
+      const r=await mgAjax('mvgreen_kod_simulate',{});
+      kodInput.value=r.code;
+      kodStatus.textContent='Testovací kód vytvořen: '+r.code+' (zbývá '+r.left+' použití).';
+    }catch(e){kodStatus.textContent='Chyba: '+e.message;}finally{kodSimulate.disabled=false;}
+  });
+}
+// Návrat z GoPay: zobrazit stav platby podle ?mvg_platba= a uklidit adresu.
+(function(){
+  const params=new URLSearchParams(location.search);
+  const platba=params.get('mvg_platba');
+  if(platba&&kodStatus){
+    const map={
+      diky:'Platba proběhla, kód posíláme na e-mail – zkontrolujte prosím i Hromadnou poštu / Spam.',
+      cekame:'Platbu zpracováváme, kód dorazí e-mailem obvykle do pár minut.',
+      'chyba-email':'Zadejte prosím platný e-mail.',
+      'chyba-udaje':'Něco se nepovedlo, zkuste to prosím znovu.',
+      'chyba-limit':'Odesláno příliš mnoho požadavků, zkuste to prosím za chvíli.',
+      'chyba-platba':'Platbu se nepodařilo zpracovat, zkuste to prosím znovu.',
+      'chyba-platba-nenastavena':'Platby se teď připravují, zkuste to prosím později.',
+      'chyba-bezpecnost':'Stránka vypršela, zkuste to prosím znovu.',
+    };
+    kodStatus.textContent=map[platba]||'';
+    const url=new URL(location.href);url.searchParams.delete('mvg_platba');history.replaceState(null,'',url.toString());
+  }
+})();
 })();
