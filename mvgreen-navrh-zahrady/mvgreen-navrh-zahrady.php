@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.77
+ * Version: 0.6.78
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.77');
+define('MVGREEN_VERSION', '0.6.78');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -30,7 +30,12 @@ function mvgreen_harden_upload_dir($dir) {
 }
 
 add_shortcode('mvgreen_navrh_zahrady', function () {
-    wp_enqueue_style('mvgreen-reference-font', 'https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;600;700;800;900&display=swap', [], null);
+    // Matches the real mvgreen.cz site, verified by inspecting its live computed styles:
+    // Montserrat for headings (700/800), Inter for body text/buttons (400–900). Previously this
+    // loaded Roboto Condensed under a mistaken assumption that it matched the real site – it
+    // never did, and a later patch (see assets/app.css) had already silently papered over most
+    // of the visible effect by forcing Inter back on via !important; this corrects it at the source.
+    wp_enqueue_style('mvgreen-reference-font', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap', [], null);
     wp_enqueue_style('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.css', ['mvgreen-reference-font'], MVGREEN_VERSION);
     wp_enqueue_script('mvgreen-plants-805', plugin_dir_url(__FILE__) . 'assets/catalog-805.js', [], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-ai-safety', plugin_dir_url(__FILE__) . 'assets/ai-safety.js', [], MVGREEN_VERSION, true);
