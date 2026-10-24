@@ -530,17 +530,6 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-generation-progress-fill{display:block;height:100%;background:#288157;border-radius:999px;transition:width .4s ease}
 .mvgreen-designer .mg-generation-progress-label{font-size:12px;font-weight:700;color:#2f6649;margin:7px 0 0}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-note{background:#eaf5ed;border-radius:10px;padding:13px;font-size:12px;color:#47624f;line-height:1.6;margin:20px 0}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-tabs button{border:1px solid #e0ebe3;background:#f5f8f6;color:#46614f;border-radius:9px;padding:11px 15px;font-size:12px;font-weight:750;cursor:pointer}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-tabs button[aria-selected="true"]{background:#156333;color:#fff;border-color:#156333}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-layout{display:grid;grid-template-columns:195px minmax(0,1fr);gap:15px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-library{border:1px solid #e0ebe3;border-radius:12px;padding:14px;background:#f8fbf9}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-library h4{font-size:13px;color:#1b4930;margin:0 0 14px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-item{display:flex;align-items:center;gap:7px;border:1px solid #e5ece6;border-radius:8px;padding:9px 7px;margin:0 0 7px;background:#fff;color:#405e49;font-size:12px;cursor:pointer}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview{display:flex;flex-direction:column;gap:10px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview img{width:100%;height:330px;object-fit:cover;border-radius:12px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview small{color:#607468;font-size:11px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview button{align-self:flex-end}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:18px 0}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary>div{background:#f4faf6;border:1px solid #dfebe3;border-radius:12px;padding:17px}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary h4{color:#1c4a31;font-size:16px;margin:0 0 10px}
@@ -549,7 +538,7 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary button.mg-primary{background:#156333;color:#fff}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-plan{background:#fff!important;border:1px solid #e1eae3!important;border-radius:13px!important}
 @media(max-width:1180px){.mvgreen-designer .mg-redesign-frame.mg-is-modal{grid-template-columns:170px minmax(0,1fr)!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-tips{display:none!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding:28px 22px!important}}
-@media(max-width:680px){.mvgreen-designer .mg-redesign-frame.mg-is-modal{grid-template-columns:1fr!important;top:0!important;height:100dvh!important;width:100vw!important;border-radius:0!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding:60px 16px 20px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-grid,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-options,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-details,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-grid,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-layout,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-layout{grid-template-columns:1fr!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-picture{height:200px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-side{position:static}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-edit-preview img{height:240px}.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-progress-label{font-size:15px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image{min-height:230px}}
+@media(max-width:680px){.mvgreen-designer .mg-redesign-frame.mg-is-modal{grid-template-columns:1fr!important;top:0!important;height:100dvh!important;width:100vw!important;border-radius:0!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-redesign-main{padding:60px 16px 20px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-grid,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-tailored-options,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-details,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-grid,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-summary,.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-layout{grid-template-columns:1fr!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-variant-picture{height:200px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-measure-side{position:static}.mvgreen-designer .mg-redesign-frame.mg-is-modal #mg-progress-label{font-size:15px!important}.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image{min-height:230px}}
 
 /* Keep photo calibration available even when the user selected automatic design. */
 .mvgreen-designer.mg-automatic-mode .mg-redesign-frame.mg-is-modal .mg-measure-step .mg-calibration,
@@ -635,19 +624,17 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-thumbs-images{display:flex;gap:5px}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-ref-thumbs-images img{width:58px;height:50px;object-fit:cover;border-radius:6px;border:1px solid #dce6dc}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-3 .mg-redesign-tips .mg-tips-reference-photo{height:155px!important;object-fit:cover!important}
-/* Steps 4 and 5–8 occupy the full content area; their own right panels are inside the screen. */
+/* Steps 4 and 5–7 occupy the full content area; their own right panels are inside the screen. */
 @media(min-width:1181px){
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4,
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5,
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6,
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7,
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8{grid-template-columns:220px minmax(0,1fr)!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7{grid-template-columns:220px minmax(0,1fr)!important}
 }
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-4 .mg-redesign-tips,
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-redesign-tips,
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-redesign-tips,
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-redesign-tips,
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-redesign-tips{display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-redesign-tips{display:none!important}
 /* Legacy area-tool colors (dormant old canvas, kept inert at the unused step-9 slot). */
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-measure-layout{grid-template-columns:minmax(0,1fr) 240px!important;gap:18px!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-measure-side{background:#fff!important;border:1px solid #e1eae4!important}
@@ -679,33 +666,24 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-image{min-height:370px!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-status{background:#f3faf5!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-5 .mg-generation-status p{padding:8px 0!important;font-size:13px!important}
-/* Step 7 — plant library, photo, planting tips. */
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-edit-layout{grid-template-columns:175px minmax(0,1fr) 230px!important;gap:13px!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-edit-preview img{height:355px!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-tips{background:#f5fbf6;border:1px solid #e1eae4;border-radius:10px;padding:14px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-tips h4{font-size:15px;color:#23462e}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-tips p{font-size:12px;line-height:1.65;color:#45664f}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-thumbnails{display:flex;gap:5px;margin:15px 0}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-thumbnails img{width:31%;height:78px;object-fit:cover;border-radius:6px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-edit-tips button{background:#156333;color:#fff;border:0;border-radius:7px;padding:10px;width:100%}
-/* Step 8 — overview at left, line-item budget at right. */
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary{width:49%;display:block!important;margin:12px 0!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary>div:nth-child(2){display:none!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table{position:absolute;top:78px;left:53%;width:45%;padding:14px;border:1px solid #e1ebe3;border-radius:11px;background:#fff}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 [data-mg-step="8"]{position:relative;min-height:470px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table h4{font-size:16px;margin:0 0 14px;color:#213c2c}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table>div{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #e8eee8;font-size:12px;color:#47614f}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table .mg-ref-budget-total{font-size:15px;font-weight:900;color:#153d2a}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table p{font-size:11px;line-height:1.5;color:#627869}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table button{width:100%}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details{margin-top:20px;max-width:50%;font-size:12px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details summary{cursor:pointer;font-weight:800;color:#156333}
+/* Step 7 — overview at left, line-item budget at right (was step 8; step 7 used to be the plant/
+   material/lighting checklist step, removed – dead and duplicate of step 5's free-text wishes). */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-budget-summary{width:49%;display:block!important;margin:12px 0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-budget-summary>div:nth-child(2){display:none!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table{position:absolute;top:78px;left:53%;width:45%;padding:14px;border:1px solid #e1ebe3;border-radius:11px;background:#fff}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 [data-mg-step="7"]{position:relative;min-height:470px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table h4{font-size:16px;margin:0 0 14px;color:#213c2c}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table>div{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #e8eee8;font-size:12px;color:#47614f}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table .mg-ref-budget-total{font-size:15px;font-weight:900;color:#153d2a}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table p{font-size:11px;line-height:1.5;color:#627869}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table button{width:100%}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-plan-details{margin-top:20px;max-width:50%;font-size:12px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-plan-details summary{cursor:pointer;font-weight:800;color:#156333}
 @media(max-width:1180px){
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-measure-layout,
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-edit-layout{grid-template-columns:1fr!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-reference-details,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary{width:100%!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table{position:static!important;width:auto!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details{max-width:100%}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-measure-layout{grid-template-columns:1fr!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-reference-details,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-budget-summary{width:100%!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-budget-table{position:static!important;width:auto!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-7 .mg-ref-plan-details{max-width:100%}
 }
 
 /* 0.6.6 – reference colors for the five area types; applies only to the nine-step designer. */
