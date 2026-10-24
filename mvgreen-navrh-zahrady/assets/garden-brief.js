@@ -97,15 +97,16 @@
   }
 
   function favoritesHtml(curated) {
-    var picks = uniquePicks(curated);
+    // Showing a fixed pick of ~18 names out of 800+ in the catalog made the catalog look much
+    // smaller than it is and steered customers toward only those few species. The AI already
+    // chooses from the full curated catalog for the site's actual conditions (choosePlants
+    // below); a customer with a specific plant in mind names it in the free-text notes field
+    // (sent to the AI as PŘÁNÍ ZÁKAZNÍKA) instead of picking from this short list.
     return '<section class="mg-fav" aria-labelledby="mg-fav-title">' +
       '<h4 id="mg-fav-title">Co máte rádi?</h4>' +
-      '<p class="mg-note">Vyberte pár rostlin a barev. Do návrhu dáme jen rostliny, které u vás porostou.</p>' +
+      '<p class="mg-note">Vyberte barvu a způsob zálivky. Vhodné rostliny z celého katalogu vybere AI podle podmínek na vaší zahradě – konkrétní přání napište do poznámek.</p>' +
       '<div class="mg-fav__group" role="group" aria-label="Oblíbené barvy">' + COLORS.map(function (c) {
         return '<button type="button" class="mg-chip" data-fav-color="' + c[0] + '" aria-pressed="false"><span class="mg-chip__dot mg-chip__dot--' + c[0] + '"></span>' + c[1] + '</button>';
-      }).join('') + '</div>' +
-      '<div class="mg-fav__group mg-fav__plants" role="group" aria-label="Oblíbené rostliny">' + picks.map(function (p, i) {
-        return '<button type="button" class="mg-chip" data-fav-plant="' + i + '" aria-pressed="false">' + p.label + '</button>';
       }).join('') + '</div>' +
       '<div class="mg-fav__group" role="group" aria-label="Závlaha"><span class="mg-fav__label">Závlaha:</span>' +
       ['Mám automatickou závlahu', 'Zalévám ručně', 'Nechci zalévat'].map(function (t, i) {
