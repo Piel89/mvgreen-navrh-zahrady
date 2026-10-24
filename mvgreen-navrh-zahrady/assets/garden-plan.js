@@ -226,9 +226,14 @@
         var r = a[i], g = a[i + 1], bl = a[i + 2];
         var diff = (Math.abs(r - b[i]) + Math.abs(g - b[i + 1]) + Math.abs(bl - b[i + 2])) / 3;
         // Nový trávník je hladký a zelený; záhon je pestrý nebo členitý (traviny, keříky, mulč).
+        // Tightened from the original (g>r+10, tex<30): that was loose enough to misclassify real
+        // new low/dense planting (e.g. thyme or groundcover along a wall) as "just lawn", silently
+        // dropping whole beds from the count a customer could plainly see in the photo. Requiring a
+        // stronger green margin AND a lower texture ceiling before calling something "lawn" means
+        // only genuinely smooth, uniformly green areas get excluded now.
         var xr = (k % W) < W - 1 ? i + 4 : i - 4, yd = k < W * (H - 1) ? i + W * 4 : i - W * 4;
         var tex = Math.abs(g - a[xr + 1]) + Math.abs(g - a[yd + 1]) + Math.abs(r - a[xr]) + Math.abs(bl - a[yd + 2]);
-        var lawn = g > r + 10 && g > bl + 10 && tex < 30;
+        var lawn = g > r + 14 && g > bl + 14 && tex < 20;
         if (diff > 24 && !lawn) hit[k] = 1;
       }
       // Uzavření: zaplnit mezery mezi rostlinami (rozmazání 3×3 dvakrát).
@@ -240,7 +245,10 @@
         }
         hit = nx;
       }
-      var seen = new Int32Array(W * H), comps = [], id = 0, minArea = W * H * 0.003;
+      // Halved from 0.3% – at a 320px-wide working image that was already filtering out smaller or
+      // more distant beds (e.g. a modest planting strip by a far wall) before they ever got a
+      // chance to become a numbered circle on the photo.
+      var seen = new Int32Array(W * H), comps = [], id = 0, minArea = W * H * 0.0015;
       for (var p = 0; p < W * H; p++) {
         if (!hit[p] || seen[p]) continue;
         id++; var st = [p], cnt = 0, sx = 0, sy = 0, x0 = W, y0 = H, x1 = 0, y1 = 0; seen[p] = id;
@@ -277,12 +285,14 @@
           if (!mergedAny) break;
         }
       }
-      comps = comps.filter(function (c) { return c.n >= W * H * 0.004; }).map(function (c) {
+      comps = comps.filter(function (c) { return c.n >= W * H * 0.002; }).map(function (c) {
         // Číslo dát doprostřed obrysu, ale na skutečný pixel záhonu (ne do mezery).
         return { x: c.sx / c.n / W * 100, y: c.sy / c.n / H * 100, share: c.n / (W * H) };
       });
       comps.sort(function (u, v) { return v.share - u.share; });
-      return comps.slice(0, 6).sort(function (u, v) { return u.x - v.x; });
+      // Capped at 9 to match the server-side AI prompt's own marker ceiling (plan.php) – raised
+      // from 6 so a photo with several genuinely separate new beds doesn't lose the smallest ones.
+      return comps.slice(0, 9).sort(function (u, v) { return u.x - v.x; });
     });
   }
 
