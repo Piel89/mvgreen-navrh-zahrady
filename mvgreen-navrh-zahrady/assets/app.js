@@ -533,15 +533,48 @@ function makeReferenceStep(number,title,description){
 }
 const resultStep=root.querySelector('[data-mg-step="6"]');
 const generationStep=makeReferenceStep(5,'Vytváříme váš návrh…','Na základě vaší fotografie, zvoleného stylu a podmínek připravíme zadání pro vizualizaci.');
-generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img src="https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png" alt="Ilustrační ukázka návrhu zahrady"><span>Ukázka vzhledu návrhu</span></div><div class="mg-generation-status"><h4>Co se právě děje?</h4><p>✓ Analyzujeme vaši fotografii</p><p>✓ Rozpoznáváme plochy</p><p>✓ Vybíráme vhodné rostliny</p><p>✓ Připravujeme vizualizace</p><p>✓ Tvoříme doporučení</p><button type="button" id="mg-generation-admin" class="mg-primary mg-hidden">✨ Spustit testovací AI návrh</button>'
+generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img id="mg-generation-preview-img" src="" alt="Vaše nahraná fotografie zahrady"><span>Vaše fotografie</span></div><div class="mg-generation-status"><h4>Co se právě děje?</h4><div class="mg-generation-progress" id="mg-generation-progress" hidden><div class="mg-progress-track"><div class="mg-generation-progress-fill" id="mg-generation-progress-fill" style="width:4%"></div></div><p class="mg-generation-progress-label" id="mg-generation-progress-label">Připraveno ke generování</p></div><p>✓ Analyzujeme vaši fotografii</p><p>✓ Rozpoznáváme plochy</p><p>✓ Vybíráme vhodné rostliny</p><p>✓ Připravujeme vizualizace</p><p>✓ Tvoříme doporučení</p><button type="button" id="mg-generation-admin" class="mg-primary mg-hidden">✨ Spustit testovací AI návrh</button>'
   +'<div class="mg-buy-panel" id="mvg-koupit"><h4>Získejte svůj AI návrh</h4><p class="mg-note">Máte kód z e-mailu? Zadejte ho a vygenerujeme váš návrh.</p><div class="mg-buy-row"><input type="text" id="mg-kod-input" placeholder="Kód z e-mailu (např. AB12C-3DE45)" maxlength="11" autocomplete="off"><button type="button" id="mg-kod-use" class="mg-primary">Vytvořit AI návrh</button></div><p class="mg-note" id="mg-kod-status"></p>'
   +'<details class="mg-buy-new"><summary>Nemáte kód? Koupit AI návrh za 89 Kč</summary><div class="mg-buy-row"><input type="email" id="mg-buy-email" placeholder="váš e-mail" autocomplete="email"><button type="button" id="mg-buy-submit" class="mg-primary">Zaplatit 89 Kč</button></div><label class="mg-buy-consent"><input type="checkbox" id="mg-buy-consent"> Souhlasím, aby plnění (vygenerování návrhu) začalo ihned po zaplacení, a beru na vědomí, že tím u vyčerpaných použití ztrácím právo na odstoupení od smlouvy do 14 dnů. <a href="/obchodni-podminky/" target="_blank" rel="noopener">Obchodní podmínky</a></label><p class="mg-note" id="mg-buy-status"></p></details>'
   +'<button type="button" id="mg-kod-simulate" class="mg-secondary mg-hidden">🧪 Správce: vytvořit testovací kód</button></div></div></div>';
 resultStep.insertAdjacentElement('beforebegin',generationStep);
+// Step 5 used to show a fixed stock photo captioned "Ukázka vzhledu návrhu" (sample design look) while
+// generating – misleading, since it was never the customer's own garden. Show their actual uploaded
+// photo instead, kept in sync with the same upload-preview image step 2 already populates.
+const genPreviewImg=generationStep.querySelector('#mg-generation-preview-img');
+const uploadPreviewForGen=q('mg-upload-preview-image');
+if(genPreviewImg&&uploadPreviewForGen){
+ if(uploadPreviewForGen.src)genPreviewImg.src=uploadPreviewForGen.src;
+ uploadPreviewForGen.addEventListener('load',()=>{genPreviewImg.src=uploadPreviewForGen.src;});
+}
 const actualAiButton=q('mg-ai-test');
 const adminButton=q('mg-generation-admin');
 if(actualAiButton&&adminButton){
  adminButton.addEventListener('click',()=>actualAiButton.click());
+}
+// Simulated but honestly-paced progress bar: a single AI image-edit call has no real progress events,
+// so this estimates elapsed-time progress through named stages and always finishes at 100% – it tells
+// the customer "still working, here's roughly how far along" rather than implying exact completion %.
+function startGenerationProgress(){
+ const wrap=generationStep.querySelector('#mg-generation-progress');
+ const fill=generationStep.querySelector('#mg-generation-progress-fill');
+ const label=generationStep.querySelector('#mg-generation-progress-label');
+ if(!wrap||!fill||!label)return{stop(){}};
+ const stages=['Analyzujeme fotografii…','Rozpoznáváme plochy a rozvržení…','Vybíráme vhodné rostliny…','AI generuje vizualizaci (toto trvá nejdéle)…','Dokončujeme návrh…'];
+ let pct=4,stageIndex=0,stopped=false;
+ wrap.hidden=false;fill.style.width=pct+'%';label.textContent=stages[0];
+ const timer=setInterval(()=>{
+  if(stopped)return;
+  pct=Math.min(92,pct+(92-pct)*0.06+0.6);
+  fill.style.width=pct+'%';
+  const next=Math.min(stages.length-1,Math.floor(pct/19));
+  if(next!==stageIndex){stageIndex=next;label.textContent=stages[stageIndex];}
+ },700);
+ return{stop(ok){
+  if(stopped)return;stopped=true;clearInterval(timer);
+  fill.style.width='100%';label.textContent=ok?'Hotovo':'Přerušeno';
+  setTimeout(()=>{wrap.hidden=true;fill.style.width='4%';},700);
+ }};
 }
 const resultDemo=document.createElement('div');
 resultDemo.className='mg-reference-result';
@@ -1061,6 +1094,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   if(!confirm(confirmText(Math.round(prepared.coverage*100))))return;
   const result=q('mg-ai-result');result.classList.remove('mg-hidden');result.textContent='AI připravuje návrh. Obvykle to trvá asi minutu…';
   trigger.disabled=true;
+  const progress=startGenerationProgress();
   try{
     const data=new URLSearchParams();data.set('action','mvgreen_ai_preview');data.set('nonce',aiConfig.nonce);
     data.set('image',prepared.image);data.set('mask',prepared.mask);
@@ -1071,6 +1105,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=json.data.image});
     // Rules 3–4: undo padding, reject a re-drawn scene, hard-lock everything outside the mask.
     const done=S.finish(original,editMask,aiPhoto,prepared.box);
+    progress.stop(done.ok);
     if(!done.ok){
       result.replaceChildren();
       const msg=document.createElement('p');msg.textContent=done.emptyInside?'AI nevrátila žádnou úpravu zahrady. Výsledek nebyl použit.':'AI změnila i části, které měly zůstat beze změny (odchylka '+Math.round(done.drift)+'). Výsledek nebyl použit.';result.append(msg);
@@ -1097,7 +1132,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
     const extras=document.createElement('div');extras.className='mg-ai-extras';result.append(extras);
     mgPlanAndAngles(extras,finalImage,original.toDataURL('image/jpeg',0.8),brief,d,editMask,extraFields);
-  }catch(err){result.textContent='Chyba: '+err.message;}finally{trigger.disabled=false;}
+  }catch(err){progress.stop(false);result.textContent='Chyba: '+err.message;}finally{trigger.disabled=false;}
 }
 
 if(aiConfig.enabled){

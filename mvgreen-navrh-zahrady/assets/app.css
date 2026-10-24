@@ -540,6 +540,10 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-status{padding:21px;border-radius:13px;border:1px solid #dfebe3;background:#f4faf6}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-status h4{font-size:16px;color:#19462f;margin:0 0 18px}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-status p{font-size:13px;color:#43604e;margin:0 0 13px}
+.mvgreen-designer .mg-generation-progress{margin:0 0 16px}
+.mvgreen-designer .mg-generation-progress .mg-progress-track{height:8px;background:#e1efe5;border-radius:999px;overflow:hidden}
+.mvgreen-designer .mg-generation-progress-fill{display:block;height:100%;background:#288157;border-radius:999px;transition:width .4s ease}
+.mvgreen-designer .mg-generation-progress-label{font-size:12px;font-weight:700;color:#2f6649;margin:7px 0 0}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-note{background:#eaf5ed;border-radius:10px;padding:13px;font-size:12px;color:#47624f;line-height:1.6;margin:20px 0}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-result{border:1px solid #e1ebe3;border-radius:13px;overflow:hidden;margin:17px 0;background:#fff}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-result-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:13px 15px}
