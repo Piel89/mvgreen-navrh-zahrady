@@ -578,13 +578,20 @@ if(genPreviewImg&&uploadPreviewForGen){
 // without ever reopening this overlay itself. Re-entering this step offers the button again so the
 // customer can redo the marking from scratch (confirmMask always starts from a blank mask).
 const maskStep=makeReferenceStep(4,'Označení plochy','Vyznačte štětcem plochu zahrady, kterou chcete AI návrhem změnit. Co nevyznačíte, zůstane přesně jako na vaší fotografii.');
-maskStep.innerHTML+='<div class="mg-mask-step-body"><p class="mg-mask-step-status" id="mg-mask-status">Plocha ještě není vyznačena.</p><button type="button" class="mg-primary" id="mg-mask-open">✏️ Označit plochu na fotografii</button></div>';
+maskStep.innerHTML+='<div class="mg-mask-step-body"><p class="mg-mask-step-status" id="mg-mask-status">Plocha ještě není vyznačena.</p><button type="button" class="mg-primary" id="mg-mask-open">✏️ Označit plochu na fotografii</button><div class="mg-mask-preview-wrap mg-hidden" id="mg-mask-preview-wrap"><img class="mg-mask-preview-img" id="mg-mask-preview-img" alt="Náhled vyznačené plochy – zeleně zvýrazněná část se v návrhu změní"></div></div>';
 generationStep.insertAdjacentElement('beforebegin',maskStep);
+// Kept alongside confirmedEditMask so the preview below still shows the last marked area after
+// leaving and returning to this step without re-marking (confirmMask itself keeps no photo state).
+let maskPreviewDataUrl=null;
 function updateMaskStatus(){
- const status=q('mg-mask-status'),btn=q('mg-mask-open');
+ const status=q('mg-mask-status'),btn=q('mg-mask-open'),wrap=q('mg-mask-preview-wrap'),img=q('mg-mask-preview-img');
  if(!status||!btn)return;
  if(confirmedEditMask){status.textContent='✓ Plocha je vyznačena. Můžete pokračovat, nebo ji vyznačit znovu.';btn.textContent='✏️ Vyznačit plochu znovu';}
  else{status.textContent='Plocha ještě není vyznačena.';btn.textContent='✏️ Označit plochu na fotografii';}
+ if(wrap&&img){
+  if(confirmedEditMask&&maskPreviewDataUrl){img.src=maskPreviewDataUrl;wrap.classList.remove('mg-hidden');}
+  else wrap.classList.add('mg-hidden');
+ }
 }
 async function openMaskConfirmation(){
  if(!photoReady){showWizardStep(3);return;}
@@ -595,7 +602,10 @@ async function openMaskConfirmation(){
  const styleKey=q('mg-style-card')?.value||'english';
  const hint=(styleLayout[styleKey]&&styleLayout[styleKey].hint)||'Vymalujte plochu, kterou chcete v zahradě změnit. Dům, plot, stromy a obloha zůstanou beze změny.';
  const mask=await S.confirmMask(original,null,hint,{blank:true});
- if(mask)confirmedEditMask=S.growMask(mask);
+ if(mask){
+  confirmedEditMask=S.growMask(mask);
+  try{maskPreviewDataUrl=S.maskPreview(original,confirmedEditMask).toDataURL('image/jpeg',0.85);}catch(e){maskPreviewDataUrl=null;}
+ }
  updateMaskStatus();
 }
 q('mg-mask-open').addEventListener('click',()=>openMaskConfirmation());

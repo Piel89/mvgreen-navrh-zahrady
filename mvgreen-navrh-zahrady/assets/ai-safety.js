@@ -359,9 +359,30 @@
     });
   }
 
+  /**
+   * Static thumbnail of a confirmed mask: the photo with the marked (editable) area tinted green and
+   * the rest dimmed, exactly like confirmMask's own live overlay – so a customer can see afterwards,
+   * on the step itself, what they marked without reopening the brush.
+   */
+  function maskPreview(photo, mask) {
+    var w = photo.width, h = photo.height;
+    var out = canvas(w, h), cx = out.getContext('2d');
+    cx.drawImage(photo, 0, 0, w, h);
+    var tint = canvas(w, h), tc = tint.getContext('2d');
+    tc.drawImage(mask, 0, 0, w, h);
+    tc.globalCompositeOperation = 'source-in'; tc.fillStyle = 'rgba(40,200,110,0.45)'; tc.fillRect(0, 0, w, h);
+    cx.drawImage(tint, 0, 0);
+    var dim = canvas(w, h), dc = dim.getContext('2d');
+    dc.fillStyle = 'rgba(10,20,15,0.35)'; dc.fillRect(0, 0, w, h);
+    dc.globalCompositeOperation = 'destination-out'; dc.drawImage(mask, 0, 0, w, h);
+    cx.drawImage(dim, 0, 0);
+    return out;
+  }
+
   window.MVGreenAISafety = {
     prepare: prepare, finish: finish, validate: validate, autoMask: autoMask,
     polygonMask: polygonMask, confirmMask: confirmMask, editableShare: editableShare, growMask: growMask,
+    maskPreview: maskPreview,
     limits: { MAX_EDITABLE: MAX_EDITABLE, MIN_EDITABLE: MIN_EDITABLE, MAX_DRIFT: MAX_DRIFT }
   };
 })();
