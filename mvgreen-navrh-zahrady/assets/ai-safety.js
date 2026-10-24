@@ -229,13 +229,41 @@
   }
 
   /**
-   * Full-screen confirmation of the automatic mask. Resolves with the final mask canvas or null.
-   * The customer sees which parts may change and can widen/narrow them with a brush.
+   * Grows (dilates) a mask outward by a small margin so a hand-painted stroke that falls a few
+   * pixels short of a corner or an adjoining edge doesn't leave that sliver protected by accident.
+   * Without this, anything the customer didn't quite reach with the brush stays hard-locked to the
+   * original photo after generation – a raw, untouched patch inside an otherwise new-looking area,
+   * which reads as unfinished rather than a deliberate edge. The grown mask is reused for BOTH the
+   * request sent to the AI and the hard-lock check on the result, so the extra margin the AI is
+   * allowed to touch is exactly the margin we accept back – growing it in only one place would let
+   * the AI paint there while our own lock-back then erased it again.
    */
-  function confirmMask(photo, initialHorizon, hint) {
+  function growMask(mask, px) {
+    if (px == null) px = Math.max(4, Math.round(mask.width / 160));
+    if (!px) return mask;
+    var w = mask.width, h = mask.height, out = canvas(w, h), oc = out.getContext('2d');
+    var steps = 8;
+    for (var i = 0; i < steps; i++) {
+      var ang = (Math.PI * 2 * i) / steps;
+      oc.drawImage(mask, Math.round(Math.cos(ang) * px), Math.round(Math.sin(ang) * px));
+    }
+    oc.drawImage(mask, 0, 0);
+    oc.globalCompositeOperation = 'source-in'; oc.fillStyle = '#1b9c55'; oc.fillRect(0, 0, w, h);
+    oc.globalCompositeOperation = 'source-over';
+    return out;
+  }
+
+  /**
+   * Full-screen confirmation of the editable area. Resolves with the final mask canvas or null.
+   * opts.blank starts from nothing (manual mode: the customer paints what to change from scratch)
+   * instead of the automatic horizon-based guess; the brush then defaults to "add" so the first
+   * touch already paints, and the horizon slider – meaningless with nothing pre-filled – is hidden.
+   */
+  function confirmMask(photo, initialHorizon, hint, opts) {
     return new Promise(function (resolve) {
+      var blank = !!(opts && opts.blank);
       var horizon = initialHorizon == null ? 0.42 : initialHorizon;
-      var mask = autoMask(photo, horizon);
+      var mask = blank ? canvas(photo.width, photo.height) : autoMask(photo, horizon);
       var ov = document.createElement('div');
       ov.className = 'mg-mask-overlay';
       ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Potvrzení upravované plochy');
@@ -246,11 +274,12 @@
         (hint ? '<span class="mg-mask-hint">💡 ' + String(hint).replace(/[<>&]/g, '') + '</span>' : '') + '</div>' +
         '<div class="mg-mask-stage"><canvas></canvas></div>' +
         '<div class="mg-mask-tools">' +
-        '<label class="mg-mask-horizon">Hranice zahrady<input type="range" min="10" max="85" step="1"></label>' +
+        (blank ? '' : '<label class="mg-mask-horizon">Hranice zahrady<input type="range" min="10" max="85" step="1"></label>') +
         '<div class="mg-mask-brush" role="group" aria-label="Štětec">' +
         '<button type="button" data-brush="add" aria-pressed="false">＋ Přidat plochu</button>' +
         '<button type="button" data-brush="erase" aria-pressed="false">− Odebrat plochu</button>' +
         '</div>' +
+        (blank ? '<label class="mg-mask-size">Síla štětce – tenčí pro cestičku, širší pro plochu<input type="range" class="mg-mask-size-range" min="35" max="130" step="5" value="100"></label>' : '') +
         '<span class="mg-mask-share" aria-live="polite"></span>' +
         '</div>' +
         '<div class="mg-mask-actions"><button type="button" data-act="cancel">Zpět</button><button type="button" data-act="ok" class="mg-primary">Potvrdit plochu</button></div>' +
@@ -258,9 +287,10 @@
       document.body.appendChild(ov);
       var cv = ov.querySelector('canvas'), cx = cv.getContext('2d');
       cv.width = photo.width; cv.height = photo.height;
-      var range = ov.querySelector('input[type=range]'); range.value = Math.round(horizon * 100);
+      var range = ov.querySelector('.mg-mask-horizon input[type=range]'); if (range) range.value = Math.round(horizon * 100);
+      var sizeRange = ov.querySelector('.mg-mask-size-range'); var sizeMul = 1;
       var share = ov.querySelector('.mg-mask-share');
-      var brush = '';
+      var brush = blank ? 'add' : '';
 
       function render() {
         cx.clearRect(0, 0, cv.width, cv.height);
@@ -279,7 +309,8 @@
         share.classList.toggle('is-bad', !!msg);
         ov.querySelector('[data-act=ok]').disabled = !!msg;
       }
-      range.addEventListener('input', function () { mask = autoMask(photo, range.value / 100); render(); });
+      if (range) range.addEventListener('input', function () { mask = autoMask(photo, range.value / 100); render(); });
+      if (sizeRange) sizeRange.addEventListener('input', function () { sizeMul = sizeRange.value / 100; });
       ov.querySelectorAll('[data-brush]').forEach(function (b) {
         b.addEventListener('click', function () {
           brush = brush === b.dataset.brush ? '' : b.dataset.brush;
@@ -298,7 +329,7 @@
         if (!brush) return;
         var r = cv.getBoundingClientRect();
         var x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height;
-        var rad = Math.max(10, cv.width / 30);
+        var rad = Math.max(6, cv.width / 30 * sizeMul);
         // Stamp a single dab, then – if we moved since the last event – also stamp along the
         // straight line back to the previous point. A fast or coarse-grained drag (and any
         // programmatic/automated painting that moves the pointer in discrete jumps rather than
@@ -320,13 +351,17 @@
       function close(v) { ov.remove(); resolve(v); }
       ov.querySelector('[data-act=cancel]').addEventListener('click', function () { close(null); });
       ov.querySelector('[data-act=ok]').addEventListener('click', function () { close(mask); });
+      if (blank) {
+        ov.querySelectorAll('[data-brush]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.brush === brush)); });
+        cv.style.cursor = 'crosshair';
+      }
       render();
     });
   }
 
   window.MVGreenAISafety = {
     prepare: prepare, finish: finish, validate: validate, autoMask: autoMask,
-    polygonMask: polygonMask, confirmMask: confirmMask, editableShare: editableShare,
+    polygonMask: polygonMask, confirmMask: confirmMask, editableShare: editableShare, growMask: growMask,
     limits: { MAX_EDITABLE: MAX_EDITABLE, MIN_EDITABLE: MIN_EDITABLE, MAX_DRIFT: MAX_DRIFT }
   };
 })();
