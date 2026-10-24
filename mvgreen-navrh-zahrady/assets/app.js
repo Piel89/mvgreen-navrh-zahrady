@@ -573,7 +573,7 @@ const genPreviewImg=generationStep.querySelector('#mg-generation-preview-img');
 const uploadPreviewForGen=q('mg-upload-preview-image');
 if(genPreviewImg&&uploadPreviewForGen){
  if(uploadPreviewForGen.src)genPreviewImg.src=uploadPreviewForGen.src;
- uploadPreviewForGen.addEventListener('load',()=>{genPreviewImg.src=uploadPreviewForGen.src;if(typeof syncBedPathPhoto==='function')syncBedPathPhoto();});
+ uploadPreviewForGen.addEventListener('load',()=>{genPreviewImg.src=uploadPreviewForGen.src;if(typeof syncBedPathPhoto==='function')syncBedPathPhoto();if(typeof composeGenPreview==='function')composeGenPreview();});
 }
 // Step 4 ("Označení plochy") – a dedicated step for marking exactly which part of the garden photo
 // the AI design is allowed to change. It shows the single-brush mask-confirmation overlay
@@ -609,7 +609,10 @@ function updateMaskStatus(){
  // of the plain uploaded photo, so the customer keeps seeing what will actually change.
  const genBadge=generationStep?.querySelector('.mg-generation-image span');
  if(genPreviewImg&&confirmedEditMask&&maskPreviewDataUrl){
-  genPreviewImg.src=maskPreviewDataUrl;
+  // composeGenPreview (defined further below, with the bed/path sketch step) draws the red/blue
+  // hint strokes on top of this same marked-area preview when any exist, so the customer keeps
+  // seeing what they sketched on step 5 here too, not just a plain green-tinted photo.
+  if(typeof composeGenPreview==='function')composeGenPreview();else genPreviewImg.src=maskPreviewDataUrl;
   if(genBadge)genBadge.textContent='Vaše fotografie – zeleně vyznačená plocha se změní';
  }else if(genBadge){
   genBadge.textContent='Vaše fotografie';
@@ -690,6 +693,37 @@ function renderBedPath(){
  drawSet(bedStrokes,'#e5312f');
  drawSet(pathStrokes,'#2f6fe5');
 }
+// Step 6's photo preview (genPreviewImg) should show the exact same red/blue hints the customer
+// drew on step 5, on top of whatever base photo it's already showing (the green-tinted marked-area
+// preview once step 4 is confirmed, otherwise the plain uploaded photo) – otherwise the sketch the
+// customer just made effectively vanishes the moment they move on, which is confusing. Composes a
+// fresh data URL at full photo resolution (not the small on-screen step-5 canvas) each time it's
+// called, so it stays correct across resizes.
+function composeGenPreview(){
+ if(!genPreviewImg)return;
+ const base=maskPreviewDataUrl||(uploadPreviewForGen&&uploadPreviewForGen.src)||'';
+ if(!base)return;
+ if(!bedStrokes.length&&!pathStrokes.length){genPreviewImg.src=base;return;}
+ const im=new Image();
+ im.onload=()=>{
+  const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;
+  const cx=c.getContext('2d');cx.drawImage(im,0,0,c.width,c.height);
+  function drawSet(strokes,color){
+   cx.strokeStyle=color;cx.lineWidth=Math.max(3,c.width/160);cx.lineCap='round';cx.lineJoin='round';
+   strokes.forEach(stroke=>{
+    if(stroke.length<2)return;
+    cx.beginPath();
+    stroke.forEach((p,i)=>{const x=p.x/100*c.width,y=p.y/100*c.height;if(i===0)cx.moveTo(x,y);else cx.lineTo(x,y);});
+    cx.stroke();
+   });
+  }
+  drawSet(bedStrokes,'#e5312f');
+  drawSet(pathStrokes,'#2f6fe5');
+  try{genPreviewImg.src=c.toDataURL('image/jpeg',0.88);}catch(e){genPreviewImg.src=base;}
+ };
+ im.onerror=()=>{genPreviewImg.src=base;};
+ im.src=base;
+}
 if(bedPathPhotoImg)bedPathPhotoImg.addEventListener('load',sizeBedPathCanvas);
 window.addEventListener('resize',()=>sizeBedPathCanvas());
 syncBedPathPhoto();
@@ -701,7 +735,7 @@ bedPathStep.querySelectorAll('[data-bp-tool]').forEach(b=>{
  });
 });
 bedPathStep.querySelector('#mg-bedpath-clear')?.addEventListener('click',()=>{
- bedStrokes=[];pathStrokes=[];renderBedPath();autoSave();
+ bedStrokes=[];pathStrokes=[];renderBedPath();composeGenPreview();autoSave();
 });
 // Downsample a long drag to a modest number of points – this is only ever a rough "roughly here"
 // trace, never a precise reproduction of the stroke, so losing in-between detail loses nothing
@@ -739,7 +773,7 @@ if(bedPathCanvas){
   if(bpCurrent&&bpCurrent.length>1){
    const stroke=downsampleStroke(bpCurrent,40);
    if(bpTool==='bed')bedStrokes.push(stroke);else if(bpTool==='path')pathStrokes.push(stroke);
-   autoSave();
+   composeGenPreview();autoSave();
   }
   bpCurrent=null;
   renderBedPath();
@@ -917,7 +951,7 @@ if(heroComparison){
  sync();
 }
 root.querySelectorAll('[data-welcome-variant]').forEach(btn=>btn.addEventListener('click',()=>{chooseVariant(btn.dataset.welcomeVariant);openDesignerModal()}));
-const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){tailoredChoice=typeof d.tailoredChoice==='string'?d.tailoredChoice:'';for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[];if(Array.isArray(d.bedStrokes))bedStrokes=d.bedStrokes;if(Array.isArray(d.pathStrokes))pathStrokes=d.pathStrokes;renderBedPath()}}catch(e){}chooseVariant(q('mg-variant').value,false);updateList();
+const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){tailoredChoice=typeof d.tailoredChoice==='string'?d.tailoredChoice:'';for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[];if(Array.isArray(d.bedStrokes))bedStrokes=d.bedStrokes;if(Array.isArray(d.pathStrokes))pathStrokes=d.pathStrokes;renderBedPath();composeGenPreview()}}catch(e){}chooseVariant(q('mg-variant').value,false);updateList();
 function autoSave(){try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice,bedStrokes,pathStrokes}))}catch(e){}};root.addEventListener('change',e=>{if(e.target.id!=='mg-photo')autoSave()});root.addEventListener('pointerup',()=>setTimeout(autoSave,100));q('mg-save').addEventListener('click',()=>{try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice,bedStrokes,pathStrokes}));alert('Údaje a oblasti byly uloženy v prohlížeči. Fotografie se neukládá. Po obnovení stránky ji nahrajte znovu.')}catch(e){alert('Prohlížeč ukládání nepovolil.')}});q('mg-reset').addEventListener('click',()=>{localStorage.removeItem(key);alert('Uložené údaje byly vymazány. Aktuální formulář zůstává otevřený.')});
 syncMode();
 // Pojistka: pokud má návštěvník v URL (?mvg=KOD, z e-mailu) nebo uloženo v prohlížeči (z dřívější
