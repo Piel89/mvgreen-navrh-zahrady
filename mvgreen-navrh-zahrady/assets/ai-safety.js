@@ -58,7 +58,9 @@
     mc.globalCompositeOperation = 'source-over';
 
     var coverage = editableShare(editMask);
-    return { image: img.toDataURL('image/png'), mask: m.toDataURL('image/png'), box: box, coverage: coverage };
+    // JPEG for the photo (no alpha needed; PNG of a photographic image can be 5x+ larger and was
+    // tripping the server's upload size limit with a 413). Mask stays PNG: it needs the alpha channel.
+    return { image: img.toDataURL('image/jpeg', 0.92), mask: m.toDataURL('image/png'), box: box, coverage: coverage };
   }
 
   function editableShare(editMask) {

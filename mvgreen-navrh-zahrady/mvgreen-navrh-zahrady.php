@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.63
+ * Version: 0.6.64
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -25,12 +25,12 @@ function mvgreen_harden_upload_dir($dir) {
 
 add_shortcode('mvgreen_navrh_zahrady', function () {
     wp_enqueue_style('mvgreen-reference-font', 'https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;600;700;800;900&display=swap', [], null);
-    wp_enqueue_style('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.css', ['mvgreen-reference-font'], '0.6.63');
-    wp_enqueue_script('mvgreen-plants-805', plugin_dir_url(__FILE__) . 'assets/catalog-805.js', [], '0.6.63', true);
-    wp_enqueue_script('mvgreen-ai-safety', plugin_dir_url(__FILE__) . 'assets/ai-safety.js', [], '0.6.63', true);
-    wp_enqueue_script('mvgreen-brief', plugin_dir_url(__FILE__) . 'assets/garden-brief.js', [], '0.6.63', true);
-    wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], '0.6.63', true);
-    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-brief', 'mvgreen-plan'], '0.6.63', true);
+    wp_enqueue_style('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.css', ['mvgreen-reference-font'], '0.6.64');
+    wp_enqueue_script('mvgreen-plants-805', plugin_dir_url(__FILE__) . 'assets/catalog-805.js', [], '0.6.64', true);
+    wp_enqueue_script('mvgreen-ai-safety', plugin_dir_url(__FILE__) . 'assets/ai-safety.js', [], '0.6.64', true);
+    wp_enqueue_script('mvgreen-brief', plugin_dir_url(__FILE__) . 'assets/garden-brief.js', [], '0.6.64', true);
+    wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], '0.6.64', true);
+    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-brief', 'mvgreen-plan'], '0.6.64', true);
     wp_add_inline_script('mvgreen-designer', 'window.MVGreenAI = '.wp_json_encode(['ajaxUrl'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('mvgreen_ai_test'),'enabled'=>current_user_can('manage_options')]).';', 'before');
     // Use the exact WordPress site logo; supports classic and block themes.
     $mvgreen_logo_id = (int) get_theme_mod('custom_logo', 0);
@@ -72,18 +72,32 @@ $mvgreen_ai_preview_handle = function () {
     $mask = isset($_POST['mask']) ? wp_unslash($_POST['mask']) : '';
     $instructions = isset($_POST['instructions']) ? sanitize_textarea_field(wp_unslash($_POST['instructions'])) : '';
     if (strlen($image)>12000000 || strlen($mask)>12000000 || strlen($instructions)>2500) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
+    // The photo may be JPEG (small, no alpha needed) or PNG; the mask must stay PNG (needs the alpha channel).
+    $image_mime = 'image/png';
+    $decode_photo = function($data) use (&$image_mime) {
+        if (!preg_match('~^data:(image/(?:png|jpeg));base64,([A-Za-z0-9+/=]+)$~D', $data, $m)) return false;
+        $bytes = base64_decode($m[2], true);
+        if ($bytes === false || strlen($bytes) > 9000000) return false;
+        $is_png = substr($bytes,0,8) === "\x89PNG\r\n\x1a\n";
+        $is_jpeg = substr($bytes,0,3) === "\xFF\xD8\xFF";
+        if ($m[1] === 'image/png' && !$is_png) return false;
+        if ($m[1] === 'image/jpeg' && !$is_jpeg) return false;
+        $image_mime = $m[1];
+        return $bytes;
+    };
     $decode_png = function($data) {
         if (!preg_match('~^data:image/png;base64,([A-Za-z0-9+/=]+)$~D', $data, $m)) return false;
         $bytes = base64_decode($m[1], true);
         return $bytes !== false && strlen($bytes) <= 9000000 && substr($bytes,0,8) === "\x89PNG\r\n\x1a\n" ? $bytes : false;
     };
-    $original_bytes = $decode_png($image);
+    $original_bytes = $decode_photo($image);
     $mask_bytes = $decode_png($mask);
     if (!$original_bytes || !$mask_bytes) wp_send_json_error(['message'=>'Neplatná fotografie nebo maska.'], 400);
     if (!function_exists('getimagesizefromstring')) wp_send_json_error(['message'=>'Server nepodporuje kontrolu obrázků.'], 200);
     $image_info = @getimagesizefromstring($original_bytes);
     $mask_info = @getimagesizefromstring($mask_bytes);
-    if (!$image_info || !$mask_info || $image_info[0] !== $mask_info[0] || $image_info[1] !== $mask_info[1] || $image_info[2] !== IMAGETYPE_PNG || $mask_info[2] !== IMAGETYPE_PNG) {
+    $image_type_ok = $image_mime === 'image/jpeg' ? $image_info[2] === IMAGETYPE_JPEG : $image_info[2] === IMAGETYPE_PNG;
+    if (!$image_info || !$mask_info || $image_info[0] !== $mask_info[0] || $image_info[1] !== $mask_info[1] || !$image_type_ok || $mask_info[2] !== IMAGETYPE_PNG) {
         wp_send_json_error(['message'=>'Maska musí mít stejnou velikost jako fotografie.'], 400);
     }
     $allowed_sizes = ['1536x1024', '1024x1536', '1024x1024'];
@@ -126,16 +140,16 @@ $mvgreen_ai_preview_handle = function () {
     $field = function($name, $value) use (&$parts, $boundary) {
         $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"'."\r\n\r\n".$value."\r\n";
     };
-    $file = function($name, $filename, $bytes) use (&$parts, $boundary) {
-        $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"; filename="'.$filename.'"'."\r\n".'Content-Type: image/png'."\r\n\r\n".$bytes."\r\n";
+    $file = function($name, $filename, $bytes, $content_type) use (&$parts, $boundary) {
+        $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"; filename="'.$filename.'"'."\r\n".'Content-Type: '.$content_type."\r\n\r\n".$bytes."\r\n";
     };
     $field('model', 'gpt-image-1.5');
     $field('prompt', $prompt);
     $field('quality', 'high');
     $field('size', $image_info[0] > $image_info[1] * 1.15 ? '1536x1024' : ($image_info[1] > $image_info[0] * 1.15 ? '1024x1536' : '1024x1024'));
     $field('input_fidelity', 'high');
-    $file('image[]', 'garden.png', $original_bytes);
-    $file('mask', 'edit-mask.png', $mask_bytes);
+    $file('image[]', $image_mime === 'image/jpeg' ? 'garden.jpg' : 'garden.png', $original_bytes, $image_mime);
+    $file('mask', 'edit-mask.png', $mask_bytes, 'image/png');
     $parts .= '--'.$boundary."--\r\n";
     $response = wp_remote_post('https://api.openai.com/v1/images/edits', [
         'headers'=>['Authorization'=>'Bearer '.MVGREEN_OPENAI_API_KEY,'Content-Type'=>'multipart/form-data; boundary='.$boundary],
