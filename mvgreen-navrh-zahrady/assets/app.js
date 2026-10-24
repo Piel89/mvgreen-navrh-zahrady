@@ -663,76 +663,18 @@ if(progress){
  badge.id='mg-progress-badge';badge.className='mg-progress-badge';badge.textContent='1';
  progress.insertBefore(badge,progress.firstChild);
 }
-const photoStage=q('mg-stage');
+// Step 3's old polygon/category marking canvas (toolCol, area-kind linking, the advanced-mode
+// toggle, the fullscreen area-kind picker) is retired – see runAiGeneration and showWizardStep's
+// n===3 redirect. The photo stage and the measuring-distance calibration stay exactly where the
+// static markup already puts them, inside step 2, instead of being relocated into step 3.
 const measureStep=root.querySelector('[data-mg-step="3"]');
-if(photoStage&&measureStep){
- const layout=document.createElement('div');layout.className='mg-measure-layout';
- const photoCol=document.createElement('div');photoCol.className='mg-measure-photo';
- const toolCol=document.createElement('aside');toolCol.className='mg-measure-side';
- toolCol.innerHTML='<h4>Nástroje</h4>'+[['Trávník','keep','lawn','leaf'],['Záhon','change','bed','bed'],['Cestička','change','path','path'],['Mulč / štěrk','remove','mulch','mulch'],['Terasa','change','terrace','terrace']].map((x,i)=>'<button type="button" class="mg-ref-area-kind mg-ref-area-'+x[2]+'" data-mg-tool-link="'+x[1]+'" data-mg-area-kind="'+x[2]+'" aria-pressed="'+(i===0)+'">'+mgTipIcon(x[3])+' '+x[0]+'</button>').join('')+'<button type="button" id="mg-ref-add-zone">＋ Další zóna</button><h4>Tipy pro označení</h4><p>✓ Označte plochy co nejpřesněji.</p><p>✓ Rozdělujte větší plochy.</p><p>✓ Můžete přidat více zón.</p><p>✓ Rozměry jsou orientační.</p>';
- const calibration=q('mg-calibrate')?.closest('.mg-calibration');
- if(calibration)photoCol.append(calibration);
- photoCol.append(photoStage);
- const below=measureStep.querySelector('.mg-below-photo');
- if(below)photoCol.append(below);
- const actions=measureStep.querySelector('.mg-editor-actions');
- if(actions)photoCol.append(actions);
- layout.append(photoCol,toolCol);
- measureStep.insertBefore(layout,measureStep.querySelector('.mg-mobile-controls'));
- toolCol.querySelectorAll('[data-mg-tool-link]').forEach(b=>b.addEventListener('click',()=>{
-  areaKind=b.dataset.mgAreaKind;
-  root.querySelector('[data-tool="'+b.dataset.mgToolLink+'"]')?.click();
-  toolCol.querySelectorAll('[data-mg-area-kind]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
- }));
- toolCol.querySelector('#mg-ref-add-zone')?.addEventListener('click',()=>{if(!photoReady){showWizardStep(2);return}root.querySelector('[data-mg-area-kind="lawn"]')?.click();q('mg-polygon').click()});
-}
-// Step 03: keep the original wired tool buttons, but display them in the right sidebar.
-const step3Tools=measureStep?.querySelector('.mg-measure-side');
-const step3ToolHome=step3Tools?.parentNode;
-const step3PhotoStage=q('mg-stage');
-const step3AdvancedControls=[
- measureStep?.querySelector('.mg-below-photo'),
- measureStep?.querySelector('.mg-editor-actions'),
- measureStep?.querySelector('.mg-mobile-controls'),
- measureStep?.querySelector('#mg-area-list'),
- ...Array.from(measureStep?.querySelectorAll('.mg-note')||[])
-].filter(Boolean);
-const step3Toggle=document.createElement('button');
-step3Toggle.type='button';step3Toggle.className='mg-step3-advanced-toggle';
-step3Toggle.setAttribute('aria-expanded','false');
-if(step3PhotoStage)step3PhotoStage.insertAdjacentElement('afterend',step3Toggle);
-function refreshStep3Controls(){
- const advanced=q('mg-design-mode')?.value==='advanced';
- root.classList.toggle('mg-step3-is-advanced',advanced);
- root.classList.toggle('mg-step3-is-auto',!advanced);
- step3AdvancedControls.forEach(el=>el.classList.toggle('mg-step3-controls-collapsed',!advanced));
- step3Toggle.textContent=advanced?'✨ Přepnout na automatický AI návrh':'✏️ Pokročilé úpravy – označit plochy';
- step3Toggle.setAttribute('aria-expanded',String(advanced));
- if(step3Tools)step3Tools.classList.toggle('mg-step3-tools-collapsed',!advanced);
- const fullKinds=fullscreenKinds;
- if(fullKinds)fullKinds.hidden=!advanced;
- step3PhotoStage?.querySelector('.mg-fullscreen-bar')?.classList.toggle('mg-fs-bar-hidden',!advanced);
-}
-step3Toggle.addEventListener('click',()=>{
- const advanced=q('mg-design-mode')?.value==='advanced';
- setDesignMode(advanced?'auto':'advanced');
- refreshStep3Controls();
- autoSave();
+['.mg-below-photo','.mg-editor-actions','.mg-mobile-controls','#mg-area-list','.mg-fullscreen-bar'].forEach(sel=>{
+ const el=(measureStep||root).querySelector(sel)||q('mg-stage')?.querySelector(sel);
+ if(el)el.classList.add('mg-hidden');
 });
-// Fullscreen uses the same working area-kind actions as the right-hand sidebar.
-const fullscreenKinds=document.createElement('div');
-fullscreenKinds.className='mg-fs-area-kinds';
-fullscreenKinds.innerHTML='<strong>Označit plochu</strong>';
-[['Trávník','lawn'],['Záhon','bed'],['Cestička','path'],['Mulč / štěrk','mulch'],['Terasa','terrace']].forEach(([label,kind])=>{
- const b=document.createElement('button');b.type='button';b.textContent=label;
- b.dataset.mgFullscreenKind=kind;
- b.addEventListener('click',()=>{
-  step3Tools?.querySelector('[data-mg-area-kind="'+kind+'"]')?.click();
-  fullscreenKinds.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
- });
- fullscreenKinds.appendChild(b);
+root.querySelectorAll('.mg-note').forEach(p=>{
+ if(/Vyberte barvu a rovnou kreslete/.test(p.textContent))p.classList.add('mg-hidden');
 });
-step3PhotoStage?.appendChild(fullscreenKinds);
 const originalShowWizardStep=showWizardStep;
 const sideTips=root.querySelector('.mg-redesign-tips');
 sideTips?.addEventListener('click',event=>{
@@ -740,21 +682,7 @@ sideTips?.addEventListener('click',event=>{
  if(b&&sideTips.contains(b))q('mg-next')?.click();
 });
 showWizardStep=function(n){
- // Move the existing tool DOM back before the tips column is re-rendered.
- if(step3Tools&&step3ToolHome&&step3Tools.parentNode!==step3ToolHome)step3ToolHome.appendChild(step3Tools);
  originalShowWizardStep(n);
- if(wizardStep===3){
-  const right=root.querySelector('.mg-redesign-tips');
-  if(right&&step3Tools)right.prepend(step3Tools);
-  if(photoReady&&img){
-   const stage=q('mg-stage'),placeholder=q('mg-placeholder');
-   if(stage)stage.classList.add('mg-stage-has-upload');
-   if(placeholder)placeholder.classList.add('mg-hidden');
-   canvas.classList.remove('mg-hidden');
-   draw();
-  }
-  refreshStep3Controls();
- }
  const frame=root.querySelector('.mg-redesign-frame');if(frame){for(let i=0;i<=9;i++)frame.classList.toggle('mg-view-step-'+i,i===wizardStep);}
  const badge=q('mg-progress-badge');if(badge)badge.textContent=String(wizardStep);
  const aiTrigger=q('mg-generation-admin'),aiOriginal=q('mg-ai-test');if(aiTrigger&&aiOriginal)aiTrigger.classList.toggle('mg-hidden',aiOriginal.classList.contains('mg-hidden'));
