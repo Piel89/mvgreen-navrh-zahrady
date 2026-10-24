@@ -187,16 +187,24 @@
     var colorNames = { purple: 'fialová', white: 'bílá', pink: 'růžová', yellow: 'žlutá', red: 'červená', green: 'převážně zelená' };
     var cols = (d['mg-fav-colors'] || '').split(',').filter(Boolean).map(function (c) { return colorNames[c]; }).filter(Boolean);
     var irr = ['automatická závlaha je k dispozici', 'zalévá se ručně', 'zahrada se nezalévá – jen suchomilné rostliny'][+(d['mg-irrigation'] || 1)] || 'zalévá se ručně';
-    // Rough bed/path placement from the optional wizard step "Umístění záhonu a cesty" (app.js) –
-    // a few percent-of-photo coordinates per hint type, already capped there. Worded explicitly as
-    // approximate position only, never an exact shape or size, matching what the customer actually
-    // drew (a quick freehand line, not a traced outline).
+    // Rough bed/path/remove placement from the optional wizard step "Umístění záhonu, cesty a
+    // úklidu" (app.js) – a few percent-of-photo coordinates per hint type, already capped there.
+    // Worded explicitly as approximate position only, never an exact shape or size, matching what
+    // the customer actually drew (a quick freehand line, not a traced outline).
+    // IMPORTANT: as of the "5 řešení" revamp, these same strokes are ALSO burned directly onto the
+    // photo sent to the AI (app.js's annotateForAI, called right before upload) – the % coordinates
+    // below are a text backup of the same information, not the only signal. The AI genuinely sees
+    // these marks on the image it's editing, so this line must say so and tell it to erase the marks
+    // themselves from the result, or the model may render the colored lines/dashes as if they were
+    // real paint or tape on the ground.
     var bedHints = (extra.bedHints || []).slice(0, 4);
     var pathHints = (extra.pathHints || []).slice(0, 4);
+    var removeHints = (extra.removeHints || []).slice(0, 4);
     var hintParts = [];
     if (bedHints.length) hintParts.push('záhon zhruba u: ' + bedHints.join(', '));
     if (pathHints.length) hintParts.push('cesta zhruba u: ' + pathHints.join(', '));
-    var hintLine = hintParts.length ? 'ORIENTAČNÍ UMÍSTĚNÍ ZÁHONU/CESTY OD ZÁKAZNÍKA (jen velmi hrubá poloha, NE přesný tvar ani rozměr; souřadnice v % šířky/výšky fotografie od levého horního rohu): ' + hintParts.join('; ') + '.' : '';
+    if (removeHints.length) hintParts.push('odstranit zhruba u: ' + removeHints.join(', '));
+    var hintLine = hintParts.length ? 'ZNAČKY ZÁKAZNÍKA PŘÍMO NA FOTOGRAFII, KTEROU UPRAVUJEŠ: na vstupním obrázku jsou navíc nakreslené tenké barevné čáry/křížky – ČERVENÁ čára = sem zákazník chce nový záhon, MODRÁ čára = sem chce cestu, ČERNÁ přerušovaná čára/křížek = přesně tady je objekt nebo nepořádek, který musíš v této oblasti úplně a beze zbytku odstranit (viz pravidlo POŘÁDEK – typicky nářadí, stroje nebo haraburdí, které si zákazník sám vyznačil, protože na fotce zůstávalo). Tyto čáry a křížky NEJSOU skutečná barva, páska ani součást zahrady – v hotovém obrázku po nich nesmí zůstat ani stopa, nahraď to místo trávníkem, záhonem nebo cestou podle okolí. Udávají jen VELMI HRUBOU polohu, ne přesný tvar ani rozměr. Pro jistotu i jako text (souřadnice v % šířky/výšky fotografie od levého horního rohu): ' + hintParts.join('; ') + '.' : '';
     var lines = [
       'ÚKOL: Realisticky dosázej a uprav pouze plochu zahrady v průhledné části masky. Výsledek musí vypadat jako fotografie stejné zahrady po realizaci, ne jako vizualizace. NEJVYŠŠÍ PRIORITA ZE VŠEHO: v upravované ploše nesmí po úpravě zůstat vidět žádný nepořádek ani stavební materiál či nářadí – viz pravidlo POŘÁDEK níže. Návrh, který tohle nesplní, je nepoužitelný, i kdyby byl jinak hezký.',
       'STYL: ' + String(extra.styleLabel || d['mg-style'] || 'přirozená zahrada').replace(/^[A-C] – /, '') + '. ' + (extra.styleAi || ''),

@@ -2023,6 +2023,7 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-bedpath-tools button{border-radius:9px;border:1px solid #d9e5dc;background:#fff;padding:10px 16px;font-size:13px;font-weight:700;color:#2b4434;cursor:pointer}
 .mvgreen-designer .mg-bedpath-tools [data-bp-tool="bed"][aria-pressed="true"]{background:#fdeceb;border-color:#e5312f;color:#a3201d}
 .mvgreen-designer .mg-bedpath-tools [data-bp-tool="path"][aria-pressed="true"]{background:#eaf1fd;border-color:#2f6fe5;color:#1d4aa3}
+.mvgreen-designer .mg-bedpath-tools [data-bp-tool="remove"][aria-pressed="true"]{background:#ececec;border-color:#111;color:#111}
 .mvgreen-designer #mg-bedpath-clear{background:#f4f6f4;color:#5a6f63}
 
 /* "Co přesně chcete" (step 5): the free-text wishes field is easy to overlook among the other form

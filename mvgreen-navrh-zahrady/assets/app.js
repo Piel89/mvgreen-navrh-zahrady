@@ -348,7 +348,7 @@ q('mg-next').addEventListener('click',()=>{
 });
 // One shared list of step names used both for the always-visible seven-slot sidebar nav and for
 // the progress-bar label below (previously duplicated verbatim in both places).
-const designerStepNames=['Styl zahrady','Detaily zahrady','Fotografie zahrady','Označení plochy','Umístění záhonu a cesty','Co přesně chcete','Výsledky návrhu','Přehled a rozpočet'];
+const designerStepNames=['Styl zahrady','Detaily zahrady','Fotografie zahrady','Označení plochy','Umístění záhonu, cesty a úklidu','Co přesně chcete','Výsledky návrhu','Přehled a rozpočet'];
 const shell=root.querySelector('.mg-shell');
 if(shell){
  const frame=document.createElement('div');frame.className='mg-redesign-frame';
@@ -643,18 +643,26 @@ async function openMaskConfirmation(editExisting){
 q('mg-mask-open').addEventListener('click',()=>openMaskConfirmation(false));
 q('mg-mask-adjust')?.addEventListener('click',()=>openMaskConfirmation(true));
 
-// Step 5 "Umístění záhonu a cesty": an optional, rough red/blue freehand sketch of where the
-// customer wants a new bed or path, drawn over their own photo (with step 4's green mask tint once
-// it exists, for context). Not a filled-area brush like confirmMask's – just a thin line following
-// the drag, since this is only ever an approximate "roughly here" position for the AI, never an
-// exact shape or size (the owner's own framing). Captured as plain point lists in the same
-// photo-relative 0–100% coordinate convention plan.php/garden-plan.js already use. Unlike step 4,
-// this step is entirely optional – "Další krok" never blocks on it.
-const bedPathStep=makeReferenceStep(5,'Umístění záhonu a cesty','Nepovinné: hrubě naznačte štětcem, kde zhruba chcete záhon a kde cestu. Nejde o přesný tvar ani rozměr, jen orientační poloha pro AI. Tento krok můžete klidně přeskočit.');
-bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon a cestu"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note">Čáry jsou jen orientační – stačí hrubý tah, AI podle něj jen pozná zhruba kam záhon nebo cesta patří. Přesný tvar a rozměr si AI domyslí sama.</p></div>';
+// Step 5 "Umístění záhonu, cesty a úklidu": an optional, rough freehand sketch of where the
+// customer wants a new bed or path, and what must definitely be removed (clutter, tools), drawn
+// over their own photo (with step 4's green mask tint once it exists, for context). Not a
+// filled-area brush like confirmMask's – just a thin line following the drag, since this is only
+// ever an approximate "roughly here" position for the AI, never an exact shape or size (the owner's
+// own framing). Captured as plain point lists in the same photo-relative 0–100% coordinate
+// convention plan.php/garden-plan.js already use. Unlike step 4, this step is entirely optional –
+// "Další krok" never blocks on it.
+// Solution 1 + 2 from the owner's "5 řešení" research request: these marks aren't only described in
+// words in the AI instructions text (garden-brief.js) – they're burned directly onto the photo sent
+// to the AI (see annotateForAI below), since a model follows what it visually sees on the image far
+// more reliably than coordinates spelled out in a paragraph of text. The black "remove" mark in
+// particular exists because purely textual removal instructions (the POŘÁDEK rule) kept missing
+// small/specific objects (e.g. a concrete mixer) that the AI apparently couldn't reliably locate from
+// a category name alone – pointing at the exact spot removes that ambiguity.
+const bedPathStep=makeReferenceStep(5,'Umístění záhonu, cesty a úklidu','Nepovinné: hrubě naznačte štětcem, kde zhruba chcete záhon, kde cestu a co se má na fotce určitě odstranit (nepořádek, nářadí, stroje). Nejde o přesný tvar ani rozměr, jen orientační poloha pro AI – tyhle značky AI uvidí přímo na fotce, kterou upravuje. Tento krok můžete klidně přeskočit.');
+bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon, cestu a odstranění"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" data-bp-tool="remove" aria-pressed="false">⬛ Tohle odstranit (nepořádek, nářadí)</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note">Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.</p></div>';
 generationStep.insertAdjacentElement('beforebegin',bedPathStep);
 // Flat arrays of strokes (each stroke a downsampled array of {x,y} in 0–100% photo coordinates).
-let bedStrokes=[],pathStrokes=[];
+let bedStrokes=[],pathStrokes=[],removeStrokes=[];
 const bedPathPhotoImg=bedPathStep.querySelector('#mg-bedpath-photo');
 const bedPathCanvas=bedPathStep.querySelector('#mg-bedpath-canvas');
 const bedPathCtx=bedPathCanvas&&bedPathCanvas.getContext('2d');
@@ -681,17 +689,19 @@ function renderBedPath(){
  if(!bedPathCtx)return;
  const w=bedPathCanvas.width,h=bedPathCanvas.height;
  bedPathCtx.clearRect(0,0,w,h);
- function drawSet(strokes,color){
-  bedPathCtx.strokeStyle=color;bedPathCtx.lineWidth=Math.max(2,w/160);bedPathCtx.lineCap='round';bedPathCtx.lineJoin='round';
+ function drawSet(strokes,color,dash){
+  bedPathCtx.strokeStyle=color;bedPathCtx.lineWidth=Math.max(2,w/160);bedPathCtx.lineCap='round';bedPathCtx.lineJoin='round';bedPathCtx.setLineDash(dash||[]);
   strokes.forEach(stroke=>{
    if(stroke.length<2)return;
    bedPathCtx.beginPath();
    stroke.forEach((p,i)=>{const x=p.x/100*w,y=p.y/100*h;if(i===0)bedPathCtx.moveTo(x,y);else bedPathCtx.lineTo(x,y);});
    bedPathCtx.stroke();
   });
+  bedPathCtx.setLineDash([]);
  }
  drawSet(bedStrokes,'#e5312f');
  drawSet(pathStrokes,'#2f6fe5');
+ drawSet(removeStrokes,'#111111',[Math.max(4,w/50),Math.max(3,w/70)]);
 }
 // Step 6's photo preview (genPreviewImg) should show the exact same red/blue hints the customer
 // drew on step 5, on top of whatever base photo it's already showing (the green-tinted marked-area
@@ -703,22 +713,24 @@ function composeGenPreview(){
  if(!genPreviewImg)return;
  const base=maskPreviewDataUrl||(uploadPreviewForGen&&uploadPreviewForGen.src)||'';
  if(!base)return;
- if(!bedStrokes.length&&!pathStrokes.length){genPreviewImg.src=base;return;}
+ if(!bedStrokes.length&&!pathStrokes.length&&!removeStrokes.length){genPreviewImg.src=base;return;}
  const im=new Image();
  im.onload=()=>{
   const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;
   const cx=c.getContext('2d');cx.drawImage(im,0,0,c.width,c.height);
-  function drawSet(strokes,color){
-   cx.strokeStyle=color;cx.lineWidth=Math.max(3,c.width/160);cx.lineCap='round';cx.lineJoin='round';
+  function drawSet(strokes,color,dash){
+   cx.strokeStyle=color;cx.lineWidth=Math.max(3,c.width/160);cx.lineCap='round';cx.lineJoin='round';cx.setLineDash(dash||[]);
    strokes.forEach(stroke=>{
     if(stroke.length<2)return;
     cx.beginPath();
     stroke.forEach((p,i)=>{const x=p.x/100*c.width,y=p.y/100*c.height;if(i===0)cx.moveTo(x,y);else cx.lineTo(x,y);});
     cx.stroke();
    });
+   cx.setLineDash([]);
   }
   drawSet(bedStrokes,'#e5312f');
   drawSet(pathStrokes,'#2f6fe5');
+  drawSet(removeStrokes,'#111111',[Math.max(4,c.width/50),Math.max(3,c.width/70)]);
   try{genPreviewImg.src=c.toDataURL('image/jpeg',0.88);}catch(e){genPreviewImg.src=base;}
  };
  im.onerror=()=>{genPreviewImg.src=base;};
@@ -735,7 +747,7 @@ bedPathStep.querySelectorAll('[data-bp-tool]').forEach(b=>{
  });
 });
 bedPathStep.querySelector('#mg-bedpath-clear')?.addEventListener('click',()=>{
- bedStrokes=[];pathStrokes=[];renderBedPath();composeGenPreview();autoSave();
+ bedStrokes=[];pathStrokes=[];removeStrokes=[];renderBedPath();composeGenPreview();autoSave();
 });
 // Downsample a long drag to a modest number of points – this is only ever a rough "roughly here"
 // trace, never a precise reproduction of the stroke, so losing in-between detail loses nothing
@@ -762,17 +774,19 @@ if(bedPathCanvas){
   bpCurrent.push(bedPathPoint(e));
   renderBedPath();
   const w=bedPathCanvas.width,h=bedPathCanvas.height;
-  bedPathCtx.strokeStyle=bpTool==='bed'?'#e5312f':'#2f6fe5';bedPathCtx.lineWidth=Math.max(2,w/160);bedPathCtx.lineCap='round';bedPathCtx.lineJoin='round';
+  bedPathCtx.strokeStyle=bpTool==='bed'?'#e5312f':bpTool==='path'?'#2f6fe5':'#111111';bedPathCtx.lineWidth=Math.max(2,w/160);bedPathCtx.lineCap='round';bedPathCtx.lineJoin='round';
+  bedPathCtx.setLineDash(bpTool==='remove'?[Math.max(4,w/50),Math.max(3,w/70)]:[]);
   bedPathCtx.beginPath();
   bpCurrent.forEach((p,i)=>{const x=p.x/100*w,y=p.y/100*h;if(i===0)bedPathCtx.moveTo(x,y);else bedPathCtx.lineTo(x,y);});
   bedPathCtx.stroke();
+  bedPathCtx.setLineDash([]);
  });
  ['pointerup','pointercancel'].forEach(ev=>bedPathCanvas.addEventListener(ev,()=>{
   if(!bpDrawing)return;
   bpDrawing=false;
   if(bpCurrent&&bpCurrent.length>1){
    const stroke=downsampleStroke(bpCurrent,40);
-   if(bpTool==='bed')bedStrokes.push(stroke);else if(bpTool==='path')pathStrokes.push(stroke);
+   if(bpTool==='bed')bedStrokes.push(stroke);else if(bpTool==='path')pathStrokes.push(stroke);else if(bpTool==='remove')removeStrokes.push(stroke);
    composeGenPreview();autoSave();
   }
   bpCurrent=null;
@@ -790,6 +804,31 @@ function sampleHintPoints(strokes,max){
  const out=[];
  for(let i=0;i<max;i++){const idx=Math.round(i*(all.length-1)/(max-1));out.push('('+Math.round(all[idx].x)+'%,'+Math.round(all[idx].y)+'%)');}
  return out;
+}
+// Burns the step-5 bed/path/remove sketch onto a *clone* of the given canvas and returns that clone
+// – the given canvas itself is never touched. Used only to build the image actually uploaded to the
+// AI (see the generation call above); the real `original` stays clean for S.finish()'s hard-lock
+// comparison. Same colors/dash as the step-5 canvas and step-6 preview, so what the customer saw
+// while drawing is exactly what the AI sees. A no-op (returns the same canvas) when nothing was
+// drawn, so the AI payload is byte-identical to before this feature for anyone who skips step 5.
+function annotateForAI(src){
+ if(!bedStrokes.length&&!pathStrokes.length&&!removeStrokes.length)return src;
+ const c=document.createElement('canvas');c.width=src.width;c.height=src.height;
+ const cx=c.getContext('2d');cx.drawImage(src,0,0,c.width,c.height);
+ function drawSet(strokes,color,dash){
+  cx.strokeStyle=color;cx.lineWidth=Math.max(4,c.width/140);cx.lineCap='round';cx.lineJoin='round';cx.setLineDash(dash||[]);
+  strokes.forEach(stroke=>{
+   if(stroke.length<2)return;
+   cx.beginPath();
+   stroke.forEach((p,i)=>{const x=p.x/100*c.width,y=p.y/100*c.height;if(i===0)cx.moveTo(x,y);else cx.lineTo(x,y);});
+   cx.stroke();
+  });
+  cx.setLineDash([]);
+ }
+ drawSet(bedStrokes,'#e5312f');
+ drawSet(pathStrokes,'#2f6fe5');
+ drawSet(removeStrokes,'#111111',[Math.max(4,c.width/50),Math.max(3,c.width/70)]);
+ return c;
 }
 
 // Consolidate "Co přesně chcete" (now step 6): the notes field, the privacy hint, and the
@@ -951,8 +990,8 @@ if(heroComparison){
  sync();
 }
 root.querySelectorAll('[data-welcome-variant]').forEach(btn=>btn.addEventListener('click',()=>{chooseVariant(btn.dataset.welcomeVariant);openDesignerModal()}));
-const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){tailoredChoice=typeof d.tailoredChoice==='string'?d.tailoredChoice:'';for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[];if(Array.isArray(d.bedStrokes))bedStrokes=d.bedStrokes;if(Array.isArray(d.pathStrokes))pathStrokes=d.pathStrokes;renderBedPath();composeGenPreview()}}catch(e){}chooseVariant(q('mg-variant').value,false);updateList();
-function autoSave(){try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice,bedStrokes,pathStrokes}))}catch(e){}};root.addEventListener('change',e=>{if(e.target.id!=='mg-photo')autoSave()});root.addEventListener('pointerup',()=>setTimeout(autoSave,100));q('mg-save').addEventListener('click',()=>{try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice,bedStrokes,pathStrokes}));alert('Údaje a oblasti byly uloženy v prohlížeči. Fotografie se neukládá. Po obnovení stránky ji nahrajte znovu.')}catch(e){alert('Prohlížeč ukládání nepovolil.')}});q('mg-reset').addEventListener('click',()=>{localStorage.removeItem(key);alert('Uložené údaje byly vymazány. Aktuální formulář zůstává otevřený.')});
+const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){tailoredChoice=typeof d.tailoredChoice==='string'?d.tailoredChoice:'';for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[];if(Array.isArray(d.bedStrokes))bedStrokes=d.bedStrokes;if(Array.isArray(d.pathStrokes))pathStrokes=d.pathStrokes;if(Array.isArray(d.removeStrokes))removeStrokes=d.removeStrokes;renderBedPath();composeGenPreview()}}catch(e){}chooseVariant(q('mg-variant').value,false);updateList();
+function autoSave(){try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice,bedStrokes,pathStrokes,removeStrokes}))}catch(e){}};root.addEventListener('change',e=>{if(e.target.id!=='mg-photo')autoSave()});root.addEventListener('pointerup',()=>setTimeout(autoSave,100));q('mg-save').addEventListener('click',()=>{try{localStorage.setItem(key,JSON.stringify({form:getData(),areas,calibration,metersPerPixel,tailoredChoice,bedStrokes,pathStrokes,removeStrokes}));alert('Údaje a oblasti byly uloženy v prohlížeči. Fotografie se neukládá. Po obnovení stránky ji nahrajte znovu.')}catch(e){alert('Prohlížeč ukládání nepovolil.')}});q('mg-reset').addEventListener('click',()=>{localStorage.removeItem(key);alert('Uložené údaje byly vymazány. Aktuální formulář zůstává otevřený.')});
 syncMode();
 // Pojistka: pokud má návštěvník v URL (?mvg=KOD, z e-mailu) nebo uloženo v prohlížeči (z dřívější
 // návštěvy) kód s už hotovým návrhem, načteme a zobrazíme ho rovnou – i bez nahrané fotografie,
@@ -1284,7 +1323,12 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
   original.getContext('2d').drawImage(img,0,0,original.width,original.height);
   const editMask=confirmedEditMask;
-  const prepared=S.prepare(original,editMask);
+  // Solution 1 ("5 řešení" research): the customer's bed/path/remove sketch from step 5 is burned
+  // directly onto the photo sent to the AI, not just described as % coordinates in the text prompt –
+  // a model follows a line it can actually see far more reliably than one spelled out in words.
+  // `original` itself is deliberately left untouched: S.finish() further below still diffs against
+  // it to enforce the hard lock outside the mask, so that check must never see the annotation lines.
+  const prepared=S.prepare(annotateForAI(original),editMask);
   const invalid=S.validate(prepared.coverage);
   if(invalid)return alert(invalid);
   if(!confirm(confirmText(Math.round(prepared.coverage*100))))return;
@@ -1295,7 +1339,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const data=new URLSearchParams();data.set('action','mvgreen_ai_preview');data.set('nonce',aiConfig.nonce);
     data.set('image',prepared.image);data.set('mask',prepared.mask);
     Object.entries(extraFields||{}).forEach(([k,v])=>data.set(k,v==null?'':String(v)));
-    const d=getData();const sl=styleLayout[d['mg-style-card']]||styleLayout['lawn-beds'];const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,{styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max,bedHints:sampleHintPoints(bedStrokes,4),pathHints:sampleHintPoints(pathStrokes,4)});data.set('instructions',brief.text);
+    const d=getData();const sl=styleLayout[d['mg-style-card']]||styleLayout['lawn-beds'];const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,{styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max,bedHints:sampleHintPoints(bedStrokes,4),pathHints:sampleHintPoints(pathStrokes,4),removeHints:sampleHintPoints(removeStrokes,4)});data.set('instructions',brief.text);
     const response=await fetch(aiConfig.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});
     const json=await response.json();if(!json.success||!json.data?.image)throw new Error(json.data?.message||'AI návrh se nepodařilo vytvořit.');
     const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=json.data.image});
