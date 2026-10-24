@@ -212,8 +212,16 @@
   function polygonMask(w, h, editAreas, keepAreas) {
     var m = canvas(w, h), mc = m.getContext('2d');
     function path(a) { mc.beginPath(); mc.moveTo(a.points[0].x, a.points[0].y); a.points.slice(1).forEach(function (p) { mc.lineTo(p.x, p.y); }); mc.closePath(); }
-    mc.fillStyle = '#1b9c55';
-    editAreas.forEach(function (a) { if (a.points && a.points.length >= 3) { path(a); mc.fill(); } });
+    mc.fillStyle = '#1b9c55'; mc.strokeStyle = '#1b9c55'; mc.lineJoin = 'round';
+    // A hand-traced polygon rarely lines up pixel-perfect with its neighbour (a bed drawn right
+    // next to a lawn area, say), leaving a sliver that belongs to neither shape. Anything not
+    // explicitly covered stays protected and gets hard-locked back to the original photo, so an
+    // unintended sliver shows up as an untouched strip of old ground between two new areas.
+    // Stroking each edit polygon's own outline with a small margin closes that sliver without
+    // bleeding meaningfully past it; a "keep" polygon cut out right after still keeps its own
+    // exact edge, since destination-out trims the margin wherever it overlaps one.
+    mc.lineWidth = Math.max(4, w / 220);
+    editAreas.forEach(function (a) { if (a.points && a.points.length >= 3) { path(a); mc.fill(); mc.stroke(); } });
     mc.globalCompositeOperation = 'destination-out';
     (keepAreas || []).forEach(function (a) { if (a.points && a.points.length >= 3) { path(a); mc.fill(); } });
     mc.globalCompositeOperation = 'source-over';
