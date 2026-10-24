@@ -254,16 +254,45 @@
   }
 
   /**
+   * Rounds a mask's edge into calmer curves (blur+threshold) right before it's confirmed – the
+   * same idea as autoMask's own outline-smoothing step, but safe to run on ANY mask: it only
+   * rounds the boundary, never fills holes or drops a region not touching the bottom edge (which
+   * would be wrong here – a hand-painted mask can legitimately have several separate islands,
+   * unlike autoMask's single ground-connected guess).
+   */
+  function smoothMaskEdge(mask) {
+    var w = mask.width, h = mask.height;
+    var sm = canvas(w, h), smc = sm.getContext('2d');
+    smc.filter = 'blur(' + Math.max(3, Math.round(w / 180)) + 'px)'; smc.drawImage(mask, 0, 0); smc.filter = 'none';
+    var sd = smc.getImageData(0, 0, w, h);
+    for (var z = 3; z < sd.data.length; z += 4) sd.data[z] = sd.data[z] > 128 ? 255 : 0;
+    var out = canvas(w, h), oc = out.getContext('2d');
+    oc.putImageData(sd, 0, 0);
+    oc.globalCompositeOperation = 'source-in'; oc.fillStyle = '#1b9c55'; oc.fillRect(0, 0, w, h);
+    oc.globalCompositeOperation = 'source-over';
+    return out;
+  }
+
+  /**
    * Full-screen confirmation of the editable area. Resolves with the final mask canvas or null.
    * opts.blank starts from nothing (manual mode: the customer paints what to change from scratch)
    * instead of the automatic horizon-based guess; the brush then defaults to "add" so the first
    * touch already paints, and the horizon slider – meaningless with nothing pre-filled – is hidden.
+   * opts.initialMask re-opens the brush loaded with an already-confirmed mask (adjust mode: the
+   * customer adds to or removes from what they marked before, instead of starting over); like
+   * blank mode it hides the horizon slider (it would silently replace the hand-painted area) and
+   * shows the brush-size control, but leaves no brush pre-selected so the first touch can't
+   * accidentally erase or extend before the customer picks +/−.
    */
   function confirmMask(photo, initialHorizon, hint, opts) {
     return new Promise(function (resolve) {
       var blank = !!(opts && opts.blank);
+      var initial = opts && opts.initialMask;
       var horizon = initialHorizon == null ? 0.42 : initialHorizon;
-      var mask = blank ? canvas(photo.width, photo.height) : autoMask(photo, horizon);
+      var mask;
+      if (initial) { mask = canvas(photo.width, photo.height); mask.getContext('2d').drawImage(initial, 0, 0); }
+      else mask = blank ? canvas(photo.width, photo.height) : autoMask(photo, horizon);
+      var freehand = blank || !!initial;
       var ov = document.createElement('div');
       ov.className = 'mg-mask-overlay';
       ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Potvrzení upravované plochy');
@@ -274,12 +303,12 @@
         (hint ? '<span class="mg-mask-hint">💡 ' + String(hint).replace(/[<>&]/g, '') + '</span>' : '') + '</div>' +
         '<div class="mg-mask-stage"><canvas></canvas></div>' +
         '<div class="mg-mask-tools">' +
-        (blank ? '' : '<label class="mg-mask-horizon">Hranice zahrady<input type="range" min="10" max="85" step="1"></label>') +
+        (freehand ? '' : '<label class="mg-mask-horizon">Hranice zahrady<input type="range" min="10" max="85" step="1"></label>') +
         '<div class="mg-mask-brush" role="group" aria-label="Štětec">' +
         '<button type="button" data-brush="add" aria-pressed="false">＋ Přidat plochu</button>' +
         '<button type="button" data-brush="erase" aria-pressed="false">− Odebrat plochu</button>' +
         '</div>' +
-        (blank ? '<label class="mg-mask-size">Síla štětce – tenčí pro cestičku, širší pro plochu<input type="range" class="mg-mask-size-range" min="35" max="130" step="5" value="100"></label>' : '') +
+        (freehand ? '<label class="mg-mask-size">Síla štětce – tenčí pro cestičku, širší pro plochu<input type="range" class="mg-mask-size-range" min="35" max="130" step="5" value="100"></label>' : '') +
         '<span class="mg-mask-share" aria-live="polite"></span>' +
         '</div>' +
         '<div class="mg-mask-actions"><button type="button" data-act="cancel">Zpět</button><button type="button" data-act="ok" class="mg-primary">Potvrdit plochu</button></div>' +
@@ -350,7 +379,13 @@
       ['pointerup', 'pointercancel'].forEach(function (ev) { cv.addEventListener(ev, function () { painting = false; lastX = lastY = null; }); });
       function close(v) { ov.remove(); resolve(v); }
       ov.querySelector('[data-act=cancel]').addEventListener('click', function () { close(null); });
-      ov.querySelector('[data-act=ok]').addEventListener('click', function () { close(mask); });
+      // Round the edge into calmer curves before handing the mask off. A brush stroke is really a
+      // string of overlapping circles; on a flat, regular surface (paving, decking) that scalloped
+      // boundary can come through in the AI result as a wavy seam that looks like a trail of
+      // mouse-drags rather than one deliberate edge. smoothMaskEdge only rounds the boundary – it
+      // never closes real gaps or drops a disconnected island, so several separate hand-painted
+      // areas (e.g. a bed in the middle of the lawn) still all survive.
+      ov.querySelector('[data-act=ok]').addEventListener('click', function () { close(smoothMaskEdge(mask)); });
       if (blank) {
         ov.querySelectorAll('[data-brush]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.brush === brush)); });
         cv.style.cursor = 'crosshair';
@@ -382,7 +417,7 @@
   window.MVGreenAISafety = {
     prepare: prepare, finish: finish, validate: validate, autoMask: autoMask,
     polygonMask: polygonMask, confirmMask: confirmMask, editableShare: editableShare, growMask: growMask,
-    maskPreview: maskPreview,
+    maskPreview: maskPreview, smoothMaskEdge: smoothMaskEdge,
     limits: { MAX_EDITABLE: MAX_EDITABLE, MIN_EDITABLE: MIN_EDITABLE, MAX_DRIFT: MAX_DRIFT }
   };
 })();

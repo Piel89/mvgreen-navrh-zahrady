@@ -256,6 +256,10 @@ let wizardStep=0;
 // The single confirmed edit mask from step 4 ("Označení plochy"), reused as-is by runAiGeneration –
 // generation never reopens the mask-confirmation overlay itself. Already grown via S.growMask when set.
 let confirmedEditMask=null;
+// Same mask, but WITHOUT that margin growth – kept separately so re-opening the brush in "adjust"
+// mode starts from exactly what the customer painted. Feeding it confirmedEditMask instead would
+// grow the edge by another margin on every single re-edit, even if nothing new gets painted.
+let rawEditMask=null;
 
 /* One consistent set of small line icons, instead of mixed typographic/emoji symbols. */
 function mgTipIcon(kind){
@@ -578,16 +582,25 @@ if(genPreviewImg&&uploadPreviewForGen){
 // without ever reopening this overlay itself. Re-entering this step offers the button again so the
 // customer can redo the marking from scratch (confirmMask always starts from a blank mask).
 const maskStep=makeReferenceStep(4,'Označení plochy','Vyznačte štětcem plochu zahrady, kterou chcete AI návrhem změnit. Co nevyznačíte, zůstane přesně jako na vaší fotografii.');
-maskStep.innerHTML+='<div class="mg-mask-step-body"><p class="mg-mask-step-status" id="mg-mask-status">Plocha ještě není vyznačena.</p><button type="button" class="mg-primary" id="mg-mask-open">✏️ Označit plochu na fotografii</button><div class="mg-mask-preview-wrap mg-hidden" id="mg-mask-preview-wrap"><img class="mg-mask-preview-img" id="mg-mask-preview-img" alt="Náhled vyznačené plochy – zeleně zvýrazněná část se v návrhu změní"></div></div>';
+maskStep.innerHTML+='<div class="mg-mask-step-body"><p class="mg-mask-step-status" id="mg-mask-status">Plocha ještě není vyznačena.</p><div class="mg-mask-step-buttons"><button type="button" class="mg-primary" id="mg-mask-open">✏️ Označit plochu na fotografii</button><button type="button" class="mg-hidden" id="mg-mask-adjust">➕➖ Přidat nebo odebrat z vyznačené plochy</button></div><div class="mg-mask-preview-wrap mg-hidden" id="mg-mask-preview-wrap"><img class="mg-mask-preview-img" id="mg-mask-preview-img" alt="Náhled vyznačené plochy – zeleně zvýrazněná část se v návrhu změní"></div></div>';
 generationStep.insertAdjacentElement('beforebegin',maskStep);
 // Kept alongside confirmedEditMask so the preview below still shows the last marked area after
 // leaving and returning to this step without re-marking (confirmMask itself keeps no photo state).
 let maskPreviewDataUrl=null;
 function updateMaskStatus(){
- const status=q('mg-mask-status'),btn=q('mg-mask-open'),wrap=q('mg-mask-preview-wrap'),img=q('mg-mask-preview-img');
+ const status=q('mg-mask-status'),btn=q('mg-mask-open'),adjustBtn=q('mg-mask-adjust'),wrap=q('mg-mask-preview-wrap'),img=q('mg-mask-preview-img');
  if(!status||!btn)return;
- if(confirmedEditMask){status.textContent='✓ Plocha je vyznačena. Můžete pokračovat, nebo ji vyznačit znovu.';btn.textContent='✏️ Vyznačit plochu znovu';}
- else{status.textContent='Plocha ještě není vyznačena.';btn.textContent='✏️ Označit plochu na fotografii';}
+ if(confirmedEditMask){
+  status.textContent='✓ Plocha je vyznačena. Můžete pokračovat, plochu upravit (přidat/odebrat), nebo ji celou vyznačit znovu.';
+  btn.textContent='✏️ Vyznačit celou plochu znovu od začátku';
+  btn.classList.remove('mg-primary');
+  if(adjustBtn){adjustBtn.classList.remove('mg-hidden');adjustBtn.classList.add('mg-primary');}
+ }else{
+  status.textContent='Plocha ještě není vyznačena.';
+  btn.textContent='✏️ Označit plochu na fotografii';
+  btn.classList.add('mg-primary');
+  if(adjustBtn){adjustBtn.classList.add('mg-hidden');adjustBtn.classList.remove('mg-primary');}
+ }
  if(wrap&&img){
   if(confirmedEditMask&&maskPreviewDataUrl){img.src=maskPreviewDataUrl;wrap.classList.remove('mg-hidden');}
   else wrap.classList.add('mg-hidden');
@@ -602,7 +615,7 @@ function updateMaskStatus(){
   genBadge.textContent='Vaše fotografie';
  }
 }
-async function openMaskConfirmation(){
+async function openMaskConfirmation(editExisting){
  if(!photoReady){showWizardStep(3);return;}
  const S=window.MVGreenAISafety;
  if(!S)return alert('Chybí bezpečnostní modul AI. Obnovte stránku.');
@@ -610,14 +623,19 @@ async function openMaskConfirmation(){
  original.getContext('2d').drawImage(img,0,0,original.width,original.height);
  const styleKey=q('mg-style-card')?.value||'english';
  const hint=(styleLayout[styleKey]&&styleLayout[styleKey].hint)||'Vymalujte plochu, kterou chcete v zahradě změnit. Dům, plot, stromy a obloha zůstanou beze změny.';
- const mask=await S.confirmMask(original,null,hint,{blank:true});
+ // "Upravit" re-opens the brush loaded with the last RAW (un-grown) mask so the customer adds to or
+ // removes from what's already marked with +/-, instead of starting over from a blank canvas.
+ const opts=(editExisting&&rawEditMask)?{initialMask:rawEditMask}:{blank:true};
+ const mask=await S.confirmMask(original,null,hint,opts);
  if(mask){
+  rawEditMask=mask;
   confirmedEditMask=S.growMask(mask);
   try{maskPreviewDataUrl=S.maskPreview(original,confirmedEditMask).toDataURL('image/jpeg',0.85);}catch(e){maskPreviewDataUrl=null;}
  }
  updateMaskStatus();
 }
-q('mg-mask-open').addEventListener('click',()=>openMaskConfirmation());
+q('mg-mask-open').addEventListener('click',()=>openMaskConfirmation(false));
+q('mg-mask-adjust')?.addEventListener('click',()=>openMaskConfirmation(true));
 // Consolidate "Co přesně chcete" (step 5): the notes field, the privacy hint, and the
 // summary/admin-test/save/reset actions + their output used to live on the static results step
 // (step 6) even though that step no longer shows anything but the real AI result. Move those
@@ -1073,14 +1091,15 @@ async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask,extr
     const res=await mgAjax('mvgreen_ai_plan',Object.assign({image:img,before:bef,markers:points.length,plants:(brief?.plants||[]).map(p=>p.name+(p.latin?' ('+p.latin+')':'')).join('; '),style:(styleChoices[d['mg-style-card']]?.name||''),width:d['mg-width'],length:d['mg-length']},extraFields));
     const dims={width:d['mg-width'],length:d['mg-length']};
     res.plan._markers=points.length;
-    const built=P.build(res.plan,dims);
     planText=(res.plan.elements||[]).map(e=>e.label+' ('+e.type+')').join(', ');
-    planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><img class="mg-plan-photo" alt="Návrh s očíslovanými záhony" src="'+numbered+'">'+P.bedsHtml(res.plan,dims)+P.shoppingHtml(res.plan,dims)+P.careHtml(res.plan)+
-      '<details class="mg-plan-details"><summary>📐 Orientační půdorys (pohled shora)</summary><div class="mg-plan-svg">'+built.svg+'</div>'+P.plantLegendHtml(built)+P.legendHtml(built)+'</details>';
+    // The abstract top-down "Orientační půdorys" SVG (built from the AI's own guessed polygon
+    // coordinates, independent of the actual photo) used to render here too. Owner's own words:
+    // it doesn't make geometric sense (elements end up nowhere near their real position) and he'd
+    // rather not have it at all – removed. The numbered photo above is the real, trustworthy plan.
+    planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><img class="mg-plan-photo" alt="Návrh s očíslovanými záhony" src="'+numbered+'">'+P.bedsHtml(res.plan,dims)+P.shoppingHtml(res.plan,dims)+P.careHtml(res.plan);
     const row=document.createElement('div');row.className='mg-actions';
     const dl1=document.createElement('a');dl1.href=numbered;dl1.download='mvgreen-navrh-cisla.jpg';dl1.textContent='⬇ Uložit fotku s čísly';dl1.className='mg-ai-download';
-    const dl2=document.createElement('button');dl2.type='button';dl2.textContent='⬇ Stáhnout půdorys (PNG)';dl2.addEventListener('click',()=>P.downloadPng(built.svg,'mvgreen-pudorys.png'));
-    row.append(dl1,dl2);planBox.append(row);
+    row.append(dl1);planBox.append(row);
   }catch(e){planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><p class="mg-note">Seznam záhonů se nepodařilo vytvořit: '+String(e.message).replace(/[<>&]/g,'')+'</p>'}
   // Jiný pohled je další placený AI snímek (stejná cenová třída jako hlavní návrh) – u balíčku
   // na 1 použití by si ho zákazník nemohl vyzkoušet, proto zůstává jen pro test správce.

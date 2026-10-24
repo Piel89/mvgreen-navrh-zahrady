@@ -2023,6 +2023,7 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
    confirmed, instead of only a checkmark line + button. */
 .mvgreen-designer .mg-mask-step-body{display:flex;flex-direction:column;align-items:flex-start;gap:14px;margin-top:6px}
 .mvgreen-designer .mg-mask-step-status{margin:0;font-size:15px;color:#2b4434}
+.mvgreen-designer .mg-mask-step-buttons{display:flex;flex-wrap:wrap;gap:10px}
 .mvgreen-designer .mg-mask-preview-wrap{width:100%;max-width:460px}
 .mvgreen-designer .mg-mask-preview-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid #dce8dd;box-shadow:0 6px 18px #15633314}
 
