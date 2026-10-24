@@ -224,13 +224,31 @@ function chooseVariant(code,applySettings=true,styleChoice=null){
  q('mg-variant').value=selected;q('mg-style-card').value=key;
  root.querySelectorAll('[data-mg-style-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mgStyleChoice===key)));
  q('mg-variant-note').textContent='Vybráno: '+config.name;
- // The right-hand inspiration photo must follow the selected card immediately.
- const chosenCard=root.querySelector('[data-mg-style-choice="'+key+'"]');
- const chosenImage=chosenCard?.querySelector('img');
- const tipsImage=root.querySelector('.mg-redesign-tips .mg-tips-reference-photo');
- if(chosenImage&&tipsImage){tipsImage.src=chosenImage.src;tipsImage.alt='Vybraný styl: '+config.name;tipsImage.dataset.mgStyle=key;}
+ // The right-hand inspiration photo + caption must follow the selected card immediately.
+ syncTipsReferencePhoto();
  renderTailoredChoices(selected);
  if(applySettings){q('mg-style').value=config.style;q('mg-preference').value=v.preference;q('mg-maint').value=selected==='C'?'Nízká':'Střední';lastPlan=null;}
+}
+// Keeps the right-hand tips photo + its caption (style name + short description, taken straight
+// from the chosen style card) in sync with whatever style is currently selected. Called both when
+// the customer picks a style (chooseVariant) and when a tips-showing step is (re)rendered.
+function syncTipsReferencePhoto(){
+ const tips=root.querySelector('.mg-redesign-tips');if(!tips)return;
+ const photo=tips.querySelector('.mg-tips-reference-photo');
+ const caption=tips.querySelector('.mg-tips-reference-caption');
+ if(!photo&&!caption)return;
+ const chosenCard=root.querySelector('[data-mg-style-choice][aria-pressed="true"]');
+ const chosenImage=chosenCard?.querySelector('img');
+ if(!chosenImage)return;
+ const key=q('mg-style-card')?.value||'english';
+ const name=chosenCard.querySelector('.mg-variant-info strong')?.textContent||'';
+ const desc=chosenCard.querySelector('.mg-variant-info small')?.textContent||'';
+ if(photo){photo.src=chosenImage.src;photo.alt=name?('Vybraný styl: '+name):'Inspirace pro vybraný styl zahrady';photo.dataset.mgStyle=key;}
+ if(caption){
+  caption.innerHTML='';
+  if(name){const strongEl=document.createElement('strong');strongEl.textContent=name;caption.appendChild(strongEl);}
+  if(desc){const smallEl=document.createElement('small');smallEl.textContent=desc;caption.appendChild(smallEl);}
+ }
 }
 root.querySelectorAll('[data-mg-style-choice]').forEach(button=>button.addEventListener('click',()=>{chooseVariant(button.dataset.mgVariant,true,button.dataset.mgStyleChoice);autoSave()}));
 q('mg-summary').addEventListener('click',()=>{const d=getData(),min=Number(d['mg-min']),max=Number(d['mg-max']),w=Number(d['mg-width']),l=Number(d['mg-length']);if(!Number.isFinite(min)||!Number.isFinite(max)||min<0||max<min){alert('Zkontrolujte rozpočet od–do.');return}const area=w>0&&l>0?`${fmt(w*l)} m²`:'nezadána';const out=q('mg-output');out.textContent=`ZADÁNÍ NÁVRHU ZAHRADY\n\nFotografie: ${photoReady?'nahrána':'nenahrána'}\nOznačené oblasti: ${areas.length}\nMěřítko: ${metersPerPixel?'nastaveno (orientační)':'nenastaveno'}\n${areas.map((a,i)=>`${i+1}. ${a.tool==='keep'?'Zachovat':a.tool==='remove'?'Odstranit':'Změnit'}${metersPerPixel?` ≈ ${fmt(polygonArea(a.points)*metersPerPixel**2)} m²`:''}`).join('\n')}\nVarianta: ${variantOptions[d['mg-variant']]?.label||variantOptions.B.label}\nPreference: ${tailoredChoice}\nStyl: ${d['mg-style']}\nSvětlo: ${d['mg-sun']}\nCelková zadaná plocha: ${area}\nRozpočet: ${fmt(min)}–${fmt(max)} Kč\nRealizace: ${d['mg-build']}\nÚdržba: ${d['mg-maint']}\nPožadavky: ${d['mg-notes']||'neuvedeny'}\n\nVýpočty z fotografie jsou orientační. AI návrh a platby zatím nejsou dostupné.`;out.classList.remove('mg-hidden')});
@@ -306,7 +324,13 @@ tips.innerHTML='<h3>'+(wizardStep===1?'Tipy pro výběr stylu':'Tipy pro lepší
   tips.appendChild(indicator);
   if(photoReady)updateGardenPhotoQuality();
  }
- if(tips&&[1,2,5,7,8].includes(wizardStep)){const selectedPhoto=root.querySelector('[data-mg-style-choice][aria-pressed="true"] img');if(selectedPhoto){const photo=document.createElement('img');photo.className='mg-tips-reference-photo';photo.src=selectedPhoto.src;photo.alt='Inspirace pro vybraný styl zahrady';photo.loading='lazy';photo.dataset.mgStyle=q('mg-style-card')?.value||'english';tips.appendChild(photo);}}
+ if(tips&&[1,2,5,7,8].includes(wizardStep)){const selectedPhoto=root.querySelector('[data-mg-style-choice][aria-pressed="true"] img');if(selectedPhoto){
+  const wrap=document.createElement('div');wrap.className='mg-tips-reference-wrap';
+  const photo=document.createElement('img');photo.className='mg-tips-reference-photo';photo.loading='lazy';
+  const caption=document.createElement('div');caption.className='mg-tips-reference-caption';
+  wrap.append(photo,caption);tips.appendChild(wrap);
+  syncTipsReferencePhoto();
+ }}
  if(wizardStep>0){const main=root.querySelector('.mg-redesign-main');if(main)main.scrollTo({top:0,behavior:'instant'});}
 }
 if(q('mg-placeholder'))q('mg-placeholder').textContent='Po nahrání se zde zobrazí vaše fotografie.';
