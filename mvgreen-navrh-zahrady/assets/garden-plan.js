@@ -139,7 +139,7 @@
     }).join('');
     return '<table class="mg-plan-legend"><thead><tr><th></th><th>Prvek</th><th>Plocha</th><th>Rostliny</th></tr></thead><tbody>' + rows + '</tbody></table>' +
       '<p class="mg-plan-totals">Trávník ' + fmtM2(r.totals.lawn) + ' · záhony ' + fmtM2(r.totals.bed) + ' · rostlin celkem ' + r.totals.plants + ' ks</p>' +
-      '<p class="mg-note">Půdorys je převedený z fotografie, proto jsou plochy orientační' + (r.measured ? '' : ' (bez zadaných rozměrů jde o odhad podle domu)') + '. Přesné míry ověříme na místě. ' + esc(r.notes) + '</p>';
+      '<p class="mg-note">Půdorys je převedený z fotografie, proto jsou plochy orientační' + (r.measured ? '' : ' (bez zadaných rozměrů jde o odhad podle domu)') + '. Přesné rozměry si prosím ověřte přímo na zahradě. ' + esc(r.notes) + '</p>';
   }
 
   /** Stáhne SVG jako PNG. */
@@ -292,7 +292,7 @@
     }).join('');
     var shopRows = Object.keys(shop).sort().map(function (k) { return '<tr><td>' + esc(k) + '</td><td>' + shop[k] + ' ks</td></tr>'; }).join('');
     return (bedRows ? '<ol class="mg-plan-beds">' + bedRows + '</ol>' : '<p class="mg-note">Na fotografii nejsou žádné nové záhony.</p>') +
-      '<p class="mg-note">Počty kusů jsou orientační podle velikosti záhonů na fotografii. Přesné množství upřesníme při zaměření na místě.</p>';
+      '<p class="mg-note">Počty kusů jsou orientační podle velikosti záhonů na fotografii. Přesné množství si upřesněte podle skutečné velikosti záhonu na zahradě.</p>';
   }
 
 
@@ -329,8 +329,12 @@
     return '<h5>🛒 Nákupní seznam s orientační cenou</h5><table class="mg-plan-legend mg-plan-shop"><thead><tr><th>Položka</th><th>Množství</th><th>Cena</th></tr></thead><tbody>' + rows +
       '</tbody><tfoot><tr><th>Materiál celkem</th><th></th><th>' + kc(lo) + '–' + kc(hi) + ' Kč</th></tr></tfoot></table>' +
       '<p class="mg-note">Ceny jsou orientační ceny zahradnictví s DPH, bez práce a dopravy.</p>' +
-      '<div class="mg-plan-offer"><strong>Nechte práci na nás</strong><p>MV GREEN založí nový trávník nebo obnoví ten stávající a postará se o jeho pravidelnou údržbu. Pošlete nám tento návrh a do 1–2 dnů dostanete nezávaznou cenovou nabídku.</p>' +
-      '<a class="mg-primary" href="/kontakty/#poptavka">Chci nabídku na realizaci</a> <a href="https://wa.me/420723339650">nebo napište na WhatsApp</a></div>';
+      // This tool is for self-service garden planning, not a lead-in to a custom on-site survey
+      // or build of the whole design (beds, planting…) – the business doesn't offer that. Point
+      // only at the real, standing MV GREEN lawn-care services and let the customer arrange beds/
+      // planting themselves; never imply a quote is coming for "realizing this design".
+      '<div class="mg-plan-offer"><strong>Údržbu trávníku svěřte MV GREEN</strong><p>Na webu mvgreen.cz nabízíme sekání, stříhání živých plotů a tují, založení nebo obnovu trávníku, aerifikaci, zapískování a dosev. Záhony a výsadbu z tohoto návrhu si zajistíte sami nebo přes zahradnictví – o trávník se vám rádi postaráme.</p>' +
+      '<a class="mg-primary" href="/kontakty/#poptavka">Napsat MV GREEN</a> <a href="https://wa.me/420723339650">nebo na WhatsApp</a></div>';
   }
 
   /** Kalendář péče na jednu stránku podle skupin rostlin v návrhu (trávník vždy). */
