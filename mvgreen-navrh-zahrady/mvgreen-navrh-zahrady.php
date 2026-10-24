@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.65
+ * Version: 0.6.66
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -25,12 +25,12 @@ function mvgreen_harden_upload_dir($dir) {
 
 add_shortcode('mvgreen_navrh_zahrady', function () {
     wp_enqueue_style('mvgreen-reference-font', 'https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;600;700;800;900&display=swap', [], null);
-    wp_enqueue_style('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.css', ['mvgreen-reference-font'], '0.6.65');
-    wp_enqueue_script('mvgreen-plants-805', plugin_dir_url(__FILE__) . 'assets/catalog-805.js', [], '0.6.65', true);
-    wp_enqueue_script('mvgreen-ai-safety', plugin_dir_url(__FILE__) . 'assets/ai-safety.js', [], '0.6.65', true);
-    wp_enqueue_script('mvgreen-brief', plugin_dir_url(__FILE__) . 'assets/garden-brief.js', [], '0.6.65', true);
-    wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], '0.6.65', true);
-    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-brief', 'mvgreen-plan'], '0.6.65', true);
+    wp_enqueue_style('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.css', ['mvgreen-reference-font'], '0.6.66');
+    wp_enqueue_script('mvgreen-plants-805', plugin_dir_url(__FILE__) . 'assets/catalog-805.js', [], '0.6.66', true);
+    wp_enqueue_script('mvgreen-ai-safety', plugin_dir_url(__FILE__) . 'assets/ai-safety.js', [], '0.6.66', true);
+    wp_enqueue_script('mvgreen-brief', plugin_dir_url(__FILE__) . 'assets/garden-brief.js', [], '0.6.66', true);
+    wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], '0.6.66', true);
+    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-brief', 'mvgreen-plan'], '0.6.66', true);
     wp_add_inline_script('mvgreen-designer', 'window.MVGreenAI = '.wp_json_encode(['ajaxUrl'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('mvgreen_ai_test'),'enabled'=>current_user_can('manage_options')]).';', 'before');
     // Use the exact WordPress site logo; supports classic and block themes.
     $mvgreen_logo_id = (int) get_theme_mod('custom_logo', 0);
@@ -71,7 +71,12 @@ $mvgreen_ai_preview_handle = function () {
     $image = isset($_POST['image']) ? wp_unslash($_POST['image']) : '';
     $mask = isset($_POST['mask']) ? wp_unslash($_POST['mask']) : '';
     $instructions = isset($_POST['instructions']) ? sanitize_textarea_field(wp_unslash($_POST['instructions'])) : '';
-    if (strlen($image)>12000000 || strlen($mask)>12000000 || strlen($instructions)>2500) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
+    // Styles with more plants (e.g. "Okrasné záhony", max 9) plus the free-text customer-notes
+    // field legitimately produce instructions well past 2500 chars (measured ~3000 with no notes
+    // at all) – that used to trip this guard and fail with a misleading "photo too large" error
+    // for a paying customer. The client now truncates notes to 500 chars; 6000 leaves generous
+    // headroom above the realistic worst case while still bounding the request.
+    if (strlen($image)>12000000 || strlen($mask)>12000000 || strlen($instructions)>6000) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
     // The photo may be JPEG (small, no alpha needed) or PNG; the mask must stay PNG (needs the alpha channel).
     $image_mime = 'image/png';
     $decode_photo = function($data) use (&$image_mime) {

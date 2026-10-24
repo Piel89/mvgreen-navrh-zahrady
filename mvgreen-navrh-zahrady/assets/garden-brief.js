@@ -197,7 +197,10 @@
       'NAVÁZÁNÍ: nové záhony a rostliny ukonči s odstupem od okraje upravované plochy; u okraje nech pruh trávníku nebo mulče, aby výsledek plynule navazoval na původní fotografii. Nikdy neusekávej rostliny okrajem plochy.',
       'ZÁHONY: nové záhony veď jako pruh těsně podél hranice upravované plochy – u domu, plotu, zdi, stromu nebo cesty. ZÁSADNĚ NEDĚLEJ záhon jako samostatný ostrůvek nebo velký oblouk zasahující doprostřed trávníku – majitel chce mít uprostřed zahrady souvislou otevřenou plochu trávníku, kterou lze normálně sekat. Jasné okraje, nastýlané kůrou nebo štěrkem, rostliny ve skupinách po 3–7 kusech, ne náhodně rozházené. Trávník hustý a rovnoměrný, ale přirozený, ne umělý.',
       'POŘÁDEK: pokud je v upravované ploše nepořádek – hromady větví, kamení, suť, uschlé nebo řídké rostliny, zbytky materiálu – odstraň ho a nahraď upraveným trávníkem, mulčem nebo záhonem. Výsledek musí působit čistě a dokončeně v celé upravované ploše, žádný nepořádek nesmí zůstat viditelný, ani v pozadí za novým záhonem.',
-      d['mg-notes'] ? 'PŘÁNÍ ZÁKAZNÍKA: ' + d['mg-notes'] : '',
+      // Free-text field has no client-side cap, so a customer can type arbitrarily long notes.
+      // Truncate defensively here: the server also caps total instruction length, and a request
+      // that silently exceeds it must never fail for a paying customer with a confusing error.
+      d['mg-notes'] ? 'PŘÁNÍ ZÁKAZNÍKA: ' + String(d['mg-notes']).slice(0, 500) : '',
       'ZAKÁZÁNO: měnit dům, okna, střechu, plot, cesty, terén, stromy, oblohu a úhel pohledu; přidávat lidi, zvířata, nábytek, text, vodoznaky nebo nové stavby.'
     ];
     return { text: lines.filter(Boolean).join('\n'), plants: pick.plants, rejected: pick.rejected };
