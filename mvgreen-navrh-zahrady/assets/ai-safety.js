@@ -279,20 +279,36 @@
           cv.style.cursor = brush ? 'crosshair' : 'default';
         });
       });
-      var painting = false;
+      var painting = false, lastX = null, lastY = null;
+      function stamp(x, y, rad) {
+        var mc = mask.getContext('2d');
+        mc.globalCompositeOperation = brush === 'erase' ? 'destination-out' : 'source-over';
+        mc.fillStyle = '#1b9c55'; mc.beginPath(); mc.arc(x, y, rad, 0, Math.PI * 2); mc.fill();
+        mc.globalCompositeOperation = 'source-over';
+      }
       function paint(e) {
         if (!brush) return;
         var r = cv.getBoundingClientRect();
         var x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height;
-        var mc = mask.getContext('2d'), rad = Math.max(10, cv.width / 30);
-        mc.globalCompositeOperation = brush === 'erase' ? 'destination-out' : 'source-over';
-        mc.fillStyle = '#1b9c55'; mc.beginPath(); mc.arc(x, y, rad, 0, Math.PI * 2); mc.fill();
-        mc.globalCompositeOperation = 'source-over';
+        var rad = Math.max(10, cv.width / 30);
+        // Stamp a single dab, then – if we moved since the last event – also stamp along the
+        // straight line back to the previous point. A fast or coarse-grained drag (and any
+        // programmatic/automated painting that moves the pointer in discrete jumps rather than
+        // a smooth stream) can otherwise skip pixels between pointermove events, leaving a row of
+        // separate circles with untouched gaps between them instead of one solid, compact area.
+        // Those gaps stay protected by the safety hard-lock, so anything sitting in a gap (e.g.
+        // clutter the customer meant to mark for removal) would silently survive AI generation.
+        if (lastX !== null) {
+          var dx = x - lastX, dy = y - lastY, dist = Math.sqrt(dx * dx + dy * dy), step = Math.max(1, rad / 2);
+          for (var t = step; t < dist; t += step) stamp(lastX + dx * (t / dist), lastY + dy * (t / dist), rad);
+        }
+        stamp(x, y, rad);
+        lastX = x; lastY = y;
         render();
       }
-      cv.addEventListener('pointerdown', function (e) { if (!brush) return; painting = true; try { cv.setPointerCapture(e.pointerId); } catch (er) {} paint(e); });
+      cv.addEventListener('pointerdown', function (e) { if (!brush) return; painting = true; lastX = lastY = null; try { cv.setPointerCapture(e.pointerId); } catch (er) {} paint(e); });
       cv.addEventListener('pointermove', function (e) { if (painting) paint(e); });
-      ['pointerup', 'pointercancel'].forEach(function (ev) { cv.addEventListener(ev, function () { painting = false; }); });
+      ['pointerup', 'pointercancel'].forEach(function (ev) { cv.addEventListener(ev, function () { painting = false; lastX = lastY = null; }); });
       function close(v) { ov.remove(); resolve(v); }
       ov.querySelector('[data-act=cancel]').addEventListener('click', function () { close(null); });
       ov.querySelector('[data-act=ok]').addEventListener('click', function () { close(mask); });

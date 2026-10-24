@@ -85,20 +85,25 @@
     var shapes = '', labels = '', legend = [], bedNo = 0, totals = { lawn: 0, bed: 0, plants: 0 };
     els.forEach(function (e) {
       var st = STYLE[e.type], p = pts(e);
-      if (e.type === 'tree' || e.type === 'shrub' || p.length < 3) {
-        if (e.type === 'fence' && p.length >= 2) {
-          shapes += '<polyline points="' + p.map(function (q) { return X(q[0]) + ',' + Y(q[1]); }).join(' ') + '" fill="none" stroke="' + st.stroke + '" stroke-width="3" stroke-dasharray="8 4"/>';
-          return;
-        }
-        var c = p[0], r = e.type === 'tree' ? Math.max(14, 2.2 / W * inner) : Math.max(8, 0.8 / W * inner);
-        shapes += '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="' + r.toFixed(1) + '" fill="' + st.fill + '" fill-opacity=".85" stroke="' + st.stroke + '" stroke-width="1.5"/>' +
-          '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="2" fill="' + st.stroke + '"/>';
-        if (e.is_new) {
-          legend.push({ no: '', type: st.name, label: e.label || st.name, area: '', plants: e.plants || [], isNew: true });
-          (e.plants || []).forEach(function (pl) { totals.plants += +pl.count || 0; });
-        }
+      if (e.type === 'fence' && p.length >= 2) {
+        shapes += '<polyline points="' + p.map(function (q) { return X(q[0]) + ',' + Y(q[1]); }).join(' ') + '" fill="none" stroke="' + st.stroke + '" stroke-width="3" stroke-dasharray="8 4"/>';
         return;
       }
+      if (e.type === 'tree' || e.type === 'shrub') {
+        // Only draw NEW plantings. An existing tree/shrub just confirms what's already on the
+        // photo and adds nothing for the customer – and on a narrow site the real-world canopy
+        // radius (2.2 m) can dwarf the whole plan, producing a huge, misplaced-looking blob
+        // (seen in production: two unlabeled green circles swallowing the house). Capping the
+        // radius keeps that from recurring even for a genuinely new, deliberately large shrub.
+        if (!e.is_new || !p.length) return;
+        var c = p[0], r = Math.min(e.type === 'tree' ? Math.max(14, 2.2 / W * inner) : Math.max(8, 0.8 / W * inner), inner * 0.05);
+        shapes += '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="' + r.toFixed(1) + '" fill="' + st.fill + '" fill-opacity=".85" stroke="' + st.stroke + '" stroke-width="1.5"/>' +
+          '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="2" fill="' + st.stroke + '"/>';
+        legend.push({ no: '', type: st.name, label: e.label || st.name, area: '', plants: e.plants || [], isNew: true });
+        (e.plants || []).forEach(function (pl) { totals.plants += +pl.count || 0; });
+        return;
+      }
+      if (p.length < 3) return; // malformed element from the AI plan – drop it rather than draw a meaningless shape
       var a = m2(areaGrid(p)), cen = centroid(p);
       shapes += '<polygon points="' + p.map(function (q) { return X(q[0]) + ',' + Y(q[1]); }).join(' ') + '" fill="' + (fillOf[e.type] || st.fill) + '" stroke="' + st.stroke + '" stroke-width="' + (e.type === 'bed' ? 2 : 1.5) + '" stroke-linejoin="round"/>';
       if (e.type === 'lawn') totals.lawn += a;
@@ -324,7 +329,7 @@
     return '<h5>🛒 Nákupní seznam s orientační cenou</h5><table class="mg-plan-legend mg-plan-shop"><thead><tr><th>Položka</th><th>Množství</th><th>Cena</th></tr></thead><tbody>' + rows +
       '</tbody><tfoot><tr><th>Materiál celkem</th><th></th><th>' + kc(lo) + '–' + kc(hi) + ' Kč</th></tr></tfoot></table>' +
       '<p class="mg-note">Ceny jsou orientační ceny zahradnictví s DPH, bez práce a dopravy.</p>' +
-      '<div class="mg-plan-offer"><strong>Nechte práci na nás</strong><p>MV GREEN připraví plochy, založí nebo obnoví trávník, odveze starý materiál a postará se o pravidelnou údržbu. Pošlete nám tento návrh a do 1–2 dnů dostanete nezávaznou cenovou nabídku.</p>' +
+      '<div class="mg-plan-offer"><strong>Nechte práci na nás</strong><p>MV GREEN založí nový trávník nebo obnoví ten stávající a postará se o jeho pravidelnou údržbu. Pošlete nám tento návrh a do 1–2 dnů dostanete nezávaznou cenovou nabídku.</p>' +
       '<a class="mg-primary" href="/kontakty/#poptavka">Chci nabídku na realizaci</a> <a href="https://wa.me/420723339650">nebo napište na WhatsApp</a></div>';
   }
 
