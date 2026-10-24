@@ -192,15 +192,29 @@
         if (cnt >= minArea) comps.push({ n: cnt, sx: sx, sy: sy, x0: x0, y0: y0, x1: x1, y1: y1 });
       }
       // Části jednoho záhonu (přerušené trsy) spojit, když se jejich obrysy téměř dotýkají.
-      var gap = Math.round(W * 0.04), merged = true;
-      while (merged) {
-        merged = false;
-        for (var u = 0; u < comps.length && !merged; u++) for (var v = u + 1; v < comps.length && !merged; v++) {
-          var A = comps[u], B = comps[v];
-          if (A.x0 - gap <= B.x1 && B.x0 - gap <= A.x1 && A.y0 - gap <= B.y1 && B.y0 - gap <= A.y1) {
-            A.n += B.n; A.sx += B.sx; A.sy += B.sy; A.x0 = Math.min(A.x0, B.x0); A.y0 = Math.min(A.y0, B.y0); A.x1 = Math.max(A.x1, B.x1); A.y1 = Math.max(A.y1, B.y1);
-            comps.splice(v, 1); merged = true;
+      // A busy/textured photo can produce hundreds of tiny components; restarting the O(n²) scan
+      // from scratch on every single merge (as before) makes this O(n³) and can hang the tab for
+      // minutes. Cap both the candidate count and the number of passes so it always terminates fast.
+      if (comps.length > 1) {
+        comps.sort(function (u, v) { return v.n - u.n; });
+        if (comps.length > 180) comps = comps.slice(0, 180);
+        var gap = Math.round(W * 0.04), pass2 = 0;
+        while (pass2 < 12) {
+          pass2++;
+          var mergedAny = false;
+          for (var u = 0; u < comps.length; u++) {
+            if (!comps[u]) continue;
+            for (var v = u + 1; v < comps.length; v++) {
+              if (!comps[v]) continue;
+              var A = comps[u], B = comps[v];
+              if (A.x0 - gap <= B.x1 && B.x0 - gap <= A.x1 && A.y0 - gap <= B.y1 && B.y0 - gap <= A.y1) {
+                A.n += B.n; A.sx += B.sx; A.sy += B.sy; A.x0 = Math.min(A.x0, B.x0); A.y0 = Math.min(A.y0, B.y0); A.x1 = Math.max(A.x1, B.x1); A.y1 = Math.max(A.y1, B.y1);
+                comps[v] = null; mergedAny = true;
+              }
+            }
           }
+          comps = comps.filter(function (c) { return c; });
+          if (!mergedAny) break;
         }
       }
       comps = comps.filter(function (c) { return c.n >= W * H * 0.004; }).map(function (c) {
