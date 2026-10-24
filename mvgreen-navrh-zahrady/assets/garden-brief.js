@@ -200,10 +200,11 @@
       'ZÁHONY: nové záhony veď jako pruh těsně podél hranice upravované plochy – u domu, plotu, zdi, stromu nebo cesty. ZÁSADNĚ NEDĚLEJ záhon jako samostatný ostrůvek nebo velký oblouk zasahující doprostřed trávníku – majitel chce mít uprostřed zahrady souvislou otevřenou plochu trávníku, kterou lze normálně sekat. Jasné okraje, nastýlané kůrou nebo štěrkem, rostliny ve skupinách po 3–7 kusech, ne náhodně rozházené. Trávník hustý a rovnoměrný, ale přirozený, ne umělý.',
       'BARVA TRÁVNÍKU: odstín a sytost zelené u trávníku zachovej stejné jako na originální fotografii – neměň barvu trávy na tmavší, sytější nebo jinak laděnou zelenou a neslaďuj ji s barvou nových rostlin. Tráva smí být jen upravenější (rovnoměrně posekaná, bez plešin a suchých míst), ne jinak zbarvená.',
       'POŘÁDEK (POVINNÉ, BEZ VÝJIMKY): V CELÉ upravované ploše smí po úpravě zůstat JEN trávník, záhon nebo mulč/štěrk – nic jiného. Projdi upravovanou plochu objekt po objektu a odstraň úplně VŠECHNO přenosné nebo dočasné, co tam na originální fotce je – zejména: stavební nářadí a technika (míchačka na beton, kolečko, lopaty, žebřík, hadice), hromady hlíny, písku, štěrku nebo stavební suti, pytle a palety s materiálem, dřevo, větve, kamení, odpadky, uschlé nebo řídké rostliny. Žádný z těchto předmětů nesmí zůstat viditelný ani částečně, ani v pozadí za novým záhonem – nahraď to místo trávníkem, mulčem nebo záhonem podle okolí. Trvalé prvky zahrady (zeď, plot, strom, studna, altán) nech beze změny, ale cokoliv přenosného vždy odstraň – v pochybnostech je to nepořádek k odstranění, ne prvek k zachování.',
-      // Free-text field has no client-side cap, so a customer can type arbitrarily long notes.
-      // Truncate defensively here: the server also caps total instruction length, and a request
-      // that silently exceeds it must never fail for a paying customer with a confusing error.
-      d['mg-notes'] ? 'PŘÁNÍ ZÁKAZNÍKA: ' + String(d['mg-notes']).slice(0, 500) : '',
+      // The textarea's own maxlength (app.js) already stops typing at 1200 chars – generous room
+      // for several sentences, measured against the worst-case fixed instruction text above so the
+      // total always stays well under the server's 6000-char instructions cap. Truncate defensively
+      // here too (matching that same 1200) in case the field is ever filled some other way than typing.
+      d['mg-notes'] ? 'PŘÁNÍ ZÁKAZNÍKA: ' + String(d['mg-notes']).slice(0, 1200) : '',
       'ZAKÁZÁNO: měnit dům, okna, střechu, plot, cesty, terén, stromy, oblohu a úhel pohledu; přidávat lidi, zvířata, nábytek, text, vodoznaky nebo nové stavby.'
     ];
     return { text: lines.filter(Boolean).join('\n'), plants: pick.plants, rejected: pick.rejected };
