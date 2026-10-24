@@ -592,6 +592,15 @@ function updateMaskStatus(){
   if(confirmedEditMask&&maskPreviewDataUrl){img.src=maskPreviewDataUrl;wrap.classList.remove('mg-hidden');}
   else wrap.classList.add('mg-hidden');
  }
+ // Step 5's own photo preview shows the exact same marked-area thumbnail once it exists, instead
+ // of the plain uploaded photo, so the customer keeps seeing what will actually change.
+ const genBadge=generationStep?.querySelector('.mg-generation-image span');
+ if(genPreviewImg&&confirmedEditMask&&maskPreviewDataUrl){
+  genPreviewImg.src=maskPreviewDataUrl;
+  if(genBadge)genBadge.textContent='Vaše fotografie – zeleně vyznačená plocha se změní';
+ }else if(genBadge){
+  genBadge.textContent='Vaše fotografie';
+ }
 }
 async function openMaskConfirmation(){
  if(!photoReady){showWizardStep(3);return;}

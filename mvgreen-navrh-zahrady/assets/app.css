@@ -518,7 +518,9 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-in-details{margin:15px 0!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(220px,1fr);gap:17px;align-items:stretch;margin:20px 0}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image{min-height:350px;position:relative;border-radius:13px;overflow:hidden;background:#e4f1e9}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+/* object-fit:contain (not cover) – the whole photo, including what's marked to change, must stay
+   visible here. A cropped photo previously hid part of the marked area from the customer. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-image span{position:absolute;bottom:14px;left:14px;background:#03472cc9;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-status{padding:21px;border-radius:13px;border:1px solid #dfebe3;background:#f4faf6}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-status h4{font-size:16px;color:#19462f;margin:0 0 18px}
