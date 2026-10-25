@@ -2038,3 +2038,87 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-notes-spotlight textarea{border:2px solid #156333!important;animation:mg-notes-pulse 1.8s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.mvgreen-designer .mg-notes-spotlight textarea{animation:none;box-shadow:0 0 0 3px #15633340}}
 .mvgreen-designer #mg-kod-status,.mvgreen-designer #mg-buy-status{min-height:1em}
+
+/* ===========================================================================
+   v0.6.95: visual refresh — motion, depth and typographic contrast.
+   Owner feedback: the tool is functionally solid but "still looks cheap"
+   compared to the rest of mvgreen.cz. Audit found two measurable causes in
+   this file: almost nothing had a transition (2 rules in ~2000 lines, so
+   every hover/step-change/toggle just snaps instantly instead of settling),
+   and border-radius was a different ad-hoc value in nearly every rule added
+   over time (7/8/9/10/11/12/13/14/16px all in use with no shared scale).
+   This block is appended last on purpose, so it wins the cascade for the
+   properties it sets (transition/transform/box-shadow/radius) without having
+   to touch - and risk breaking - a few thousand lines of working layout
+   rules above. Every animation/transition here respects
+   prefers-reduced-motion, matching the one pre-existing animation in this
+   file (.mg-notes-spotlight) a few lines up.
+   =========================================================================== */
+
+/* Shared tokens: a small, consistent corner-radius scale for the handful of
+   large, high-visibility surfaces (card shells, modal, result, plan, mask
+   dialog). Smaller historic controls keep their own original radius - low
+   visual weight, not worth touching - so the biggest, most-looked-at shapes
+   now agree with each other without a blanket rewrite of the whole file. */
+.mvgreen-designer{--mg-r-sm:10px;--mg-r-md:16px;--mg-r-lg:22px;--mg-ease:cubic-bezier(.2,.7,.3,1)}
+.mvgreen-designer .mg-shell{border-radius:var(--mg-r-lg)!important;box-shadow:0 1px 2px #0a1f1310,0 18px 44px -12px #0a2a1c33!important}
+.mvgreen-designer .mg-redesign-frame{border-radius:var(--mg-r-lg)!important}
+.mvgreen-designer .mg-plan,.mvgreen-designer .mg-ai-result,.mvgreen-designer .mg-mask-box,.mvgreen-designer .mg-bedpath-stage,.mvgreen-designer .mg-plan-output,.mvgreen-designer .mg-area-details{border-radius:var(--mg-r-md)!important}
+.mvgreen-designer .mg-plan,.mvgreen-designer .mg-ai-result{box-shadow:0 1px 2px #0a1f1308,0 10px 28px -10px #0a2a1c28}
+
+/* Motion defaults: every interactive surface settles instead of snapping.
+   Kept short (150–220ms) and on only the properties that actually change,
+   so it reads as responsiveness, not sluggishness. */
+.mvgreen-designer button,.mvgreen-designer a.mg-primary,.mvgreen-designer .mg-ai-download,
+.mvgreen-designer input,.mvgreen-designer select,.mvgreen-designer textarea,
+.mvgreen-designer .mg-chip,.mvgreen-designer .mg-variant,.mvgreen-designer .mg-plant-card,
+.mvgreen-designer .mg-shoot-card,.mvgreen-designer .mg-hero-comparison .mg-hero-touch-toggle{
+ transition:background-color .18s var(--mg-ease),border-color .18s var(--mg-ease),color .18s var(--mg-ease),box-shadow .18s var(--mg-ease),transform .15s var(--mg-ease),outline-color .18s var(--mg-ease)
+}
+.mvgreen-designer button:not(:disabled):hover,.mvgreen-designer a.mg-primary:hover,.mvgreen-designer .mg-ai-download:hover{
+ transform:translateY(-1px);box-shadow:0 6px 16px -6px #15633352
+}
+.mvgreen-designer button:not(:disabled):active{transform:translateY(0);box-shadow:none}
+.mvgreen-designer button.mg-primary:not(:disabled):hover{box-shadow:0 8px 20px -6px #15633366}
+.mvgreen-designer input:not([type="checkbox"]):not([type="radio"]):hover,
+.mvgreen-designer select:hover,.mvgreen-designer textarea:hover{border-color:#9fc2a8}
+.mvgreen-designer input:focus-visible,.mvgreen-designer select:focus-visible,.mvgreen-designer textarea:focus-visible{
+ box-shadow:0 0 0 4px #15633322
+}
+
+/* Step progress bar: smooth, slightly glowing fill instead of a hard jump. */
+.mvgreen-designer #mg-progress-fill{transition:width .4s var(--mg-ease);box-shadow:0 0 10px 1px #1b9c5580}
+
+/* Each wizard step settles in with a short rise-and-fade instead of
+   appearing instantly - a small cue that something changed, not just a
+   different form on screen. Triggered purely by [hidden] being removed
+   (how showWizardStep already works), no script changes needed. */
+@keyframes mg-step-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.mvgreen-designer .mg-wizard-step:not([hidden]){animation:mg-step-in .32s var(--mg-ease)}
+
+/* The finished AI photo is the moment the customer is paying to see - give
+   it a deliberate reveal instead of popping in like any other image. */
+@keyframes mg-reveal{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:scale(1)}}
+.mvgreen-designer .mg-after-image,.mvgreen-designer #mg-output:not(.mg-hidden),.mvgreen-designer .mg-ai-result img{animation:mg-reveal .5s var(--mg-ease)}
+
+@media(prefers-reduced-motion:reduce){
+ .mvgreen-designer button,.mvgreen-designer a.mg-primary,.mvgreen-designer .mg-ai-download,
+ .mvgreen-designer input,.mvgreen-designer select,.mvgreen-designer textarea,
+ .mvgreen-designer .mg-chip,.mvgreen-designer .mg-variant,.mvgreen-designer .mg-plant-card,
+ .mvgreen-designer .mg-shoot-card,.mvgreen-designer .mg-hero-comparison .mg-hero-touch-toggle,
+ .mvgreen-designer #mg-progress-fill{transition:none}
+ .mvgreen-designer button:not(:disabled):hover,.mvgreen-designer a.mg-primary:hover,.mvgreen-designer .mg-ai-download:hover{transform:none}
+ .mvgreen-designer .mg-wizard-step:not([hidden]),.mvgreen-designer .mg-after-image,.mvgreen-designer #mg-output:not(.mg-hidden),.mvgreen-designer .mg-ai-result img{animation:none}
+}
+
+/* Typographic contrast: the step "eyebrow" label (e.g. "03 / 08 · VAŠE
+   FOTOGRAFIE") gets a small colour mark instead of reading as plain grey
+   caps - the same kind of detail the real mvgreen.cz site's section labels
+   already use. */
+.mvgreen-designer .mg-step-kicker{display:flex;align-items:center;gap:7px}
+.mvgreen-designer .mg-step-kicker::before{content:"";width:16px;height:3px;border-radius:2px;background:#1b9c55;display:inline-block}
+
+/* Chips/pills and segmented controls (favourites, bed/path mode, brush tools)
+   get the same pressed/hover language as the rest of the refresh. */
+.mvgreen-designer .mg-chip:hover,.mvgreen-designer .mg-bedpath-mode button:hover,.mvgreen-designer .mg-bedpath-tools button:hover{border-color:#8fc49c}
+.mvgreen-designer .mg-chip[aria-pressed="true"]{box-shadow:0 4px 12px -4px #15633355}
