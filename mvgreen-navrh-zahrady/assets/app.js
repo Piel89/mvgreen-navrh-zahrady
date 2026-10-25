@@ -1335,11 +1335,21 @@ function createPlan(){
    if(/blue|hidcote|munstead|levand|šalvěj|šanta|violet|purple|kakost/.test(n))return 'purple';
    return 'neutral';
  };
- const palettes=[['purple','white','pink','neutral'],['yellow','white','purple','neutral'],['pink','white','purple','neutral']];
+ const palettes=[['purple','white','pink','neutral'],['yellow','white','purple','neutral'],['pink','white','purple','neutral'],['red','white','neutral','purple']];
  const palette=palettes[Math.abs(Math.round(requested*10))%palettes.length];
- const ordered=eligible.map(p=>({...p,_height:parseHeight(p),_color:colors(p)}))
+ let ordered=eligible.map(p=>({...p,_height:parseHeight(p),_color:colors(p)}))
    .filter(p=>palette.includes(p._color))
    .sort((a,b)=>a._height-b._height||a.name.localeCompare(b.name,'cs'));
+ // Fallback: colors() can tag a species 'red', and before this fix no palette included 'red' at
+ // all, so an eligible pool made up mostly of red-flowering species silently produced an empty
+ // `ordered` here and the plan below failed with "no plants for these conditions" even though
+ // `eligible` (checked a few lines up) was non-empty. Keep the palette (it's still a nicer, more
+ // coherent default), but never let a palette miss turn a real, non-empty eligible pool into zero
+ // plan candidates – fall back to the full eligible set, sorted the same way, instead.
+ if(!ordered.length){
+   ordered=eligible.map(p=>({...p,_height:parseHeight(p),_color:colors(p)}))
+     .sort((a,b)=>a._height-b._height||a.name.localeCompare(b.name,'cs'));
+ }
  const selected=[];
  const targets=maxSpecies<=3?[0,0.5,1]:[0,0.25,0.5,0.75,1];
  for(const t of targets){

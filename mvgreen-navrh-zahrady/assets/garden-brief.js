@@ -85,17 +85,6 @@
     return 'green';
   }
 
-  // One chip per plant name (cultivars of the same plant collapse into one), max 18.
-  function uniquePicks(curated) {
-    var seen = {}, out = [];
-    curated.forEach(function (p) {
-      var label = String(p.name).replace(/\s*„.*$/, '').trim();
-      if (seen[label] || out.length >= 18) return;
-      seen[label] = 1; out.push({ label: label, plant: p });
-    });
-    return out;
-  }
-
   function favoritesHtml(curated) {
     // Showing a fixed pick of ~18 names out of 800+ in the catalog made the catalog look much
     // smaller than it is and steered customers toward only those few species. The AI already
@@ -116,18 +105,18 @@
       '</section>';
   }
 
+  // curated/plants kept as parameters (bindFavorites(root, curated, onChange), restore(colors,
+  // plants, water)) for call-site/signature compatibility even though favoritesHtml() never
+  // renders [data-fav-plant] chips – there is currently no UI path that sets #mg-fav-plants.
   function bindFavorites(root, curated, onChange) {
-    var picks = uniquePicks(curated).map(function (x) { return x.plant; });
     function sync() {
       var cols = [].map.call(root.querySelectorAll('[data-fav-color][aria-pressed=true]'), function (b) { return b.dataset.favColor; });
-      var pl = [].map.call(root.querySelectorAll('[data-fav-plant][aria-pressed=true]'), function (b) { return picks[+b.dataset.favPlant].latin; });
       var w = root.querySelector('[data-fav-water][aria-pressed=true]');
       root.querySelector('#mg-fav-colors').value = cols.join(',');
-      root.querySelector('#mg-fav-plants').value = pl.join('|');
       root.querySelector('#mg-irrigation').value = w ? w.dataset.favWater : '1';
       if (onChange) onChange();
     }
-    root.querySelectorAll('[data-fav-color],[data-fav-plant]').forEach(function (b) {
+    root.querySelectorAll('[data-fav-color]').forEach(function (b) {
       b.addEventListener('click', function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); sync(); });
     });
     root.querySelectorAll('[data-fav-water]').forEach(function (b) {
@@ -138,7 +127,6 @@
     });
     return function restore(colors, plants, water) {
       (colors || '').split(',').filter(Boolean).forEach(function (c) { var b = root.querySelector('[data-fav-color="' + c + '"]'); if (b) b.setAttribute('aria-pressed', 'true'); });
-      (plants || '').split('|').filter(Boolean).forEach(function (l) { picks.forEach(function (p, i) { if (p.latin === l) { var b = root.querySelector('[data-fav-plant="' + i + '"]'); if (b) b.setAttribute('aria-pressed', 'true'); } }); });
       if (water !== undefined && water !== '') root.querySelectorAll('[data-fav-water]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.favWater === String(water))); });
       sync();
     };

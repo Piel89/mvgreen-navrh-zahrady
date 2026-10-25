@@ -51,7 +51,11 @@ $mvgreen_update_inject = function ($transient) {
         'plugin' => $basename,
         'new_version' => $meta['version'],
         'url' => 'https://github.com/Piel89/mvgreen-navrh-zahrady',
-        'package' => 'https://github.com/Piel89/mvgreen-navrh-zahrady/archive/refs/heads/main.zip',
+        // Pinned to the exact detected release tag (confirmed tag format: v0.6.97, …) – the
+        // floating branch-HEAD archive used before this meant a push to main after the version
+        // check but before the user clicked "Aktualizovat" could silently ship newer, unreviewed
+        // code instead of the version WordPress told the user it was installing.
+        'package' => 'https://github.com/Piel89/mvgreen-navrh-zahrady/archive/refs/tags/v' . $meta['version'] . '.zip',
         'requires' => '6.0',
     ];
     if (isset($transient->no_update[$basename])) unset($transient->no_update[$basename]);
