@@ -1473,9 +1473,24 @@ async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask,extr
     // it doesn't make geometric sense (elements end up nowhere near their real position) and he'd
     // rather not have it at all – removed. The numbered photo above is the real, trustworthy plan.
     planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><img class="mg-plan-photo" alt="Návrh s očíslovanými záhony" src="'+numbered+'">'+P.bedsHtml(res.plan,dims)+P.shoppingHtml(res.plan,dims)+P.careHtml(res.plan);
+    // Print-only heading (hidden on screen, shown by the @media print rules below) so a PDF/printout
+    // of the plan is self-explanatory once it's out of the wizard – not everyone opening the saved
+    // PDF later will remember which design or garden it belongs to.
+    const printHeader=document.createElement('div');printHeader.className='mg-print-header';
+    const ph1=document.createElement('h2');ph1.textContent='MVGreen – souhrn návrhu zahrady';
+    const ph2=document.createElement('p');ph2.textContent=[d['mg-locality'],new Date().toLocaleDateString('cs-CZ')].filter(Boolean).join(' · ');
+    printHeader.append(ph1,ph2);planBox.insertBefore(printHeader,planBox.firstChild);
     const row=document.createElement('div');row.className='mg-actions';
     const dl1=document.createElement('a');dl1.href=numbered;dl1.download='mvgreen-navrh-cisla.jpg';dl1.textContent='⬇ Uložit fotku s čísly';dl1.className='mg-ai-download';
-    row.append(dl1);planBox.append(row);
+    const dl2=document.createElement('button');dl2.type='button';dl2.className='mg-plan-print';dl2.textContent='📄 Stáhnout souhrn (PDF)';
+    dl2.addEventListener('click',()=>{
+     document.body.classList.add('mg-printing');
+     const done=()=>{document.body.classList.remove('mg-printing');window.removeEventListener('afterprint',done)};
+     window.addEventListener('afterprint',done);
+     window.print();
+     setTimeout(done,15000); // safety net – some mobile browsers never fire afterprint
+    });
+    row.append(dl1,dl2);planBox.append(row);
   }catch(e){planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><p class="mg-note">Seznam záhonů se nepodařilo vytvořit: '+String(e.message).replace(/[<>&]/g,'')+'</p>'}
   // Jiný pohled je další placený AI snímek (stejná cenová třída jako hlavní návrh) – u balíčku
   // na 1 použití by si ho zákazník nemohl vyzkoušet, proto zůstává jen pro test správce.

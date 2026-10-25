@@ -2122,3 +2122,24 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
    get the same pressed/hover language as the rest of the refresh. */
 .mvgreen-designer .mg-chip:hover,.mvgreen-designer .mg-bedpath-mode button:hover,.mvgreen-designer .mg-bedpath-tools button:hover{border-color:#8fc49c}
 .mvgreen-designer .mg-chip[aria-pressed="true"]{box-shadow:0 4px 12px -4px #15633355}
+
+/* v0.6.97: printable/PDF plan summary (Bod 5). The heading is only meant for
+   the printout – hidden on screen – and the @media print rules isolate the
+   .mg-plan-box (numbered photo + bed list + shopping list + care calendar)
+   from the rest of the wizard chrome, which stays on screen the whole time
+   and would otherwise print as several blank/irrelevant pages. */
+.mvgreen-designer .mg-print-header{display:none}
+.mvgreen-designer .mg-plan-print{margin-left:8px}
+@media print{
+ body.mg-printing .mg-head,body.mg-printing .mg-wizard-progress,body.mg-printing .mg-welcome,body.mg-printing .mg-wizard-footer{display:none!important}
+ body.mg-printing .mg-wizard-step>*:not(#mg-ai-result){display:none!important}
+ body.mg-printing #mg-ai-result>*:not(.mg-plan-box){display:none!important}
+ body.mg-printing .mg-plan-box .mg-actions{display:none!important}
+ body.mg-printing .mg-plan-box{box-shadow:none!important;border:0!important;background:#fff!important;padding:0!important}
+ body.mg-printing .mg-print-header{display:block!important;margin-bottom:14px}
+ body.mg-printing .mg-print-header h2{margin:0 0 4px;color:#156333}
+ body.mg-printing .mg-print-header p{margin:0;color:#555}
+ body.mg-printing table tr{page-break-inside:avoid}
+ body.mg-printing{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ @page{margin:14mm}
+}
