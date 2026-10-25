@@ -1276,7 +1276,13 @@ const plants=(Array.isArray(window.MVGreenPlantCatalog)?window.MVGreenPlantCatal
 let lastPlan=null;
 // Customer favourites, photo guide and photo check (garden-brief.js).
 const Brief=window.MVGreenBrief;
-const curatedPlants=legacyPlants.filter(p=>p.latin&&p.availability!=='vyprodáno');
+// Fed into Brief.buildInstructions/buildBedStageInstructions (the AI prompt) and the favourites UI.
+// This used to be legacyPlants alone (~53 hand-priced species) even though garden-brief.js's own
+// comment on favoritesHtml says "the AI already chooses from the full curated catalog" – it never
+// did: the AI only ever saw those 53. Using the full merged `plants` (805 species, enriched with
+// legacy price/availability where we have it) actually matches that claim, and gives every design
+// real access to the whole catalog instead of the same ~50 species on repeat.
+const curatedPlants=plants.filter(p=>p.latin&&p.availability!=='vyprodáno');
 if(Brief){
  const grid=root.querySelector('[data-mg-step="1"] .mg-variant-grid');
  if(grid&&!root.querySelector('.mg-fav')){
