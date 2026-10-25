@@ -659,7 +659,7 @@ q('mg-mask-adjust')?.addEventListener('click',()=>openMaskConfirmation(true));
 // small/specific objects (e.g. a concrete mixer) that the AI apparently couldn't reliably locate from
 // a category name alone – pointing at the exact spot removes that ambiguity.
 const bedPathStep=makeReferenceStep(5,'Umístění záhonu, cesty a úklidu','Nepovinné: hrubě naznačte štětcem, kde zhruba chcete záhon, kde cestu a co se má na fotce určitě odstranit (nepořádek, nářadí, stroje). Nejde o přesný tvar ani rozměr, jen orientační poloha pro AI – tyhle značky AI uvidí přímo na fotce, kterou upravuje. Tento krok můžete klidně přeskočit.');
-bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div><div class="mg-bedpath-mode" role="group" aria-label="Způsob zakreslení"><button type="button" id="mg-bp-mode-rough" aria-pressed="true">〰️ Hrubě (tahem)</button><button type="button" id="mg-bp-mode-precise" aria-pressed="false">✏️ Přesně (klikání rohů)</button></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon, cestu a odstranění"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" data-bp-tool="remove" aria-pressed="false">⬛ Tohle odstranit (nepořádek, nářadí)</button><button type="button" id="mg-bp-finish" class="mg-hidden">✓ Dokončit tvar</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note" id="mg-bp-mode-note">Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.</p><p class="mg-note mg-bp-measure" id="mg-bp-measure"></p></div>';
+bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div><div class="mg-bedpath-mode" role="group" aria-label="Způsob zakreslení"><button type="button" id="mg-bp-mode-rough" aria-pressed="true">〰️ Hrubě (tahem)</button><button type="button" id="mg-bp-mode-precise" aria-pressed="false">✏️ Přesně (klikání rohů)</button><button type="button" id="mg-bp-calibrate">📏 Zadat měřítko</button></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon, cestu a odstranění"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" data-bp-tool="remove" aria-pressed="false">⬛ Tohle odstranit (nepořádek, nářadí)</button><button type="button" id="mg-bp-finish" class="mg-hidden">✓ Dokončit tvar</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note" id="mg-bp-mode-note">Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.</p><p class="mg-note mg-bp-measure" id="mg-bp-measure"></p></div>';
 generationStep.insertAdjacentElement('beforebegin',bedPathStep);
 // Flat arrays of strokes (each stroke a downsampled array of {x,y} in 0–100% photo coordinates).
 let bedStrokes=[],pathStrokes=[],removeStrokes=[];
@@ -670,6 +670,10 @@ let bedStrokes=[],pathStrokes=[],removeStrokes=[];
 // to an assumed width – directly answering "I drew a line, not the shape I actually meant".
 let bedPolygons=[],pathPolygons=[];
 let preciseMode=false,bpDraft=[];
+// The old distance-calibration tool (metersPerPixel) lived on a step that's since been retired and
+// is never shown to a customer any more (see "dormant-measure" below) – so this is the ONLY live way
+// to set metersPerPixel today. It reuses the same underlying variable the dormant one used to.
+let bp5Calibrating=false,bp5CalibPts=[];
 const bedPathPhotoImg=bedPathStep.querySelector('#mg-bedpath-photo');
 const bedPathCanvas=bedPathStep.querySelector('#mg-bedpath-canvas');
 const bedPathCtx=bedPathCanvas&&bedPathCanvas.getContext('2d');
@@ -719,7 +723,7 @@ function updateBedPathMeasure(){
  if(!preciseMode){el.textContent='';return}
  const parts=[];
  if(!metersPerPixel){
-  parts.push('Rozměry se zobrazí, jakmile v kroku „Fotografie zahrady“ nastavíte měřítko (📏 Změřit známou vzdálenost).');
+  parts.push('Rozměry se zobrazí, jakmile tlačítkem „📏 Zadat měřítko“ označíte dva body se známou vzdáleností.');
  }else{
   bedPolygons.forEach((poly,i)=>{const a=polygonAreaM2(poly);if(a!=null)parts.push(`Záhon ${i+1}: ≈ ${fmt(a)} m²`);});
   pathPolygons.forEach((poly,i)=>{const p=polygonPerimeterM(poly);if(p!=null)parts.push(`Cesta ${i+1}: obvod ≈ ${fmt(p)} m`);});
@@ -765,6 +769,10 @@ function renderBedPath(){
   bpDraft.forEach((p,i)=>{const x=p.x/100*w,y=p.y/100*h;if(i===0)bedPathCtx.moveTo(x,y);else bedPathCtx.lineTo(x,y);});
   bedPathCtx.stroke();bedPathCtx.setLineDash([]);
   bpDraft.forEach((p,i)=>{const x=p.x/100*w,y=p.y/100*h;bedPathCtx.beginPath();bedPathCtx.arc(x,y,Math.max(4,w/180),0,Math.PI*2);bedPathCtx.fillStyle=i===0?'#fff':(bpTool==='bed'?'#e5312f':'#2f6fe5');bedPathCtx.fill();bedPathCtx.strokeStyle='#111';bedPathCtx.lineWidth=1;bedPathCtx.stroke();});
+ }
+ if(bp5CalibPts.length){
+  bedPathCtx.strokeStyle='#e9a520';bedPathCtx.fillStyle='#e9a520';bedPathCtx.lineWidth=Math.max(2,w/160);bedPathCtx.setLineDash([]);
+  bp5CalibPts.forEach((p,i)=>{const x=p.x/100*w,y=p.y/100*h;bedPathCtx.beginPath();bedPathCtx.arc(x,y,Math.max(5,w/150),0,Math.PI*2);bedPathCtx.fill();if(i===1){const a=bp5CalibPts[0];bedPathCtx.beginPath();bedPathCtx.moveTo(a.x/100*w,a.y/100*h);bedPathCtx.lineTo(x,y);bedPathCtx.stroke();}});
  }
  updateBedPathMeasure();
 }
@@ -819,20 +827,39 @@ const bpModeRough=bedPathStep.querySelector('#mg-bp-mode-rough'),bpModePrecise=b
 function syncBpMode(){
  bpModeRough?.setAttribute('aria-pressed',String(!preciseMode));
  bpModePrecise?.setAttribute('aria-pressed',String(preciseMode));
- if(bpModeNote)bpModeNote.textContent=preciseMode
+ bedPathStep.querySelector('#mg-bp-calibrate')?.setAttribute('aria-pressed',String(bp5Calibrating));
+ if(bpModeNote)bpModeNote.textContent=bp5Calibrating
+  ?'Klikněte na dva body na fotce, jejichž skutečnou vzdálenost znáte (např. konce plotového pole), pak zadejte kolik metrů to je.'
+  :preciseMode
   ?'Klikáním označte rohy přesně tak, jak má záhon nebo cesta vypadat (jako v CAD programu). Posledním kliknutím na první bod nebo tlačítkem „Dokončit tvar“ obrazec uzavřete. AI pak vyplní přesně tuhle plochu, ne jen okolí čáry.'
   :'Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.';
  if(bpFinishBtn)bpFinishBtn.classList.toggle('mg-hidden',!preciseMode||bpDraft.length<3);
- if(bedPathCanvas)bedPathCanvas.style.cursor=bpTool?'crosshair':'default';
+ if(bedPathCanvas)bedPathCanvas.style.cursor=(bpTool||bp5Calibrating)?'crosshair':'default';
 }
 function finishPrecisePolygon(){
  if(bpDraft.length<3)return;
  if(bpTool==='bed')bedPolygons.push(bpDraft);else if(bpTool==='path')pathPolygons.push(bpDraft);
  bpDraft=[];renderBedPath();composeGenPreview();autoSave();syncBpMode();
 }
+// The only LIVE way left to set metersPerPixel (the old step-3 calibration tool is retired/dormant
+// – see photoSection's "dormant-measure" section below). Two clicks directly on this step's own
+// canvas, same 0–100% convention as everything else here, converted through the dormant canvas's
+// pixel dimensions purely as a stable shared unit (percentToMeters/polygonAreaM2 already use it).
+function calibrate5Click(p){
+ bp5CalibPts.push(p);
+ if(bp5CalibPts.length<2){renderBedPath();return;}
+ const pxDist=Math.hypot((bp5CalibPts[1].x-bp5CalibPts[0].x)/100*canvas.width,(bp5CalibPts[1].y-bp5CalibPts[0].y)/100*canvas.height);
+ bp5Calibrating=false;bp5CalibPts=[];
+ if(pxDist<1){renderBedPath();syncBpMode();return;}
+ const input=prompt('Kolik metrů je mezi označenými body? (např. 2.5)');
+ const m=Number((input||'').replace(',','.'));
+ if(m>0&&Number.isFinite(m)){metersPerPixel=m/pxDist;applyScaleDimensionEstimate();}
+ renderBedPath();composeGenPreview();syncBpMode();
+}
 bpModeRough?.addEventListener('click',()=>{preciseMode=false;bpDraft=[];renderBedPath();syncBpMode();});
 bpModePrecise?.addEventListener('click',()=>{preciseMode=true;bpDraft=[];renderBedPath();syncBpMode();});
 bpFinishBtn?.addEventListener('click',finishPrecisePolygon);
+bedPathStep.querySelector('#mg-bp-calibrate')?.addEventListener('click',()=>{bp5Calibrating=true;bp5CalibPts=[];renderBedPath();syncBpMode();});
 bedPathStep.querySelectorAll('[data-bp-tool]').forEach(b=>{
  b.addEventListener('click',()=>{
   bpTool=bpTool===b.dataset.bpTool?'':b.dataset.bpTool;
@@ -860,6 +887,7 @@ function bedPathPoint(e){
 }
 if(bedPathCanvas){
  bedPathCanvas.addEventListener('pointerdown',e=>{
+  if(bp5Calibrating){calibrate5Click(bedPathPoint(e));return;}
   if(!bpTool)return;
   if(preciseMode&&bpTool!=='remove'){
    const p=bedPathPoint(e);
