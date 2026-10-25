@@ -177,7 +177,7 @@ stage.addEventListener('wheel',e=>{
  if(Math.abs(step)<0.001)return;
  setZoom(zoom+step,e.clientX,e.clientY);
 },{passive:false});
-function calibrationClick(p){calibration.push(p);if(calibration.length===2){const d=dist(...calibration);if(d<3){calibration=[];return alert('Body musí být od sebe vzdálené.')}const input=prompt('Kolik metrů je mezi označenými body? (např. 12)');const m=Number((input||'').replace(',','.'));if(m>0&&Number.isFinite(m)){saveHistory();metersPerPixel=m/d;applyScaleDimensionEstimate();q('mg-scale-status').textContent=`Měřítko nastaveno: ${fmt(m)} m / ${fmt(d)} px`;updateList()}else{calibration=[];q('mg-scale-status').textContent='Měřítko není nastavené'}mode='polygon'}draw()}canvas.addEventListener('pointerdown',e=>{if(!photoReady)return;if(panMode||spacePan){panDrag={x:e.clientX,y:e.clientY,left:stage.scrollLeft,top:stage.scrollTop};canvas.setPointerCapture(e.pointerId);return}const p=point(e);if(mode==='calibrate'){calibrationClick(p);return}if(mode==='polygon'){if(draft.length>=3&&dist(p,draft[0])<Math.max(12,canvas.width/85)){finish();return}if(draft.length===0){for(let i=areas.length-1;i>=0;i--){const a=areas[i];const idx=a.points.findIndex(v=>dist(v,p)<Math.max(12,canvas.width/90));if(idx!==-1){saveHistory();selected=i;drag={kind:'vertex',i,index:idx,last:p};canvas.setPointerCapture(e.pointerId);draw();return}}}draftRedo=[];draft.push(snapPoint(p));draw();return}if(mode==='rectangle'){rectStart=p;hover=p;canvas.setPointerCapture(e.pointerId);return}if(mode==='select'){for(let i=areas.length-1;i>=0;i--){const a=areas[i];const idx=a.points.findIndex(v=>dist(v,p)<Math.max(12,canvas.width/90));if(idx!==-1){saveHistory();selected=i;drag={kind:'vertex',i,index:idx,last:p};break}const edge=nearEdge(p,a.points);if(edge){saveHistory();a.points.splice(edge.i+1,0,p);selected=i;drag={kind:'vertex',i,index:edge.i+1,last:p};break}if(inside(p,a.points)){saveHistory();selected=i;drag={kind:'area',i,last:p};break}}if(drag)canvas.setPointerCapture(e.pointerId);else selected=-1;updateList();draw()}});
+function calibrationClick(p){calibration.push(p);if(calibration.length===2){const d=dist(...calibration);if(d<3){calibration=[];return alert('Body musí být od sebe vzdálené.')}const input=prompt('Kolik metrů je mezi označenými body? (např. 12)');const m=Number((input||'').replace(',','.'));if(m>0&&Number.isFinite(m)){saveHistory();metersPerPixel=m/d;applyScaleDimensionEstimate();q('mg-scale-status').textContent=`Měřítko nastaveno: ${fmt(m)} m / ${fmt(d)} px`;updateList()}else{calibration=[];q('mg-scale-status').textContent='Měřítko není nastavené'}mode='polygon'}draw();if(typeof renderBedPath==='function')renderBedPath()}canvas.addEventListener('pointerdown',e=>{if(!photoReady)return;if(panMode||spacePan){panDrag={x:e.clientX,y:e.clientY,left:stage.scrollLeft,top:stage.scrollTop};canvas.setPointerCapture(e.pointerId);return}const p=point(e);if(mode==='calibrate'){calibrationClick(p);return}if(mode==='polygon'){if(draft.length>=3&&dist(p,draft[0])<Math.max(12,canvas.width/85)){finish();return}if(draft.length===0){for(let i=areas.length-1;i>=0;i--){const a=areas[i];const idx=a.points.findIndex(v=>dist(v,p)<Math.max(12,canvas.width/90));if(idx!==-1){saveHistory();selected=i;drag={kind:'vertex',i,index:idx,last:p};canvas.setPointerCapture(e.pointerId);draw();return}}}draftRedo=[];draft.push(snapPoint(p));draw();return}if(mode==='rectangle'){rectStart=p;hover=p;canvas.setPointerCapture(e.pointerId);return}if(mode==='select'){for(let i=areas.length-1;i>=0;i--){const a=areas[i];const idx=a.points.findIndex(v=>dist(v,p)<Math.max(12,canvas.width/90));if(idx!==-1){saveHistory();selected=i;drag={kind:'vertex',i,index:idx,last:p};break}const edge=nearEdge(p,a.points);if(edge){saveHistory();a.points.splice(edge.i+1,0,p);selected=i;drag={kind:'vertex',i,index:edge.i+1,last:p};break}if(inside(p,a.points)){saveHistory();selected=i;drag={kind:'area',i,last:p};break}}if(drag)canvas.setPointerCapture(e.pointerId);else selected=-1;updateList();draw()}});
 canvas.addEventListener('pointermove',e=>{if(panDrag){stage.scrollLeft=panDrag.left+panDrag.x-e.clientX;stage.scrollTop=panDrag.top+panDrag.y-e.clientY;return}if(!photoReady||panMode||spacePan)return;const p=point(e);hover=p;if(drag){const a=areas[drag.i];if(drag.kind==='vertex')a.points[drag.index]=snapPoint(p,drag.index);else{const dx=p.x-drag.last.x,dy=p.y-drag.last.y;a.points=a.points.map(v=>({x:Math.max(0,Math.min(canvas.width,v.x+dx)),y:Math.max(0,Math.min(canvas.height,v.y+dy))}))}drag.last=p;draw()}else if(mode==='rectangle'||mode==='polygon')draw()});
 canvas.addEventListener('pointerup',e=>{if(panDrag){panDrag=null;return}if(panMode||spacePan)return;if(mode==='rectangle'&&rectStart){const p=point(e),a=rectStart;rectStart=null;if(dist(a,p)>5){saveHistory();areas.push({tool,kind:areaKind,points:[{x:a.x,y:a.y},{x:p.x,y:a.y},{x:p.x,y:p.y},{x:a.x,y:p.y}]});selected=areas.length-1;updateList()}setMode('rectangle')}if(drag){drag=null;updateList();draw()}});canvas.addEventListener('pointercancel',()=>{panDrag=null;drag=null;rectStart=null;draw()});canvas.addEventListener('dblclick',e=>{if(mode==='polygon'){e.preventDefault();if(draft.length>3)draft.pop();finish()}});
 function undo(){if(draft.length){draftRedo.push(draft.pop());draw();return}if(!history.length)return;redoHistory.push(JSON.stringify({areas,calibration,metersPerPixel}));const d=JSON.parse(history.pop());areas=d.areas;calibration=d.calibration;metersPerPixel=d.metersPerPixel;selected=-1;infoOpen=-1;updateList();draw()}
@@ -659,10 +659,17 @@ q('mg-mask-adjust')?.addEventListener('click',()=>openMaskConfirmation(true));
 // small/specific objects (e.g. a concrete mixer) that the AI apparently couldn't reliably locate from
 // a category name alone – pointing at the exact spot removes that ambiguity.
 const bedPathStep=makeReferenceStep(5,'Umístění záhonu, cesty a úklidu','Nepovinné: hrubě naznačte štětcem, kde zhruba chcete záhon, kde cestu a co se má na fotce určitě odstranit (nepořádek, nářadí, stroje). Nejde o přesný tvar ani rozměr, jen orientační poloha pro AI – tyhle značky AI uvidí přímo na fotce, kterou upravuje. Tento krok můžete klidně přeskočit.');
-bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon, cestu a odstranění"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" data-bp-tool="remove" aria-pressed="false">⬛ Tohle odstranit (nepořádek, nářadí)</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note">Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.</p></div>';
+bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div><div class="mg-bedpath-mode" role="group" aria-label="Způsob zakreslení"><button type="button" id="mg-bp-mode-rough" aria-pressed="true">〰️ Hrubě (tahem)</button><button type="button" id="mg-bp-mode-precise" aria-pressed="false">✏️ Přesně (klikání rohů)</button></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon, cestu a odstranění"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" data-bp-tool="remove" aria-pressed="false">⬛ Tohle odstranit (nepořádek, nářadí)</button><button type="button" id="mg-bp-finish" class="mg-hidden">✓ Dokončit tvar</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note" id="mg-bp-mode-note">Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.</p><p class="mg-note mg-bp-measure" id="mg-bp-measure"></p></div>';
 generationStep.insertAdjacentElement('beforebegin',bedPathStep);
 // Flat arrays of strokes (each stroke a downsampled array of {x,y} in 0–100% photo coordinates).
 let bedStrokes=[],pathStrokes=[],removeStrokes=[];
+// Precise click-corner shapes ("✏️ Přesně") – same 0–100% convention, but each is a CLOSED polygon
+// the customer traced corner by corner (like a CAD outline) instead of a rough freehand centerline.
+// When present for a given type (bed/path), these replace the rough stroke for that type at
+// generation time with an exact-shape mask (ai-safety.js's polygonMask) instead of a stroke buffered
+// to an assumed width – directly answering "I drew a line, not the shape I actually meant".
+let bedPolygons=[],pathPolygons=[];
+let preciseMode=false,bpDraft=[];
 const bedPathPhotoImg=bedPathStep.querySelector('#mg-bedpath-photo');
 const bedPathCanvas=bedPathStep.querySelector('#mg-bedpath-canvas');
 const bedPathCtx=bedPathCanvas&&bedPathCanvas.getContext('2d');
@@ -685,6 +692,45 @@ function sizeBedPathCanvas(){
  if(bedPathCanvas.height!==h)bedPathCanvas.height=h;
  renderBedPath();
 }
+// Real-world length/area for a 0–100%-coordinate shape, reusing the SAME calibration
+// (metersPerPixel) the customer already set on the "Fotografie zahrady" step. The step-3 canvas and
+// this one both map onto the same uploaded photo at the same aspect ratio, so one percent of width
+// here equals one percent of width there – converting through `canvas` (step 3's mg-canvas) gives
+// real meters without asking the customer to calibrate twice.
+function percentToMeters(dxPercent,dyPercent){
+ if(!metersPerPixel||!canvas.width||!canvas.height)return null;
+ return Math.hypot(dxPercent/100*canvas.width,dyPercent/100*canvas.height)*metersPerPixel;
+}
+function polygonAreaM2(poly){
+ if(!metersPerPixel||!canvas.width||!canvas.height||poly.length<3)return null;
+ const sx=canvas.width/100*metersPerPixel,sy=canvas.height/100*metersPerPixel;
+ const areaPercent=Math.abs(poly.reduce((s,p,i)=>{const b=poly[(i+1)%poly.length];return s+p.x*b.y-b.x*p.y},0)/2);
+ return areaPercent*sx*sy;
+}
+function polygonPerimeterM(poly){
+ if(!metersPerPixel||poly.length<2)return null;
+ let total=0;
+ for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length];total+=percentToMeters(b.x-a.x,b.y-a.y)||0;}
+ return total;
+}
+function updateBedPathMeasure(){
+ const el=bedPathStep.querySelector('#mg-bp-measure');
+ if(!el)return;
+ if(!preciseMode){el.textContent='';return}
+ const parts=[];
+ if(!metersPerPixel){
+  parts.push('Rozměry se zobrazí, jakmile v kroku „Fotografie zahrady“ nastavíte měřítko (📏 Změřit známou vzdálenost).');
+ }else{
+  bedPolygons.forEach((poly,i)=>{const a=polygonAreaM2(poly);if(a!=null)parts.push(`Záhon ${i+1}: ≈ ${fmt(a)} m²`);});
+  pathPolygons.forEach((poly,i)=>{const p=polygonPerimeterM(poly);if(p!=null)parts.push(`Cesta ${i+1}: obvod ≈ ${fmt(p)} m`);});
+ }
+ if(bpDraft.length>=2&&metersPerPixel){
+  const a=bpDraft[bpDraft.length-2],b=bpDraft[bpDraft.length-1];
+  const seg=percentToMeters(b.x-a.x,b.y-a.y);
+  if(seg!=null)parts.push(`Poslední strana: ≈ ${fmt(seg)} m`);
+ }
+ el.textContent=parts.join(' · ');
+}
 function renderBedPath(){
  if(!bedPathCtx)return;
  const w=bedPathCanvas.width,h=bedPathCanvas.height;
@@ -699,9 +745,28 @@ function renderBedPath(){
   });
   bedPathCtx.setLineDash([]);
  }
+ function drawPolySet(polys,color){
+  bedPathCtx.strokeStyle=color;bedPathCtx.fillStyle=color+'4d';bedPathCtx.lineWidth=Math.max(2,w/160);bedPathCtx.lineJoin='round';bedPathCtx.setLineDash([]);
+  polys.forEach(poly=>{
+   if(poly.length<3)return;
+   bedPathCtx.beginPath();
+   poly.forEach((p,i)=>{const x=p.x/100*w,y=p.y/100*h;if(i===0)bedPathCtx.moveTo(x,y);else bedPathCtx.lineTo(x,y);});
+   bedPathCtx.closePath();bedPathCtx.fill();bedPathCtx.stroke();
+  });
+ }
  drawSet(bedStrokes,'#e5312f');
  drawSet(pathStrokes,'#2f6fe5');
  drawSet(removeStrokes,'#111111',[Math.max(4,w/50),Math.max(3,w/70)]);
+ drawPolySet(bedPolygons,'#e5312f');
+ drawPolySet(pathPolygons,'#2f6fe5');
+ if(bpDraft.length){
+  bedPathCtx.strokeStyle=bpTool==='bed'?'#e5312f':'#2f6fe5';bedPathCtx.lineWidth=Math.max(2,w/160);bedPathCtx.lineJoin='round';bedPathCtx.setLineDash([Math.max(4,w/80),Math.max(3,w/100)]);
+  bedPathCtx.beginPath();
+  bpDraft.forEach((p,i)=>{const x=p.x/100*w,y=p.y/100*h;if(i===0)bedPathCtx.moveTo(x,y);else bedPathCtx.lineTo(x,y);});
+  bedPathCtx.stroke();bedPathCtx.setLineDash([]);
+  bpDraft.forEach((p,i)=>{const x=p.x/100*w,y=p.y/100*h;bedPathCtx.beginPath();bedPathCtx.arc(x,y,Math.max(4,w/180),0,Math.PI*2);bedPathCtx.fillStyle=i===0?'#fff':(bpTool==='bed'?'#e5312f':'#2f6fe5');bedPathCtx.fill();bedPathCtx.strokeStyle='#111';bedPathCtx.lineWidth=1;bedPathCtx.stroke();});
+ }
+ updateBedPathMeasure();
 }
 // Step 6's photo preview (genPreviewImg) should show the exact same red/blue hints the customer
 // drew on step 5, on top of whatever base photo it's already showing (the green-tinted marked-area
@@ -713,7 +778,7 @@ function composeGenPreview(){
  if(!genPreviewImg)return;
  const base=maskPreviewDataUrl||(uploadPreviewForGen&&uploadPreviewForGen.src)||'';
  if(!base)return;
- if(!bedStrokes.length&&!pathStrokes.length&&!removeStrokes.length){genPreviewImg.src=base;return;}
+ if(!bedStrokes.length&&!pathStrokes.length&&!removeStrokes.length&&!bedPolygons.length&&!pathPolygons.length){genPreviewImg.src=base;return;}
  const im=new Image();
  im.onload=()=>{
   const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;
@@ -728,9 +793,20 @@ function composeGenPreview(){
    });
    cx.setLineDash([]);
   }
+  function drawPolySet(polys,color){
+   cx.strokeStyle=color;cx.fillStyle=color+'4d';cx.lineWidth=Math.max(3,c.width/160);cx.lineJoin='round';cx.setLineDash([]);
+   polys.forEach(poly=>{
+    if(poly.length<3)return;
+    cx.beginPath();
+    poly.forEach((p,i)=>{const x=p.x/100*c.width,y=p.y/100*c.height;if(i===0)cx.moveTo(x,y);else cx.lineTo(x,y);});
+    cx.closePath();cx.fill();cx.stroke();
+   });
+  }
   drawSet(bedStrokes,'#e5312f');
   drawSet(pathStrokes,'#2f6fe5');
   drawSet(removeStrokes,'#111111',[Math.max(4,c.width/50),Math.max(3,c.width/70)]);
+  drawPolySet(bedPolygons,'#e5312f');
+  drawPolySet(pathPolygons,'#2f6fe5');
   try{genPreviewImg.src=c.toDataURL('image/jpeg',0.88);}catch(e){genPreviewImg.src=base;}
  };
  im.onerror=()=>{genPreviewImg.src=base;};
@@ -739,15 +815,34 @@ function composeGenPreview(){
 if(bedPathPhotoImg)bedPathPhotoImg.addEventListener('load',sizeBedPathCanvas);
 window.addEventListener('resize',()=>sizeBedPathCanvas());
 syncBedPathPhoto();
+const bpModeRough=bedPathStep.querySelector('#mg-bp-mode-rough'),bpModePrecise=bedPathStep.querySelector('#mg-bp-mode-precise'),bpFinishBtn=bedPathStep.querySelector('#mg-bp-finish'),bpModeNote=bedPathStep.querySelector('#mg-bp-mode-note');
+function syncBpMode(){
+ bpModeRough?.setAttribute('aria-pressed',String(!preciseMode));
+ bpModePrecise?.setAttribute('aria-pressed',String(preciseMode));
+ if(bpModeNote)bpModeNote.textContent=preciseMode
+  ?'Klikáním označte rohy přesně tak, jak má záhon nebo cesta vypadat (jako v CAD programu). Posledním kliknutím na první bod nebo tlačítkem „Dokončit tvar“ obrazec uzavřete. AI pak vyplní přesně tuhle plochu, ne jen okolí čáry.'
+  :'Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.';
+ if(bpFinishBtn)bpFinishBtn.classList.toggle('mg-hidden',!preciseMode||bpDraft.length<3);
+ if(bedPathCanvas)bedPathCanvas.style.cursor=bpTool?'crosshair':'default';
+}
+function finishPrecisePolygon(){
+ if(bpDraft.length<3)return;
+ if(bpTool==='bed')bedPolygons.push(bpDraft);else if(bpTool==='path')pathPolygons.push(bpDraft);
+ bpDraft=[];renderBedPath();composeGenPreview();autoSave();syncBpMode();
+}
+bpModeRough?.addEventListener('click',()=>{preciseMode=false;bpDraft=[];renderBedPath();syncBpMode();});
+bpModePrecise?.addEventListener('click',()=>{preciseMode=true;bpDraft=[];renderBedPath();syncBpMode();});
+bpFinishBtn?.addEventListener('click',finishPrecisePolygon);
 bedPathStep.querySelectorAll('[data-bp-tool]').forEach(b=>{
  b.addEventListener('click',()=>{
   bpTool=bpTool===b.dataset.bpTool?'':b.dataset.bpTool;
   bedPathStep.querySelectorAll('[data-bp-tool]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.bpTool===bpTool)));
-  if(bedPathCanvas)bedPathCanvas.style.cursor=bpTool?'crosshair':'default';
+  bpDraft=[];renderBedPath();syncBpMode();
  });
 });
+syncBpMode();
 bedPathStep.querySelector('#mg-bedpath-clear')?.addEventListener('click',()=>{
- bedStrokes=[];pathStrokes=[];removeStrokes=[];renderBedPath();composeGenPreview();autoSave();
+ bedStrokes=[];pathStrokes=[];removeStrokes=[];bedPolygons=[];pathPolygons=[];bpDraft=[];renderBedPath();composeGenPreview();autoSave();syncBpMode();
 });
 // Downsample a long drag to a modest number of points – this is only ever a rough "roughly here"
 // trace, never a precise reproduction of the stroke, so losing in-between detail loses nothing
@@ -766,10 +861,17 @@ function bedPathPoint(e){
 if(bedPathCanvas){
  bedPathCanvas.addEventListener('pointerdown',e=>{
   if(!bpTool)return;
+  if(preciseMode&&bpTool!=='remove'){
+   const p=bedPathPoint(e);
+   if(bpDraft.length>=3&&dist(p,bpDraft[0])<2.5){finishPrecisePolygon();return;}
+   bpDraft.push(p);renderBedPath();syncBpMode();
+   return;
+  }
   bpDrawing=true;bpCurrent=[bedPathPoint(e)];
   try{bedPathCanvas.setPointerCapture(e.pointerId);}catch(er){}
  });
  bedPathCanvas.addEventListener('pointermove',e=>{
+  if(preciseMode)return;
   if(!bpDrawing||!bpCurrent)return;
   bpCurrent.push(bedPathPoint(e));
   renderBedPath();
@@ -812,7 +914,7 @@ function sampleHintPoints(strokes,max){
 // while drawing is exactly what the AI sees. A no-op (returns the same canvas) when nothing was
 // drawn, so the AI payload is byte-identical to before this feature for anyone who skips step 5.
 function annotateForAI(src){
- if(!bedStrokes.length&&!pathStrokes.length&&!removeStrokes.length)return src;
+ if(!bedStrokes.length&&!pathStrokes.length&&!removeStrokes.length&&!bedPolygons.length&&!pathPolygons.length)return src;
  const c=document.createElement('canvas');c.width=src.width;c.height=src.height;
  const cx=c.getContext('2d');cx.drawImage(src,0,0,c.width,c.height);
  function drawSet(strokes,color,dash){
@@ -825,9 +927,20 @@ function annotateForAI(src){
   });
   cx.setLineDash([]);
  }
+ function drawPolySet(polys,color){
+  cx.strokeStyle=color;cx.fillStyle=color+'4d';cx.lineWidth=Math.max(4,c.width/140);cx.lineJoin='round';cx.setLineDash([]);
+  polys.forEach(poly=>{
+   if(poly.length<3)return;
+   cx.beginPath();
+   poly.forEach((p,i)=>{const x=p.x/100*c.width,y=p.y/100*c.height;if(i===0)cx.moveTo(x,y);else cx.lineTo(x,y);});
+   cx.closePath();cx.fill();cx.stroke();
+  });
+ }
  drawSet(bedStrokes,'#e5312f');
  drawSet(pathStrokes,'#2f6fe5');
  drawSet(removeStrokes,'#111111',[Math.max(4,c.width/50),Math.max(3,c.width/70)]);
+ drawPolySet(bedPolygons,'#e5312f');
+ drawPolySet(pathPolygons,'#2f6fe5');
  return c;
 }
 
@@ -854,12 +967,23 @@ function buildStagedPlan(S,w,h,editMask,ctx){
   used=used?S.combineMasks('union',used,m):m;
   return m;
  }
+ // Precise click-corner shapes ("✏️ Přesně") get an exact-outline mask instead of a stroke buffered
+ // to an assumed width – the customer traced the actual shape, so there is no width to guess.
+ function claimPolygons(polygons){
+  if(!polygons||!polygons.length)return null;
+  var m=S.polygonMask(w,h,polygons.map(function(pts){return{points:pts}}),[]);
+  m=S.combineMasks('intersect',m,editMask);
+  if(used)m=S.combineMasks('subtract',m,used);
+  if(S.editableShare(m)<MIN_SHARE)return null;
+  used=used?S.combineMasks('union',used,m):m;
+  return m;
+ }
  var removeMask=claim(ctx.removeStrokes,STAGE_WIDTH_SHARE.remove);
  if(removeMask)stages.push({mask:removeMask,instructions:Brief.buildRemoveStageInstructions()});
- var pathMask=claim(ctx.pathStrokes,STAGE_WIDTH_SHARE.path);
- if(pathMask)stages.push({mask:pathMask,instructions:Brief.buildPathStageInstructions({})});
- var bedMask=claim(ctx.bedStrokes,STAGE_WIDTH_SHARE.bed);
- if(bedMask)stages.push({mask:bedMask,instructions:Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants})});
+ var pathMask=claimPolygons(ctx.pathPolygons)||claim(ctx.pathStrokes,STAGE_WIDTH_SHARE.path);
+ if(pathMask)stages.push({mask:pathMask,instructions:Brief.buildPathStageInstructions({sizeHint:ctx.pathSizeHint})});
+ var bedMask=claimPolygons(ctx.bedPolygons)||claim(ctx.bedStrokes,STAGE_WIDTH_SHARE.bed);
+ if(bedMask)stages.push({mask:bedMask,instructions:Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants,sizeHint:ctx.bedSizeHint})});
  var remainder=used?S.combineMasks('subtract',editMask,used):editMask;
  if(S.editableShare(remainder)>=MIN_SHARE)stages.push({mask:remainder,instructions:ctx.remainderInstructions});
  return stages.length?stages:null;
@@ -1364,9 +1488,16 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   // placement to the AI's reading of a hint line. brief.text is always built the same way either
   // way – it's the general/"remainder" instructions, and its .plants/.rejected drive the result
   // summary further down regardless of which path actually ran.
-  const hasSketch=!!(bedStrokes.length||pathStrokes.length||removeStrokes.length);
+  const hasSketch=!!(bedStrokes.length||pathStrokes.length||removeStrokes.length||bedPolygons.length||pathPolygons.length);
   const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,Object.assign({},styleExtra,{skipHintLine:hasSketch,bedHints:sampleHintPoints(bedStrokes,4),pathHints:sampleHintPoints(pathStrokes,4),removeHints:sampleHintPoints(removeStrokes,4)}));
-  const stagedPlan=hasSketch?buildStagedPlan(S,original.width,original.height,editMask,{bedStrokes,pathStrokes,removeStrokes,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max}):null;
+  // Precise click-corner shapes (0–100% coords) convert 1:1 into `original`'s pixel space: `original`
+  // is drawn at exactly canvas.width×canvas.height, the same pixel grid the calibration (metersPerPixel)
+  // already uses, so no extra scaling step is needed here.
+  const polyToPx=poly=>poly.map(p=>({x:p.x/100*original.width,y:p.y/100*original.height}));
+  const bedPolygonsPx=bedPolygons.map(polyToPx),pathPolygonsPx=pathPolygons.map(polyToPx);
+  const bedSizeHint=bedPolygons.map(polygonAreaM2).filter(v=>v!=null).map(v=>`≈ ${fmt(v)} m²`).join(', ')||null;
+  const pathSizeHint=pathPolygons.map(polygonPerimeterM).filter(v=>v!=null).map(v=>`obvod ≈ ${fmt(v)} m`).join(', ')||null;
+  const stagedPlan=hasSketch?buildStagedPlan(S,original.width,original.height,editMask,{bedStrokes,pathStrokes,removeStrokes,bedPolygons:bedPolygonsPx,pathPolygons:pathPolygonsPx,bedSizeHint,pathSizeHint,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max}):null;
   // Staged pipeline sends the photo untouched – precise masks replace the drawn hint lines, so
   // there's nothing left for annotateForAI to usefully mark. The single-call fallback still burns
   // the rough sketch onto the photo (solution 1, "5 řešení"), since that path has no per-area mask.

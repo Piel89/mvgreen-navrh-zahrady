@@ -271,14 +271,16 @@
   /** Hardscape stage: the customer's own "🔵 Tady chci cestu" mark, already buffered into a real path-shaped mask. */
   function buildPathStageInstructions(extra) {
     var material = (extra && extra.pathMaterial) || 'mlatová nebo štěrková cestička s přírodním, nepravidelným okrajem';
-    return 'V CELÉ průhledné části masky vytvoř ' + material + ', která plynule a realisticky navazuje na úroveň a materiál bezprostředního okolí (tam, kde maska sousedí s trávníkem, zůstává za okrajem cesty trávník; kde sousedí s domem nebo zdí, cesta k nim přiléhá). Cesta musí vyplnit celou odemčenou plochu až po samý okraj, beze zbytku, bez mezer ani nedotažených koutů. Nepřidávej v této ploše žádné rostliny ani záhon, jen zpevněný povrch. Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    var sizeHint = extra && extra.sizeHint;
+    return 'V CELÉ průhledné části masky vytvoř ' + material + ', která plynule a realisticky navazuje na úroveň a materiál bezprostředního okolí (tam, kde maska sousedí s trávníkem, zůstává za okrajem cesty trávník; kde sousedí s domem nebo zdí, cesta k nim přiléhá). Cesta musí vyplnit celou odemčenou plochu až po samý okraj, beze zbytku, bez mezer ani nedotažených koutů. Nepřidávej v této ploše žádné rostliny ani záhon, jen zpevněný povrch.' + (sizeHint ? ' Zákazník tuhle plochu přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, nic nezaokrouhluj ani nezvětšuj.' : '') + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
   }
 
   /** Bed/planting stage: the customer's own "🔴 Tady chci záhon" mark, already buffered into a real bed-shaped mask. */
   function buildBedStageInstructions(d, curated, lastPlan, extra) {
     var pick = choosePlants(d, curated, lastPlan, { max: (extra && extra.maxPlants) || 6 });
     var cols = favoriteColorNames(d);
-    return 'V CELÉ průhledné části masky vytvoř hustě osázený záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou. POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí. Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' + (cols.length ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    var sizeHint = extra && extra.sizeHint;
+    return 'V CELÉ průhledné části masky vytvoř hustě osázený záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou. POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí. Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' + (cols.length ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + (sizeHint ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.' : '') + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
   }
 
   window.MVGreenBrief = {

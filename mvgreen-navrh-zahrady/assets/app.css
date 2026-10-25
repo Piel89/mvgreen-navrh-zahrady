@@ -2024,6 +2024,10 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-bedpath-tools [data-bp-tool="bed"][aria-pressed="true"]{background:#fdeceb;border-color:#e5312f;color:#a3201d}
 .mvgreen-designer .mg-bedpath-tools [data-bp-tool="path"][aria-pressed="true"]{background:#eaf1fd;border-color:#2f6fe5;color:#1d4aa3}
 .mvgreen-designer .mg-bedpath-tools [data-bp-tool="remove"][aria-pressed="true"]{background:#ececec;border-color:#111;color:#111}
+.mvgreen-designer .mg-bedpath-mode{display:flex;flex-wrap:wrap;gap:8px}
+.mvgreen-designer .mg-bedpath-mode button{border-radius:999px;border:1px solid #d9e5dc;background:#f3f8f4;padding:7px 14px;font-size:12.5px;font-weight:700;color:#4a5f52;cursor:pointer}
+.mvgreen-designer .mg-bedpath-mode button[aria-pressed="true"]{background:#1b9c55;border-color:#1b9c55;color:#fff}
+.mvgreen-designer .mg-bp-measure{font-weight:700;color:#1b6b3f;min-height:1.2em}
 .mvgreen-designer #mg-bedpath-clear{background:#f4f6f4;color:#5a6f63}
 
 /* "Co přesně chcete" (step 5): the free-text wishes field is easy to overlook among the other form
