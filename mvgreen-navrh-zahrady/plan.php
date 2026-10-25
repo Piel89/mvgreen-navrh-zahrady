@@ -55,11 +55,19 @@ function mvgreen_ai_plan_handle() {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
     // Admin testuje zdarma. Veřejnost potřebuje platný (zaplacený) kód, ale tento
     // levný rozbor fotky už zakoupené použití nečerpá – to dělá jen mvgreen_ai_preview/angle.
+    // Právě proto, že nečerpá _mvg_uses_left, by jinak jeden jednou zaplacený kód – byť už dávno
+    // vyčerpaný – fungoval jako navždy platný klíč k neomezeným voláním tohoto (byť levného)
+    // placeného API. Vlastní strop na kód (_mvg_plan_calls) to omezí na rozumný, ale štědrý počet
+    // (víc než dost na skutečné použití: rozbor po každém vygenerování + pár náhledů znovu).
     if (!current_user_can('manage_options')) {
         if (!function_exists('mvgreen_find_code_post')) wp_send_json_error(['message' => 'Půdorys zatím není dostupný.'], 503);
         if (mvgreen_code_rate_limited()) wp_send_json_error(['message' => 'Příliš mnoho pokusů. Zkuste to prosím za chvíli.'], 429);
         $code_post = mvgreen_find_code_post(isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '');
         if (!$code_post || get_post_meta($code_post->ID, '_mvg_status', true) !== 'paid') wp_send_json_error(['message' => 'Neplatný nebo nezaplacený kód.'], 403);
+        $plan_limit = max(10, ((int) get_post_meta($code_post->ID, '_mvg_uses_total', true)) * 5);
+        $plan_used = (int) get_post_meta($code_post->ID, '_mvg_plan_calls', true);
+        if ($plan_used >= $plan_limit) wp_send_json_error(['message' => 'Pro tento kód už bylo rozborů fotky využito dost. Napište nám prosím, pokud potřebujete další.'], 429);
+        update_post_meta($code_post->ID, '_mvg_plan_calls', $plan_used + 1);
     }
     if (!defined('MVGREEN_OPENAI_API_KEY') || !MVGREEN_OPENAI_API_KEY) wp_send_json_error(['message' => 'Chybí MVGREEN_OPENAI_API_KEY.'], 400);
     // Levné volání, přesto denní strop proti chybám ve smyčce (sdílený mezi správcem a veřejností).
