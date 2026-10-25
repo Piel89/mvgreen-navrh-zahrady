@@ -225,6 +225,7 @@
       'ROSTLINY – POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej. Respektuj uvedené výšky a skutečné měřítko vůči domu a plotu.',
       cols.length ? 'BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '',
       'PODMÍNKY: ' + ({ 'Slunce': 'plné slunce', 'Polostín': 'polostín', 'Stín': 'stín' }[d['mg-sun']] || 'různé oslunění') + '; půda ' + ({ dry: 'suchá', wet: 'vlhká' }[d['mg-water']] || 'běžně vlhká') + '; ' + irr + '; lokalita ' + (d['mg-locality'] || 'Domažlicko') + (d['mg-altitude'] ? ', ' + d['mg-altitude'] + ' m n. m' : '') + '.',
+      (d['mg-slope'] && d['mg-slope'] !== 'flat') || (d['mg-orientation'] && d['mg-orientation'] !== 'unknown') ? 'TERÉN: ' + ({ mild: 'mírný svah', steep: 'výrazný svah' }[d['mg-slope']] || 'rovina') + (d['mg-orientation'] && d['mg-orientation'] !== 'unknown' ? '; orientace zahrady ke světovým stranám: ' + d['mg-orientation'] + (({ mild: true, steep: true }[d['mg-slope']]) ? ' (sklon klesá/stoupá ve směru ' + d['mg-orientation'] + ')' : '') : '') + '. Respektuj sklon a orientaci při návrhu výsadby a cestiček – na svahu nenavrhuj rovinné prvky bez opěrných záhonů/teras, na jihu/jihozápadě počítej s větším suchem a sluncem, na severu/severovýchodě s vlhčím a stinnějším stanovištěm.' : '',
       'ÚDRŽBA: ' + (d['mg-maint'] || 'nízká') + '. Rozpočet do ' + (d['mg-max'] || '50000') + ' Kč – žádné drahé prvky (jezírka, pergoly, zídky, terasy).',
       extra.layout ? 'ROZVRŽENÍ: ' + extra.layout : '',
       hintLine,
@@ -280,7 +281,8 @@
     var pick = choosePlants(d, curated, lastPlan, { max: (extra && extra.maxPlants) || 6 });
     var cols = favoriteColorNames(d);
     var sizeHint = extra && extra.sizeHint;
-    return 'V CELÉ průhledné části masky vytvoř hustě osázený záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou. POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí. Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' + (cols.length ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + (sizeHint ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.' : '') + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    var terrainHint = (d['mg-slope'] && d['mg-slope'] !== 'flat') ? ' Záhon je na svahu (' + ({ mild: 'mírný', steep: 'výrazný' }[d['mg-slope']] || d['mg-slope']) + ') – zohledni to rozmístěním i volbou druhů (odolnost vůči splavování vody).' : '';
+    return 'V CELÉ průhledné části masky vytvoř hustě osázený záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou. POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí. Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' + (cols.length ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + (sizeHint ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.' : '') + terrainHint + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
   }
 
   window.MVGreenBrief = {
