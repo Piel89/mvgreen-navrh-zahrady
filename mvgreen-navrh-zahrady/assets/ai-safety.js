@@ -303,6 +303,16 @@
    */
   function confirmMask(photo, initialHorizon, hint, opts) {
     return new Promise(function (resolve) {
+      // Without this guard, a photo/canvas that somehow ended up with zero width or height
+      // (seen on a phone: the brush dialog opened with its tools and "Upravuje se 0 % fotky"
+      // warning but no photo at all – canvas.width/height of 0 is still a "valid" HTMLCanvasElement,
+      // draws nothing, and reports 0% editable area without ever throwing) would otherwise open a
+      // dialog with a permanently blank canvas instead of failing clearly and recoverably.
+      if (!photo || !photo.width || !photo.height) {
+        alert('Fotografii se nepodařilo načíst pro vyznačení plochy. Zkuste prosím fotografii nahrát znovu.');
+        resolve(null);
+        return;
+      }
       var blank = !!(opts && opts.blank);
       var initial = opts && opts.initialMask;
       var horizon = initialHorizon == null ? 0.42 : initialHorizon;

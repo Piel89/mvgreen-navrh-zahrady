@@ -625,6 +625,10 @@ async function openMaskConfirmation(editExisting){
  if(!photoReady){showWizardStep(3);return;}
  const S=window.MVGreenAISafety;
  if(!S)return alert('Chybí bezpečnostní modul AI. Obnovte stránku.');
+ // photoReady alone isn't quite enough to trust canvas.width/height – belt-and-suspenders with the
+ // same check confirmMask itself now does, so a stale/zeroed canvas sends the customer back to
+ // re-upload instead of opening a brush dialog over a blank photo.
+ if(!canvas.width||!canvas.height){alert('Fotografii se nepodařilo načíst. Nahrajte ji prosím znovu.');showWizardStep(3);return;}
  const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
  original.getContext('2d').drawImage(img,0,0,original.width,original.height);
  const styleKey=q('mg-style-card')?.value||'english';
