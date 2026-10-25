@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.89
+ * Version: 0.6.90
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.89');
+define('MVGREEN_VERSION', '0.6.90');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -78,17 +78,24 @@ $mvgreen_ai_preview_handle = function () {
         if ($code === '') wp_send_json_error(['message'=>'Zadejte prosím kód z e-mailu.'], 400);
     }
     if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message'=>'Jiný návrh se právě vytváří. Zkuste to později.'], 429);
-    // The original and the edit mask are PNG data URLs; transparent mask pixels are editable.
+    // The photo is a PNG/JPEG data URL. The plain single-call flow sends its own `mask`+
+    // `instructions` fields, same as always. The staged pipeline ("5 řešení" revamp, step 2 –
+    // app.js's buildStagedPlan) instead sends `stages`: a JSON array of {mask, instructions} pairs,
+    // each already scoped to its own deterministic geometric mask (bed/path/remove/remainder) by
+    // app.js. Either way this handler ends up with the same $stage_defs shape and chains them, one
+    // OpenAI call per stage, inside this SAME request/redeem/lock cycle – a staged design still only
+    // ever costs the customer one code.
     $image = isset($_POST['image']) ? wp_unslash($_POST['image']) : '';
-    $mask = isset($_POST['mask']) ? wp_unslash($_POST['mask']) : '';
     $instructions = isset($_POST['instructions']) ? sanitize_textarea_field(wp_unslash($_POST['instructions'])) : '';
+    $stages_raw = isset($_POST['stages']) ? wp_unslash($_POST['stages']) : '';
     // Styles with more plants (e.g. "Okrasné záhony", max 9) plus the free-text customer-notes
     // field legitimately produce instructions well past 2500 chars (measured ~3000 with no notes
     // at all) – that used to trip this guard and fail with a misleading "photo too large" error
     // for a paying customer. The client now truncates notes to 500 chars; 6000 leaves generous
-    // headroom above the realistic worst case while still bounding the request.
-    if (strlen($image)>12000000 || strlen($mask)>12000000 || strlen($instructions)>6000) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
-    // The photo may be JPEG (small, no alpha needed) or PNG; the mask must stay PNG (needs the alpha channel).
+    // headroom above the realistic worst case while still bounding the request. The staged payload
+    // can legitimately hold several masks at once, so it gets its own, larger cap.
+    if (strlen($image)>12000000 || strlen($instructions)>6000 || strlen($stages_raw)>48000000) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
+    // The photo may be JPEG (small, no alpha needed) or PNG; every mask must stay PNG (needs the alpha channel).
     $image_mime = 'image/png';
     $decode_photo = function($data) use (&$image_mime) {
         if (!preg_match('~^data:(image/(?:png|jpeg));base64,([A-Za-z0-9+/=]+)$~D', $data, $m)) return false;
@@ -102,37 +109,78 @@ $mvgreen_ai_preview_handle = function () {
         return $bytes;
     };
     $decode_png = function($data) {
-        if (!preg_match('~^data:image/png;base64,([A-Za-z0-9+/=]+)$~D', $data, $m)) return false;
+        if (!is_string($data) || !preg_match('~^data:image/png;base64,([A-Za-z0-9+/=]+)$~D', $data, $m)) return false;
         $bytes = base64_decode($m[1], true);
         return $bytes !== false && strlen($bytes) <= 9000000 && substr($bytes,0,8) === "\x89PNG\r\n\x1a\n" ? $bytes : false;
     };
     $original_bytes = $decode_photo($image);
-    $mask_bytes = $decode_png($mask);
-    if (!$original_bytes || !$mask_bytes) wp_send_json_error(['message'=>'Neplatná fotografie nebo maska.'], 400);
+    if (!$original_bytes) wp_send_json_error(['message'=>'Neplatná fotografie.'], 400);
     if (!function_exists('getimagesizefromstring')) wp_send_json_error(['message'=>'Server nepodporuje kontrolu obrázků.'], 200);
     $image_info = @getimagesizefromstring($original_bytes);
-    $mask_info = @getimagesizefromstring($mask_bytes);
-    $image_type_ok = $image_mime === 'image/jpeg' ? $image_info[2] === IMAGETYPE_JPEG : $image_info[2] === IMAGETYPE_PNG;
-    if (!$image_info || !$mask_info || $image_info[0] !== $mask_info[0] || $image_info[1] !== $mask_info[1] || !$image_type_ok || $mask_info[2] !== IMAGETYPE_PNG) {
-        wp_send_json_error(['message'=>'Maska musí mít stejnou velikost jako fotografie.'], 400);
-    }
+    $image_type_ok = $image_info && ($image_mime === 'image/jpeg' ? $image_info[2] === IMAGETYPE_JPEG : $image_info[2] === IMAGETYPE_PNG);
+    if (!$image_info || !$image_type_ok) wp_send_json_error(['message'=>'Neplatná fotografie.'], 400);
     $allowed_sizes = ['1536x1024', '1024x1536', '1024x1024'];
     if (!in_array($image_info[0] . 'x' . $image_info[1], $allowed_sizes, true)) {
         wp_send_json_error(['message'=>'Fotografie musí být připravena bezpečnostním modulem (bez ořezu). Obnovte stránku a zkuste to znovu.'], 400);
     }
-    // Hard rule: the AI may never repaint the whole photo. Count editable (transparent) mask pixels.
-    if (function_exists('imagecreatefromstring')) {
-        $m = @imagecreatefromstring($mask_bytes);
-        if (!$m) wp_send_json_error(['message'=>'Neplatná maska.'], 400);
-        $mw = imagesx($m); $mh = imagesy($m); $editable = 0; $total = 0;
-        for ($y = 0; $y < $mh; $y += 8) {
-            for ($x = 0; $x < $mw; $x += 8) {
-                $alpha = (imagecolorat($m, $x, $y) >> 24) & 0x7F; // 127 = fully transparent
-                $total++;
-                if ($alpha > 63) $editable++;
-            }
+    // Build the ordered list of stages to run. Legacy single-call flow: exactly one stage from the
+    // top-level mask+instructions fields (unchanged behaviour, same validation as before). Staged
+    // flow: `stages` decodes to an ordered array, each entry already a full-size mask + its own
+    // self-contained prompt (see garden-brief.js's buildRemoveStageInstructions and neighbours).
+    $stage_defs = [];
+    if ($stages_raw !== '') {
+        $decoded = json_decode($stages_raw, true);
+        if (!is_array($decoded) || !count($decoded) || count($decoded) > 4) {
+            wp_send_json_error(['message'=>'Neplatné zadání kroků návrhu.'], 400);
         }
-        imagedestroy($m);
+        foreach ($decoded as $stage) {
+            if (!is_array($stage) || !isset($stage['mask'], $stage['instructions']) || !is_string($stage['mask']) || !is_string($stage['instructions'])) {
+                wp_send_json_error(['message'=>'Neplatné zadání kroků návrhu.'], 400);
+            }
+            $stage_mask_bytes = $decode_png($stage['mask']);
+            $stage_instructions = sanitize_textarea_field($stage['instructions']);
+            if (!$stage_mask_bytes || strlen($stage_instructions) > 6000) wp_send_json_error(['message'=>'Neplatné zadání kroků návrhu.'], 400);
+            $mi = @getimagesizefromstring($stage_mask_bytes);
+            if (!$mi || $mi[0] !== $image_info[0] || $mi[1] !== $image_info[1] || $mi[2] !== IMAGETYPE_PNG) {
+                wp_send_json_error(['message'=>'Maska kroku musí mít stejnou velikost jako fotografie.'], 400);
+            }
+            $stage_defs[] = ['mask' => $stage_mask_bytes, 'instructions' => $stage_instructions];
+        }
+    } else {
+        $mask = isset($_POST['mask']) ? wp_unslash($_POST['mask']) : '';
+        if (strlen($mask)>12000000) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
+        $mask_bytes = $decode_png($mask);
+        if (!$mask_bytes) wp_send_json_error(['message'=>'Neplatná maska.'], 400);
+        $mask_info = @getimagesizefromstring($mask_bytes);
+        if (!$mask_info || $mask_info[0] !== $image_info[0] || $mask_info[1] !== $image_info[1] || $mask_info[2] !== IMAGETYPE_PNG) {
+            wp_send_json_error(['message'=>'Maska musí mít stejnou velikost jako fotografie.'], 400);
+        }
+        $stage_defs[] = ['mask' => $mask_bytes, 'instructions' => $instructions];
+    }
+    // Hard rule: the AI may never repaint the whole photo. Checked against the UNION of every
+    // stage's mask (what ends up unlocked across the whole chained result), not each stage alone –
+    // a staged design is deliberately split into several small masks that can each be well under
+    // the limit on their own but must still add up to a sane total.
+    if (function_exists('imagecreatefromstring')) {
+        $mw = $image_info[0]; $mh = $image_info[1];
+        $cols = (int) ceil($mw / 8); $rows = (int) ceil($mh / 8);
+        $union = array_fill(0, max(1, $cols * $rows), false);
+        foreach ($stage_defs as $sd) {
+            $m = @imagecreatefromstring($sd['mask']);
+            if (!$m) wp_send_json_error(['message'=>'Neplatná maska.'], 400);
+            $idx = 0;
+            for ($y = 0; $y < $mh; $y += 8) {
+                for ($x = 0; $x < $mw; $x += 8) {
+                    if (!$union[$idx]) {
+                        $alpha = (imagecolorat($m, $x, $y) >> 24) & 0x7F; // 127 = fully transparent
+                        if ($alpha > 63) $union[$idx] = true;
+                    }
+                    $idx++;
+                }
+            }
+            imagedestroy($m);
+        }
+        $total = count($union); $editable = count(array_filter($union));
         $share = $total ? $editable / $total : 1;
         if ($share > 0.72) wp_send_json_error(['message'=>'Upravovaná plocha je příliš velká. Dům, plot, stromy a obloha musí zůstat mimo úpravu.'], 400);
         if ($share < 0.015) wp_send_json_error(['message'=>'Označte prosím plochu zahrady, kterou chcete upravit.'], 400);
@@ -154,59 +202,90 @@ $mvgreen_ai_preview_handle = function () {
         }
         $result_post_id = (int) $redeem;
     }
-    $prompt = "Toto je SKUTEČNÁ fotografie konkrétní zahrady. Proveď pouze lokální retuš uvnitř průhledné oblasti masky; mimo ni nesmí být změněn ani jeden pixel. Nevytvářej novou scénu, neměň dům, střechu, okna, fasádu, plot, terén, svah, stromy, oblohu ani úhel pohledu. Šedé okraje fotografie ponech šedé. Uprav přiloženou SKUTEČNOU fotografii zahrady jako realistickou fotografickou retuš, nikoliv jako nový obraz. ZACHOVEJ identický úhel kamery, kompozici, geometrii, stávající stromy, dům, plot, pozadí, oblohu, perspektivu a osvětlení. UPRAVUJ POUZE průhledné oblasti masky. Ostatní pixely ponech bez změny. Nové rostliny musí mít věrohodné měřítko, přirozenou strukturu a stíny odpovídající scéně. Žádný malovaný, ilustrativní, CGI, pohádkový ani přehnaně stylizovaný vzhled. Vhodné pro realistickou fotografii skutečně realizovatelné zahrady. Nezobrazuj žádné barevné značky ani text. Zadání: " . $instructions;
-    // WordPress HTTP API does not build multipart files automatically; compose a bounded body.
-    $boundary = 'mvgreen_' . wp_generate_password(24, false, false);
-    $parts = '';
-    $field = function($name, $value) use (&$parts, $boundary) {
-        $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"'."\r\n\r\n".$value."\r\n";
+    // One stage = one OpenAI edit call, chained: stage i's output bytes become stage i+1's input, all
+    // inside this one redeem/lock cycle. A chain can run several minutes end to end; lift the PHP
+    // time limit (best effort – @ in case the host disables this) so a slow host doesn't kill the
+    // request mid-chain the way a short default could.
+    @set_time_limit(0);
+    $size = $image_info[0] > $image_info[1] * 1.15 ? '1536x1024' : ($image_info[1] > $image_info[0] * 1.15 ? '1024x1536' : '1024x1024');
+    $run_stage = function($photo_bytes, $photo_mime, $mask_bytes, $stage_instructions) use ($size) {
+        $prompt = "Toto je SKUTEČNÁ fotografie konkrétní zahrady. Proveď pouze lokální retuš uvnitř průhledné oblasti masky; mimo ni nesmí být změněn ani jeden pixel. Nevytvářej novou scénu, neměň dům, střechu, okna, fasádu, plot, terén, svah, stromy, oblohu ani úhel pohledu. Šedé okraje fotografie ponech šedé. Uprav přiloženou SKUTEČNOU fotografii zahrady jako realistickou fotografickou retuš, nikoliv jako nový obraz. ZACHOVEJ identický úhel kamery, kompozici, geometrii, stávající stromy, dům, plot, pozadí, oblohu, perspektivu a osvětlení. UPRAVUJ POUZE průhledné oblasti masky. Ostatní pixely ponech bez změny. Nové rostliny musí mít věrohodné měřítko, přirozenou strukturu a stíny odpovídající scéně. Žádný malovaný, ilustrativní, CGI, pohádkový ani přehnaně stylizovaný vzhled. Vhodné pro realistickou fotografii skutečně realizovatelné zahrady. Nezobrazuj žádné barevné značky ani text. Zadání: " . $stage_instructions;
+        // WordPress HTTP API does not build multipart files automatically; compose a bounded body.
+        $boundary = 'mvgreen_' . wp_generate_password(24, false, false);
+        $parts = '';
+        $field = function($name, $value) use (&$parts, $boundary) {
+            $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"'."\r\n\r\n".$value."\r\n";
+        };
+        $file = function($name, $filename, $bytes, $content_type) use (&$parts, $boundary) {
+            $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"; filename="'.$filename.'"'."\r\n".'Content-Type: '.$content_type."\r\n\r\n".$bytes."\r\n";
+        };
+        $field('model', 'gpt-image-1.5');
+        $field('prompt', $prompt);
+        $field('quality', 'high');
+        $field('size', $size);
+        $field('input_fidelity', 'high');
+        $file('image[]', $photo_mime === 'image/jpeg' ? 'garden.jpg' : 'garden.png', $photo_bytes, $photo_mime);
+        $file('mask', 'edit-mask.png', $mask_bytes, 'image/png');
+        $parts .= '--'.$boundary."--\r\n";
+        $response = wp_remote_post('https://api.openai.com/v1/images/edits', [
+            'headers'=>['Authorization'=>'Bearer '.MVGREEN_OPENAI_API_KEY,'Content-Type'=>'multipart/form-data; boundary='.$boundary],
+            'body'=>$parts, 'timeout'=>240
+        ]);
+        if (is_wp_error($response)) return ['error' => 'Spojení s AI selhalo: '.$response->get_error_message()];
+        $status = wp_remote_retrieve_response_code($response);
+        $json = json_decode(wp_remote_retrieve_body($response), true);
+        if ($status<200 || $status>=300) {
+            return ['error' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.'];
+        }
+        if (empty($json['data'][0]['b64_json'])) return ['error' => 'AI nevrátila obrázek.'];
+        return ['bytes' => base64_decode($json['data'][0]['b64_json'])];
     };
-    $file = function($name, $filename, $bytes, $content_type) use (&$parts, $boundary) {
-        $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"; filename="'.$filename.'"'."\r\n".'Content-Type: '.$content_type."\r\n\r\n".$bytes."\r\n";
-    };
-    $field('model', 'gpt-image-1.5');
-    $field('prompt', $prompt);
-    $field('quality', 'high');
-    $field('size', $image_info[0] > $image_info[1] * 1.15 ? '1536x1024' : ($image_info[1] > $image_info[0] * 1.15 ? '1024x1536' : '1024x1024'));
-    $field('input_fidelity', 'high');
-    $file('image[]', $image_mime === 'image/jpeg' ? 'garden.jpg' : 'garden.png', $original_bytes, $image_mime);
-    $file('mask', 'edit-mask.png', $mask_bytes, 'image/png');
-    $parts .= '--'.$boundary."--\r\n";
-    $response = wp_remote_post('https://api.openai.com/v1/images/edits', [
-        'headers'=>['Authorization'=>'Bearer '.MVGREEN_OPENAI_API_KEY,'Content-Type'=>'multipart/form-data; boundary='.$boundary],
-        'body'=>$parts, 'timeout'=>240
-    ]);
+    $current_bytes = $original_bytes; $current_mime = $image_mime;
+    $last_good_bytes = $original_bytes; $partial_message = '';
+    foreach ($stage_defs as $i => $sd) {
+        $r = $run_stage($current_bytes, $current_mime, $sd['mask'], $sd['instructions']);
+        if (isset($r['error'])) {
+            if ($i === 0) {
+                // Nothing usable at all yet – and for the legacy single-call flow this IS the only
+                // stage – so this is a hard failure exactly like before.
+                delete_transient('mvgreen_ai_preview_lock');
+                wp_send_json_error(['message'=>$r['error']], 200);
+            }
+            // A later stage failed after the customer's one code was already redeemed. Rather than
+            // return nothing for a spent credit, keep whatever the chain produced up to here and
+            // tell the customer part of the design could not be finished.
+            $partial_message = $r['error'];
+            break;
+        }
+        $current_bytes = $r['bytes']; $current_mime = 'image/png';
+        $last_good_bytes = $current_bytes;
+    }
     delete_transient('mvgreen_ai_preview_lock');
-    if (is_wp_error($response)) wp_send_json_error(['message'=>'Spojení s AI selhalo: '.$response->get_error_message()], 200);
-    $status = wp_remote_retrieve_response_code($response);
-    $json = json_decode(wp_remote_retrieve_body($response), true);
-    if ($status<200 || $status>=300) {
-        $message = isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.';
-        wp_send_json_error(['message'=>$message], 200);
+    $final_bytes = $last_good_bytes;
+    // Keep every paid output (first stage's input, last stage's mask, final result) so a rejected
+    // result can be reviewed without paying again.
+    $up = wp_upload_dir();
+    $dir = trailingslashit($up['basedir']) . 'mvgreen-ai-log';
+    if (wp_mkdir_p($dir)) {
+        mvgreen_harden_upload_dir($dir);
+        $stem = gmdate('Ymd-His') . '-' . wp_generate_password(10, false, false);
+        @file_put_contents($dir . '/' . $stem . '-vstup.png', $original_bytes);
+        @file_put_contents($dir . '/' . $stem . '-maska.png', end($stage_defs)['mask']);
+        @file_put_contents($dir . '/' . $stem . '-ai.png', $final_bytes);
+        $log = glob($dir . '/*.png') ?: [];
+        sort($log);
+        while (count($log) > 60) @unlink(array_shift($log));
+        update_option('mvgreen_ai_last_log', trailingslashit($up['baseurl']) . 'mvgreen-ai-log/' . $stem, false);
     }
-    if (!empty($json['data'][0]['b64_json'])) {
-        // Keep every paid output (input, mask, result) so a rejected result can be reviewed without paying again.
-        $up = wp_upload_dir();
-        $dir = trailingslashit($up['basedir']) . 'mvgreen-ai-log';
-        if (wp_mkdir_p($dir)) {
-            mvgreen_harden_upload_dir($dir);
-            $stem = gmdate('Ymd-His') . '-' . wp_generate_password(10, false, false);
-            @file_put_contents($dir . '/' . $stem . '-vstup.png', $original_bytes);
-            @file_put_contents($dir . '/' . $stem . '-maska.png', $mask_bytes);
-            @file_put_contents($dir . '/' . $stem . '-ai.png', base64_decode($json['data'][0]['b64_json']));
-            $log = glob($dir . '/*.png') ?: [];
-            sort($log);
-            while (count($log) > 60) @unlink(array_shift($log));
-            update_option('mvgreen_ai_last_log', trailingslashit($up['baseurl']) . 'mvgreen-ai-log/' . $stem, false);
-        }
-        // Durable per-customer copy (never rotated/deleted like the debug log above) plus the
-        // "don't lose your design" e-mail – only for a real paid code, never for admin tests.
-        if ($result_post_id && function_exists('mvgreen_save_result_and_notify')) {
-            mvgreen_save_result_and_notify($result_post_id, $json['data'][0]['b64_json']);
-        }
-        wp_send_json_success(['image'=>'data:image/png;base64,'.$json['data'][0]['b64_json']]);
+    $final_b64 = base64_encode($final_bytes);
+    // Durable per-customer copy (never rotated/deleted like the debug log above) plus the
+    // "don't lose your design" e-mail – only for a real paid code, never for admin tests.
+    if ($result_post_id && function_exists('mvgreen_save_result_and_notify')) {
+        mvgreen_save_result_and_notify($result_post_id, $final_b64);
     }
-    wp_send_json_error(['message'=>'AI nevrátila obrázek. Kredit mohl být účtován. Před opakováním zkontrolujte účet.'], 200);
+    $payload = ['image'=>'data:image/png;base64,'.$final_b64];
+    if ($partial_message !== '') $payload['message'] = 'Část návrhu se nepodařilo dokončit (' . $partial_message . '), zobrazujeme nejlepší dosažený výsledek.';
+    wp_send_json_success($payload);
 };
 add_action('wp_ajax_mvgreen_ai_preview', $mvgreen_ai_preview_handle);
 add_action('wp_ajax_nopriv_mvgreen_ai_preview', $mvgreen_ai_preview_handle);

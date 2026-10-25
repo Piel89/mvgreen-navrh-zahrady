@@ -41,6 +41,25 @@
    * Returns { image, mask, box, coverage } with PNG data URLs ready for the API.
    * API mask convention: transparent = editable, opaque = protected.
    */
+  /**
+   * Scales an arbitrary "paint = editable" mask into a given API letterbox box and punches it out
+   * (destination-out → transparent = editable), exactly like prepare() does for the customer's own
+   * confirmed mask. Factored out so the staged-generation pipeline (app.js's buildStagedPlan) can
+   * convert each of its own stage masks into the SAME box prepare() already computed for the photo –
+   * every stage of one request must share one letterbox placement, since they all edit the same photo.
+   */
+  function maskToApiCanvas(mask, box) {
+    var m = canvas(box.W, box.H), mc = m.getContext('2d');
+    mc.fillStyle = '#fff'; mc.fillRect(0, 0, box.W, box.H);
+    var scaled = canvas(box.W, box.H), sc = scaled.getContext('2d');
+    sc.drawImage(mask, box.x, box.y, box.w, box.h);
+    mc.globalCompositeOperation = 'destination-out';
+    mc.drawImage(scaled, 0, 0);
+    mc.globalCompositeOperation = 'source-over';
+    return m;
+  }
+  function maskToApi(mask, box) { return maskToApiCanvas(mask, box).toDataURL('image/png'); }
+
   function prepare(photo, editMask) {
     var w = photo.width, h = photo.height, box = fitBox(w, h);
     var img = canvas(box.W, box.H), ic = img.getContext('2d');
@@ -48,15 +67,7 @@
     ic.fillStyle = '#7f8a80'; ic.fillRect(0, 0, box.W, box.H);
     ic.drawImage(photo, box.x, box.y, box.w, box.h);
 
-    var m = canvas(box.W, box.H), mc = m.getContext('2d');
-    mc.fillStyle = '#fff'; mc.fillRect(0, 0, box.W, box.H);
-    // Scale the editable mask into place and punch it out (destination-out → transparent = editable).
-    var scaled = canvas(box.W, box.H), sc = scaled.getContext('2d');
-    sc.drawImage(editMask, box.x, box.y, box.w, box.h);
-    mc.globalCompositeOperation = 'destination-out';
-    mc.drawImage(scaled, 0, 0);
-    mc.globalCompositeOperation = 'source-over';
-
+    var m = maskToApiCanvas(editMask, box);
     var coverage = editableShare(editMask);
     // JPEG for the photo (no alpha needed; PNG of a photographic image can be 5x+ larger and was
     // tripping the server's upload size limit with a 413). Mask stays PNG: it needs the alpha channel.
@@ -475,10 +486,60 @@
     return out;
   }
 
+  /**
+   * Staged-generation geometry ("5 řešení" revamp, step 2: deterministic masks instead of AI-guessed
+   * placement). Turns a set of rough freehand strokes (app.js's bedStrokes/pathStrokes/removeStrokes –
+   * each an array of {x,y} in 0–100% photo coordinates, same convention plan.php/garden-plan.js use)
+   * into an actual filled mask by stroking a thick line along each one. The customer's drawn line was
+   * always just a rough centerline, never a traced outline – widthPx is the real buffer that turns it
+   * into a plausible path/bed footprint. Same "paint = editable" convention as every other mask here.
+   */
+  function strokeMask(w, h, strokes, widthPx) {
+    var m = canvas(w, h), mc = m.getContext('2d');
+    mc.strokeStyle = '#1b9c55'; mc.fillStyle = '#1b9c55'; mc.lineCap = 'round'; mc.lineJoin = 'round';
+    mc.lineWidth = Math.max(2, widthPx);
+    (strokes || []).forEach(function (stroke) {
+      if (!stroke || stroke.length < 2) {
+        // A single dab (e.g. a tap rather than a drag) still marks a spot worth covering.
+        if (stroke && stroke.length === 1) {
+          mc.beginPath(); mc.arc(stroke[0].x / 100 * w, stroke[0].y / 100 * h, widthPx / 2, 0, Math.PI * 2); mc.fill();
+        }
+        return;
+      }
+      mc.beginPath();
+      stroke.forEach(function (p, i) {
+        var x = p.x / 100 * w, y = p.y / 100 * h;
+        if (i === 0) mc.moveTo(x, y); else mc.lineTo(x, y);
+      });
+      mc.stroke();
+    });
+    return m;
+  }
+
+  /**
+   * Boolean combine of two "paint = editable" masks: 'intersect' (both), 'subtract' (a minus b), or
+   * 'union' (either). Used to keep every geometric stage mask inside the customer's own confirmed
+   * area (intersect with confirmedEditMask) and to carve the leftover "general style" region out of
+   * it (subtract the bed/path/remove masks already handled by their own stage).
+   */
+  function combineMasks(op, a, b) {
+    var w = a.width, h = a.height, out = canvas(w, h), oc = out.getContext('2d');
+    oc.drawImage(a, 0, 0);
+    oc.globalCompositeOperation = op === 'union' ? 'source-over' : (op === 'subtract' ? 'destination-out' : 'source-in');
+    oc.drawImage(b, 0, 0);
+    oc.globalCompositeOperation = 'source-over';
+    // Re-stamp solid paint colour over whatever alpha survived – keeps every mask in the same plain
+    // "#1b9c55 where editable" shape other code here already assumes, regardless of which op ran.
+    oc.globalCompositeOperation = 'source-in'; oc.fillStyle = '#1b9c55'; oc.fillRect(0, 0, w, h);
+    oc.globalCompositeOperation = 'source-over';
+    return out;
+  }
+
   window.MVGreenAISafety = {
     prepare: prepare, finish: finish, validate: validate, autoMask: autoMask,
     polygonMask: polygonMask, confirmMask: confirmMask, editableShare: editableShare, growMask: growMask,
-    maskPreview: maskPreview, smoothMaskEdge: smoothMaskEdge,
+    maskPreview: maskPreview, smoothMaskEdge: smoothMaskEdge, strokeMask: strokeMask, combineMasks: combineMasks,
+    maskToApi: maskToApi,
     limits: { MAX_EDITABLE: MAX_EDITABLE, MIN_EDITABLE: MIN_EDITABLE, MAX_DRIFT: MAX_DRIFT }
   };
 })();

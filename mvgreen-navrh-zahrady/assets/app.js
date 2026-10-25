@@ -831,6 +831,40 @@ function annotateForAI(src){
  return c;
 }
 
+// "5 řešení" revamp, step 2 (staged generation): turns the step-5 bed/path/remove sketch into real
+// geometric masks instead of a hint the AI merely reads off the photo. Each stroke type is buffered
+// to a photo-proportional width (the customer's line was always just a rough centerline, never a
+// traced outline), intersected with the customer's own confirmed edit area so no stage can ever
+// reach outside it, and claimed in priority order – remove first, then path, then bed – so a stroke
+// that crosses another type's stroke is only ever handled by the higher-priority stage. Whatever is
+// left over inside the confirmed area becomes one last "remainder" stage using the same general
+// styling instructions buildInstructions() already produces. Returns null when there's nothing
+// worth sending as its own stage (e.g. every stroke fell entirely outside the confirmed area) so the
+// caller can fall back to the plain single-call flow.
+var STAGE_WIDTH_SHARE={remove:0.09,path:0.035,bed:0.07}; // share of photo width, tunable starting points
+function buildStagedPlan(S,w,h,editMask,ctx){
+ var MIN_SHARE=0.0015; // ~0.15% of the frame – below this a stage mask is effectively empty
+ var stages=[],used=null;
+ function claim(strokes,widthShare){
+  if(!strokes.length)return null;
+  var m=S.strokeMask(w,h,strokes,Math.max(2,w*widthShare));
+  m=S.combineMasks('intersect',m,editMask);
+  if(used)m=S.combineMasks('subtract',m,used);
+  if(S.editableShare(m)<MIN_SHARE)return null;
+  used=used?S.combineMasks('union',used,m):m;
+  return m;
+ }
+ var removeMask=claim(ctx.removeStrokes,STAGE_WIDTH_SHARE.remove);
+ if(removeMask)stages.push({mask:removeMask,instructions:Brief.buildRemoveStageInstructions()});
+ var pathMask=claim(ctx.pathStrokes,STAGE_WIDTH_SHARE.path);
+ if(pathMask)stages.push({mask:pathMask,instructions:Brief.buildPathStageInstructions({})});
+ var bedMask=claim(ctx.bedStrokes,STAGE_WIDTH_SHARE.bed);
+ if(bedMask)stages.push({mask:bedMask,instructions:Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants})});
+ var remainder=used?S.combineMasks('subtract',editMask,used):editMask;
+ if(S.editableShare(remainder)>=MIN_SHARE)stages.push({mask:remainder,instructions:ctx.remainderInstructions});
+ return stages.length?stages:null;
+}
+
 // Consolidate "Co přesně chcete" (now step 6): the notes field, the privacy hint, and the
 // summary/admin-test/save/reset actions + their output used to live on the static results step
 // (now step 7) even though that step no longer shows anything but the real AI result. Move those
@@ -1323,12 +1357,23 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
   original.getContext('2d').drawImage(img,0,0,original.width,original.height);
   const editMask=confirmedEditMask;
-  // Solution 1 ("5 řešení" research): the customer's bed/path/remove sketch from step 5 is burned
-  // directly onto the photo sent to the AI, not just described as % coordinates in the text prompt –
-  // a model follows a line it can actually see far more reliably than one spelled out in words.
-  // `original` itself is deliberately left untouched: S.finish() further below still diffs against
-  // it to enforce the hard lock outside the mask, so that check must never see the annotation lines.
-  const prepared=S.prepare(annotateForAI(original),editMask);
+  const d=getData();const sl=styleLayout[d['mg-style-card']]||styleLayout['lawn-beds'];
+  const styleExtra={styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max};
+  // "5 řešení" revamp, staged pipeline: when the customer drew a bed/path/remove sketch in step 5,
+  // each stroke type gets its own precise geometric mask (buildStagedPlan above) instead of leaving
+  // placement to the AI's reading of a hint line. brief.text is always built the same way either
+  // way – it's the general/"remainder" instructions, and its .plants/.rejected drive the result
+  // summary further down regardless of which path actually ran.
+  const hasSketch=!!(bedStrokes.length||pathStrokes.length||removeStrokes.length);
+  const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,Object.assign({},styleExtra,{skipHintLine:hasSketch,bedHints:sampleHintPoints(bedStrokes,4),pathHints:sampleHintPoints(pathStrokes,4),removeHints:sampleHintPoints(removeStrokes,4)}));
+  const stagedPlan=hasSketch?buildStagedPlan(S,original.width,original.height,editMask,{bedStrokes,pathStrokes,removeStrokes,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max}):null;
+  // Staged pipeline sends the photo untouched – precise masks replace the drawn hint lines, so
+  // there's nothing left for annotateForAI to usefully mark. The single-call fallback still burns
+  // the rough sketch onto the photo (solution 1, "5 řešení"), since that path has no per-area mask.
+  // `original` itself is deliberately left untouched either way: S.finish() further below still
+  // diffs against it to enforce the hard lock outside the mask, so that check must never see any
+  // annotation lines.
+  const prepared=S.prepare(stagedPlan?original:annotateForAI(original),editMask);
   const invalid=S.validate(prepared.coverage);
   if(invalid)return alert(invalid);
   if(!confirm(confirmText(Math.round(prepared.coverage*100))))return;
@@ -1337,13 +1382,20 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   const progress=startGenerationProgress();
   try{
     const data=new URLSearchParams();data.set('action','mvgreen_ai_preview');data.set('nonce',aiConfig.nonce);
-    data.set('image',prepared.image);data.set('mask',prepared.mask);
+    data.set('image',prepared.image);
     Object.entries(extraFields||{}).forEach(([k,v])=>data.set(k,v==null?'':String(v)));
-    const d=getData();const sl=styleLayout[d['mg-style-card']]||styleLayout['lawn-beds'];const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,{styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max,bedHints:sampleHintPoints(bedStrokes,4),pathHints:sampleHintPoints(pathStrokes,4),removeHints:sampleHintPoints(removeStrokes,4)});data.set('instructions',brief.text);
+    if(stagedPlan){
+      data.set('stages',JSON.stringify(stagedPlan.map(s=>({mask:S.maskToApi(s.mask,prepared.box),instructions:s.instructions}))));
+    }else{
+      data.set('mask',prepared.mask);data.set('instructions',brief.text);
+    }
     const response=await fetch(aiConfig.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});
     const json=await response.json();if(!json.success||!json.data?.image)throw new Error(json.data?.message||'AI návrh se nepodařilo vytvořit.');
     const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=json.data.image});
-    // Rules 3–4: undo padding, reject a re-drawn scene, hard-lock everything outside the mask.
+    // Rules 3–4: undo padding, reject a re-drawn scene, hard-lock everything outside the mask. The
+    // staged pipeline still checks this ONCE, here, against the whole confirmed area and the true
+    // original photo – exactly like the single-call flow – regardless of how many AI calls chained
+    // server-side to produce aiPhoto.
     const done=S.finish(original,editMask,aiPhoto,prepared.box);
     progress.stop(done.ok);
     if(!done.ok){
@@ -1374,6 +1426,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const range=document.createElement('input');range.type='range';range.min='0';range.max='100';range.value='50';range.className='mg-comparison-range';range.setAttribute('aria-label','Posunout hranici porovnání před a po');range.addEventListener('input',()=>comparison.style.setProperty('--mg-reveal',range.value+'%'));
     comparison.append(after,before,labels,range);result.append(comparison);
     const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';result.append(note);
+    if(json.data.message){const warn=document.createElement('p');warn.className='mg-note';warn.textContent=json.data.message;result.append(warn);}
     if(brief.rejected.length){const why=document.createElement('p');why.className='mg-note';why.textContent='Do návrhu jsme nedali: '+brief.rejected.join(', ')+' – pro vaše podmínky (slunce, vlhkost, zálivka) se nehodí. Použili jsme vhodnější rostliny.';result.append(why);}
     const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';result.append(used);
     const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);

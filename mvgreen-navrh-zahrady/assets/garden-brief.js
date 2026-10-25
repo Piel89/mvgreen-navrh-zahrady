@@ -182,10 +182,19 @@
     return { plants: chosen, rejected: rejected };
   }
 
+  // Shared by buildInstructions (the general/remainder prompt) and buildBedStageInstructions (the
+  // staged-pipeline bed prompt) so the two never drift apart on how plants/colors get worded.
+  var COLOR_NAMES = { purple: 'fialová', white: 'bílá', pink: 'růžová', yellow: 'žlutá', red: 'červená', green: 'převážně zelená' };
+  function favoriteColorNames(d) {
+    return (d['mg-fav-colors'] || '').split(',').filter(Boolean).map(function (c) { return COLOR_NAMES[c]; }).filter(Boolean);
+  }
+  function plantListLine(pick) {
+    return pick.plants.map(function (p) { return p.name + ' (' + p.latin + (p.height ? ', výška ' + p.height : '') + ')'; }).join('; ');
+  }
+
   function buildInstructions(d, curated, lastPlan, extra) {
     var pick = choosePlants(d, curated, lastPlan, { max: extra.maxPlants || 6 });
-    var colorNames = { purple: 'fialová', white: 'bílá', pink: 'růžová', yellow: 'žlutá', red: 'červená', green: 'převážně zelená' };
-    var cols = (d['mg-fav-colors'] || '').split(',').filter(Boolean).map(function (c) { return colorNames[c]; }).filter(Boolean);
+    var cols = favoriteColorNames(d);
     var irr = ['automatická závlaha je k dispozici', 'zalévá se ručně', 'zahrada se nezalévá – jen suchomilné rostliny'][+(d['mg-irrigation'] || 1)] || 'zalévá se ručně';
     // Rough bed/path/remove placement from the optional wizard step "Umístění záhonu, cesty a
     // úklidu" (app.js) – a few percent-of-photo coordinates per hint type, already capped there.
@@ -197,9 +206,14 @@
     // these marks on the image it's editing, so this line must say so and tell it to erase the marks
     // themselves from the result, or the model may render the colored lines/dashes as if they were
     // real paint or tape on the ground.
-    var bedHints = (extra.bedHints || []).slice(0, 4);
-    var pathHints = (extra.pathHints || []).slice(0, 4);
-    var removeHints = (extra.removeHints || []).slice(0, 4);
+    // extra.skipHintLine: set by the staged pipeline's "remainder/style" call (app.js) once bed/path/
+    // remove strokes are handled by their OWN dedicated stage with a real geometric mask – restating
+    // them here as a text hint would be redundant at best and confusing at worst (this stage's mask
+    // no longer even covers those strokes' area). The single-call fallback (no step-5 strokes, or
+    // strokes present but the staged pipeline not applicable) always leaves this on, unchanged.
+    var bedHints = extra.skipHintLine ? [] : (extra.bedHints || []).slice(0, 4);
+    var pathHints = extra.skipHintLine ? [] : (extra.pathHints || []).slice(0, 4);
+    var removeHints = extra.skipHintLine ? [] : (extra.removeHints || []).slice(0, 4);
     var hintParts = [];
     if (bedHints.length) hintParts.push('záhon zhruba u: ' + bedHints.join(', '));
     if (pathHints.length) hintParts.push('cesta zhruba u: ' + pathHints.join(', '));
@@ -208,7 +222,7 @@
     var lines = [
       'ÚKOL: Realisticky dosázej a uprav pouze plochu zahrady v průhledné části masky. Výsledek musí vypadat jako fotografie stejné zahrady po realizaci, ne jako vizualizace. NEJVYŠŠÍ PRIORITA ZE VŠEHO: v upravované ploše nesmí po úpravě zůstat vidět žádný nepořádek ani stavební materiál či nářadí – viz pravidlo POŘÁDEK níže. Návrh, který tohle nesplní, je nepoužitelný, i kdyby byl jinak hezký.',
       'STYL: ' + String(extra.styleLabel || d['mg-style'] || 'přirozená zahrada').replace(/^[A-C] – /, '') + '. ' + (extra.styleAi || ''),
-      'ROSTLINY – POUŽIJ POUZE TYTO DRUHY: ' + pick.plants.map(function (p) { return p.name + ' (' + p.latin + (p.height ? ', výška ' + p.height : '') + ')'; }).join('; ') + '. Žádné jiné druhy nepřidávej. Respektuj uvedené výšky a skutečné měřítko vůči domu a plotu.',
+      'ROSTLINY – POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej. Respektuj uvedené výšky a skutečné měřítko vůči domu a plotu.',
       cols.length ? 'BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '',
       'PODMÍNKY: ' + ({ 'Slunce': 'plné slunce', 'Polostín': 'polostín', 'Stín': 'stín' }[d['mg-sun']] || 'různé oslunění') + '; půda ' + ({ dry: 'suchá', wet: 'vlhká' }[d['mg-water']] || 'běžně vlhká') + '; ' + irr + '; lokalita ' + (d['mg-locality'] || 'Domažlicko') + (d['mg-altitude'] ? ', ' + d['mg-altitude'] + ' m n. m' : '') + '.',
       'ÚDRŽBA: ' + (d['mg-maint'] || 'nízká') + '. Rozpočet do ' + (d['mg-max'] || '50000') + ' Kč – žádné drahé prvky (jezírka, pergoly, zídky, terasy).',
@@ -238,9 +252,41 @@
     return { text: text, plants: pick.plants, rejected: pick.rejected };
   }
 
+  /*
+   * ---------- Staged-generation prompts ("5 řešení" revamp, step 2) ----------
+   * app.js's staged pipeline (see runStagedGeneration there) turns the customer's rough bed/path/
+   * remove sketch into real geometric masks (ai-safety.js's strokeMask) and sends a SEPARATE,
+   * independent OpenAI call for each one, chained server-side (mvgreen-navrh-zahrady.php). Each call
+   * only ever sees its own narrow mask and has no memory of the others, so every prompt below must be
+   * fully self-contained – there is no "as discussed above" to lean on. mvgreen-navrh-zahrady.php's
+   * fixed preamble (scene/house/fence/angle preservation) wraps every one of these identically, the
+   * same way it wraps buildInstructions()'s text today.
+   */
+
+  /** Cleanup stage: the customer's own "⬛ Tohle odstranit" mark – one narrow mask per object/pile. */
+  function buildRemoveStageInstructions() {
+    return 'V CELÉ průhledné části masky je konkrétní předmět nebo nepořádek, který si zákazník sám označil jako věc k odstranění (typicky stavební nářadí nebo technika jako míchačka, kolečko, žebřík, hadice, nebo hromada hlíny, písku, dřeva či jiného materiálu). Odstraň ho úplně a beze zbytku – nenechej viditelnou jeho žádnou část ani stín ani obrys po něm. Nahraď to místo tím, co by tam realisticky navazovalo podle bezprostředního okolí těsně za hranicí masky (trávník, dlažba, mulč nebo štěrk – podle toho, co na fotografii sousedí). Nepřidávej žádné nové rostliny ani prvky, jen uveď plochu do čistého, upraveného stavu jako součást zbytku zahrady. Fotorealistický výsledek, žádné jiné změny, žádný malovaný ani ilustrativní vzhled.';
+  }
+
+  /** Hardscape stage: the customer's own "🔵 Tady chci cestu" mark, already buffered into a real path-shaped mask. */
+  function buildPathStageInstructions(extra) {
+    var material = (extra && extra.pathMaterial) || 'mlatová nebo štěrková cestička s přírodním, nepravidelným okrajem';
+    return 'V CELÉ průhledné části masky vytvoř ' + material + ', která plynule a realisticky navazuje na úroveň a materiál bezprostředního okolí (tam, kde maska sousedí s trávníkem, zůstává za okrajem cesty trávník; kde sousedí s domem nebo zdí, cesta k nim přiléhá). Cesta musí vyplnit celou odemčenou plochu až po samý okraj, beze zbytku, bez mezer ani nedotažených koutů. Nepřidávej v této ploše žádné rostliny ani záhon, jen zpevněný povrch. Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+  }
+
+  /** Bed/planting stage: the customer's own "🔴 Tady chci záhon" mark, already buffered into a real bed-shaped mask. */
+  function buildBedStageInstructions(d, curated, lastPlan, extra) {
+    var pick = choosePlants(d, curated, lastPlan, { max: (extra && extra.maxPlants) || 6 });
+    var cols = favoriteColorNames(d);
+    return 'V CELÉ průhledné části masky vytvoř hustě osázený záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou. POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí. Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' + (cols.length ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+  }
+
   window.MVGreenBrief = {
     analyze: analyze, renderCheck: renderCheck, guideHtml: guideHtml,
     favoritesHtml: favoritesHtml, bindFavorites: bindFavorites,
-    choosePlants: choosePlants, buildInstructions: buildInstructions, colorOf: colorOf
+    choosePlants: choosePlants, buildInstructions: buildInstructions, colorOf: colorOf,
+    buildRemoveStageInstructions: buildRemoveStageInstructions,
+    buildPathStageInstructions: buildPathStageInstructions,
+    buildBedStageInstructions: buildBedStageInstructions
   };
 })();
