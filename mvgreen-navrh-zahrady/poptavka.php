@@ -5,7 +5,8 @@
  * Shortcode: [mvgreen_poptavka]
  * - Každá poptávka se uloží do administrace (Poptávky), takže se neztratí, ani když selže e-mail.
  * - Na e-mail správce webu přijde zpráva s fotkami v příloze (zmenšenými na rozumnou velikost).
- * - Ochrana proti spamu: nonce, skryté pole (honeypot), minimální doba vyplnění, limit na IP.
+ * - Ochrana proti spamu: nonce, skryté pole (honeypot), minimální doba vyplnění, limit na IP,
+ *   kontrolní početní otázka a požadavek na české telefonní číslo (9 číslic, případně s předvolbou).
  */
 if (!defined('ABSPATH')) exit;
 
@@ -15,6 +16,22 @@ const MVGREEN_POPTAVKA_MAX_TOTAL_BYTES = 40 * 1024 * 1024;
 
 function mvgreen_poptavka_services() {
     return ['Sekání trávníku', 'Vertikutace', 'Živý plot / thuje', 'Štěpkování', 'Pravidelná údržba', 'Jiné'];
+}
+
+// Ties the two numbers shown in the control question to a server secret, so a bot can't just
+// submit any a/b pair and have it "match" – it would have to also guess the hash. Deterministic
+// (no per-request nonce/timestamp), so it still works fine behind a full-page cache.
+function mvgreen_poptavka_captcha_hash($a, $b) {
+    return wp_hash($a . ':' . $b . ':mvgreen_poptavka_captcha');
+}
+
+// Accepts a bare 9-digit Czech number, or one with a +420/00420 country prefix; rejects anything
+// else (including the non-Czech-shaped numbers typical of form-spam bots).
+function mvgreen_poptavka_phone_digits($phone) {
+    $d = preg_replace('/\D/', '', (string) $phone);
+    if (strlen($d) === 12 && strpos($d, '420') === 0) $d = substr($d, 3);
+    elseif (strlen($d) === 14 && strpos($d, '00420') === 0) $d = substr($d, 5);
+    return $d;
 }
 
 function mvgreen_poptavka_recipient() {
@@ -49,6 +66,9 @@ add_shortcode('mvgreen_poptavka', function () {
     $action = esc_url(admin_url('admin-post.php'));
     $services = mvgreen_poptavka_services();
     $privacy = esc_url(apply_filters('mvgreen_poptavka_privacy_url', home_url('/ochrana-osobnich-udaju/')));
+    $cap_a = wp_rand(1, 9);
+    $cap_b = wp_rand(1, 9);
+    $cap_hash = mvgreen_poptavka_captcha_hash($cap_a, $cap_b);
     ob_start();
     ?>
 <div class="mvg-poptavka" id="poptavka">
@@ -86,6 +106,10 @@ add_shortcode('mvgreen_poptavka', function () {
       </label>
       <ul class="mvg-pp-list" aria-live="polite"></ul>
     </div>
+    <input type="hidden" name="mvg_cap_a" value="<?php echo (int) $cap_a; ?>">
+    <input type="hidden" name="mvg_cap_b" value="<?php echo (int) $cap_b; ?>">
+    <input type="hidden" name="mvg_cap_h" value="<?php echo esc_attr($cap_hash); ?>">
+    <label>Kontrolní otázka: kolik je <?php echo (int) $cap_a; ?> + <?php echo (int) $cap_b; ?>? <b class="mvg-req">*</b><input type="text" name="mvg_cap_answer" required maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></label>
     <button type="submit">Odeslat poptávku</button>
     <p class="mvg-pp-note">Odesláním poptávky nám předáváte kontaktní údaje a fotky, abychom vám mohli připravit nabídku. Více v <a href="<?php echo $privacy; ?>">zásadách ochrany osobních údajů</a>.</p>
   </form>
@@ -157,10 +181,11 @@ add_shortcode('mvgreen_poptavka', function () {
 
 function mvgreen_poptavka_error_text($code) {
     $map = [
-        'chyba-udaje' => 'Vyplňte prosím jméno a telefon.',
+        'chyba-udaje' => 'Vyplňte prosím jméno a platné telefonní číslo (české, 9 číslic).',
         'chyba-fotky' => 'Některou fotku se nepodařilo nahrát. Zkuste prosím menší fotky (do 12 MB) nebo je pošlete přes WhatsApp.',
         'chyba-limit' => 'Odeslali jste několik poptávek za sebou. Zkuste to prosím za chvíli nebo zavolejte.',
         'chyba-bezpecnost' => 'Formulář vypršel. Načtěte prosím stránku znovu a odešlete poptávku ještě jednou.',
+        'chyba-kontrola' => 'Kontrolní otázka nesedí. Zkuste to prosím ještě jednou.',
     ];
     return $map[$code] ?? 'Poptávku se nepodařilo odeslat. Zavolejte nám prosím na 723 339 650.';
 }
@@ -183,6 +208,15 @@ function mvgreen_poptavka_handle() {
     $started = isset($_POST['mvg_t']) ? (int) $_POST['mvg_t'] : 0;
     if (!empty($_POST['mvg_web']) || ($started && time() - $started < 4)) mvgreen_poptavka_redirect($back, 'ok');
 
+    // Control question: a wrong/missing answer could be a genuine visitor's mistake (unlike the
+    // invisible honeypot/timing checks above, which a real person never touches), so this gets a
+    // real, retryable error instead of the silent "pretend success" used for those.
+    $cap_a = isset($_POST['mvg_cap_a']) ? (int) $_POST['mvg_cap_a'] : -1;
+    $cap_b = isset($_POST['mvg_cap_b']) ? (int) $_POST['mvg_cap_b'] : -1;
+    $cap_h = isset($_POST['mvg_cap_h']) ? sanitize_text_field(wp_unslash($_POST['mvg_cap_h'])) : '';
+    $cap_answer = isset($_POST['mvg_cap_answer']) ? (int) trim(wp_unslash($_POST['mvg_cap_answer'])) : null;
+    if (!hash_equals(mvgreen_poptavka_captcha_hash($cap_a, $cap_b), $cap_h) || $cap_answer !== ($cap_a + $cap_b)) mvgreen_poptavka_redirect($back, 'chyba-kontrola');
+
     $ip_key = 'mvgreen_pp_' . md5(isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'x');
     $count = (int) get_transient($ip_key);
     if ($count >= 5) mvgreen_poptavka_redirect($back, 'chyba-limit');
@@ -195,7 +229,9 @@ function mvgreen_poptavka_handle() {
     $all = mvgreen_poptavka_services();
     $picked = [];
     foreach ((array) ($_POST['mvg_services'] ?? []) as $i) { $i = (int) $i; if (isset($all[$i])) $picked[] = $all[$i]; }
-    if ($name === '' || strlen(preg_replace('/\D/', '', $phone)) < 9) mvgreen_poptavka_redirect($back, 'chyba-udaje');
+    // Czech number required (9 digits, optionally with a +420/00420 prefix) – real customers are
+    // local; this alone rejects the non-Czech-shaped numbers typical of form-spam bots.
+    if ($name === '' || strlen(mvgreen_poptavka_phone_digits($phone)) !== 9) mvgreen_poptavka_redirect($back, 'chyba-udaje');
 
     // Photos: validated by real image type, stored under a random folder name, resized for e-mail.
     $saved = [];
