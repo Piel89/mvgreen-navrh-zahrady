@@ -273,12 +273,48 @@
     return 'V CELÉ průhledné části masky vytvoř hustě osázený záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou. POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí. Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' + (cols.length ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + (sizeHint ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.' : '') + terrainHint + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
   }
 
+  /*
+   * ---------- mg-area-types.js's grid classification step (replaces the old freehand bed/path
+   * sketch) – one instruction builder per category, same "self-contained, no cross-stage memory"
+   * rule as the three above. detail is an optional free-text note the customer typed for THIS
+   * specific area (step 6, "co v něm chcete" per-area description) – folded in verbatim when
+   * present, left out entirely when not (never invent a placeholder in its absence).
+   */
+  function withDetail(base, detail) {
+    return base + (detail ? ' Zákazníkovo upřesnění pro tuhle konkrétní plochu: "' + detail + '". Řiď se jím, pokud neodporuje výše uvedenému.' : '');
+  }
+
+  function buildGrassStageInstructions(detail) {
+    return withDetail('V CELÉ průhledné části masky vytvoř zdravý, rovnoměrně sestřižený trávník stejné barvy a textury jako zbytek trávníku na fotografii, plynule navazující na své okolí až po samý okraj masky, beze zbytku. Žádné rostliny, dlažba ani jiné prvky v této ploše. Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail);
+  }
+
+  function buildWallStageInstructions(detail) {
+    return withDetail('V CELÉ průhledné části masky vytvoř nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm) a musí navazovat na úroveň terénu po obou stranách. Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail);
+  }
+
+  function buildMulchStageInstructions(detail) {
+    return withDetail('V CELÉ průhledné části masky vytvoř souvislou vrstvu mulčovací kůry (hnědá, přírodní, nepravidelná textura), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku, bez rostlin. Fotorealistický výsledek, žádný malovaný ani ilustrativní vzhled.', detail);
+  }
+
+  function buildPavingStageInstructions(detail) {
+    return withDetail('V CELÉ průhledné části masky vytvoř zpevněnou plochu (dlažba nebo terasová prkna, podle stylu zbytku zahrady), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku, bez rostlin. Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail);
+  }
+
+  function buildHedgeStageInstructions(detail) {
+    return withDetail('V CELÉ průhledné části masky vysaď hustý, rovnoměrně sestřižený živý plot (keře vhodné pro živý plot, podle stylu zbytku zahrady), vyplňující celou odemčenou plochu až po samý okraj, beze zbytku. Realistická výška vzhledem k okolí. Fotorealistický výsledek, žádný malovaný ani ilustrativní vzhled.', detail);
+  }
+
   window.MVGreenBrief = {
     analyze: analyze, renderCheck: renderCheck, guideHtml: guideHtml,
     favoritesHtml: favoritesHtml, bindFavorites: bindFavorites,
     choosePlants: choosePlants, buildInstructions: buildInstructions, colorOf: colorOf,
     buildRemoveStageInstructions: buildRemoveStageInstructions,
     buildPathStageInstructions: buildPathStageInstructions,
-    buildBedStageInstructions: buildBedStageInstructions
+    buildBedStageInstructions: buildBedStageInstructions,
+    buildGrassStageInstructions: buildGrassStageInstructions,
+    buildWallStageInstructions: buildWallStageInstructions,
+    buildMulchStageInstructions: buildMulchStageInstructions,
+    buildPavingStageInstructions: buildPavingStageInstructions,
+    buildHedgeStageInstructions: buildHedgeStageInstructions
   };
 })();

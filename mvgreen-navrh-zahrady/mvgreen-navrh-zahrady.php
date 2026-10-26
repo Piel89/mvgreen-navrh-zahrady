@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.109
+ * Version: 0.6.110
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.109');
+define('MVGREEN_VERSION', '0.6.110');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -44,9 +44,10 @@ add_shortcode('mvgreen_navrh_zahrady', function () {
     // mg-slic.js itself is never enqueued here: only the Worker loads it (importScripts, relative
     // to the Worker's own URL below), the main thread never needs it directly.
     wp_enqueue_script('mvgreen-paint-mask', plugin_dir_url(__FILE__) . 'assets/mg-paint-mask.js', ['mvgreen-ai-safety'], MVGREEN_VERSION, true);
+    wp_enqueue_script('mvgreen-area-types', plugin_dir_url(__FILE__) . 'assets/mg-area-types.js', ['mvgreen-ai-safety'], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-brief', plugin_dir_url(__FILE__) . 'assets/garden-brief.js', [], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], MVGREEN_VERSION, true);
-    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-brief', 'mvgreen-plan'], MVGREEN_VERSION, true);
+    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-area-types', 'mvgreen-brief', 'mvgreen-plan'], MVGREEN_VERSION, true);
     wp_add_inline_script('mvgreen-designer', 'window.MVGreenAI = '.wp_json_encode(['ajaxUrl'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('mvgreen_ai_test'),'enabled'=>current_user_can('manage_options'),'workerUrl'=>plugins_url('assets/mg-segment-worker.js', __FILE__)]).';', 'before');
     // Use the exact WordPress site logo; supports classic and block themes.
     $mvgreen_logo_id = (int) get_theme_mod('custom_logo', 0);
