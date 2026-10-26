@@ -326,9 +326,15 @@
       ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Potvrzení upravované plochy');
       ov.innerHTML =
         '<div class="mg-mask-box">' +
-        '<div class="mg-mask-head"><strong>Které části zahrady se smí změnit?</strong>' +
-        '<span>Zeleně zvýrazněnou plochu AI upraví. Dům, plot, stromy a obloha zůstanou přesně jako na vaší fotce.</span>' +
+        '<div class="mg-mask-head"><button type="button" class="mg-mask-maximize" data-act="maximize" aria-pressed="false" aria-label="Zvětšit na celou obrazovku" title="Zvětšit na celou obrazovku">⛶</button><strong>Které části zahrady se smí změnit?</strong>' +
+        '<span class="mg-mask-desc">Zeleně zvýrazněnou plochu AI upraví. Dům, plot, stromy a obloha zůstanou přesně jako na vaší fotce.</span>' +
         (hint ? '<span class="mg-mask-hint">💡 ' + String(hint).replace(/[<>&]/g, '') + '</span>' : '') + '</div>' +
+        '<div class="mg-mask-zoom" role="group" aria-label="Lupa pro přesnější kreslení prstem">' +
+        '<button type="button" data-zoom="out" aria-label="Oddálit">－</button>' +
+        '<button type="button" data-zoom="reset" title="Vrátit přiblížení">100 %</button>' +
+        '<button type="button" data-zoom="in" aria-label="Přiblížit">＋</button>' +
+        '<button type="button" data-zoom="pan" aria-pressed="false">✋ Posun</button>' +
+        '</div>' +
         '<div class="mg-mask-stage"><canvas></canvas></div>' +
         '<div class="mg-mask-tools">' +
         '<label class="mg-mask-horizon">Hranice zahrady<input type="range" min="10" max="85" step="1"></label>' +
@@ -350,6 +356,62 @@
       var sizeRange = ov.querySelector('.mg-mask-size-range'); var sizeMul = 1;
       var share = ov.querySelector('.mg-mask-share');
       var brush = blank ? 'add' : '';
+
+      // Zoom + pan for precise finger painting on small phone screens (the "nejde to prstem trefit"
+      // feedback): the canvas's drawing RESOLUTION never changes (cv.width/height stay the photo's
+      // real pixels, so paint()'s coordinate math below needs no change), only its on-screen CSS
+      // size grows – the stage then scrolls to pan. Mirrors app.js's step-3 editor zoom pattern.
+      var maskStage = ov.querySelector('.mg-mask-stage');
+      var maskZoom = 1, MASK_ZOOM_MAX = 3, maskNaturalW = null, maskNaturalH = null, maskPanning = false;
+      function maskCursor() { cv.style.cursor = maskPanning ? 'grab' : (brush ? 'crosshair' : 'default'); }
+      function applyMaskZoom() {
+        if (maskZoom <= 1) {
+          cv.style.removeProperty('width'); cv.style.removeProperty('height');
+          cv.style.removeProperty('max-width'); cv.style.removeProperty('max-height');
+          maskStage.classList.remove('mg-mask-zoomed');
+        } else {
+          // max-width/max-height (not just width/height) must be overridden too – a CSS max-height
+          // on the canvas otherwise keeps clamping it regardless of the explicit width/height set
+          // below, so zooming in would grow the width but leave the height stuck at its 60vh cap.
+          if (!maskNaturalW) { var nr = cv.getBoundingClientRect(); if (nr.width) { maskNaturalW = nr.width; maskNaturalH = nr.height; } }
+          if (maskNaturalW) {
+            cv.style.setProperty('width', Math.round(maskNaturalW * maskZoom) + 'px', 'important');
+            cv.style.setProperty('height', Math.round(maskNaturalH * maskZoom) + 'px', 'important');
+            cv.style.setProperty('max-width', 'none', 'important');
+            cv.style.setProperty('max-height', 'none', 'important');
+          }
+          maskStage.classList.add('mg-mask-zoomed');
+        }
+        var resetBtn = ov.querySelector('[data-zoom=reset]'); if (resetBtn) resetBtn.textContent = Math.round(maskZoom * 100) + ' %';
+      }
+      var zoomInBtn = ov.querySelector('[data-zoom=in]'), zoomOutBtn = ov.querySelector('[data-zoom=out]'), zoomResetBtn = ov.querySelector('[data-zoom=reset]'), panBtn = ov.querySelector('[data-zoom=pan]');
+      if (zoomInBtn) zoomInBtn.addEventListener('click', function () { maskZoom = Math.min(MASK_ZOOM_MAX, maskZoom + 0.5); applyMaskZoom(); });
+      if (zoomOutBtn) zoomOutBtn.addEventListener('click', function () { maskZoom = Math.max(1, maskZoom - 0.5); applyMaskZoom(); });
+      if (zoomResetBtn) zoomResetBtn.addEventListener('click', function () { maskZoom = 1; applyMaskZoom(); maskStage.scrollLeft = 0; maskStage.scrollTop = 0; });
+      if (panBtn) panBtn.addEventListener('click', function () {
+        maskPanning = !maskPanning;
+        panBtn.setAttribute('aria-pressed', String(maskPanning));
+        maskStage.classList.toggle('mg-mask-panning', maskPanning);
+        maskCursor();
+      });
+      maskStage.addEventListener('wheel', function (e) {
+        if (!e.ctrlKey) return;
+        e.preventDefault();
+        var delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 160 : 1);
+        var step = Math.max(-0.2, Math.min(0.2, -delta / 600));
+        maskZoom = Math.max(1, Math.min(MASK_ZOOM_MAX, maskZoom + step));
+        applyMaskZoom();
+      }, { passive: false });
+      var maxBtn = ov.querySelector('.mg-mask-maximize');
+      var maskBox = ov.querySelector('.mg-mask-box');
+      if (maxBtn) maxBtn.addEventListener('click', function () {
+        var maxed = ov.classList.toggle('mg-mask-maxed');
+        maskBox.classList.toggle('mg-mask-maxed', maxed);
+        maxBtn.textContent = maxed ? '⤢' : '⛶';
+        maxBtn.setAttribute('aria-pressed', String(maxed));
+        maxBtn.setAttribute('aria-label', maxed ? 'Zmenšit' : 'Zvětšit na celou obrazovku');
+        maxBtn.title = maxed ? 'Zmenšit' : 'Zvětšit na celou obrazovku';
+      });
 
       // "Locked" must always truthfully mean nothing above the line is currently editable, from the
       // very first frame – autoMask's own soft horizon-extension can paint a little above the line,
@@ -418,7 +480,7 @@
         b.addEventListener('click', function () {
           brush = brush === b.dataset.brush ? '' : b.dataset.brush;
           ov.querySelectorAll('[data-brush]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.brush === brush)); });
-          cv.style.cursor = brush ? 'crosshair' : 'default';
+          maskCursor();
         });
       });
       var painting = false, lastX = null, lastY = null;
@@ -456,7 +518,7 @@
         lastX = x; lastY = y;
         render();
       }
-      cv.addEventListener('pointerdown', function (e) { if (!brush) return; painting = true; lastX = lastY = null; try { cv.setPointerCapture(e.pointerId); } catch (er) {} paint(e); });
+      cv.addEventListener('pointerdown', function (e) { if (maskPanning || !brush) return; painting = true; lastX = lastY = null; try { cv.setPointerCapture(e.pointerId); } catch (er) {} paint(e); });
       cv.addEventListener('pointermove', function (e) { if (painting) paint(e); });
       ['pointerup', 'pointercancel'].forEach(function (ev) { cv.addEventListener(ev, function () { painting = false; lastX = lastY = null; }); });
       function close(v) { ov.remove(); resolve(v); }

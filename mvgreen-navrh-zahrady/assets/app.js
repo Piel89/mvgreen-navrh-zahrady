@@ -663,7 +663,7 @@ q('mg-mask-adjust')?.addEventListener('click',()=>openMaskConfirmation(true));
 // small/specific objects (e.g. a concrete mixer) that the AI apparently couldn't reliably locate from
 // a category name alone – pointing at the exact spot removes that ambiguity.
 const bedPathStep=makeReferenceStep(5,'Umístění záhonu, cesty a úklidu','Nepovinné: hrubě naznačte štětcem, kde zhruba chcete záhon, kde cestu a co se má na fotce určitě odstranit (nepořádek, nářadí, stroje). Nejde o přesný tvar ani rozměr, jen orientační poloha pro AI – tyhle značky AI uvidí přímo na fotce, kterou upravuje. Tento krok můžete klidně přeskočit.');
-bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div><div class="mg-bedpath-mode" role="group" aria-label="Způsob zakreslení"><button type="button" id="mg-bp-mode-rough" aria-pressed="true">〰️ Hrubě (tahem)</button><button type="button" id="mg-bp-mode-precise" aria-pressed="false">✏️ Přesně (klikání rohů)</button><button type="button" id="mg-bp-calibrate">📏 Zadat měřítko</button></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon, cestu a odstranění"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" data-bp-tool="remove" aria-pressed="false">⬛ Tohle odstranit (nepořádek, nářadí)</button><button type="button" id="mg-bp-finish" class="mg-hidden">✓ Dokončit tvar</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note" id="mg-bp-mode-note">Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.</p><p class="mg-note mg-bp-measure" id="mg-bp-measure"></p></div>';
+bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-viewport"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div></div><div class="mg-bedpath-zoom" role="group" aria-label="Lupa pro přesnější zakreslení prstem"><button type="button" data-bpzoom="out" aria-label="Oddálit">－</button><button type="button" data-bpzoom="reset" title="Vrátit přiblížení">100 %</button><button type="button" data-bpzoom="in" aria-label="Přiblížit">＋</button><button type="button" data-bpzoom="pan" aria-pressed="false">✋ Posun</button><button type="button" id="mg-bp-fullscreen" aria-pressed="false">⛶ Celá obrazovka</button></div><div class="mg-bedpath-mode" role="group" aria-label="Způsob zakreslení"><button type="button" id="mg-bp-mode-rough" aria-pressed="true">〰️ Hrubě (tahem)</button><button type="button" id="mg-bp-mode-precise" aria-pressed="false">✏️ Přesně (klikání rohů)</button><button type="button" id="mg-bp-calibrate">📏 Zadat měřítko</button></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon, cestu a odstranění"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" data-bp-tool="remove" aria-pressed="false">⬛ Tohle odstranit (nepořádek, nářadí)</button><button type="button" id="mg-bp-finish" class="mg-hidden">✓ Dokončit tvar</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note" id="mg-bp-mode-note">Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.</p><p class="mg-note mg-bp-measure" id="mg-bp-measure"></p></div>';
 generationStep.insertAdjacentElement('beforebegin',bedPathStep);
 // Flat arrays of strokes (each stroke a downsampled array of {x,y} in 0–100% photo coordinates).
 let bedStrokes=[],pathStrokes=[],removeStrokes=[];
@@ -700,6 +700,77 @@ function sizeBedPathCanvas(){
  if(bedPathCanvas.height!==h)bedPathCanvas.height=h;
  renderBedPath();
 }
+// 0.6.101: zoom + pan so a sketch stroke can be placed precisely with a finger on a small phone
+// screen – the stage's on-screen width grows beyond its normal "max-width:620px" fit and the
+// viewport scrolls to pan; the canvas's drawing RESOLUTION is kept in sync via sizeBedPathCanvas()
+// above (bedPathPoint() below maps everything through getBoundingClientRect(), so it needs no
+// change at all to stay accurate at any zoom level).
+const bedPathViewport=bedPathStep.querySelector('.mg-bedpath-viewport');
+const bedPathStage=bedPathStep.querySelector('.mg-bedpath-stage');
+let bpZoom=1,bpNaturalW=null,bpPanning=false;
+const BP_ZOOM_MAX=3;
+function bpApplyZoom(){
+ if(bpZoom<=1){
+  bedPathStage.style.removeProperty('width');
+  bedPathViewport.classList.remove('mg-bp-zoomed');
+ }else{
+  if(!bpNaturalW){const r=bedPathStage.getBoundingClientRect();if(r.width)bpNaturalW=r.width;}
+  if(bpNaturalW)bedPathStage.style.setProperty('width',Math.round(bpNaturalW*bpZoom)+'px','important');
+  bedPathViewport.classList.add('mg-bp-zoomed');
+ }
+ sizeBedPathCanvas();
+ const resetBtn=bedPathBody.querySelector('[data-bpzoom=reset]');if(resetBtn)resetBtn.textContent=Math.round(bpZoom*100)+' %';
+}
+function bpCursor(){if(bedPathCanvas)bedPathCanvas.style.cursor=bpPanning?'grab':((bpTool||bp5Calibrating)?'crosshair':'default');}
+bedPathStep.querySelector('[data-bpzoom=in]')?.addEventListener('click',()=>{bpZoom=Math.min(BP_ZOOM_MAX,bpZoom+0.5);bpApplyZoom();});
+bedPathStep.querySelector('[data-bpzoom=out]')?.addEventListener('click',()=>{bpZoom=Math.max(1,bpZoom-0.5);bpApplyZoom();});
+bedPathStep.querySelector('[data-bpzoom=reset]')?.addEventListener('click',()=>{bpZoom=1;bpApplyZoom();bedPathViewport.scrollLeft=0;bedPathViewport.scrollTop=0;});
+const bpPanBtn=bedPathStep.querySelector('[data-bpzoom=pan]');
+bpPanBtn?.addEventListener('click',()=>{
+ bpPanning=!bpPanning;
+ bpPanBtn.setAttribute('aria-pressed',String(bpPanning));
+ bedPathViewport.classList.toggle('mg-bp-panning',bpPanning);
+ bpCursor();
+});
+bedPathViewport?.addEventListener('wheel',e=>{
+ if(!e.ctrlKey)return;
+ e.preventDefault();
+ const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?160:1);
+ const step=Math.max(-0.2,Math.min(0.2,-delta/600));
+ bpZoom=Math.max(1,Math.min(BP_ZOOM_MAX,bpZoom+step));
+ bpApplyZoom();
+},{passive:false});
+// Fullscreen: reparent the whole body (stage + zoom toolbar + mode + brush buttons together, so
+// every control stays usable) onto <body> – a plain position:fixed left in place can be silently
+// broken by a transformed WordPress theme ancestor (see the 0.6.19 note on step 3's own
+// fullscreen), so this moves the real DOM node instead, exactly like that proven step-3 pattern.
+const bedPathBody=bedPathStep.querySelector('.mg-bedpath-body');
+const bpFsBtn=bedPathBody.querySelector('#mg-bp-fullscreen');
+let bpFsMarker=null,bpFsWrapper=null;
+function toggleBpFullscreen(){
+ const open=!bedPathBody.classList.contains('mg-bp-fullscreen');
+ if(open){
+  if(!bpFsMarker){bpFsMarker=document.createComment('bedpath fullscreen return point');bedPathBody.parentNode.insertBefore(bpFsMarker,bedPathBody);}
+  // Every .mg-bedpath-* rule (and the designer's own CSS variables) is scoped under
+  // ".mvgreen-designer …" in app.css, so moving bedPathBody straight onto <body> would silently
+  // drop all of it. A plain carrier div with that same class, placed as its new parent, keeps
+  // every "`.mvgreen-designer` ancestor" selector matching without needing to rewrite any of them.
+  bpFsWrapper=document.createElement('div');
+  bpFsWrapper.className='mvgreen-designer mg-bp-fs-wrap';
+  document.body.appendChild(bpFsWrapper);
+  bpFsWrapper.appendChild(bedPathBody);
+  document.body.classList.add('mg-bp-fs-open');
+ }else{
+  if(bpFsMarker&&bpFsMarker.parentNode)bpFsMarker.parentNode.insertBefore(bedPathBody,bpFsMarker);
+  bpFsWrapper?.remove();bpFsWrapper=null;
+  document.body.classList.remove('mg-bp-fs-open');
+ }
+ bedPathBody.classList.toggle('mg-bp-fullscreen',open);
+ if(bpFsBtn){bpFsBtn.setAttribute('aria-pressed',String(open));bpFsBtn.textContent=open?'⤢ Zmenšit':'⛶ Celá obrazovka';}
+ bpZoom=1;bpNaturalW=null;bpApplyZoom();
+ if(bedPathViewport){bedPathViewport.scrollLeft=0;bedPathViewport.scrollTop=0;}
+}
+bpFsBtn?.addEventListener('click',toggleBpFullscreen);
 // Real-world length/area for a 0–100%-coordinate shape, reusing the SAME calibration
 // (metersPerPixel) the customer already set on the "Fotografie zahrady" step. The step-3 canvas and
 // this one both map onto the same uploaded photo at the same aspect ratio, so one percent of width
@@ -722,7 +793,7 @@ function polygonPerimeterM(poly){
  return total;
 }
 function updateBedPathMeasure(){
- const el=bedPathStep.querySelector('#mg-bp-measure');
+ const el=bedPathBody.querySelector('#mg-bp-measure');
  if(!el)return;
  if(!preciseMode){el.textContent='';return}
  const parts=[];
@@ -827,18 +898,18 @@ function composeGenPreview(){
 if(bedPathPhotoImg)bedPathPhotoImg.addEventListener('load',sizeBedPathCanvas);
 window.addEventListener('resize',()=>sizeBedPathCanvas());
 syncBedPathPhoto();
-const bpModeRough=bedPathStep.querySelector('#mg-bp-mode-rough'),bpModePrecise=bedPathStep.querySelector('#mg-bp-mode-precise'),bpFinishBtn=bedPathStep.querySelector('#mg-bp-finish'),bpModeNote=bedPathStep.querySelector('#mg-bp-mode-note');
+const bpModeRough=bedPathStep.querySelector('#mg-bp-mode-rough'),bpModePrecise=bedPathStep.querySelector('#mg-bp-mode-precise'),bpFinishBtn=bedPathStep.querySelector('#mg-bp-finish'),bpModeNote=bedPathStep.querySelector('#mg-bp-mode-note'),bpCalibrateBtn=bedPathStep.querySelector('#mg-bp-calibrate');
 function syncBpMode(){
  bpModeRough?.setAttribute('aria-pressed',String(!preciseMode));
  bpModePrecise?.setAttribute('aria-pressed',String(preciseMode));
- bedPathStep.querySelector('#mg-bp-calibrate')?.setAttribute('aria-pressed',String(bp5Calibrating));
+ bpCalibrateBtn?.setAttribute('aria-pressed',String(bp5Calibrating));
  if(bpModeNote)bpModeNote.textContent=bp5Calibrating
   ?'Klikněte na dva body na fotce, jejichž skutečnou vzdálenost znáte (např. konce plotového pole), pak zadejte kolik metrů to je.'
   :preciseMode
   ?'Klikáním označte rohy přesně tak, jak má záhon nebo cesta vypadat (jako v CAD programu). Posledním kliknutím na první bod nebo tlačítkem „Dokončit tvar“ obrazec uzavřete. AI pak vyplní přesně tuhle plochu, ne jen okolí čáry.'
   :'Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.';
  if(bpFinishBtn)bpFinishBtn.classList.toggle('mg-hidden',!preciseMode||bpDraft.length<3);
- if(bedPathCanvas)bedPathCanvas.style.cursor=(bpTool||bp5Calibrating)?'crosshair':'default';
+ bpCursor();
 }
 function finishPrecisePolygon(){
  if(bpDraft.length<3)return;
@@ -863,11 +934,11 @@ function calibrate5Click(p){
 bpModeRough?.addEventListener('click',()=>{preciseMode=false;bpDraft=[];renderBedPath();syncBpMode();});
 bpModePrecise?.addEventListener('click',()=>{preciseMode=true;bpDraft=[];renderBedPath();syncBpMode();});
 bpFinishBtn?.addEventListener('click',finishPrecisePolygon);
-bedPathStep.querySelector('#mg-bp-calibrate')?.addEventListener('click',()=>{bp5Calibrating=true;bp5CalibPts=[];renderBedPath();syncBpMode();});
+bpCalibrateBtn?.addEventListener('click',()=>{bp5Calibrating=true;bp5CalibPts=[];renderBedPath();syncBpMode();});
 bedPathStep.querySelectorAll('[data-bp-tool]').forEach(b=>{
  b.addEventListener('click',()=>{
   bpTool=bpTool===b.dataset.bpTool?'':b.dataset.bpTool;
-  bedPathStep.querySelectorAll('[data-bp-tool]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.bpTool===bpTool)));
+  bedPathBody.querySelectorAll('[data-bp-tool]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.bpTool===bpTool)));
   bpDraft=[];renderBedPath();syncBpMode();
  });
 });
@@ -891,6 +962,7 @@ function bedPathPoint(e){
 }
 if(bedPathCanvas){
  bedPathCanvas.addEventListener('pointerdown',e=>{
+  if(bpPanning)return;
   if(bp5Calibrating){calibrate5Click(bedPathPoint(e));return;}
   if(!bpTool)return;
   if(preciseMode&&bpTool!=='remove'){
