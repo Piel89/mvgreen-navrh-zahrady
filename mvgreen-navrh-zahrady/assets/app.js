@@ -142,6 +142,13 @@ function setupPhoto(nextImg,resetAreas){
  canvas.width=Math.max(1,Math.round(nextImg.naturalWidth*s));
  canvas.height=Math.max(1,Math.round(nextImg.naturalHeight*s));
  photoReady=true;zoom=1;
+ // Warm the superpixel segmentation (mg-paint-mask.js) as soon as the photo itself is ready,
+ // rather than waiting for the customer to actually reach step 4 and click "Označit" – the
+ // ~0.3-2.5s computation then has the whole rest of steps 1-3 to finish quietly in a Web Worker
+ // in the background, so the brush dialog is usually instant when it opens. Fire-and-forget: a
+ // failure here just means confirmPaintMask() retries (and surfaces the error) when actually
+ // opened, same as if this warm-up call didn't exist at all.
+ if(window.MVGreenPaintMask)window.MVGreenPaintMask.prepareSegmentation(nextImg,nextImg.src).catch(()=>{});
  if(resetAreas){calibration=[];metersPerPixel=null;areas=[];draft=[];selected=-1;history=[],redoHistory=[],draftRedo=[],infoOpen=-1;}
  snapEnabled=q('mg-snap').checked;spacePan=false;mode='polygon';
  canvas.classList.remove('mg-hidden');
@@ -322,6 +329,13 @@ let confirmedEditMask=null;
 // mode starts from exactly what the customer painted. Feeding it confirmedEditMask instead would
 // grow the edge by another margin on every single re-edit, even if nothing new gets painted.
 let rawEditMask=null;
+// Step 4's paint tool (mg-paint-mask.js) marks two explicit categories – "Zůstane" (protect) and
+// "Odstranit" (remove) – instead of one "editable" blob. paintCategory is the raw per-segment
+// category array, kept so re-opening the brush ("adjust") restores exactly what was painted;
+// paintRemoveMask is just the "Odstranit" category as its own "paint = editable" mask, unioned
+// into buildStagedPlan's literal-removal stage alongside (not instead of) step 5's own rough
+// "⬛ Tohle odstranit" strokes.
+let paintCategory=null,paintRemoveMask=null;
 
 /* One consistent set of small line icons, instead of mixed typographic/emoji symbols. */
 function mgTipIcon(kind){
@@ -638,16 +652,18 @@ if(genPreviewImg&&uploadPreviewForGen){
  uploadPreviewForGen.addEventListener('load',()=>{genPreviewImg.src=uploadPreviewForGen.src;if(typeof syncBedPathPhoto==='function')syncBedPathPhoto();if(typeof composeGenPreview==='function')composeGenPreview();});
 }
 // Step 4 ("Označení plochy") – a dedicated step for marking exactly which part of the garden photo
-// the AI design is allowed to change. It shows the single-brush mask-confirmation overlay
-// (ai-safety.js) on entry (see the showWizardStep wrapper below); confirming it stores the result
-// (already grown via S.growMask) in confirmedEditMask, which runAiGeneration later reuses as-is
-// without ever reopening this overlay itself. Re-entering this step offers the button again so the
-// customer can redo the marking from scratch (confirmMask always starts from a blank mask).
-const maskStep=makeReferenceStep(4,'Označení plochy','Vyznačte štětcem plochu zahrady, kterou chcete AI návrhem změnit. Co nevyznačíte, zůstane přesně jako na vaší fotografii.');
-maskStep.innerHTML+='<div class="mg-mask-step-body"><p class="mg-mask-step-status" id="mg-mask-status">Plocha ještě není vyznačena.</p><div class="mg-mask-step-buttons"><button type="button" class="mg-primary" id="mg-mask-open">✏️ Označit plochu na fotografii</button><button type="button" class="mg-hidden" id="mg-mask-adjust">➕➖ Přidat nebo odebrat z vyznačené plochy</button></div><div class="mg-mask-preview-wrap mg-hidden" id="mg-mask-preview-wrap"><img class="mg-mask-preview-img" id="mg-mask-preview-img" alt="Náhled vyznačené plochy – zeleně zvýrazněná část se v návrhu změní"></div></div>';
+// the AI design is allowed to change. It shows the paint-based mask tool (mg-paint-mask.js) on
+// entry (see the showWizardStep wrapper below); confirming it stores the editable area (already
+// grown via S.growMask) in confirmedEditMask and the "Odstranit" category in paintRemoveMask,
+// which runAiGeneration later reuses as-is without ever reopening this overlay itself. Re-entering
+// this step offers the button again so the customer can redo the marking from scratch, or (via
+// "Upravit vyznačení") reopen it loaded with exactly what they painted last time.
+const maskStep=makeReferenceStep(4,'Označení plochy','Vyznačte štětcem, co se NESMÍ změnit (zůstane přesně jako na fotce) a co chcete z fotky odstranit. Co nevyznačíte, AI smí volně upravit podle vašeho zadání.');
+maskStep.innerHTML+='<div class="mg-mask-step-body"><p class="mg-mask-step-status" id="mg-mask-status">Plocha ještě není vyznačena.</p><div class="mg-mask-step-buttons"><button type="button" class="mg-primary" id="mg-mask-open">✏️ Vyznačit, co zůstane a co odstranit</button><button type="button" class="mg-hidden" id="mg-mask-adjust">➕➖ Upravit vyznačení</button></div><div class="mg-mask-preview-wrap mg-hidden" id="mg-mask-preview-wrap"><img class="mg-mask-preview-img" id="mg-mask-preview-img" alt="Náhled vyznačené plochy – zeleně zůstane beze změny, červeně se odstraní, ostatní je volné pro AI návrh"></div></div>';
 generationStep.insertAdjacentElement('beforebegin',maskStep);
 // Kept alongside confirmedEditMask so the preview below still shows the last marked area after
-// leaving and returning to this step without re-marking (confirmMask itself keeps no photo state).
+// leaving and returning to this step without re-marking (the paint tool itself keeps no photo
+// state between opens – app.js is what persists everything across steps/reloads-within-session).
 let maskPreviewDataUrl=null;
 function updateMaskStatus(){
  const status=q('mg-mask-status'),btn=q('mg-mask-open'),adjustBtn=q('mg-mask-adjust'),wrap=q('mg-mask-preview-wrap'),img=q('mg-mask-preview-img');
@@ -687,22 +703,31 @@ async function openMaskConfirmation(editExisting){
  if(!photoReady){showWizardStep(3);return;}
  const S=window.MVGreenAISafety;
  if(!S)return alert('Chybí bezpečnostní modul AI. Obnovte stránku.');
+ const P=window.MVGreenPaintMask;
+ if(!P)return alert('Chybí nástroj pro vyznačení plochy. Obnovte stránku.');
  // photoReady alone isn't quite enough to trust canvas.width/height – belt-and-suspenders with the
- // same check confirmMask itself now does, so a stale/zeroed canvas sends the customer back to
+ // same check confirmPaintMask itself now does, so a stale/zeroed canvas sends the customer back to
  // re-upload instead of opening a brush dialog over a blank photo.
  if(!canvas.width||!canvas.height){alert('Fotografii se nepodařilo načíst. Nahrajte ji prosím znovu.');showWizardStep(3);return;}
  const original=document.createElement('canvas');original.width=canvas.width;original.height=canvas.height;
  original.getContext('2d').drawImage(img,0,0,original.width,original.height);
  const styleKey=q('mg-style-card')?.value||'english';
  const hint=(styleLayout[styleKey]&&styleLayout[styleKey].hint)||'Vymalujte plochu, kterou chcete v zahradě změnit. Dům, plot, stromy a obloha zůstanou beze změny.';
- // "Upravit" re-opens the brush loaded with the last RAW (un-grown) mask so the customer adds to or
- // removes from what's already marked with +/-, instead of starting over from a blank canvas.
- const opts=(editExisting&&rawEditMask)?{initialMask:rawEditMask}:{blank:true};
- const mask=await S.confirmMask(original,null,hint,opts);
- if(mask){
-  rawEditMask=mask;
-  confirmedEditMask=S.growMask(mask);
-  try{maskPreviewDataUrl=S.maskPreview(original,confirmedEditMask).toDataURL('image/jpeg',0.85);}catch(e){maskPreviewDataUrl=null;}
+ // "Upravit" re-opens the brush loaded with the last category array so the customer adjusts what's
+ // already marked instead of starting over from the auto sky/wall guess; segmentPhoto's own cache
+ // (keyed by img.src) means this re-run of the same photo is effectively free.
+ const opts={cacheKey:img.src,initialCategory:(editExisting&&paintCategory)?paintCategory:null};
+ const result=await P.confirmPaintMask(original,hint,opts);
+ if(result){
+  paintCategory=result.category;
+  rawEditMask=result.editMask;
+  paintRemoveMask=result.hasRemove?result.removeMask:null;
+  confirmedEditMask=S.growMask(result.editMask);
+  // The dialog's own render (protect=green/remove=red) is what the customer just confirmed, so
+  // the step's summary thumbnail reuses that exact snapshot instead of ai-safety.js's maskPreview
+  // (which tints the whole editable area green regardless of category – the opposite meaning of
+  // green inside this new tool, so reusing it here would show a contradictory thumbnail).
+  maskPreviewDataUrl=result.previewDataUrl||null;
  }
  updateMaskStatus();
 }
@@ -711,8 +736,8 @@ q('mg-mask-adjust')?.addEventListener('click',()=>openMaskConfirmation(true));
 
 // Step 5 "Umístění záhonu, cesty a úklidu": an optional, rough freehand sketch of where the
 // customer wants a new bed or path, and what must definitely be removed (clutter, tools), drawn
-// over their own photo (with step 4's green mask tint once it exists, for context). Not a
-// filled-area brush like confirmMask's – just a thin line following the drag, since this is only
+// over their own photo (with step 4's mask tint once it exists, for context). Not a filled-area
+// segment brush like step 4's own paint tool – just a thin line following the drag, since this is only
 // ever an approximate "roughly here" position for the AI, never an exact shape or size (the owner's
 // own framing). Captured as plain point lists in the same photo-relative 0–100% coordinate
 // convention plan.php/garden-plan.js already use. Unlike step 4, this step is entirely optional –
@@ -1183,6 +1208,19 @@ function buildStagedPlan(S,w,h,editMask,ctx){
   return m;
  }
  var removeMask=claim(ctx.removeStrokes,STAGE_WIDTH_SHARE.remove);
+ // Step 4's own "🟥 Odstranit" paint category (mg-paint-mask.js) marks removal the same way these
+ // rough step-5 strokes do – a literal-removal sub-mask, not part of the general "remainder"
+ // style redesign – so the two sources are simply unioned into one removal stage. A customer who
+ // marks removal on step 4 never has to repeat it on step 5; one who marks it on both (harmless,
+ // if unlikely) just gets the union of whatever they marked either way.
+ if(ctx.paintRemoveMask){
+  var paintRemove=S.combineMasks('intersect',ctx.paintRemoveMask,editMask);
+  if(used)paintRemove=S.combineMasks('subtract',paintRemove,used);
+  if(S.editableShare(paintRemove)>=MIN_SHARE){
+   removeMask=removeMask?S.combineMasks('union',removeMask,paintRemove):paintRemove;
+   used=used?S.combineMasks('union',used,paintRemove):paintRemove;
+  }
+ }
  if(removeMask)stages.push({mask:removeMask,instructions:Brief.buildRemoveStageInstructions()});
  var pathMask=claimPolygons(ctx.pathPolygons)||claim(ctx.pathStrokes,STAGE_WIDTH_SHARE.path);
  if(pathMask)stages.push({mask:pathMask,instructions:Brief.buildPathStageInstructions({sizeHint:ctx.pathSizeHint})});
@@ -1735,7 +1773,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   // placement to the AI's reading of a hint line. brief.text is always built the same way either
   // way – it's the general/"remainder" instructions, and its .plants/.rejected drive the result
   // summary further down regardless of which path actually ran.
-  const hasSketch=!!(bedStrokes.length||pathStrokes.length||removeStrokes.length||bedPolygons.length||pathPolygons.length);
+  const hasSketch=!!(bedStrokes.length||pathStrokes.length||removeStrokes.length||bedPolygons.length||pathPolygons.length||paintRemoveMask);
   const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,Object.assign({},styleExtra,{skipHintLine:hasSketch,bedHints:sampleHintPoints(bedStrokes,4),pathHints:sampleHintPoints(pathStrokes,4),removeHints:sampleHintPoints(removeStrokes,4)}));
   // Precise click-corner shapes (0–100% coords) convert 1:1 into `original`'s pixel space: `original`
   // is drawn at exactly canvas.width×canvas.height, the same pixel grid the calibration (metersPerPixel)
@@ -1744,7 +1782,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   const bedPolygonsPx=bedPolygons.map(polyToPx),pathPolygonsPx=pathPolygons.map(polyToPx);
   const bedSizeHint=bedPolygons.map(polygonAreaM2).filter(v=>v!=null).map(v=>`≈ ${fmt(v)} m²`).join(', ')||null;
   const pathSizeHint=pathPolygons.map(polygonPerimeterM).filter(v=>v!=null).map(v=>`obvod ≈ ${fmt(v)} m`).join(', ')||null;
-  const stagedPlan=hasSketch?buildStagedPlan(S,original.width,original.height,editMask,{bedStrokes,pathStrokes,removeStrokes,bedPolygons:bedPolygonsPx,pathPolygons:pathPolygonsPx,bedSizeHint,pathSizeHint,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max}):null;
+  const stagedPlan=hasSketch?buildStagedPlan(S,original.width,original.height,editMask,{bedStrokes,pathStrokes,removeStrokes,bedPolygons:bedPolygonsPx,pathPolygons:pathPolygonsPx,bedSizeHint,pathSizeHint,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max,paintRemoveMask}):null;
   // Staged pipeline sends the photo untouched – precise masks replace the drawn hint lines, so
   // there's nothing left for annotateForAI to usefully mark. The single-call fallback still burns
   // the rough sketch onto the photo (solution 1, "5 řešení"), since that path has no per-area mask.

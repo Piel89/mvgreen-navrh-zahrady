@@ -1893,7 +1893,9 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
    default) that squash just distorted the photo's aspect ratio into the squashed box; this fix lets
    the box scroll instead, so the stage – and the photo in it – always gets its real, correctly
    proportioned size. */
-.mg-mask-stage{background:#e8f1e9;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:160px;flex-shrink:0}
+.mg-mask-stage{position:relative;background:#e8f1e9;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:160px;flex-shrink:0}
+.mg-paint-loading{position:absolute;inset:0;z-index:1;margin:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);font-size:15px;font-weight:600;color:#156333;text-align:center;padding:0 16px}
+.mg-paint-brush [data-cat="2"][aria-pressed=true]{background:#fdeceb;border-color:#b42318;color:#b42318;box-shadow:inset 0 0 0 1px #b42318}
 .mg-mask-stage canvas{display:block;max-width:100%;max-height:60vh;width:auto;height:auto;touch-action:none}
 /* 0.6.101: zoom + pan so a brush stroke can be placed precisely with a finger on a small phone
    screen, plus a "maximize" toggle that gives the dialog more room – the drawing RESOLUTION never
