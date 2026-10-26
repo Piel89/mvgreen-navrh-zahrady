@@ -157,6 +157,7 @@
     + 'button#tool-remove.active{background:var(--remove);color:#fff;}'
     + 'button#tool-erase.active{background:var(--erase);color:#fff;}'
     + 'button.primary{background:var(--accent);color:#fff;}'
+    + 'button#tool-precision.active{background:#a6670a;color:#fff;}'
     + '.zoomrow{flex:0 0 auto;display:flex;gap:6px;padding:6px 0;}'
     + '.stage-wrap{position:relative;flex:1 1 auto;min-height:0;margin-bottom:8px;display:flex;}'
     + '.stage-viewport{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;background:#111;touch-action:none;}'
@@ -184,7 +185,7 @@
     + '<div id="chrome-top">'
     + '<div class="headerbar"><h1>Co zůstane a co odstranit?</h1><button id="info-toggle" class="info-btn" aria-label="Nápověda">ⓘ</button></div>'
     + '<div class="info-panel" id="info-panel" hidden>'
-    + '<p class="note">1 prst maluje nebo klepe (i tahem po více políčkách najednou). 2 prsty posouvají a přibližují. Když jsi přiblížený, klepni na mapku vpravo dole a hned skočíš jinam.</p>'
+    + '<p class="note">1 prst maluje nebo klepe (i tahem po více políčkách najednou). 2 prsty posouvají a přibližují. Když jsi přiblížený, klepni na mapku vpravo dole a hned skočíš jinam. Na velké ploše (tráva, obloha) jeď normálně štětcem – u plotu, hrany záhonu nebo kytky zapni „🔲 Přesně (dílky)“: uvidíš hranice jednotlivých dílků a malování trefí vždy jen ten jeden, na kterém přesně jsi.</p>'
     + '<div class="legend">'
     + '<span><span class="sw" style="background:var(--protect)"></span> zůstane (chráněno)</span>'
     + '<span><span class="sw" style="background:var(--remove)"></span> odstranit</span>'
@@ -195,6 +196,7 @@
     + '<button id="tool-protect" class="active" disabled>🟩 Zůstane (maluj)</button>'
     + '<button id="tool-remove" disabled>🟥 Odstranit (maluj)</button>'
     + '<button id="tool-erase" disabled>⬜ Smazat (maluj)</button>'
+    + '<button id="tool-precision" disabled title="Zapne hranice jednotlivých dílků a malování po jednom – pro přesné trefení plotu, hrany záhonu nebo kytky.">🔲 Přesně (dílky)</button>'
     + '<button id="auto-sky" disabled>☁️ Obloha automaticky</button>'
     + '<button id="undo-btn" disabled>↶ Zpět</button>'
     + '<button id="clear-all" disabled>Vymazat vše</button>'
@@ -298,6 +300,23 @@
         var origData = seg.preview;
         var COLORS = {}; COLORS[PROTECT] = [47, 174, 74]; COLORS[REMOVE] = [217, 69, 63];
         var S = window.MVGreenAISafety;
+        // "🔲 Přesně (dílky)" mode: draws the individual segment ("dílek") boundaries so the
+        // customer can see exactly where each paintable piece ends, and switches painting (below,
+        // paintDisc) from the usual fixed-radius brush disc to touching only the single segment
+        // under the cursor – needed to hit a thin fence line, a bed edge, or one flower precisely,
+        // where the brush disc otherwise always drags in a bit of the neighbouring segment too.
+        var precisionMode = false, edgeMap = null;
+        function computeEdgeMap() {
+          if (edgeMap) return edgeMap;
+          edgeMap = new Uint8Array(W * H);
+          for (var y = 0; y < H; y++) {
+            for (var x = 0; x < W; x++) {
+              var i = y * W + x, lab = labels[i];
+              if ((x + 1 < W && labels[i + 1] !== lab) || (y + 1 < H && labels[i + W] !== lab)) edgeMap[i] = 1;
+            }
+          }
+          return edgeMap;
+        }
         function repaint() {
           var out = new Uint8ClampedArray(origData.data);
           for (var i = 0, p = 0; i < labels.length; i++, p += 4) {
@@ -307,6 +326,12 @@
               out[p] = out[p] * 0.42 + c[0] * 0.58;
               out[p + 1] = out[p + 1] * 0.42 + c[1] * 0.58;
               out[p + 2] = out[p + 2] * 0.42 + c[2] * 0.58;
+            }
+          }
+          if (precisionMode) {
+            var edges = computeEdgeMap();
+            for (var j = 0, pp = 0; j < edges.length; j++, pp += 4) {
+              if (edges[j]) { out[pp] *= 0.35; out[pp + 1] *= 0.35; out[pp + 2] *= 0.35; }
             }
           }
           ctx.putImageData(new ImageData(out, W, H), 0, 0);
@@ -344,6 +369,12 @@
         root.getElementById('clear-all').addEventListener('click', function () { category.fill(0); repaint(); });
         root.getElementById('auto-sky').addEventListener('click', function () {
           seg.skyIds.forEach(function (id) { category[id] = PROTECT; });
+          repaint();
+        });
+        var precisionBtn = root.getElementById('tool-precision');
+        precisionBtn.addEventListener('click', function () {
+          precisionMode = !precisionMode;
+          precisionBtn.classList.toggle('active', precisionMode);
           repaint();
         });
 
@@ -494,6 +525,15 @@
         var strokeForceErase = false;
         function paintDisc(cx, cy) {
           var target = strokeForceErase ? 0 : currentTool === 'protect' ? PROTECT : currentTool === 'erase' ? 0 : REMOVE;
+          if (precisionMode) {
+            // Touch only the exact segment under the cursor – no radius – so a fence line, a bed
+            // edge, or a single flower can be hit without also grabbing its neighbours.
+            if (cx < 0 || cx >= W || cy < 0 || cy >= H) return;
+            var only = labels[cy * W + cx];
+            if (!strokeChanges.has(only)) strokeChanges.set(only, category[only]);
+            category[only] = target;
+            return;
+          }
           for (var k = 0; k < brushOffsets.length; k++) {
             var x = cx + brushOffsets[k][0], y = cy + brushOffsets[k][1];
             if (x < 0 || x >= W || y < 0 || y >= H) continue;
@@ -505,7 +545,11 @@
         function paintAt(pt) {
           if (lastPaintPt) {
             var dist = Math.hypot(pt.x - lastPaintPt.x, pt.y - lastPaintPt.y);
-            var steps = Math.max(1, Math.ceil(dist / (BRUSH_RADIUS * 0.6)));
+            // A precise drag must sample densely (every ~1.5px) so a thin segment along the path
+            // between two points isn't skipped entirely – the usual brush-disc spacing (a fraction
+            // of BRUSH_RADIUS) assumes the disc itself covers the gap, which precision mode has none of.
+            var stepSize = precisionMode ? 1.5 : BRUSH_RADIUS * 0.6;
+            var steps = Math.max(1, Math.ceil(dist / stepSize));
             for (var i = 1; i <= steps; i++) paintDisc(Math.round(lastPaintPt.x + (pt.x - lastPaintPt.x) * i / steps), Math.round(lastPaintPt.y + (pt.y - lastPaintPt.y) * i / steps));
           } else paintDisc(pt.x, pt.y);
           lastPaintPt = pt;
@@ -589,7 +633,7 @@
           close({ editMask: editMask, removeMask: removeMask, category: category, hasRemove: hasRemove, previewDataUrl: previewDataUrl });
         });
 
-        root.querySelectorAll('#tool-protect,#tool-remove,#tool-erase,#auto-sky,#undo-btn,#clear-all').forEach(function (b) { b.disabled = false; });
+        root.querySelectorAll('#tool-protect,#tool-remove,#tool-erase,#tool-precision,#auto-sky,#undo-btn,#clear-all').forEach(function (b) { b.disabled = false; });
         applyZoom();
         centerView();
         repaint();
