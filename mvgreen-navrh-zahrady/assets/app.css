@@ -1899,7 +1899,7 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
    screen, plus a "maximize" toggle that gives the dialog more room – the drawing RESOLUTION never
    changes (see ai-safety.js), only the on-screen size, so the stage must scroll while zoomed. */
 .mg-mask-stage.mg-mask-zoomed{overflow:auto;align-items:flex-start;justify-content:flex-start}
-.mg-mask-stage.mg-mask-panning canvas{touch-action:auto!important;cursor:grab}
+.mg-mask-stage.mg-mask-panning canvas{cursor:grab}
 .mg-mask-zoom{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .mg-mask-zoom button{min-width:44px;min-height:40px;padding:8px 12px;font-size:15px}
 .mg-mask-head{position:relative;padding-right:42px}
@@ -2051,7 +2051,7 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
    resolution tracks the zoomed size. */
 .mvgreen-designer .mg-bedpath-viewport.mg-bp-zoomed{overflow:auto;max-height:70vh;border-radius:14px}
 .mvgreen-designer .mg-bedpath-viewport.mg-bp-zoomed .mg-bedpath-stage{max-width:none;flex-shrink:0}
-.mvgreen-designer .mg-bedpath-viewport.mg-bp-panning canvas{touch-action:auto!important;cursor:grab}
+.mvgreen-designer .mg-bedpath-viewport.mg-bp-panning canvas{cursor:grab}
 .mvgreen-designer .mg-bedpath-zoom{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .mvgreen-designer .mg-bedpath-zoom button{min-width:44px;min-height:40px;padding:8px 12px;font-size:14px}
 .mvgreen-designer .mg-bedpath-body.mg-bp-fullscreen{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;z-index:2147483646;background:#fff;display:flex;flex-direction:column;gap:10px;padding:12px 12px max(12px,env(safe-area-inset-bottom));overflow:auto;margin:0;max-width:none;box-sizing:border-box}

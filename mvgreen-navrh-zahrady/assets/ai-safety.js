@@ -333,7 +333,6 @@
         '<button type="button" data-zoom="out" aria-label="Oddálit">－</button>' +
         '<button type="button" data-zoom="reset" title="Vrátit přiblížení">100 %</button>' +
         '<button type="button" data-zoom="in" aria-label="Přiblížit">＋</button>' +
-        '<button type="button" data-zoom="pan" aria-pressed="false">✋ Posun</button>' +
         '</div>' +
         '<div class="mg-mask-stage"><canvas></canvas></div>' +
         '<div class="mg-mask-tools">' +
@@ -362,8 +361,8 @@
       // real pixels, so paint()'s coordinate math below needs no change), only its on-screen CSS
       // size grows – the stage then scrolls to pan. Mirrors app.js's step-3 editor zoom pattern.
       var maskStage = ov.querySelector('.mg-mask-stage');
-      var maskZoom = 1, MASK_ZOOM_MAX = 3, maskNaturalW = null, maskNaturalH = null, maskPanning = false;
-      function maskCursor() { cv.style.cursor = maskPanning ? 'grab' : (brush ? 'crosshair' : 'default'); }
+      var maskZoom = 1, MASK_ZOOM_MAX = 3, maskNaturalW = null, maskNaturalH = null;
+      function maskCursor() { cv.style.cursor = brush ? 'crosshair' : 'default'; }
       function applyMaskZoom() {
         if (maskZoom <= 1) {
           cv.style.removeProperty('width'); cv.style.removeProperty('height');
@@ -384,16 +383,43 @@
         }
         var resetBtn = ov.querySelector('[data-zoom=reset]'); if (resetBtn) resetBtn.textContent = Math.round(maskZoom * 100) + ' %';
       }
-      var zoomInBtn = ov.querySelector('[data-zoom=in]'), zoomOutBtn = ov.querySelector('[data-zoom=out]'), zoomResetBtn = ov.querySelector('[data-zoom=reset]'), panBtn = ov.querySelector('[data-zoom=pan]');
+      var zoomInBtn = ov.querySelector('[data-zoom=in]'), zoomOutBtn = ov.querySelector('[data-zoom=out]'), zoomResetBtn = ov.querySelector('[data-zoom=reset]');
       if (zoomInBtn) zoomInBtn.addEventListener('click', function () { maskZoom = Math.min(MASK_ZOOM_MAX, maskZoom + 0.5); applyMaskZoom(); });
       if (zoomOutBtn) zoomOutBtn.addEventListener('click', function () { maskZoom = Math.max(1, maskZoom - 0.5); applyMaskZoom(); });
       if (zoomResetBtn) zoomResetBtn.addEventListener('click', function () { maskZoom = 1; applyMaskZoom(); maskStage.scrollLeft = 0; maskStage.scrollTop = 0; });
-      if (panBtn) panBtn.addEventListener('click', function () {
-        maskPanning = !maskPanning;
-        panBtn.setAttribute('aria-pressed', String(maskPanning));
-        maskStage.classList.toggle('mg-mask-panning', maskPanning);
-        maskCursor();
-      });
+      // Two-finger pan/zoom, one-finger paint – no mode button to forget. A customer who just wants
+      // to look around a tall photo now simply uses two fingers like any map/photo app; a stray
+      // single-finger swipe over the canvas can only ever be a paint stroke (or nothing, with no
+      // brush picked), never something that silently scrolls and derails a stroke, and never
+      // something that leaves an unwanted line behind because "Posun" wasn't toggled on first.
+      var maskPointers = new Map();
+      var maskPinch = null; // {dist, midX, midY, zoom, scrollLeft, scrollTop}
+      function maskPinchPoints() {
+        var pts = Array.from(maskPointers.values());
+        return pts.length >= 2 ? [pts[0], pts[1]] : null;
+      }
+      function maskStartPinch() {
+        var p = maskPinchPoints(); if (!p) return;
+        maskPinch = {
+          dist: Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y) || 1,
+          midX: (p[0].x + p[1].x) / 2, midY: (p[0].y + p[1].y) / 2,
+          zoom: maskZoom, scrollLeft: maskStage.scrollLeft, scrollTop: maskStage.scrollTop
+        };
+        maskStage.classList.add('mg-mask-panning');
+      }
+      function maskUpdatePinch() {
+        var p = maskPinchPoints(); if (!p || !maskPinch) return;
+        var dist = Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y) || 1;
+        var midX = (p[0].x + p[1].x) / 2, midY = (p[0].y + p[1].y) / 2;
+        maskZoom = Math.max(1, Math.min(MASK_ZOOM_MAX, maskPinch.zoom * (dist / maskPinch.dist)));
+        applyMaskZoom();
+        maskStage.scrollLeft = maskPinch.scrollLeft - (midX - maskPinch.midX);
+        maskStage.scrollTop = maskPinch.scrollTop - (midY - maskPinch.midY);
+      }
+      function maskEndPinch() {
+        maskPinch = null;
+        maskStage.classList.remove('mg-mask-panning');
+      }
       maskStage.addEventListener('wheel', function (e) {
         if (!e.ctrlKey) return;
         e.preventDefault();
@@ -518,9 +544,26 @@
         lastX = x; lastY = y;
         render();
       }
-      cv.addEventListener('pointerdown', function (e) { if (maskPanning || !brush) return; painting = true; lastX = lastY = null; try { cv.setPointerCapture(e.pointerId); } catch (er) {} paint(e); });
-      cv.addEventListener('pointermove', function (e) { if (painting) paint(e); });
-      ['pointerup', 'pointercancel'].forEach(function (ev) { cv.addEventListener(ev, function () { painting = false; lastX = lastY = null; }); });
+      cv.addEventListener('pointerdown', function (e) {
+        maskPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (maskPointers.size >= 2) { painting = false; lastX = lastY = null; maskStartPinch(); return; }
+        if (!brush) return;
+        painting = true; lastX = lastY = null;
+        try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+        paint(e);
+      });
+      cv.addEventListener('pointermove', function (e) {
+        if (maskPointers.has(e.pointerId)) maskPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (maskPointers.size >= 2) { maskUpdatePinch(); return; }
+        if (painting) paint(e);
+      });
+      ['pointerup', 'pointercancel'].forEach(function (ev) {
+        cv.addEventListener(ev, function (e) {
+          maskPointers.delete(e.pointerId);
+          if (maskPointers.size < 2) maskEndPinch();
+          if (maskPointers.size === 0) { painting = false; lastX = lastY = null; }
+        });
+      });
       function close(v) { ov.remove(); resolve(v); }
       ov.querySelector('[data-act=cancel]').addEventListener('click', function () { close(null); });
       // Round the edge into calmer curves before handing the mask off. A brush stroke is really a

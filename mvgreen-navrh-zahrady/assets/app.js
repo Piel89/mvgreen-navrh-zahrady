@@ -725,7 +725,7 @@ q('mg-mask-adjust')?.addEventListener('click',()=>openMaskConfirmation(true));
 // small/specific objects (e.g. a concrete mixer) that the AI apparently couldn't reliably locate from
 // a category name alone – pointing at the exact spot removes that ambiguity.
 const bedPathStep=makeReferenceStep(5,'Umístění záhonu, cesty a úklidu','Nepovinné: hrubě naznačte štětcem, kde zhruba chcete záhon, kde cestu a co se má na fotce určitě odstranit (nepořádek, nářadí, stroje). Nejde o přesný tvar ani rozměr, jen orientační poloha pro AI – tyhle značky AI uvidí přímo na fotce, kterou upravuje. Tento krok můžete klidně přeskočit.');
-bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-viewport"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div></div><div class="mg-bedpath-zoom" role="group" aria-label="Lupa pro přesnější zakreslení prstem"><button type="button" data-bpzoom="out" aria-label="Oddálit">－</button><button type="button" data-bpzoom="reset" title="Vrátit přiblížení">100 %</button><button type="button" data-bpzoom="in" aria-label="Přiblížit">＋</button><button type="button" data-bpzoom="pan" aria-pressed="false">✋ Posun</button><button type="button" id="mg-bp-fullscreen" aria-pressed="false">⛶ Celá obrazovka</button></div><div class="mg-bedpath-mode" role="group" aria-label="Způsob zakreslení"><button type="button" id="mg-bp-mode-rough" aria-pressed="true">〰️ Hrubě (tahem)</button><button type="button" id="mg-bp-mode-precise" aria-pressed="false">✏️ Přesně (klikání rohů)</button><button type="button" id="mg-bp-calibrate">📏 Zadat měřítko</button></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon, cestu a odstranění"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" data-bp-tool="remove" aria-pressed="false">⬛ Tohle odstranit (nepořádek, nářadí)</button><button type="button" id="mg-bp-finish" class="mg-hidden">✓ Dokončit tvar</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note" id="mg-bp-mode-note">Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.</p><p class="mg-note mg-bp-measure" id="mg-bp-measure"></p></div>';
+bedPathStep.innerHTML+='<div class="mg-bedpath-body"><div class="mg-bedpath-viewport"><div class="mg-bedpath-stage"><img id="mg-bedpath-photo" class="mg-hidden" alt="Vaše fotografie zahrady"><canvas id="mg-bedpath-canvas"></canvas><span class="mg-bedpath-empty" id="mg-bedpath-empty">Nejprve nahrajte fotografii zahrady (krok „Fotografie zahrady“).</span></div></div><div class="mg-bedpath-zoom" role="group" aria-label="Lupa pro přesnější zakreslení prstem"><button type="button" data-bpzoom="out" aria-label="Oddálit">－</button><button type="button" data-bpzoom="reset" title="Vrátit přiblížení">100 %</button><button type="button" data-bpzoom="in" aria-label="Přiblížit">＋</button><button type="button" id="mg-bp-fullscreen" aria-pressed="false">⛶ Celá obrazovka</button></div><div class="mg-bedpath-mode" role="group" aria-label="Způsob zakreslení"><button type="button" id="mg-bp-mode-rough" aria-pressed="true">〰️ Hrubě (tahem)</button><button type="button" id="mg-bp-mode-precise" aria-pressed="false">✏️ Přesně (klikání rohů)</button><button type="button" id="mg-bp-calibrate">📏 Zadat měřítko</button></div><div class="mg-bedpath-tools" role="group" aria-label="Štětec pro záhon, cestu a odstranění"><button type="button" data-bp-tool="bed" aria-pressed="false">🔴 Tady chci záhon</button><button type="button" data-bp-tool="path" aria-pressed="false">🔵 Tady chci cestu</button><button type="button" data-bp-tool="remove" aria-pressed="false">⬛ Tohle odstranit (nepořádek, nářadí)</button><button type="button" id="mg-bp-finish" class="mg-hidden">✓ Dokončit tvar</button><button type="button" id="mg-bedpath-clear">Vymazat</button></div><p class="mg-note" id="mg-bp-mode-note">Čáry a křížky jsou jen orientační – stačí hrubý tah, AI je uvidí přímo na fotce a podle nich pozná zhruba kam záhon nebo cesta patří a co má jistě zmizet. Přesný tvar a rozměr si AI domyslí sama.</p><p class="mg-note mg-bp-measure" id="mg-bp-measure"></p></div>';
 generationStep.insertAdjacentElement('beforebegin',bedPathStep);
 // Flat arrays of strokes (each stroke a downsampled array of {x,y} in 0–100% photo coordinates).
 let bedStrokes=[],pathStrokes=[],removeStrokes=[];
@@ -769,7 +769,7 @@ function sizeBedPathCanvas(){
 // change at all to stay accurate at any zoom level).
 const bedPathViewport=bedPathStep.querySelector('.mg-bedpath-viewport');
 const bedPathStage=bedPathStep.querySelector('.mg-bedpath-stage');
-let bpZoom=1,bpNaturalW=null,bpPanning=false;
+let bpZoom=1,bpNaturalW=null;
 const BP_ZOOM_MAX=3;
 function bpApplyZoom(){
  if(bpZoom<=1){
@@ -783,17 +783,42 @@ function bpApplyZoom(){
  sizeBedPathCanvas();
  const resetBtn=bedPathBody.querySelector('[data-bpzoom=reset]');if(resetBtn)resetBtn.textContent=Math.round(bpZoom*100)+' %';
 }
-function bpCursor(){if(bedPathCanvas)bedPathCanvas.style.cursor=bpPanning?'grab':((bpTool||bp5Calibrating)?'crosshair':'default');}
+function bpCursor(){if(bedPathCanvas)bedPathCanvas.style.cursor=(bpTool||bp5Calibrating)?'crosshair':'default';}
 bedPathStep.querySelector('[data-bpzoom=in]')?.addEventListener('click',()=>{bpZoom=Math.min(BP_ZOOM_MAX,bpZoom+0.5);bpApplyZoom();});
 bedPathStep.querySelector('[data-bpzoom=out]')?.addEventListener('click',()=>{bpZoom=Math.max(1,bpZoom-0.5);bpApplyZoom();});
 bedPathStep.querySelector('[data-bpzoom=reset]')?.addEventListener('click',()=>{bpZoom=1;bpApplyZoom();bedPathViewport.scrollLeft=0;bedPathViewport.scrollTop=0;});
-const bpPanBtn=bedPathStep.querySelector('[data-bpzoom=pan]');
-bpPanBtn?.addEventListener('click',()=>{
- bpPanning=!bpPanning;
- bpPanBtn.setAttribute('aria-pressed',String(bpPanning));
- bedPathViewport.classList.toggle('mg-bp-panning',bpPanning);
- bpCursor();
-});
+// Two-finger pan/zoom, one-finger draws – same convention as step 4's mask brush (see ai-safety.js):
+// no "Posun" mode button to forget, a stray single-finger swipe over the canvas can only ever be a
+// sketch stroke (or nothing, with no tool picked), and looking around a tall photo is just two
+// fingers like any map/photo app.
+const bpPointers=new Map();
+let bpPinch=null; // {dist, midX, midY, zoom, scrollLeft, scrollTop}
+function bpPinchPoints(){
+ const pts=Array.from(bpPointers.values());
+ return pts.length>=2?[pts[0],pts[1]]:null;
+}
+function bpStartPinch(){
+ const p=bpPinchPoints();if(!p)return;
+ bpPinch={
+  dist:Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y)||1,
+  midX:(p[0].x+p[1].x)/2,midY:(p[0].y+p[1].y)/2,
+  zoom:bpZoom,scrollLeft:bedPathViewport.scrollLeft,scrollTop:bedPathViewport.scrollTop
+ };
+ bedPathViewport.classList.add('mg-bp-panning');
+}
+function bpUpdatePinch(){
+ const p=bpPinchPoints();if(!p||!bpPinch)return;
+ const dist=Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y)||1;
+ const midX=(p[0].x+p[1].x)/2,midY=(p[0].y+p[1].y)/2;
+ bpZoom=Math.max(1,Math.min(BP_ZOOM_MAX,bpPinch.zoom*(dist/bpPinch.dist)));
+ bpApplyZoom();
+ bedPathViewport.scrollLeft=bpPinch.scrollLeft-(midX-bpPinch.midX);
+ bedPathViewport.scrollTop=bpPinch.scrollTop-(midY-bpPinch.midY);
+}
+function bpEndPinch(){
+ bpPinch=null;
+ bedPathViewport.classList.remove('mg-bp-panning');
+}
 bedPathViewport?.addEventListener('wheel',e=>{
  if(!e.ctrlKey)return;
  e.preventDefault();
@@ -1024,7 +1049,16 @@ function bedPathPoint(e){
 }
 if(bedPathCanvas){
  bedPathCanvas.addEventListener('pointerdown',e=>{
-  if(bpPanning)return;
+  bpPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(bpPointers.size>=2){
+   // Second finger down always means pinch/pan now, never a draw action – cancel any rough-mode
+   // stroke that was in progress so it can't end up half-drawn, half-pinch-gesture. A precise-mode
+   // draft's already-placed corner taps are left alone (those were deliberate single-finger taps,
+   // not something to discard just because the person now wants to zoom in to place the next one).
+   bpDrawing=false;bpCurrent=null;renderBedPath();
+   bpStartPinch();
+   return;
+  }
   if(bp5Calibrating){calibrate5Click(bedPathPoint(e));return;}
   if(!bpTool)return;
   if(preciseMode&&bpTool!=='remove'){
@@ -1037,6 +1071,8 @@ if(bedPathCanvas){
   try{bedPathCanvas.setPointerCapture(e.pointerId);}catch(er){}
  });
  bedPathCanvas.addEventListener('pointermove',e=>{
+  if(bpPointers.has(e.pointerId))bpPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(bpPointers.size>=2){bpUpdatePinch();return;}
   if(preciseMode)return;
   if(!bpDrawing||!bpCurrent)return;
   bpCurrent.push(bedPathPoint(e));
@@ -1049,7 +1085,9 @@ if(bedPathCanvas){
   bedPathCtx.stroke();
   bedPathCtx.setLineDash([]);
  });
- ['pointerup','pointercancel'].forEach(ev=>bedPathCanvas.addEventListener(ev,()=>{
+ ['pointerup','pointercancel'].forEach(ev=>bedPathCanvas.addEventListener(ev,e=>{
+  bpPointers.delete(e.pointerId);
+  if(bpPointers.size<2)bpEndPinch();
   if(!bpDrawing)return;
   bpDrawing=false;
   if(bpCurrent&&bpCurrent.length>1){
