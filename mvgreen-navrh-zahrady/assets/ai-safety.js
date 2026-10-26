@@ -12,8 +12,15 @@
   'use strict';
 
   var SIZES = [[1536, 1024], [1024, 1536], [1024, 1024]];
-  var MAX_EDITABLE = 0.7;   // nikdy neodemknout víc než 70 % fotky
-  var MIN_EDITABLE = 0.02;  // a aspoň 2 %
+  // These two used to make validate() BLOCK confirming/generating outside 2%-70% editable share –
+  // explicitly removed by the owner: even marking almost the whole photo editable (e.g. "keep just
+  // this one bush") must still be confirmable and must still generate. Left defined (and still
+  // exported via `limits` below) only in case something elsewhere wants to show them as information;
+  // validate() itself no longer reads them. This does NOT touch finish()'s own hard pixel-lock or
+  // its MAX_DRIFT check right below – those stay exactly as strict as before, and are the actual
+  // guarantee that nothing outside the marked area ever changes.
+  var MAX_EDITABLE = 0.7;
+  var MIN_EDITABLE = 0.02;
   var MAX_DRIFT = 22;       // průměrná odchylka (0–255) v zamčených částech, nad níž je výsledek nepoužitelný
 
   function pickSize(w, h) {
@@ -80,9 +87,9 @@
     return t ? n / t : 0;
   }
 
+  // No longer blocks on coverage share at all, by explicit owner instruction – confirming the
+  // mask and generating must always be possible, whatever fraction of the photo ends up editable.
   function validate(coverage) {
-    if (coverage < MIN_EDITABLE) return 'Označte prosím na fotografii plochu zahrady, kterou chcete upravit.';
-    if (coverage > MAX_EDITABLE) return 'Upravovaná plocha je příliš velká. Ponechte dům, plot, stromy a oblohu mimo označení.';
     return '';
   }
 

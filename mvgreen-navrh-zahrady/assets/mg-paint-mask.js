@@ -32,9 +32,10 @@
  *
  * Every fresh open starts BLANK (category all 0), exactly like the approved prototype – the
  * customer presses "☁️ Obloha automaticky" themselves rather than the dialog silently pre-filling
- * anything. The existing MAX_EDITABLE/MIN_EDITABLE 70%/2% coverage gate (ai-safety.js's
- * validate()) still blocks confirming otherwise, unchanged, wired into the status bar exactly like
- * confirmMask did before it.
+ * anything. The status bar still shows the live Zůstane/Odstranit/Neoznačeno breakdown, but
+ * ai-safety.js's validate() no longer returns a blocking message for any coverage share (removed
+ * by explicit owner instruction: confirming and generating must always be possible, even marking
+ * almost the whole photo editable to keep just one bush) – okBtn is never disabled here any more.
  */
 (function () {
   'use strict';
