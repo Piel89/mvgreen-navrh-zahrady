@@ -352,8 +352,14 @@
         function isLandscape() { return window.innerWidth > window.innerHeight; }
         function isFullscreen() { return document.fullscreenElement === hostEl || document.webkitFullscreenElement === hostEl; }
         function baseStageWidth() {
+          // Always "contain" (whole photo visible, letterboxed if needed) at zoom 1 – including in
+          // fullscreen. The prototype this was ported from used "cover" (fill edge-to-edge, cropped)
+          // in fullscreen for more painting precision on a landscape phone, but the customer wants
+          // the whole photo visible the moment fullscreen turns on, not cropped until they zoom out
+          // manually. Fullscreen still buys the usable screen space (browser chrome hidden,
+          // orientation locked) – it just no longer forces a crop on entry.
           var vw = viewport.clientWidth || 1, vh = viewport.clientHeight || 1;
-          return isFullscreen() ? Math.max(vw, vh * (W / H)) : Math.min(vw, vh * (W / H));
+          return Math.min(vw, vh * (W / H));
         }
         function applyZoom() {
           var w = Math.round(baseStageWidth() * zoom);
