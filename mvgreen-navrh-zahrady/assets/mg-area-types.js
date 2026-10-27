@@ -197,7 +197,9 @@
       function close(v) { hostEl.remove(); resolve(v); }
       root.getElementById('act-cancel').addEventListener('click', function () { close(null); });
 
-      var MAX_DIM = 1000;
+      // Same fix as mg-paint-mask.js's MAX_DIM (see its comment): raised from 1000 so the photo and
+      // the grid don't visibly blur/block on a high-res photo viewed on a normal/large screen.
+      var MAX_DIM = 1400;
       var scale = Math.min(1, MAX_DIM / Math.max(photoW, photoH));
       var W = Math.max(1, Math.round(photoW * scale)), H = Math.max(1, Math.round(photoH * scale));
       canvas.width = W; canvas.height = H;
@@ -205,7 +207,15 @@
       var origCanvas = mkCanvasFrom(photo, W, H);
       var origData = origCanvas.getContext('2d').getImageData(0, 0, W, H);
       var lockMap = downscaleLockMap(editMask, photoW, photoH, W, H);
-      var cellSize = Math.max(10, Math.round(W / 45));
+      // Owner-reported bug: with a coarse grid, a cell straddling a real edge (e.g. a retaining
+      // wall meeting a flower bed) can only be assigned ENTIRELY to one category, so the resulting
+      // mask boundary overshoots past the true edge by up to half a cell's width – visible as the
+      // "stays unchanged" area eating into the bed he wants changed, or vice versa. Shrinking the
+      // divisor from 45 to 100 roughly halves each cell's side length (quarters its area), so in
+      // precision mode (single-cell clicks) the boundary can be traced much closer to the real
+      // edge. BRUSH_RADIUS below is unaffected (it's bounded by W/60, not cellSize), so normal
+      // broad-area brush painting stays just as fast – only the finest achievable precision changes.
+      var cellSize = Math.max(10, Math.round(W / 100));
       var grid = buildGrid(W, H, cellSize);
 
       var category = new Uint8Array(grid.numSegments + 1); // 0 = unspecified, else index+1 into CATEGORIES

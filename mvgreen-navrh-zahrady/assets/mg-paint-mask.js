@@ -59,7 +59,17 @@
   function segmentPhoto(photo, cacheKey) {
     if (segCache && segCache.key === cacheKey) return segCache.promise;
     var promise = new Promise(function (resolve, reject) {
-      var MAX_DIM = 1000; // same working resolution validated in the standalone prototype
+      // Owner-reported bug: on a high-res photo (e.g. 4000x1848) viewed on a normal/large screen –
+      // especially fullscreen – the stage gets stretched well past this canvas's own pixel buffer,
+      // so the photo (and the segment grid) visibly blurs/blocks. 1000 was the standalone
+      // prototype's validated value; raised to 1400 (~2x the pixel count) as a low-risk fix that
+      // covers virtually every phone/tablet screen with zero upscaling and meaningfully sharpens
+      // typical laptop/desktop widths too, while repaint()'s per-pixel loop (the actual per-stroke
+      // cost, see paintAt below) stays comfortably inside a 60fps frame budget. A genuinely sharp
+      // render at ANY screen size would need a separate high-res display layer composited over this
+      // low-res segmentation canvas instead of sharing one canvas for both jobs – a bigger rendering
+      // change, only worth it if 1400 still isn't enough in practice.
+      var MAX_DIM = 1400;
       var srcW = photo.width || photo.naturalWidth, srcH = photo.height || photo.naturalHeight;
       var scale = Math.min(1, MAX_DIM / Math.max(srcW, srcH));
       var W = Math.max(1, Math.round(srcW * scale)), H = Math.max(1, Math.round(srcH * scale));
