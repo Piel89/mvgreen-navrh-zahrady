@@ -88,7 +88,7 @@ function showUploadedPhotoPreview(){
  if(window.MVGreenBrief&&q('mg-photo-check'))window.MVGreenBrief.renderCheck(q('mg-photo-check'),window.MVGreenBrief.analyze(img));
 }
 // 0.6.102: the photo used to vanish on every reload ("Fotografie se neukládá") because a <input
-// type=file> can't be serialized into the existing localStorage draft (mvgreen-designer-draft-v3) -
+// type=file> can't be serialized into the existing localStorage draft (mvgreen-designer-draft-v4) -
 // IndexedDB is the browser storage actually meant for binary blobs, so the already-downscaled
 // canvas (max 1400px, same JPEG the upload preview already builds via toDataURL above) is saved
 // there on every upload and quietly restored on the next visit, right next to the existing
@@ -1001,7 +1001,11 @@ if(heroComparison){
  sync();
 }
 root.querySelectorAll('[data-welcome-variant]').forEach(btn=>btn.addEventListener('click',()=>{chooseVariant(btn.dataset.welcomeVariant);openDesignerModal()}));
-const key='mvgreen-designer-draft-v3';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){tailoredChoice=typeof d.tailoredChoice==='string'?d.tailoredChoice:'';for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[];}}catch(e){}chooseVariant(q('mg-variant').value,false);updateList();
+// v3->v4: step 4/5 were reworked from freehand bed/path/remove sketches to the paint-mask +
+// area-type grid tools, so an old v3 draft's saved notes text (e.g. referencing the old
+// "zelené/červené/modré" color scheme) no longer matches reality. Bumping the key means every
+// old cached draft is silently ignored instead of resurfacing stale, now-wrong form text.
+const key='mvgreen-designer-draft-v4';try{const d=JSON.parse(localStorage.getItem(key)||'null');if(d){tailoredChoice=typeof d.tailoredChoice==='string'?d.tailoredChoice:'';for(const id of ids)if(typeof d.form?.[id]==='string')q(id).value=d.form[id];if(Array.isArray(d.areas))areas=d.areas;metersPerPixel=Number.isFinite(d.metersPerPixel)?d.metersPerPixel:null;calibration=Array.isArray(d.calibration)?d.calibration:[];}}catch(e){}chooseVariant(q('mg-variant').value,false);updateList();
 // Silent restore of the photo itself (0.6.102) – runs after the synchronous localStorage restore
 // above so any already-recovered areas/calibration are in memory first; setupPhoto's
 // resetAreas=false keeps them exactly as restored instead of wiping them out like a fresh upload
@@ -1361,7 +1365,7 @@ window.MVGreenPlanAndAngles=mgPlanAndAngles;
 // jednorázovým kódem z e-mailu (payments.php) – obě cesty jdou přes tutéž funkci níže.
 const aiConfig=window.MVGreenAI||{};
 const aiButton=q('mg-ai-test');
-// Separate localStorage key from the general form draft (mvgreen-designer-draft-v3) – this one
+// Separate localStorage key from the general form draft (mvgreen-designer-draft-v4) – this one
 // only ever holds the customer's redeemed code, so a saved AI result can be found again after a
 // crash/refresh even though the photo itself is never kept in the browser.
 const resultCodeKey='mvgreen-result-code';
