@@ -275,11 +275,25 @@
     return 'V CELÉ průhledné části masky je konkrétní předmět nebo nepořádek, který si zákazník sám označil jako věc k odstranění (typicky stavební nářadí nebo technika jako míchačka, kolečko, žebřík, hadice, nebo hromada hlíny, písku, dřeva či jiného materiálu). Odstraň ho úplně a beze zbytku – nenechej viditelnou jeho žádnou část ani stín ani obrys po něm. Nahraď to místo tím, co by tam realisticky navazovalo podle bezprostředního okolí těsně za hranicí masky (trávník, dlažba, mulč nebo štěrk – podle toho, co na fotografii sousedí). Nepřidávej žádné nové rostliny ani prvky, jen uveď plochu do čistého, upraveného stavu jako součást zbytku zahrady. Fotorealistický výsledek, žádné jiné změny, žádný malovaný ani ilustrativní vzhled.';
   }
 
+  // A spot the customer marked for removal (step 4) very often sits under a new bed/path/wall/grass
+  // area they later marked in roughly the same place (e.g. "there's a mixer there, remove it" then,
+  // separately, "put a bed there") – by design that overlap is now resolved in the area-type stage's
+  // favour (see app.js's buildStagedPlan claim order), since a specific "put a bed here" is a more
+  // precise instruction than the generic "just tidy up, don't add anything" remove stage. But the
+  // area-type stage's own mask doesn't know whether the photo under it still shows the original
+  // clutter, so every builder below states explicitly that any pre-existing object/material in its
+  // masked area must be cleared away as part of building the new thing – otherwise the model could
+  // leave the old object awkwardly standing in among new plants/paving instead of replacing it.
+  // Reported 2026-10-27 ("míchačku smazalo, ale vynechalo tam úplně záhon co tam měl být" / "ten
+  // nástroj... musí to vzít v potaz, že... nemůže prostě vynechat" – the tool must treat the whole
+  // marked area as one job, not leave untouched gaps inside it).
+  var CLEAR_EXISTING_NOTE = ' Pokud je v této ploše na fotce nějaký existující předmět, materiál, stavební technika nebo nepořádek, odstraň ho úplně jako součást téhle úpravy a nahraď ho tím, co je popsané níže – nenech z něj nic viditelného ani jím nic neobcházej.';
+
   /** Hardscape stage: the customer's own "🔵 Tady chci cestu" mark, already buffered into a real path-shaped mask. */
   function buildPathStageInstructions(extra) {
     var material = (extra && extra.pathMaterial) || 'mlatová nebo štěrková cestička s přírodním, nepravidelným okrajem';
     var sizeHint = extra && extra.sizeHint;
-    var base = 'V CELÉ průhledné části masky vytvoř ' + material + ', která plynule a realisticky navazuje na úroveň a materiál bezprostředního okolí (tam, kde maska sousedí s trávníkem, zůstává za okrajem cesty trávník; kde sousedí s domem nebo zdí, cesta k nim přiléhá). Cesta musí vyplnit celou odemčenou plochu až po samý okraj, beze zbytku, bez mezer ani nedotažených koutů. Nepřidávej v této ploše žádné rostliny ani záhon, jen zpevněný povrch.' + (sizeHint ? ' Zákazník tuhle plochu přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, nic nezaokrouhluj ani nezvětšuj.' : '') + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    var base = 'V CELÉ průhledné části masky vytvoř ' + material + ', která plynule a realisticky navazuje na úroveň a materiál bezprostředního okolí (tam, kde maska sousedí s trávníkem, zůstává za okrajem cesty trávník; kde sousedí s domem nebo zdí, cesta k nim přiléhá). Cesta musí vyplnit celou odemčenou plochu až po samý okraj, beze zbytku, bez mezer ani nedotažených koutů. Nepřidávej v této ploše žádné rostliny ani záhon, jen zpevněný povrch.' + CLEAR_EXISTING_NOTE + (sizeHint ? ' Zákazník tuhle plochu přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, nic nezaokrouhluj ani nezvětšuj.' : '') + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
     return withDetail(base, extra && extra.detail);
   }
 
@@ -306,7 +320,7 @@
     var speciesLine = detail
       ? ' Pro cokoliv, co zákazníkovo přání samo nespecifikuje, použij tyto ověřené druhy: ' + plantListLine(pick) + '.'
       : ' POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí.';
-    var base = 'V CELÉ průhledné části masky vytvoř záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou (pokud zákazníkovo přání níže neurčuje jinak).' + wishLine + speciesLine + (!detail ? ' Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' : '') + (cols.length && !detail ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + (sizeHint ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.' : '') + terrainHint + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    var base = 'V CELÉ průhledné části masky vytvoř záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou (pokud zákazníkovo přání níže neurčuje jinak).' + wishLine + speciesLine + (!detail ? ' Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' : '') + (cols.length && !detail ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + (sizeHint ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.' : '') + terrainHint + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
     return base;
   }
 
@@ -347,12 +361,12 @@
     // of whichever specific grass-type category the customer picked in step 6 (`detail`).
     var sunText = ({ 'Slunce': 'plné slunce', 'Polostín': 'polostín', 'Stín': 'stín' })[d && d['mg-sun']] || 'různé oslunění na zahradě';
     var irrText = ['automatická závlaha je k dispozici', 'zalévá se ručně', 'zahrada se nezalévá – jen suchovzdorné řešení'][+(d && d['mg-irrigation'] || 1)] || 'zalévá se ručně';
-    var base = 'V CELÉ průhledné části masky vytvoř zdravý, rovnoměrně sestřižený trávník stejné barvy a textury jako zbytek trávníku na fotografii, plynule navazující na své okolí až po samý okraj masky, beze zbytku. Podmínky této konkrétní plochy: ' + sunText + '; ' + irrText + ' – zvol travní směs a hustotu odpovídající těmto podmínkám (např. stín snášející směs do stínu, odolnou/suchovzdornou směs tam, kde se nezalévá). Žádné rostliny, dlažba ani jiné prvky v této ploše. Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    var base = 'V CELÉ průhledné části masky vytvoř zdravý, rovnoměrně sestřižený trávník stejné barvy a textury jako zbytek trávníku na fotografii, plynule navazující na své okolí až po samý okraj masky, beze zbytku. Podmínky této konkrétní plochy: ' + sunText + '; ' + irrText + ' – zvol travní směs a hustotu odpovídající těmto podmínkám (např. stín snášející směs do stínu, odolnou/suchovzdornou směs tam, kde se nezalévá). Žádné rostliny, dlažba ani jiné prvky v této ploše.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
     return withDetail(base, detail);
   }
 
   function buildWallStageInstructions(detail) {
-    return withDetail('V CELÉ průhledné části masky vytvoř nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm) a musí navazovat na úroveň terénu po obou stranách. Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail);
+    return withDetail('V CELÉ průhledné části masky vytvoř nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm) a musí navazovat na úroveň terénu po obou stranách.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail);
   }
 
   window.MVGreenBrief = {

@@ -832,10 +832,17 @@ function buildStagedPlan(S,w,h,editMask,ctx){
   used=used?S.combineMasks('union',used,m):m;
   return m;
  }
- // Step 4's own "🟥 Odstranit" paint category (mg-paint-mask.js) – unrelated to area-type
- // classification, claimed first exactly like before this tool existed.
- var removeMask=ctx.paintRemoveMask?claimMask(ctx.paintRemoveMask):null;
- if(removeMask)stages.push({mask:removeMask,instructions:Brief.buildRemoveStageInstructions()});
+ // A spot marked "🟥 Odstranit" (step 4) very often sits under a bed/path/wall/grass area the
+ // customer separately marked over roughly the same place (clear a mixer away, then put a bed where
+ // it stood) – area-types now claim their pixels BEFORE the generic remove mask does, so that
+ // overlap goes to the specific, useful instruction ("build a bed here", which now also says to
+ // clear away whatever object is already there – see CLEAR_EXISTING_NOTE in garden-brief.js) instead
+ // of remove's catch-all "tidy up, don't add anything". It used to be the other way round (remove
+ // claimed first), which SHRANK an overlapping bed down to only its non-overlapping sliver and left
+ // the overlap with remove's "don't add anything" treatment – exactly the "AI didn't do anything
+ // there" gaps reported 2026-10-27 ("míchačku smazalo, ale vynechalo tam úplně záhon"). Execution
+ // order (which AI call runs first) is unaffected – remove still goes first in the stage list,
+ // there's just no instance mask left for it to steal from once an area-type already claimed it.
  var instancesByCategory=ctx.areaInstances||{};
  AREA_TYPE_ORDER.forEach(function(catId){
   (instancesByCategory[catId]||[]).forEach(function(inst){
@@ -845,6 +852,8 @@ function buildStagedPlan(S,w,h,editMask,ctx){
    stages.push({mask:m,instructions:AREA_TYPE_BUILDERS[catId](ctx,detail)});
   });
  });
+ var removeMask=ctx.paintRemoveMask?claimMask(ctx.paintRemoveMask):null;
+ if(removeMask)stages.unshift({mask:removeMask,instructions:Brief.buildRemoveStageInstructions()});
  var remainder=used?S.combineMasks('subtract',editMask,used):editMask;
  if(S.editableShare(remainder)>=MIN_SHARE)stages.push({mask:remainder,instructions:ctx.remainderInstructions});
  return stages.length?stages:null;
