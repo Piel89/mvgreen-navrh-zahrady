@@ -1003,7 +1003,7 @@ function startGenerationProgress(){
  const wrap=generationStep.querySelector('#mg-generation-progress');
  const fill=generationStep.querySelector('#mg-generation-progress-fill');
  const label=generationStep.querySelector('#mg-generation-progress-label');
- if(!wrap||!fill||!label)return{update(){},stop(){}};
+ if(!wrap||!fill||!label)return{update(){},retrying(){},stop(){}};
  let stopped=false;
  wrap.hidden=false;fill.style.width='4%';label.textContent='Připravujeme návrh…';
  return{
@@ -1015,6 +1015,10 @@ function startGenerationProgress(){
    const pct=Math.min(96,4+Math.round((completed/total)*92));
    fill.style.width=pct+'%';
    label.textContent='AI generuje vizualizaci… krok '+completed+'/'+total+' ('+Math.round(completed/total*100)+'%)';
+  },
+  retrying(attempt){
+   if(stopped)return;
+   label.textContent='Krátký výpadek spojení, zkouším znovu… ('+attempt+'/3)';
   },
   stop(ok){
    if(stopped)return;stopped=true;
@@ -1543,9 +1547,24 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const start=await mgAjax('mvgreen_ai_preview_start',startFields);
     const totalStages=start.totalStages||1;
     progress.update(0,totalStages);
-    let step;
+    let step,stepFails=0;
     for(;;){
-      step=await mgAjax('mvgreen_ai_preview_step',{jobId:start.jobId});
+      try{
+        step=await mgAjax('mvgreen_ai_preview_step',{jobId:start.jobId});
+        stepFails=0;
+      }catch(stepErr){
+        // A mobile connection (network handoff, screen-off backgrounding a poll mid-request) can
+        // drop ONE of what are now several sequential requests without anything actually having
+        // gone wrong server-side – the job (already paid for) just sits waiting for the next poll.
+        // Re-polling the SAME _step call is safe either way: if the server never got the dropped
+        // request, this simply resends it; if it got it but the reply was lost, the job has already
+        // moved on and just reports where it now stands – never re-runs a stage twice. Only a run of
+        // several failures in a row (a real, lasting problem) gives up and surfaces the error.
+        if(++stepFails>=4)throw stepErr;
+        progress.retrying(stepFails);
+        await new Promise(r=>setTimeout(r,1500*stepFails));
+        continue;
+      }
       if(step.done)break;
       progress.update(step.completedStages||0,step.totalStages||totalStages);
     }
