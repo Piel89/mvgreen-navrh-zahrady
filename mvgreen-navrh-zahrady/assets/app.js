@@ -1491,10 +1491,21 @@ q('mg-locality').addEventListener('input',()=>{const place=q('mg-locality').valu
 // Půdorys a pohled z jiného úhlu – navazuje na hotový AI návrh (jen pro správce v testu).
 function mgScaled(src,maxW,type,quality){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,maxW/i.naturalWidth);const c=document.createElement('canvas');c.width=Math.round(i.naturalWidth*k);c.height=Math.round(i.naturalHeight*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL(type||'image/jpeg',quality||0.85))};i.onerror=()=>rej(new Error('Obrázek se nepodařilo načíst.'));i.src=src})}
 async function mgAjax(action,fields){const ai=window.MVGreenAI||{};const data=new URLSearchParams();data.set('action',action);data.set('nonce',ai.nonce);Object.entries(fields).forEach(([k,v])=>data.set(k,v==null?'':String(v)));const r=await fetch(ai.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});const j=await r.json().catch(()=>({}));if(!j.success)throw new Error(j.data?.message||'Požadavek se nezdařil.');return j.data}
-async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask,extraFields){
+async function mgPlanAndAngles(host,summaryBox,finalImage,beforeImage,brief,d,editMask,extraFields){
   extraFields=extraFields||{};
   const P=window.MVGreenPlan;
-  const planBox=document.createElement('section');planBox.className='mg-plan-box';planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><p class="mg-note">Připravujeme seznam záhonů a rostlin…</p>';host.append(planBox);
+  // Chapters 2-5 of the "zahradní projekt" (chapter 1, the visualization, is already in the DOM -
+  // see runAiGeneration above). All four are placed up front as placeholders so the layout doesn't
+  // jump once the single mvgreen_ai_plan call that feeds all of them returns.
+  const bedsChapter=document.createElement('div');bedsChapter.className='mg-plan-box mg-project-chapter';
+  bedsChapter.innerHTML='<h4>2. Co a kam vysadit</h4><p class="mg-note">Připravujeme seznam záhonů a rostlin…</p>';
+  const shopChapter=document.createElement('div');shopChapter.className='mg-plan-box mg-project-chapter';
+  shopChapter.innerHTML='<h4>3. Nákupní seznam</h4><p class="mg-note">Počítáme orientační cenu materiálu…</p>';
+  const stepsChapter=document.createElement('div');stepsChapter.className='mg-plan-box mg-project-chapter';
+  stepsChapter.innerHTML='<h4>4. Postup realizace</h4><p class="mg-note">Připravujeme postup…</p>';
+  const careChapter=document.createElement('div');careChapter.className='mg-plan-box mg-project-chapter';
+  careChapter.innerHTML='<h4>5. Péče po celý rok</h4><p class="mg-note">Připravujeme kalendář péče…</p>';
+  host.append(bedsChapter,shopChapter,stepsChapter,careChapter);
   let planText='';
   try{
     if(!P)throw new Error('Chybí modul půdorysu. Obnovte stránku.');
@@ -1511,17 +1522,31 @@ async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask,extr
     // coordinates, independent of the actual photo) used to render here too. Owner's own words:
     // it doesn't make geometric sense (elements end up nowhere near their real position) and he'd
     // rather not have it at all – removed. The numbered photo above is the real, trustworthy plan.
-    planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><img class="mg-plan-photo" alt="Návrh s očíslovanými záhony" src="'+numbered+'">'+P.bedsHtml(res.plan,dims)+P.shoppingHtml(res.plan,dims)+P.careHtml(res.plan);
+    bedsChapter.innerHTML='<h4>2. Co a kam vysadit</h4><img class="mg-plan-photo" alt="Návrh s očíslovanými záhony" src="'+numbered+'">'+P.bedsHtml(res.plan,dims)+
+      '<a class="mg-ai-download" href="'+numbered+'" download="mvgreen-navrh-cisla.jpg">⬇ Uložit fotku s čísly</a>';
+    const shopBody=P.shoppingHtml(res.plan,dims);
+    shopChapter.innerHTML='<h4>3. Nákupní seznam</h4>'+(shopBody||'<p class="mg-note">Na fotografii nejsou žádné nové rostliny ani materiál k nákupu.</p>');
+    stepsChapter.innerHTML='<h4>4. Postup realizace</h4>'+P.stepsHtml(res.plan);
+    careChapter.innerHTML='<h4>5. Péče po celý rok</h4>'+P.careHtml(res.plan);
+    // Chapter 1 (the summary at the very top) last, once the total price is known - taken straight
+    // from shoppingTotals, the SAME calculation the shopping chapter's own table uses, so the two
+    // chapters can never show two different prices for the same design.
+    const totals=P.shoppingTotals(res.plan,dims);
+    const styleName=styleChoices[d['mg-style-card']]?.name||'';
+    const metaLine=[d['mg-locality'],styleName,(dims.width&&dims.length)?(dims.width+' × '+dims.length+' m'):''].filter(Boolean).join(' · ').replace(/[<>&]/g,'');
+    const priceLine=totals.hasItems?('Orientační cena materiálu a rostlin: <strong>'+totals.lo+'–'+totals.hi+' Kč</strong> (bez práce a dopravy).'):'';
+    summaryBox.innerHTML='<h4>🌿 Váš zahradní projekt</h4>'+(metaLine?'<p class="mg-note">'+metaLine+'</p>':'')+
+      '<p>Kompletní návod, podle kterého si zahradu můžete sami vybudovat: kde co vysadit, co koupit, jak postupovat a jak se o zahradu starat celý rok. Vizualizace v kapitole 1 je jen jedna část celku.</p>'+
+      (priceLine?'<p class="mg-plan-totals">'+priceLine+'</p>':'');
     // Print-only heading (hidden on screen, shown by the @media print rules below) so a PDF/printout
     // of the plan is self-explanatory once it's out of the wizard – not everyone opening the saved
     // PDF later will remember which design or garden it belongs to.
     const printHeader=document.createElement('div');printHeader.className='mg-print-header';
-    const ph1=document.createElement('h2');ph1.textContent='MVGreen – souhrn návrhu zahrady';
+    const ph1=document.createElement('h2');ph1.textContent='MVGreen – zahradní projekt';
     const ph2=document.createElement('p');ph2.textContent=[d['mg-locality'],new Date().toLocaleDateString('cs-CZ')].filter(Boolean).join(' · ');
-    printHeader.append(ph1,ph2);planBox.insertBefore(printHeader,planBox.firstChild);
+    printHeader.append(ph1,ph2);summaryBox.insertBefore(printHeader,summaryBox.firstChild);
     const row=document.createElement('div');row.className='mg-actions';
-    const dl1=document.createElement('a');dl1.href=numbered;dl1.download='mvgreen-navrh-cisla.jpg';dl1.textContent='⬇ Uložit fotku s čísly';dl1.className='mg-ai-download';
-    const dl2=document.createElement('button');dl2.type='button';dl2.className='mg-plan-print';dl2.textContent='📄 Stáhnout souhrn (PDF)';
+    const dl2=document.createElement('button');dl2.type='button';dl2.className='mg-plan-print';dl2.textContent='📄 Stáhnout celý projekt (PDF)';
     dl2.addEventListener('click',()=>{
      document.body.classList.add('mg-printing');
      const done=()=>{document.body.classList.remove('mg-printing');window.removeEventListener('afterprint',done)};
@@ -1529,14 +1554,24 @@ async function mgPlanAndAngles(host,finalImage,beforeImage,brief,d,editMask,extr
      window.print();
      setTimeout(done,15000); // safety net – some mobile browsers never fire afterprint
     });
-    row.append(dl1,dl2);planBox.append(row);
-  }catch(e){planBox.innerHTML='<h4>🌿 Co a kde vysadit</h4><p class="mg-note">Seznam záhonů se nepodařilo vytvořit: '+String(e.message).replace(/[<>&]/g,'')+'</p>'}
+    row.append(dl2);summaryBox.append(row);
+  }catch(e){
+    const msg='<p class="mg-note">Tuhle část se nepodařilo vytvořit: '+String(e.message).replace(/[<>&]/g,'')+'</p>';
+    bedsChapter.innerHTML='<h4>2. Co a kam vysadit</h4>'+msg;
+    shopChapter.innerHTML='<h4>3. Nákupní seznam</h4>'+msg;
+    stepsChapter.innerHTML='<h4>4. Postup realizace</h4>'+msg;
+    careChapter.innerHTML='<h4>5. Péče po celý rok</h4>'+msg;
+    summaryBox.innerHTML='<h4>🌿 Váš zahradní projekt</h4><p class="mg-note">Souhrn se nepodařilo vytvořit. Zkuste prosím obnovit stránku.</p>';
+  }
   // Jiný pohled je další placený AI snímek (stejná cenová třída jako hlavní návrh) – u balíčku
-  // na 1 použití by si ho zákazník nemohl vyzkoušet, proto zůstává jen pro test správce.
+  // na 1 použití by si ho zákazník nemohl vyzkoušet, proto zůstává jen pro test správce. Appended as
+  // a SIBLING of the project section (via its parent, already in the DOM by the time this runs),
+  // not as one more chapter inside it - it's an admin-only illustrative extra, not part of the
+  // customer's actual project, and the print rules below only isolate .mg-garden-project.
   if(!aiConfig.enabled)return;
   const angles=document.createElement('section');angles.className='mg-angle-box';
   angles.innerHTML='<h4>🔭 Jiný pohled (jen pro správce)</h4><p class="mg-note">Ilustrační pohled – AI smí mírně změnit úhel kamery, proporce domu a zahrady zůstávají. Každý pohled je další placený AI pokus.</p><div class="mg-actions"><button type="button" data-view="raised">Mírně vyšší pohled</button><button type="button" data-view="aerial">Ptačí perspektiva</button></div><div class="mg-angle-out"></div>';
-  host.append(angles);
+  host.parentNode.append(angles);
   angles.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',async()=>{
     const out=angles.querySelector('.mg-angle-out');
     if(!confirm('Spustit další placený AI pokus – '+b.textContent+'?'))return;
@@ -1723,18 +1758,31 @@ async function runAiGeneration(trigger,extraFields,confirmText){
       warn.textContent='⚠️ Návrh se nepodařilo dokončit celý (' + step.message.replace(/^Část návrhu se nepodařilo dokončit \(|\)$/g,'') + '). Plochy, ke kterým se AI kvůli tomu vůbec nedostala, zůstaly na fotce beze změny – nejde o chybu AI, prostě ten krok neproběhl. Po vyřešení příčiny doporučujeme vygenerovat celý design znovu od začátku, tenhle výsledek se nedá dodatečně doplnit.';
       result.append(warn);
     }
+    // "Zahradní projekt" (2026-10-27, Martin's explicit requirement): ONE coherent document a
+    // customer can follow from cover to care calendar, not several disconnected blocks with the AI
+    // image as the unspoken headline. The visualization becomes chapter 1 of it - still here, still
+    // the first thing shown, but visually just one chapter among equals. The summary (with the
+    // total price) and chapters 2-5 depend on the separate, free mvgreen_ai_plan call below, so
+    // summaryBox starts as a placeholder mgPlanAndAngles fills in once that call returns.
+    const project=document.createElement('section');project.className='mg-garden-project';
+    const summaryBox=document.createElement('div');summaryBox.className='mg-plan-box mg-project-summary';
+    summaryBox.innerHTML='<h4>🌿 Váš zahradní projekt</h4><p class="mg-note">Připravujeme souhrn a celkovou cenu…</p>';
+    project.append(summaryBox);
+    const visualChapter=document.createElement('div');visualChapter.className='mg-plan-box mg-project-chapter';
+    visualChapter.innerHTML='<h4>1. Jak bude zahrada vypadat</h4>';
     const comparison=document.createElement('div');comparison.className='mg-before-after';comparison.setAttribute('aria-label','Porovnání původní fotografie a AI návrhu');
     const before=document.createElement('img');before.src=original.toDataURL('image/png');before.alt='Před úpravou – původní zahrada';before.className='mg-before-image';
     const after=document.createElement('img');after.src=finalImage;after.alt='Po úpravě – AI návrh';after.className='mg-after-image';
     const labels=document.createElement('div');labels.className='mg-comparison-labels';labels.innerHTML='<span>PŘED</span><span>PO – AI NÁVRHU</span>';
     const range=document.createElement('input');range.type='range';range.min='0';range.max='100';range.value='50';range.className='mg-comparison-range';range.setAttribute('aria-label','Posunout hranici porovnání před a po');range.addEventListener('input',()=>comparison.style.setProperty('--mg-reveal',range.value+'%'));
-    comparison.append(after,before,labels,range);result.append(comparison);
-    const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';result.append(note);
-    if(brief.rejected.length){const why=document.createElement('p');why.className='mg-note';why.textContent='Do návrhu jsme nedali: '+brief.rejected.join(', ')+' – pro vaše podmínky (slunce, vlhkost, zálivka) se nehodí. Použili jsme vhodnější rostliny.';result.append(why);}
-    const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';result.append(used);
-    const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
-    const extras=document.createElement('div');extras.className='mg-ai-extras';result.append(extras);
-    mgPlanAndAngles(extras,finalImage,original.toDataURL('image/jpeg',0.8),brief,d,editMask,extraFields);
+    comparison.append(after,before,labels,range);visualChapter.append(comparison);
+    const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';visualChapter.append(note);
+    if(brief.rejected.length){const why=document.createElement('p');why.className='mg-note';why.textContent='Do návrhu jsme nedali: '+brief.rejected.join(', ')+' – pro vaše podmínky (slunce, vlhkost, zálivka) se nehodí. Použili jsme vhodnější rostliny.';visualChapter.append(why);}
+    const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';visualChapter.append(used);
+    const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';visualChapter.append(link);
+    project.append(visualChapter);
+    result.append(project);
+    mgPlanAndAngles(project,summaryBox,finalImage,original.toDataURL('image/jpeg',0.8),brief,d,editMask,extraFields);
   }catch(err){progress.stop(false);result.textContent='Chyba: '+err.message;}finally{trigger.disabled=false;generationInFlight=false;releaseWakeLock();}
 }
 

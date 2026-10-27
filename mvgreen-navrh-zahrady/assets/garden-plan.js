@@ -375,24 +375,42 @@
   }
   function kc(v) { return Math.round(v / 10) * 10 >= 1000 ? (Math.round(v / 100) * 100).toLocaleString('cs-CZ') : String(Math.round(v / 10) * 10); }
 
-  /** Nákupní seznam s orientační cenou + nabídka MVGreen. */
-  function shoppingHtml(plan, opts) {
+  /**
+   * Shared price computation behind both shoppingHtml (the chapter's own table) and shoppingTotals
+   * (the project summary's headline price) - ONE calculation, so the two chapters can never show
+   * two different numbers for the same design (2026-10-27: the whole "zahradní projekt" rewrite is
+   * specifically about never letting the parts disagree with each other).
+   */
+  function computeShopping(plan, opts) {
     var r = build(plan, opts || {}), shop = {}, lo = 0, hi = 0;
     (plan.elements || []).forEach(function (e) {
       if (!e.is_new) return;
       (e.plants || []).forEach(function (p) { var k = String(p.name || '').trim(); if (k) shop[k] = (shop[k] || 0) + (+p.count || 0); });
     });
-    var rows = Object.keys(shop).sort().map(function (k) {
-      var pr = PRICES[categoryOf(k)] || PRICES.flowers, n = shop[k];
-      lo += n * pr[0]; hi += n * pr[1];
+    var keys = Object.keys(shop).sort();
+    keys.forEach(function (k) { var pr = PRICES[categoryOf(k)] || PRICES.flowers, n = shop[k]; lo += n * pr[0]; hi += n * pr[1]; });
+    var bed = r.totals.bed, mlo = bed * MULCH_M2[0], mhi = bed * MULCH_M2[1];
+    if (bed > 0) { lo += mlo; hi += mhi; }
+    return { shop: shop, keys: keys, lo: lo, hi: hi, bed: bed, mlo: mlo, mhi: mhi, hasItems: keys.length > 0 };
+  }
+
+  /** Just the headline price range (as the same formatted strings the shopping table itself uses) - for the project summary chapter, computed with no rendering work. */
+  function shoppingTotals(plan, opts) {
+    var c = computeShopping(plan, opts);
+    return { hasItems: c.hasItems, lo: kc(c.lo), hi: kc(c.hi), loRaw: c.lo, hiRaw: c.hi };
+  }
+
+  /** Nákupní seznam s orientační cenou + nabídka MVGreen. */
+  function shoppingHtml(plan, opts) {
+    var c = computeShopping(plan, opts || {});
+    if (!c.hasItems) return '';
+    var rows = c.keys.map(function (k) {
+      var pr = PRICES[categoryOf(k)] || PRICES.flowers, n = c.shop[k];
       return '<tr><td>' + esc(k) + '<br><small>' + pr[2] + '</small></td><td>' + n + ' ks</td><td>' + kc(n * pr[0]) + '–' + kc(n * pr[1]) + ' Kč</td></tr>';
     }).join('');
-    if (!rows) return '';
-    var bed = r.totals.bed, mlo = bed * MULCH_M2[0], mhi = bed * MULCH_M2[1];
-    if (bed > 0) rows += '<tr><td>Mulčovací kůra a textilie<br><small>≈ ' + fmtM2(bed) + ' záhonů</small></td><td></td><td>' + kc(mlo) + '–' + kc(mhi) + ' Kč</td></tr>';
-    lo += mlo; hi += mhi;
+    if (c.bed > 0) rows += '<tr><td>Mulčovací kůra a textilie<br><small>≈ ' + fmtM2(c.bed) + ' záhonů</small></td><td></td><td>' + kc(c.mlo) + '–' + kc(c.mhi) + ' Kč</td></tr>';
     return '<h5>🛒 Nákupní seznam s orientační cenou</h5><table class="mg-plan-legend mg-plan-shop"><thead><tr><th>Položka</th><th>Množství</th><th>Cena</th></tr></thead><tbody>' + rows +
-      '</tbody><tfoot><tr><th>Materiál celkem</th><th></th><th>' + kc(lo) + '–' + kc(hi) + ' Kč</th></tr></tfoot></table>' +
+      '</tbody><tfoot><tr><th>Materiál celkem</th><th></th><th>' + kc(c.lo) + '–' + kc(c.hi) + ' Kč</th></tr></tfoot></table>' +
       '<p class="mg-note">Ceny jsou orientační ceny zahradnictví s DPH, bez práce a dopravy.</p>' +
       // This tool is for self-service garden planning, not a lead-in to a custom on-site survey
       // or build of the whole design (beds, planting…) – the business doesn't offer that. Point
@@ -402,10 +420,54 @@
       '<a class="mg-primary" href="/kontakty/#poptavka">Napsat MV GREEN</a> <a href="https://wa.me/420723339650">nebo na WhatsApp</a></div>';
   }
 
-  /** Kalendář péče na jednu stránku podle skupin rostlin v návrhu (trávník vždy). */
-  function careHtml(plan) {
+  /** Which plant categories (+ levandule specifically) actually appear in the design - shared by careHtml and stepsHtml so the two chapters always tailor themselves to the SAME design, never drift apart. */
+  function plantPresence(plan) {
     var has = { flowers: 0, grasses: 0, shrubs: 0, trees: 0 }, lav = false;
     (plan.elements || []).forEach(function (e) { (e.plants || []).forEach(function (p) { has[categoryOf(p.name)] = 1; if (/levandul/i.test(p.name)) lav = true; }); });
+    return { has: has, lav: lav };
+  }
+
+  /**
+   * Build sequence (2026-10-27, new chapter 4 of the "zahradní projekt"): deterministic, not
+   * AI-written - the same reliability bar as careHtml below, no risk of the AI inventing a step
+   * that doesn't fit. Tailored only by which plant categories genuinely appear (plantPresence),
+   * same as careHtml, so chapters 4 and 5 never contradict each other about what's actually in
+   * the design.
+   */
+  function stepsHtml(plan) {
+    var pp = plantPresence(plan), has = pp.has;
+    var order = (has.trees ? 'stromy' : '') + (has.trees && has.shrubs ? ', ' : '') + (has.shrubs ? 'keře' : '') + ((has.trees || has.shrubs) ? ' a až poté ' : '') + 'trvalky, traviny a nižší výsadbu';
+    var steps = [
+      ['Příprava', [
+        'Podle fotky s očíslovanými záhony a popisu v kapitole 2 si plochy vyznačte přímo na zahradě.',
+        'Odstraňte nepořádek a staré nebo nemocné rostliny, které návrh na daném místě nahrazuje.'
+      ]],
+      ['Nákup', [
+        'Materiál i rostliny z nákupního seznamu (kapitola 3) kupte najednou – ušetříte cestu i peníze za hromadný odběr.',
+        'Rostliny kupujte těsně před výsadbou, ne s velkým předstihem.'
+      ]],
+      ['Výsadba', [
+        'Sázejte v pořadí ' + order + ' – podle rozmístění na očíslované fotce.',
+        'Mezi rostlinami dodržujte vzdálenost podle jejich VZROSTLÉ velikosti, ne podle velikosti sazenice, jinak budou za pár let přerostlé.',
+        'Sázejte v zamračeném dni nebo večer, nikdy na plném slunci v poledne – rostlina se lépe uchytí.'
+      ]],
+      ['Zálivka a mulč', [
+        'Po výsadbě každou rostlinu hned důkladně zalejte, i když zrovna prší.',
+        'Záhony zamulčujte (kůra, štěrk nebo textilie z nákupního seznamu) – omezí to plevel a vysychání půdy.'
+      ]],
+      ['První týdny', [
+        'Prvních 4–6 týdnů zalévejte pravidelně, dokud rostliny nezakoření.',
+        'Pak už se řiďte kalendářem péče v kapitole 5 podle ročního období.'
+      ]]
+    ];
+    return '<h5>🛠️ Jak postupovat</h5><ol class="mg-plan-steps">' + steps.map(function (s) {
+      return '<li><strong>' + esc(s[0]) + '</strong><ul>' + s[1].map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></li>';
+    }).join('') + '</ol>';
+  }
+
+  /** Kalendář péče na jednu stránku podle skupin rostlin v návrhu (trávník vždy). */
+  function careHtml(plan) {
+    var pp = plantPresence(plan), has = pp.has, lav = pp.lav;
     var rows = [
       ['Březen–duben', ['Trávník: vyhrabat, první sekání, jarní hnojení' + '', has.grasses ? 'Traviny: sestřihnout suché listy 10–15 cm nad zemí' : '', has.flowers ? 'Trvalky: odstranit loňské stonky, doplnit mulč' : '', lav ? 'Levandule: lehce zastřihnout do tvaru (ne do starého dřeva)' : '', has.shrubs ? 'Keře: tvarovací řez jarních nekvetoucích keřů' : '']],
       ['Květen–červen', ['Trávník: sekat 1× týdně, výška 4–5 cm', 'Záhony: plít, v suchu zalévat ráno nebo večer', has.flowers ? 'Trvalky: odstraňovat odkvetlé květy' : '']],
@@ -418,5 +480,5 @@
     }).join('') + '</tbody></table>';
   }
 
-  window.MVGreenPlan = { build: build, legendHtml: legendHtml, plantLegendHtml: plantLegendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare, detectBeds: detectBeds, drawMarkers: drawMarkers, shoppingHtml: shoppingHtml, careHtml: careHtml };
+  window.MVGreenPlan = { build: build, legendHtml: legendHtml, plantLegendHtml: plantLegendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare, detectBeds: detectBeds, drawMarkers: drawMarkers, shoppingHtml: shoppingHtml, shoppingTotals: shoppingTotals, careHtml: careHtml, stepsHtml: stepsHtml };
 })();
