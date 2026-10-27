@@ -1985,11 +1985,72 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-period-toggle button{padding:6px 12px;font-size:13px}
 .mvgreen-designer #mg-soil-lookup{margin-top:8px;font-size:13px;padding:8px 12px}
 .mvgreen-designer #mg-soil-lookup:disabled{opacity:.6}
+/* 0.6.142: "Hero" varianta (vybraná z návrhů v Design canvasu) – barevné animované odznaky
+   místo jedné textové věty u "Zjistit podmínky podle polohy". Čísla se počítají nahoru přes JS
+   (mgCountUp v app.js), ne čistě CSS @property trikem – ten by na nepodporovaném prohlížeči
+   nechal číslo navždy na 0, což pro reálný zákaznický web není přijatelné. */
+.mvgreen-designer .mg-location-status{margin:6px 0 2px}
+.mvgreen-designer .mg-location-status>small{color:#5a6f61}
+.mvgreen-designer .mg-cchip-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin:6px 0 8px}
+.mvgreen-designer .mg-cchip{background:#fff;border:1px solid #e2e8df;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;box-shadow:0 2px 8px rgba(20,40,25,.07);animation:mgChipIn .45s ease both}
+.mvgreen-designer .mg-cchip:nth-child(1){animation-delay:.02s}
+.mvgreen-designer .mg-cchip:nth-child(2){animation-delay:.1s}
+.mvgreen-designer .mg-cchip:nth-child(3){animation-delay:.18s}
+.mvgreen-designer .mg-cchip:nth-child(4){animation-delay:.26s}
+@keyframes mgChipIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.mvgreen-designer .mg-cchip-ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.mvgreen-designer .mg-cchip-ic svg{width:16px;height:16px}
+.mvgreen-designer .mg-cchip-val{font-size:15px;font-weight:800;color:#0f3d27;line-height:1.1}
+.mvgreen-designer .mg-cchip small{font-size:10.5px;color:#6b7a70;text-transform:uppercase;letter-spacing:.03em}
+.mvgreen-designer .mg-cchip-note{display:block;margin-top:2px;color:#5a6f61}
+/* sdílená barevná paleta pro odznaky podmínek I hlavičky kapitol níže */
+.mvgreen-designer .mg-c-sky{background:linear-gradient(145deg,#2f8fd1,#5db2e8)}
+.mvgreen-designer .mg-c-amber{background:linear-gradient(145deg,#c98a2e,#e3ab53)}
+.mvgreen-designer .mg-c-teal{background:linear-gradient(145deg,#1f9e8d,#3fc4b0)}
+.mvgreen-designer .mg-c-violet{background:linear-gradient(145deg,#6a5fc9,#8f82e0)}
+.mvgreen-designer .mg-c-green{background:linear-gradient(145deg,#156333,#2f9e5f)}
+.mvgreen-designer .mg-c-pink{background:linear-gradient(145deg,#b0506a,#d97b94)}
+.mvgreen-designer .mg-cchip-ic.mg-c-sky{animation:mgFloatY 2.6s ease-in-out infinite}
+.mvgreen-designer .mg-cchip-ic.mg-c-amber{animation:mgSlideX 2.3s ease-in-out infinite}
+.mvgreen-designer .mg-cchip-ic.mg-c-teal{animation:mgWiggle 2.8s ease-in-out infinite}
+.mvgreen-designer .mg-cchip-ic.mg-c-violet{animation:mgDrip 1.9s ease-in-out infinite}
+@keyframes mgFloatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes mgSlideX{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
+@keyframes mgWiggle{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+@keyframes mgDrip{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(2px) scale(.93)}}
+@media (prefers-reduced-motion: reduce){
+  .mvgreen-designer .mg-cchip-ic,.mvgreen-designer .mg-cchip,.mvgreen-designer .mg-chapter-ic,
+  .mvgreen-designer .mg-project-chapter,.mvgreen-designer .mg-project-summary{animation:none!important;opacity:1!important;transform:none!important}
+}
 /* 0.6.140: "Zahradní projekt" – jeden celek (souhrn + kapitoly 1–5) namísto roztroušených boxů. */
 .mvgreen-designer .mg-garden-project{margin-top:22px;display:grid;gap:18px}
 .mvgreen-designer .mg-garden-project .mg-plan-box{margin-top:0}
 .mvgreen-designer .mg-project-summary{border-color:#0f3d27;background:#f4faf5}
 .mvgreen-designer .mg-project-summary h4{font-size:20px}
+/* 0.6.142: "Hero" hlavičky kapitol (barevná ikona místo prostého textu) + jemné jednorázové
+   naskočení každé kapitoly/karty - levné na výkon (žádné nekonečné rozmazané svatozáře na 6
+   kartách najednou), ale pořád to "žije". */
+.mvgreen-designer .mg-chapter-head{display:flex;align-items:center;gap:12px;margin:0 0 10px}
+.mvgreen-designer .mg-chapter-head h4{margin:0}
+.mvgreen-designer .mg-chapter-ic{width:42px;height:42px;border-radius:13px;flex:none;position:relative;
+  display:flex;align-items:center;justify-content:center;color:#fff;animation:mgIconFloat 3.2s ease-in-out infinite}
+.mvgreen-designer .mg-chapter-ic svg{width:20px;height:20px}
+.mvgreen-designer .mg-chapter-ic::before{content:"";position:absolute;inset:-9px;border-radius:50%;
+  background:radial-gradient(circle,rgba(21,99,51,.2),transparent 70%);z-index:-1}
+@keyframes mgIconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.mvgreen-designer .mg-project-chapter,.mvgreen-designer .mg-project-summary{animation:mgCardIn .5s cubic-bezier(.3,1.1,.6,1) both}
+.mvgreen-designer .mg-garden-project>*:nth-child(1){animation-delay:0s}
+.mvgreen-designer .mg-garden-project>*:nth-child(2){animation-delay:.07s}
+.mvgreen-designer .mg-garden-project>*:nth-child(3){animation-delay:.14s}
+.mvgreen-designer .mg-garden-project>*:nth-child(4){animation-delay:.21s}
+.mvgreen-designer .mg-garden-project>*:nth-child(5){animation-delay:.28s}
+.mvgreen-designer .mg-garden-project>*:nth-child(6){animation-delay:.35s}
+@keyframes mgCardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+/* cena v souhrnu ať trochu "žije" - jemný přelévaný barevný text, ne blikání */
+.mvgreen-designer .mg-plan-totals{background:linear-gradient(90deg,#0f3d27,#1f9e8d,#0f3d27);background-size:220% auto;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:mgHue 3.5s linear infinite}
+@keyframes mgHue{to{background-position:220% 0}}
+@media (prefers-reduced-motion: reduce){.mvgreen-designer .mg-plan-totals{animation:none!important;background:none!important;-webkit-background-clip:unset!important;background-clip:unset!important;color:#0f3d27!important}}
 .mvgreen-designer .mg-plan-steps{margin:0 0 6px;padding-left:20px;display:grid;gap:10px}
 .mvgreen-designer .mg-plan-steps>li{font-size:14px;line-height:1.5}
 .mvgreen-designer .mg-plan-steps>li>strong{color:#0f3d27}
@@ -2224,5 +2285,10 @@ body.mg-bp-fs-open{overflow:hidden!important}
  body.mg-printing .mg-print-header p{margin:0;color:#555}
  body.mg-printing table tr{page-break-inside:avoid}
  body.mg-printing{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ /* 0.6.142: v tisku/PDF žádné animace (mohly by "zamrznout" uprostřed pohybu) a cena jako
+    normální čitelný tmavě zelený text, ne průhledný text s barevným přechodem na pozadí. */
+ body.mg-printing .mg-chapter-ic,body.mg-printing .mg-project-chapter,body.mg-printing .mg-project-summary,
+ body.mg-printing .mg-cchip,body.mg-printing .mg-cchip-ic{animation:none!important;opacity:1!important;transform:none!important}
+ body.mg-printing .mg-plan-totals{animation:none!important;-webkit-background-clip:unset!important;background-clip:unset!important;color:#0f3d27!important;background:none!important}
  @page{margin:14mm}
 }
