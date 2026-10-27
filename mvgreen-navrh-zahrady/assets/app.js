@@ -943,17 +943,50 @@ function renderAreaOverview(){
    octx.globalAlpha=0.5;octx.drawImage(tmp,0,0);octx.globalAlpha=1;
   });
  });
+ // Badges used to fill with the category's own colour (grey for "Opěrná zeď", pink for "Záhon",
+ // etc.) with only a thin white ring – on a small bright phone screen, against a similarly-toned
+ // part of the photo, a muted/dark fill like that reads as a near-invisible blob (reported
+ // 2026-10-27: "ta černá značka... dost to splývá, zkusil bych bílo"). A white-filled badge with a
+ // bold dark number and the category colour moved to the ring instead stays legible against any
+ // background, light or dark, for every category alike – not just a guess at whichever one blended
+ // in worst.
+ // They also used to draw strictly in category order with each instance's raw centroid – two
+ // instances of different categories whose centroids land close together (easy on a narrow, striped
+ // garden photo like this one) drew one directly on top of the other, so one vanished completely
+ // ("červeříčky se nezobrazí vůbec"). Collecting every badge position up front and nudging any pair
+ // that still overlaps apart fixes that regardless of which categories happen to collide.
+ const r=Math.max(18,Math.round(Math.min(W,H)*0.024));
+ const badges=[];
  ['bed','path','wall','grass'].forEach(catId=>{
   (areaInstances[catId]||[]).forEach(inst=>{
-   const col=meta(catId).color;
-   const r=Math.max(16,Math.round(Math.min(W,H)*0.02));
-   octx.beginPath();octx.arc(inst.photoX,inst.photoY,r,0,Math.PI*2);
-   octx.fillStyle='rgb('+col[0]+','+col[1]+','+col[2]+')';octx.fill();
-   octx.lineWidth=Math.max(2,r*0.18);octx.strokeStyle='#fff';octx.stroke();
-   octx.fillStyle='#fff';octx.font='bold '+Math.round(r*1.15)+'px system-ui,sans-serif';
-   octx.textAlign='center';octx.textBaseline='middle';
-   octx.fillText(String(inst.index),inst.photoX,inst.photoY+1);
+   badges.push({x:inst.photoX,y:inst.photoY,index:inst.index,color:meta(catId).color});
   });
+ });
+ const minDist=r*2.3;
+ for(let pass=0;pass<24;pass++){
+  let moved=false;
+  for(let i=0;i<badges.length;i++){
+   for(let j=i+1;j<badges.length;j++){
+    const a=badges[i],b=badges[j];
+    let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy);
+    if(dist<minDist){
+     moved=true;
+     if(dist<0.01){dx=1;dy=0;dist=1;}
+     const push=(minDist-dist)/2,ux=dx/dist,uy=dy/dist;
+     a.x-=ux*push;a.y-=uy*push;b.x+=ux*push;b.y+=uy*push;
+    }
+   }
+  }
+  if(!moved)break;
+ }
+ badges.forEach(b=>{
+  b.x=Math.max(r,Math.min(W-r,b.x));b.y=Math.max(r,Math.min(H-r,b.y));
+  octx.beginPath();octx.arc(b.x,b.y,r,0,Math.PI*2);
+  octx.fillStyle='#fff';octx.fill();
+  octx.lineWidth=Math.max(3,r*0.22);octx.strokeStyle='rgb('+b.color[0]+','+b.color[1]+','+b.color[2]+')';octx.stroke();
+  octx.fillStyle='#1c2a20';octx.font='bold '+Math.round(r*1.15)+'px system-ui,sans-serif';
+  octx.textAlign='center';octx.textBaseline='middle';
+  octx.fillText(String(b.index),b.x,b.y+1);
  });
  legend.innerHTML=['bed','path','wall','grass'].filter(catId=>(areaInstances[catId]||[]).length).map(catId=>{
   const m=meta(catId);
