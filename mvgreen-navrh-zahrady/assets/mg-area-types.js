@@ -215,10 +215,18 @@
     + '@media (orientation: landscape) and (max-height: 600px){.headerbar,.info-panel{display:none;}button{padding:6px 9px;font-size:11px;border-radius:7px;}.toolbar,.zoomrow{padding:4px 0;gap:4px;}}'
     + '#app.fs-mode .stage-wrap{position:fixed;inset:0;margin:0;}'
     + '#app.fs-mode .stage-viewport{border:0;border-radius:0;}'
-    + '#app.fs-mode #chrome-top,#app.fs-mode #status-bottom{position:fixed;left:0;right:0;z-index:5;background:rgba(8,16,11,0.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transition:opacity .2s ease;margin:0;}'
+    // 2026-10-27: see the matching comment in mg-paint-mask.js - chrome-top/status-bottom float as
+    // fixed overlays over the full-screen photo and used to swallow every touch in their strip
+    // (including the empty gaps between buttons), so a stroke starting right at the top/bottom edge
+    // of the photo (often exactly where a fence or path edge sits) couldn't begin there at all.
+    // pointer-events:none on the containers, re-enabled only on the buttons, lets touches on empty
+    // strip area pass straight through to the canvas while every button stays clickable.
+    + '#app.fs-mode #chrome-top,#app.fs-mode #status-bottom{position:fixed;left:0;right:0;z-index:5;background:rgba(8,16,11,0.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transition:opacity .2s ease;margin:0;pointer-events:none;}'
     + '#app.fs-mode #chrome-top{top:0;padding:max(8px, env(safe-area-inset-top,0px)) max(10px, env(safe-area-inset-right,0px)) 4px max(10px, env(safe-area-inset-left,0px));}'
     + '#app.fs-mode #status-bottom{bottom:0;padding:4px max(10px, env(safe-area-inset-right,0px)) max(8px, env(safe-area-inset-bottom,0px)) max(10px, env(safe-area-inset-left,0px));}'
+    + '#app.fs-mode #chrome-top button,#app.fs-mode #status-bottom button{pointer-events:auto;}'
     + '#app.fs-mode.controls-hidden #chrome-top,#app.fs-mode.controls-hidden #status-bottom{opacity:0;pointer-events:none;}'
+    + '#app.fs-mode.controls-hidden #chrome-top button,#app.fs-mode.controls-hidden #status-bottom button{pointer-events:none;}'
     + '#fs-prompt{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;padding:16px 26px;font-size:16px;border-radius:999px;color:#fff;background:rgba(8,16,11,0.85);box-shadow:0 6px 24px rgba(0,0,0,0.45);border:0;}'
     + '</style>'
     + '<div id="app">'
@@ -317,17 +325,34 @@
       var cellSize = Math.max(10, Math.round(W / 100));
       var grid = buildGrid(W, H, cellSize);
 
+      // 2026-10-27, owner-reported: lockMap above is pixel-resolution but a cell is painted as one
+      // atomic unit, so a cell straddling the locked/editable boundary used to render half dim
+      // (its locked pixels) and half normal (its unlocked pixels) in the SAME cell, and a tap
+      // anywhere in its unlocked sliver tagged the whole cell – a confusing, jagged ("zuby") edge
+      // that didn't line up with the grid at all. Fix: snap each cell to whichever side holds the
+      // MAJORITY of its pixels, once, before the grid is shown – a mostly-locked cell becomes fully
+      // locked (shown fully dim, not paintable; its small unlocked sliver is simply left to the
+      // later "remainder" AI stage, which is already bounded by the same safety mask), a mostly-
+      // editable cell stays fully paintable. The visible boundary then always falls exactly on a
+      // cell edge, never partway through one. This only changes which cells the GRID offers – the
+      // hard pixel-lock itself (buildStagedPlan's intersect against the customer's own confirmed
+      // editable zone) is untouched and still clips every stage's mask before it reaches the AI.
+      var cellLockedPx = new Float64Array(grid.numSegments + 1), cellTotalPx = new Float64Array(grid.numSegments + 1);
+      for (var li = 0; li < grid.labels.length; li++) {
+        cellTotalPx[grid.labels[li]]++;
+        if (lockMap[li]) cellLockedPx[grid.labels[li]]++;
+      }
+      var cellLocked = new Uint8Array(grid.numSegments + 1);
+      for (var ci = 1; ci <= grid.numSegments; ci++) cellLocked[ci] = (cellLockedPx[ci] / cellTotalPx[ci]) > 0.5 ? 1 : 0;
+
       var category = new Uint8Array(grid.numSegments + 1); // 0 = unspecified, else index+1 into CATEGORIES
       if (opts.initialCategory && opts.initialCategory.length === category.length) category.set(opts.initialCategory);
 
-      // Counts only the EDITABLE pixels of each cell, not its full footprint – a cell straddling
-      // the locked/editable boundary has part of its area permanently excluded, and including that
-      // locked sliver here made the status percentages sum to well over 100% (the "Neurčeno" share
-      // was counting every fully-locked cell's whole area too, not just unlocked-but-unpainted
-      // ones). segCount[s] summed over all s now equals exactly editablePx, as it should.
+      // Counts only the EDITABLE cells, not individual pixels any more (see cellLocked above) – a
+      // cell is either fully counted here or not at all, matching what's now actually paintable.
       var segCount = new Float64Array(grid.numSegments + 1), editablePx = 0;
       for (var si = 0; si < grid.labels.length; si++) {
-        if (!lockMap[si]) { segCount[grid.labels[si]]++; editablePx++; }
+        if (!cellLocked[grid.labels[si]]) { segCount[grid.labels[si]]++; editablePx++; }
       }
 
       var COLORS = {}; CATEGORIES.forEach(function (c, i) { COLORS[i + 1] = c.color; });
@@ -335,7 +360,8 @@
       function repaint() {
         var out = new Uint8ClampedArray(origData.data);
         for (var i = 0, p = 0; i < grid.labels.length; i++, p += 4) {
-          if (lockMap[i]) { out[p] *= 0.55; out[p + 1] *= 0.55; out[p + 2] *= 0.55; continue; }
+          // Whole-cell lock (cellLocked), not per-pixel lockMap, so a cell never renders half-dim.
+          if (cellLocked[grid.labels[i]]) { out[p] *= 0.55; out[p + 1] *= 0.55; out[p + 2] *= 0.55; continue; }
           var cat = category[grid.labels[i]];
           if (cat) {
             var c = COLORS[cat];
@@ -346,8 +372,17 @@
             // Light grid lines in the editable, still-unspecified zone so cell boundaries stay
             // visible without needing a separate toggle (a uniform grid is cheap to show always,
             // unlike SLIC's organic segment edges in step 4's own tool).
+            // 2026-10-27: a plain darken (*=0.85, even fainter than step 4's own 0.35) all but
+            // disappears on pixels that are already dark - shadowed soil, a dark fence, a mobile
+            // screen in sunlight - which is exactly where seeing the cell boundary matters most for
+            // precise marking. Blend toward a fixed bright color instead, so lines read the same
+            // regardless of what's underneath.
             var x = i % W, y = (i / W) | 0;
-            if ((x % cellSize) === 0 || (y % cellSize) === 0) { out[p] *= 0.85; out[p + 1] *= 0.85; out[p + 2] *= 0.85; }
+            if ((x % cellSize) === 0 || (y % cellSize) === 0) {
+              out[p] = out[p] * 0.4 + 255 * 0.6;
+              out[p + 1] = out[p + 1] * 0.4 + 212 * 0.6;
+              out[p + 2] = out[p + 2] * 0.4 + 0 * 0.6;
+            }
           }
         }
         ctx.putImageData(new ImageData(out, W, H), 0, 0);
@@ -561,7 +596,7 @@
       function paintDisc(cx, cy) {
         var target = targetValue();
         if (precisionMode) {
-          if (cx < 0 || cx >= W || cy < 0 || cy >= H || lockMap[cy * W + cx]) return;
+          if (cx < 0 || cx >= W || cy < 0 || cy >= H || cellLocked[grid.labels[cy * W + cx]]) return;
           var only = grid.labels[cy * W + cx];
           if (!strokeChanges.has(only)) strokeChanges.set(only, category[only]);
           category[only] = target;
@@ -569,7 +604,7 @@
         }
         for (var k = 0; k < brushOffsets.length; k++) {
           var x = cx + brushOffsets[k][0], y = cy + brushOffsets[k][1];
-          if (x < 0 || x >= W || y < 0 || y >= H || lockMap[y * W + x]) continue;
+          if (x < 0 || x >= W || y < 0 || y >= H || cellLocked[grid.labels[y * W + x]]) continue;
           var seg = grid.labels[y * W + x];
           if (!strokeChanges.has(seg)) strokeChanges.set(seg, category[seg]);
           category[seg] = target;

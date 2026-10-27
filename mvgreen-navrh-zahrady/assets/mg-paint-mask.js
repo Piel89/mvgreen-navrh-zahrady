@@ -186,10 +186,22 @@
     + '@media (orientation: landscape) and (max-height: 600px){.headerbar,.info-panel{display:none;}button{padding:6px 9px;font-size:11px;border-radius:7px;}.toolbar,.zoomrow{padding:4px 0;gap:4px;}}'
     + '#app.fs-mode .stage-wrap{position:fixed;inset:0;margin:0;}'
     + '#app.fs-mode .stage-viewport{border:0;border-radius:0;}'
-    + '#app.fs-mode #chrome-top,#app.fs-mode #status-bottom{position:fixed;left:0;right:0;z-index:5;background:rgba(8,16,11,0.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transition:opacity .2s ease;margin:0;}'
+    // 2026-10-27: chrome-top/status-bottom float as fixed overlays on top of the full-screen photo
+    // in fs-mode. They used to swallow every touch landing anywhere in their strip (default
+    // pointer-events is auto), including the empty gaps between buttons - so a customer who wanted
+    // to start a paint stroke right at the top or bottom edge of the photo (exactly where a fence or
+    // path edge often sits) couldn't: the touch hit the toolbar's background instead of the canvas,
+    // and they had to tap the canvas somewhere uncovered first (to trigger controls-hidden below)
+    // then drag under the now-hidden bar - dragging across unwanted cells on the way. Making the
+    // containers pointer-events:none by default and re-enabling it only on the actual buttons lets
+    // a touch on any empty strip of the header/footer pass straight through to the canvas beneath,
+    // while every button stays exactly as clickable as before.
+    + '#app.fs-mode #chrome-top,#app.fs-mode #status-bottom{position:fixed;left:0;right:0;z-index:5;background:rgba(8,16,11,0.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transition:opacity .2s ease;margin:0;pointer-events:none;}'
     + '#app.fs-mode #chrome-top{top:0;padding:max(8px, env(safe-area-inset-top,0px)) max(10px, env(safe-area-inset-right,0px)) 4px max(10px, env(safe-area-inset-left,0px));}'
     + '#app.fs-mode #status-bottom{bottom:0;padding:4px max(10px, env(safe-area-inset-right,0px)) max(8px, env(safe-area-inset-bottom,0px)) max(10px, env(safe-area-inset-left,0px));}'
+    + '#app.fs-mode #chrome-top button,#app.fs-mode #status-bottom button{pointer-events:auto;}'
     + '#app.fs-mode.controls-hidden #chrome-top,#app.fs-mode.controls-hidden #status-bottom{opacity:0;pointer-events:none;}'
+    + '#app.fs-mode.controls-hidden #chrome-top button,#app.fs-mode.controls-hidden #status-bottom button{pointer-events:none;}'
     + '#fs-prompt{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;padding:16px 26px;font-size:16px;border-radius:999px;color:#fff;background:rgba(8,16,11,0.85);box-shadow:0 6px 24px rgba(0,0,0,0.45);border:0;}'
     + '</style>'
     + '<div id="app">'
@@ -341,8 +353,17 @@
           }
           if (precisionMode) {
             var edges = computeEdgeMap();
+            // 2026-10-27: a plain darken (*=0.35) is a multiply - on a pixel that's already dark
+            // (shadowed soil, a dark fence, a mobile screen in sunlight) it barely changes anything,
+            // so the one line that matters most for precise tracing could vanish completely. Blend
+            // toward a fixed bright color instead, so the boundary reads the same regardless of
+            // what's underneath.
             for (var j = 0, pp = 0; j < edges.length; j++, pp += 4) {
-              if (edges[j]) { out[pp] *= 0.35; out[pp + 1] *= 0.35; out[pp + 2] *= 0.35; }
+              if (edges[j]) {
+                out[pp] = out[pp] * 0.25 + 255 * 0.75;
+                out[pp + 1] = out[pp + 1] * 0.25 + 212 * 0.75;
+                out[pp + 2] = out[pp + 2] * 0.25 + 0 * 0.75;
+              }
             }
           }
           ctx.putImageData(new ImageData(out, W, H), 0, 0);
