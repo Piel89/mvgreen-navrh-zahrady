@@ -235,7 +235,16 @@
       'ÚDRŽBA: ' + (d['mg-maint'] || 'nízká') + '. Rozpočet do ' + (d['mg-max'] || '50000') + ' Kč – žádné drahé prvky (jezírka, pergoly, zídky, terasy).',
       extra.layout ? 'ROZVRŽENÍ: ' + extra.layout : '',
       hintLine,
-      'NAVÁZÁNÍ: nové záhony a rostliny ukonči s odstupem od okraje upravované plochy; u okraje nech pruh trávníku nebo mulče, aby výsledek plynule navazoval na původní fotografii. Nikdy neusekávej rostliny okrajem plochy.',
+      'NAVÁZÁNÍ: nové záhony a rostliny ukonči s odstupem od okraje upravované plochy; u okraje nech pruh trávníku nebo mulče, aby výsledek plynule navazoval na původní fotografii.',
+      // Reported 2026-10-27 ("tam, kde v tom plotě má být ta kytka vidět... tak v tom plotě vůbec
+      // není") – a plant right next to a locked object (fence, wall, house) was rendered PARTIAL: cut
+      // off in a straight line exactly at the locked object's own edge, as if the rest of it had been
+      // erased, instead of looking like a complete, naturally-sized plant. The old "nikdy neusekávej
+      // rostliny okrajem plochy" line only named the outer edge of the whole editable area; a fence
+      // creates many more, often irregular, locked edges scattered through the middle of the photo,
+      // so this is now its own explicit, emphatic rule naming every kind of locked boundary, not a
+      // clause tucked into NAVÁZÁNÍ.
+      'CELÉ ROSTLINY, NIKDY USEKNUTÉ: žádná nová rostlina (keř, květina, strom) nesmí být nikde vedle zamčeného/needitovatelného prvku (plot, zeď, dům, strom, altán) vykreslená jako uťatá nebo useknutá rovnou čarou podél jeho hranice – jako by pokračovala dál, ale ta část chybí. Pokud by rostlina v přirozené výšce nebo šířce měla zasahovat za hranici odemčené plochy, vykresli ji místo toho CELOU a kompletní (menší, nebo o kousek dál od hranice), tak aby byl vidět celý přirozený tvar rostliny od země až po vrchol, nikdy jen její část.',
       // Reported 2026-10-27 ("tady to neni dotazeny" + screenshot circling a visible diagonal line
       // cutting across open, otherwise-unmarked lawn) – the mask boundary itself is becoming
       // visible as a seam where it falls across featureless grass with nothing (path/bed/wall) to
