@@ -404,7 +404,14 @@
   }
 
   function buildWallStageInstructions(detail, detailGeneral, pos) {
-    return withDetail('Zákazník na fotce vyznačil' + (pos ? ' (' + pos + ')' : '') + ', že si tam přeje nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady). Jeho vyznačení je jen orientační poloha a přibližná délka, ne přesný předpis tvaru – skutečný průběh, délku a napojení na okolí zvol sama podle toho, co na fotce dává smysl. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm), navazovat na úroveň terénu po obou stranách, a KDE navazuje na jakoukoliv již existující část zdi nebo zídky, která na fotce zůstává (fixní, needitovaná), musí na ni plynule stylově navázat (stejný kámen/materiál, stejná výška a linie) – bez viditelné spáry, předělu nebo změny stylu v místě napojení.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail, detailGeneral);
+    // Reported 2026-10-27: the wall's real height shrank/faded away right where it approached a
+    // locked natural rock outcrop on one side, instead of holding its height to a clean, deliberate
+    // end - the earlier wording only said "navazovat na úroveň terénu po obou stranách" (follow the
+    // ground level on both sides), which an AI could satisfy by tapering the wall down toward zero.
+    // A retaining wall's height is a structural dimension, not a decorative line that should fade -
+    // the fix states this explicitly and as its own rule, independent of (and in addition to) the
+    // "blend into an existing wall at the same height" rule for when the fixed neighbor IS a wall.
+    return withDetail('Zákazník na fotce vyznačil' + (pos ? ' (' + pos + ')' : '') + ', že si tam přeje nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady). Jeho vyznačení je jen orientační poloha a přibližná délka, ne přesný předpis tvaru – skutečný průběh, délku a napojení na okolí zvol sama podle toho, co na fotce dává smysl. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm) a tuto výšku musí držet KONSTANTNÍ a PLNOU po celé své délce, od jednoho konce k druhému – nikdy se nesmí postupně snižovat, ztenčovat ani vytrácet, dokud nekončí. Tam, kde zídka na jednom nebo obou koncích naráží na jiný fixní (needitovaný) prvek fotografie, který NENÍ zeď ani zídka (např. přírodní skála, svah, strom, roh domu), musí v plné výšce zřetelně a čistě ukončit přímo u něj (např. rovným čelem nebo zapuštěním do svahu) – ne se do něj postupně vytrácet nebo mizet. KDE naopak navazuje na jinou již existující zeď nebo zídku, která na fotce zůstává (fixní, needitovaná), musí na ni plynule stylově navázat ve STEJNÉ výšce a linii (stejný kámen/materiál) – bez viditelné spáry, předělu ani poklesu výšky v místě napojení.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail, detailGeneral);
   }
 
   window.MVGreenBrief = {
