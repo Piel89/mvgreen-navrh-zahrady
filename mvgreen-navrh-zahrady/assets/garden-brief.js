@@ -232,6 +232,12 @@
       cols.length ? 'BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '',
       'PODMÍNKY: ' + ({ 'Slunce': 'plné slunce', 'Polostín': 'polostín', 'Stín': 'stín' }[d['mg-sun']] || 'různé oslunění') + '; půda ' + ({ dry: 'suchá', wet: 'vlhká' }[d['mg-water']] || 'běžně vlhká') + '; ' + irr + '; lokalita ' + (d['mg-locality'] || 'Domažlicko') + (d['mg-altitude'] ? ', ' + d['mg-altitude'] + ' m n. m' : '') + '.',
       (d['mg-slope'] && d['mg-slope'] !== 'flat') || (d['mg-orientation'] && d['mg-orientation'] !== 'unknown') ? 'TERÉN: ' + ({ mild: 'mírný svah', steep: 'výrazný svah' }[d['mg-slope']] || 'rovina') + (d['mg-orientation'] && d['mg-orientation'] !== 'unknown' ? '; orientace zahrady ke světovým stranám: ' + d['mg-orientation'] + (({ mild: true, steep: true }[d['mg-slope']]) ? ' (sklon klesá/stoupá ve směru ' + d['mg-orientation'] + ')' : '') : '') + '. Respektuj sklon a orientaci při návrhu výsadby a cestiček – na svahu nenavrhuj rovinné prvky bez opěrných záhonů/teras, na jihu/jihozápadě počítej s větším suchem a sluncem, na severu/severovýchodě s vlhčím a stinnějším stanovištěm.' : '',
+      // 2026-10-27: mg-wind je klimatický průměr lokality (NASA POWER, viz app.js mgPowerClimate),
+      // ne odhad z fotky – promítá se do výběru/rozmístění rostlin jako textová instrukce AI,
+      // stejným způsobem jako TERÉN výše (katalog rostlin dnes nemá vlastní štítek "odolný vůči
+      // větru" u všech 805 druhů, takže se to neřeší tvrdým filtrem v choosePlants, ale stejně
+      // osvědčeným principem jako sklon/orientace).
+      d['mg-wind'] === 'strong' ? 'VÍTR: lokalita má podle klimatických dat v průměru silnější vítr. Upřednostni nižší, kompaktnější a mechanicky odolnější druhy z nabídnutého seznamu před vysokými/křehkými stonky; pokud návrh obsahuje vyšší keř nebo strom u okraje pozemku, umísti ho tak, aby přirozeně fungoval i jako větrolam pro zbytek záhonu za ním.' : (d['mg-wind'] === 'moderate' ? 'VÍTR: lokalita má mírně větrnější klima – dej přednost druhům, co to dobře snáší, ale není to tak zásadní jako u silného větru.' : ''),
       'ÚDRŽBA: ' + (d['mg-maint'] || 'nízká') + '. Rozpočet do ' + (d['mg-max'] || '50000') + ' Kč – žádné drahé prvky (jezírka, pergoly, zídky, terasy).',
       extra.layout ? 'ROZVRŽENÍ: ' + extra.layout : '',
       hintLine,

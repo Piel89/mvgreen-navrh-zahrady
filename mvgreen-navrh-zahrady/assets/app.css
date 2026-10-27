@@ -1979,6 +1979,12 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 /* 0.6.50: půdorys a jiné pohledy */
 .mvgreen-designer .mg-plan-box,.mvgreen-designer .mg-angle-box{margin-top:22px;padding:18px;border:1px solid #dce8dd;border-radius:14px;background:#fff}
 .mvgreen-designer .mg-plan-box h4,.mvgreen-designer .mg-angle-box h4{margin:0 0 10px;color:#0f3d27;font-size:18px}
+/* 0.6.141: automatické zjištění podmínek lokality (výška/sklon/vítr/vlhkost) u pole Obec. */
+.mvgreen-designer .mg-period-toggle{display:flex;align-items:center;gap:8px;margin:8px 0}
+.mvgreen-designer .mg-period-label{font-size:13px;color:#5a6f61;font-weight:650;margin:0}
+.mvgreen-designer .mg-period-toggle button{padding:6px 12px;font-size:13px}
+.mvgreen-designer #mg-soil-lookup{margin-top:8px;font-size:13px;padding:8px 12px}
+.mvgreen-designer #mg-soil-lookup:disabled{opacity:.6}
 /* 0.6.140: "Zahradní projekt" – jeden celek (souhrn + kapitoly 1–5) namísto roztroušených boxů. */
 .mvgreen-designer .mg-garden-project{margin-top:22px;display:grid;gap:18px}
 .mvgreen-designer .mg-garden-project .mg-plan-box{margin-top:0}
