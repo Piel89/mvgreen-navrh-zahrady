@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.118
+ * Version: 0.6.119
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.118');
+define('MVGREEN_VERSION', '0.6.119');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -108,6 +108,58 @@ function mvgreen_run_ai_image_stage($photo_bytes, $photo_mime, $mask_bytes, $sta
     }
     if (empty($json['data'][0]['b64_json'])) return ['error' => 'AI nevrátila obrázek.'];
     return ['bytes' => base64_decode($json['data'][0]['b64_json'])];
+}
+
+/**
+ * Hard per-stage pixel lock: keeps $after_bytes' pixels only where $mask_bytes marks the area as
+ * editable (same alpha convention used everywhere else in this file - alpha>63 ~ transparent ~
+ * editable); every other pixel reverts exactly to $before_bytes, the image this stage started from.
+ *
+ * Without this, a chained multi-stage design had no protection between stages: the client's own
+ * ai-safety.js hard-lock (never touched - see its own header) only checks drift ONCE, at the very
+ * end, against the union of every stage's mask. Each OpenAI call can introduce a little drift
+ * outside its own mask even while "preserving" the rest (compression, subtle global recolor) - with
+ * nothing correcting that between stages, drift from stage 1 fed straight into stage 2 as its input,
+ * then stage 2's own drift added to stage 1's, and so on. A design with several chained stages (the
+ * step 6 redesign allows up to 10) could end up rejected by the final check even though any ONE
+ * stage, looked at alone, would have passed easily. This makes every stage individually pixel-locked
+ * to its own mask the moment it comes back, so drift can never leak into - or compound across - the
+ * next stage's input; it only ever reinforces the existing end-to-end check, never replaces it.
+ *
+ * Returns raw PNG bytes, or $after_bytes unchanged if GD/decoding isn't available or the three
+ * images don't all share identical dimensions (fails safe to the un-locked output rather than
+ * guessing - the final client-side check still has the last word either way).
+ */
+function mvgreen_lock_stage_to_mask($before_bytes, $after_bytes, $mask_bytes) {
+    if (!function_exists('imagecreatefromstring')) return $after_bytes;
+    $before = @imagecreatefromstring($before_bytes);
+    $after = @imagecreatefromstring($after_bytes);
+    $mask = @imagecreatefromstring($mask_bytes);
+    if (!$before || !$after || !$mask) {
+        if ($before) imagedestroy($before);
+        if ($after) imagedestroy($after);
+        if ($mask) imagedestroy($mask);
+        return $after_bytes;
+    }
+    $w = imagesx($before); $h = imagesy($before);
+    if (imagesx($after) !== $w || imagesy($after) !== $h || imagesx($mask) !== $w || imagesy($mask) !== $h) {
+        imagedestroy($before); imagedestroy($after); imagedestroy($mask);
+        return $after_bytes;
+    }
+    $out = imagecreatetruecolor($w, $h);
+    for ($y = 0; $y < $h; $y++) {
+        for ($x = 0; $x < $w; $x++) {
+            $alpha = (imagecolorat($mask, $x, $y) >> 24) & 0x7F;
+            $src = $alpha > 63 ? $after : $before;
+            imagesetpixel($out, $x, $y, imagecolorat($src, $x, $y) & 0xFFFFFF);
+        }
+    }
+    imagedestroy($before); imagedestroy($after); imagedestroy($mask);
+    ob_start();
+    imagepng($out);
+    $bytes = ob_get_clean();
+    imagedestroy($out);
+    return $bytes !== false && $bytes !== '' ? $bytes : $after_bytes;
 }
 
 /** Recursively removes one per-job temp directory (and everything in it) created below. */
@@ -418,7 +470,10 @@ $mvgreen_ai_preview_step_handle = function () {
         // tell the customer part of the design could not be finished.
         $partial_message = $r['error'];
     } else {
-        @file_put_contents($dir . '/current.bin', $r['bytes']);
+        // Immediately discard whatever this one stage may have drawn outside its OWN mask, before
+        // the next stage ever sees it as input - see mvgreen_lock_stage_to_mask's own header.
+        $locked_bytes = mvgreen_lock_stage_to_mask($current_bytes, $r['bytes'], $mask_bytes);
+        @file_put_contents($dir . '/current.bin', $locked_bytes);
         $meta['current_mime'] = 'image/png';
         $i++;
         $meta['next_index'] = $i;
