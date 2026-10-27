@@ -809,11 +809,15 @@ var AREA_TYPE_ORDER=['path','wall','bed','grass'];
 // step 6's own per-island note (free text for path/wall/bed, a sun/irrigation sentence for grass –
 // see instanceDetailText below) telling the AI which of those the customer actually wants there,
 // folded in via Brief's withDetail() when present.
+// detail is {text,isGeneral} (see instanceDetailText) or null – isGeneral marks a note that came
+// from the shared "Ještě něco k celé zahradě?" field (no per-area note of its own) rather than
+// this specific island's own field, so every builder below needs it threaded through to phrase the
+// prompt accordingly (see withDetail in garden-brief.js).
 var AREA_TYPE_BUILDERS={
- path:function(ctx,detail){return Brief.buildPathStageInstructions({detail:detail});},
- wall:function(ctx,detail){return Brief.buildWallStageInstructions(detail);},
- bed:function(ctx,detail){return Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants,detail:detail});},
- grass:function(ctx,detail){return Brief.buildGrassStageInstructions(ctx.d,detail);}
+ path:function(ctx,detail){return Brief.buildPathStageInstructions({detail:detail&&detail.text,detailGeneral:detail&&detail.isGeneral});},
+ wall:function(ctx,detail){return Brief.buildWallStageInstructions(detail&&detail.text,detail&&detail.isGeneral);},
+ bed:function(ctx,detail){return Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants,detail:detail&&detail.text,detailGeneral:detail&&detail.isGeneral});},
+ grass:function(ctx,detail){return Brief.buildGrassStageInstructions(ctx.d,detail&&detail.text,detail&&detail.isGeneral);}
 };
 // Step 6's numbered-area redesign: mg-area-types.js now splits each category into its own
 // connected islands (ctx.areaInstances: {grass,path,wall,bed}->[{index,mask,...}]) instead of one
@@ -911,9 +915,19 @@ if(outputBox&&actionsBox)actionsBox.insertAdjacentElement('afterend',outputBox);
 // back mismatched against freshly repainted, differently-numbered islands next time).
 let areaInstanceDetail={};
 function instanceDetailKey(catId,index){return catId+'#'+index;}
+// Returns {text,isGeneral} for this one numbered island, or null when there's nothing at all to
+// pass. isGeneral=false: the customer's own free text/pick for THIS exact island (step 6's own
+// per-area field). isGeneral=true: that field was left empty, so this falls back to the shared
+// "Ještě něco k celé zahradě?" field (mg-notes) instead of sending the stage nothing – reported
+// 2026-10-27: a customer typed one combined description of two different beds into that single
+// shared field rather than each bed's own, and neither bed's AI call saw any of it, so both beds
+// came out generic/mismatched. garden-brief.js's withDetail() uses isGeneral to tell the model this
+// text is a whole-garden summary, not a wish specific to this one masked spot.
 function instanceDetailText(catId,index){
  const v=areaInstanceDetail[instanceDetailKey(catId,index)];
- return (v&&v!=='Nechám na AI')?v:'';
+ if(v&&v!=='Nechám na AI')return {text:v,isGeneral:false};
+ const general=(notesTextareaEl&&notesTextareaEl.value||'').trim();
+ return general?{text:general,isGeneral:true}:null;
 }
 function setInstanceDetail(catId,index,val){areaInstanceDetail[instanceDetailKey(catId,index)]=val;}
 const AREA_DETAIL_META={

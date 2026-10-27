@@ -22,6 +22,18 @@
 (function () {
   'use strict';
 
+  // ai-safety.js's own mask-grow helper (already used to pad step 4's overall "Zůstane" boundary
+  // and, since 2026-10-27, step 4's SLIC-segment remove mask too – see mg-paint-mask.js). Reused
+  // here for the SAME reason: a customer painting this grid on a phone can never land the cell
+  // boundary exactly on an irregular real-world edge (a slanted fence, a round object) – there is
+  // always one cell left just short. A small, fixed pixel grow (ai-safety.js's own default, scaled
+  // to photo resolution) gives the AI a modest, bounded allowance to finish the shape naturally
+  // past the literal painted cells, instead of leaving a sliver of the old photo untouched right at
+  // the boundary. It is still hard-bounded: buildStagedPlan always intersects every mask against
+  // the customer's own confirmed editable zone before use, so growth can never reach outside what
+  // was already approved (the house, the fence, anything marked "Zůstane").
+  var S = window.MVGreenAISafety || {};
+
   function mkCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
   // The 7 types the customer can paint, in toolbar order. Keys match garden-brief.js's
@@ -82,7 +94,10 @@
     octx.drawImage(work, 0, 0, photoW, photoH);
     octx.globalCompositeOperation = 'source-in'; octx.fillStyle = '#1b9c55'; octx.fillRect(0, 0, photoW, photoH);
     octx.globalCompositeOperation = 'source-over';
-    return out;
+    // Give the painted shape a small, fixed allowance to round out past the literal grid cells
+    // (see the S = window.MVGreenAISafety comment near the top of this file) instead of staying
+    // locked to a blocky, cell-exact outline.
+    return S.growMask ? S.growMask(out) : out;
   }
 
   function categoryMask(grid, category, matchId, photoW, photoH, W, H) {

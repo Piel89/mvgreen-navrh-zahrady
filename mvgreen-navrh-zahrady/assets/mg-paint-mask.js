@@ -636,6 +636,12 @@
         okBtn.addEventListener('click', function () {
           var editMask = categoryMask(seg, category, photoW, photoH, function (c) { return c !== PROTECT; });
           var removeMask = categoryMask(seg, category, photoW, photoH, function (c) { return c === REMOVE; });
+          // A SLIC segment the customer tapped can still fall just short of an irregular object's
+          // real edge (a round mixer, a slanted fence line) – a phone finger can't retouch single
+          // segments precisely. growMask gives a small, fixed allowance to close that gap before
+          // smoothing rounds the now-larger boundary; both stay hard-bounded by editMask/PROTECT
+          // downstream exactly as before, so this never reaches past what the customer approved.
+          if (S && S.growMask) { editMask = S.growMask(editMask); removeMask = S.growMask(removeMask); }
           if (S && S.smoothMaskEdge) { editMask = S.smoothMaskEdge(editMask); removeMask = S.smoothMaskEdge(removeMask); }
           var hasRemove = false;
           for (var s = 1; s <= numSegments; s++) if (category[s] === REMOVE) { hasRemove = true; break; }

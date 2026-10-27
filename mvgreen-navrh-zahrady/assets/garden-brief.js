@@ -294,7 +294,7 @@
     var material = (extra && extra.pathMaterial) || 'mlatová nebo štěrková cestička s přírodním, nepravidelným okrajem';
     var sizeHint = extra && extra.sizeHint;
     var base = 'V CELÉ průhledné části masky vytvoř ' + material + ', která plynule a realisticky navazuje na úroveň a materiál bezprostředního okolí (tam, kde maska sousedí s trávníkem, zůstává za okrajem cesty trávník; kde sousedí s domem nebo zdí, cesta k nim přiléhá). Cesta musí vyplnit celou odemčenou plochu až po samý okraj, beze zbytku, bez mezer ani nedotažených koutů. Nepřidávej v této ploše žádné rostliny ani záhon, jen zpevněný povrch.' + CLEAR_EXISTING_NOTE + (sizeHint ? ' Zákazník tuhle plochu přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, nic nezaokrouhluj ani nezvětšuj.' : '') + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
-    return withDetail(base, extra && extra.detail);
+    return withDetail(base, extra && extra.detail, extra && extra.detailGeneral);
   }
 
   /** Bed/planting stage: the customer's own "🔴 Tady chci záhon" mark, already buffered into a real bed-shaped mask. */
@@ -303,6 +303,7 @@
     var cols = favoriteColorNames(d);
     var sizeHint = extra && extra.sizeHint;
     var detail = extra && extra.detail;
+    var detailGeneral = extra && extra.detailGeneral;
     var terrainHint = (d['mg-slope'] && d['mg-slope'] !== 'flat') ? ' Záhon je na svahu (' + ({ mild: 'mírný', steep: 'výrazný' }[d['mg-slope']] || d['mg-slope']) + ') – zohledni to rozmístěním i volbou druhů (odolnost vůči splavování vody).' : '';
     // A customer's own wish for THIS bed (e.g. "jen strom a mulčovací kůra", "bílý oblázek", "jen
     // okrasné trávy a buxusy") used to be appended at the very end via withDetail, AFTER an
@@ -314,8 +315,18 @@
     // just a tree with no dense bed) were silently dropped. Now: when a wish is given, it comes
     // FIRST and is stated as the authority for this bed; the catalog species list becomes a fallback
     // for whatever the wish itself leaves unspecified, instead of a hard whitelist that overrides it.
+    // detailGeneral: no note was written for THIS bed specifically (step 6's own field for it was
+    // left empty) – app.js fell back to the customer's one shared "Ještě něco k celé zahradě?"
+    // note instead of sending this stage nothing. That shared note is one summary for the WHOLE
+    // garden and may describe a different bed too, so it must not be framed as this bed's own
+    // specific order (reported 2026-10-27: a combined note meant for two different beds, typed
+    // into the shared field instead of each bed's own, left both beds guessing at the other's
+    // wish). The model instead judges from the photo which part of it, if any, actually describes
+    // THIS masked spot.
     var wishLine = detail
-      ? ' ZÁKAZNÍKOVO VÝSLOVNÉ PŘÁNÍ PRO TUHLE KONKRÉTNÍ PLOCHU – ŘIĎ SE JÍM PŘESNĚ, I KDYŽ SE LIŠÍ OD OBECNÉHO POPISU NÍŽE: "' + detail + '". Pokud přání jmenuje vlastní rostliny nebo materiál (např. štěrk, oblázky, mulčovací kůra) nebo žádá jen strom či keř bez husté výsadby, udělej přesně to.'
+      ? (detailGeneral
+        ? ' ZÁKAZNÍKOVO CELKOVÉ PŘÁNÍ PRO CELOU ZAHRADU (napsal ho jako jeden souhrn, ne zvlášť pro tenhle záhon): "' + detail + '". Pokud se některá jeho část podle polohy a kontextu na fotografii zjevně týká JINÉHO záhonu nebo jiného místa, tu část na tenhle záhon neaplikuj – použij jen to, co dává smysl přesně pro tohle místo. Pokud relevantní část jmenuje vlastní rostliny nebo materiál (např. štěrk, oblázky, mulčovací kůra) nebo žádá jen strom či keř bez husté výsadby, udělej přesně to.'
+        : ' ZÁKAZNÍKOVO VÝSLOVNÉ PŘÁNÍ PRO TUHLE KONKRÉTNÍ PLOCHU – ŘIĎ SE JÍM PŘESNĚ, I KDYŽ SE LIŠÍ OD OBECNÉHO POPISU NÍŽE: "' + detail + '". Pokud přání jmenuje vlastní rostliny nebo materiál (např. štěrk, oblázky, mulčovací kůra) nebo žádá jen strom či keř bez husté výsadby, udělej přesně to.')
       : '';
     var speciesLine = detail
       ? ' Pro cokoliv, co zákazníkovo přání samo nespecifikuje, použij tyto ověřené druhy: ' + plantListLine(pick) + '.'
@@ -343,17 +354,30 @@
    * than re-asked per island, so `detail` there only ever carries the grass-type pick, never
    * redundant site-condition text. Same withDetail() mechanism either way.
    */
-  function withDetail(base, detail) {
+  function withDetail(base, detail, isGeneral) {
     // Was "Řiď se jím, pokud neodporuje výše uvedenému" (follow it only if it doesn't contradict the
     // above) - too weak: a customer's specific wish for THIS exact spot is, almost by definition,
     // more specific than the generic description above it, so treating any difference as a
     // "contradiction" to defer to made real per-area requests (e.g. "jen strom a mulčovací kůra",
     // "bílý oblázek") get silently dropped in favor of the generic default. Now stated as a clear
     // override instead of a tie-breaker.
-    return base + (detail ? ' ZÁKAZNÍKOVO VÝSLOVNÉ PŘÁNÍ PRO TUHLE KONKRÉTNÍ PLOCHU (má přednost před obecným popisem výše, pokud se od něj liší): "' + detail + '".' : '');
+    if (!detail) return base;
+    // isGeneral: this island has no note of its own (step 6's per-area field for it was left
+    // empty) – rather than send this stage NOTHING, app.js now falls back to the customer's one
+    // shared "Ještě něco k celé zahradě?" field. That field is written as ONE summary for the
+    // WHOLE garden, often describing several different spots in the same paragraph (reported
+    // 2026-10-27: a customer's single combined note meant for two different beds, with no per-area
+    // field used, produced both beds guessing at each other's details). So it must not be
+    // presented as this one area's own specific wish (the wording below used to say exactly that,
+    // which told the model to force-apply all of it here) – instead the model is told to use its
+    // own judgement, from the photo itself, about which part (if any) of that shared note
+    // describes THIS masked spot specifically, by its real position and neighbouring context.
+    return base + (isGeneral
+      ? ' ZÁKAZNÍKOVO CELKOVÉ PŘÁNÍ PRO CELOU ZAHRADU (napsal ho jako jeden souhrn, ne zvlášť pro tuhle plochu): "' + detail + '". Pokud se některá jeho část podle polohy a kontextu na fotografii zjevně týká JINÉHO konkrétního místa, tu část na tuhle plochu neaplikuj – použij jen to, co dává smysl přesně pro tohle místo.'
+      : ' ZÁKAZNÍKOVO VÝSLOVNÉ PŘÁNÍ PRO TUHLE KONKRÉTNÍ PLOCHU (má přednost před obecným popisem výše, pokud se od něj liší): "' + detail + '".');
   }
 
-  function buildGrassStageInstructions(d, detail) {
+  function buildGrassStageInstructions(d, detail, detailGeneral) {
     // Staged per-island grass prompts had no access to step 2's site data before (unlike
     // buildInstructions' single-call/remainder path, which always included it) – an AI call that
     // genuinely had zero idea whether the spot is sunny/shaded or irrigated. Passing `d` through
@@ -362,11 +386,11 @@
     var sunText = ({ 'Slunce': 'plné slunce', 'Polostín': 'polostín', 'Stín': 'stín' })[d && d['mg-sun']] || 'různé oslunění na zahradě';
     var irrText = ['automatická závlaha je k dispozici', 'zalévá se ručně', 'zahrada se nezalévá – jen suchovzdorné řešení'][+(d && d['mg-irrigation'] || 1)] || 'zalévá se ručně';
     var base = 'V CELÉ průhledné části masky vytvoř zdravý, rovnoměrně sestřižený trávník stejné barvy a textury jako zbytek trávníku na fotografii, plynule navazující na své okolí až po samý okraj masky, beze zbytku. Podmínky této konkrétní plochy: ' + sunText + '; ' + irrText + ' – zvol travní směs a hustotu odpovídající těmto podmínkám (např. stín snášející směs do stínu, odolnou/suchovzdornou směs tam, kde se nezalévá). Žádné rostliny, dlažba ani jiné prvky v této ploše.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
-    return withDetail(base, detail);
+    return withDetail(base, detail, detailGeneral);
   }
 
-  function buildWallStageInstructions(detail) {
-    return withDetail('V CELÉ průhledné části masky vytvoř nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm) a musí navazovat na úroveň terénu po obou stranách.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail);
+  function buildWallStageInstructions(detail, detailGeneral) {
+    return withDetail('V CELÉ průhledné části masky vytvoř nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm) a musí navazovat na úroveň terénu po obou stranách.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail, detailGeneral);
   }
 
   window.MVGreenBrief = {
