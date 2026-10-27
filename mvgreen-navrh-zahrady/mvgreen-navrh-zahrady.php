@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.117
+ * Version: 0.6.118
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.117');
+define('MVGREEN_VERSION', '0.6.118');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -64,7 +64,110 @@ add_shortcode('mvgreen_navrh_zahrady', function () {
  * jednorázový kód (payments.php) – ten se čerpá atomicky až těsně před
  * zavoláním placeného API, aby se nevyčerpal zbytečně při neplatném vstupu.
  */
-$mvgreen_ai_preview_handle = function () {
+/**
+ * One staged AI edit call, pulled out of the old chaining loop so both mvgreen_ai_preview_start
+ * and mvgreen_ai_preview_step (below) can call it without duplicating the OpenAI request-building
+ * logic. Pure function: takes the current photo + this stage's mask + this stage's own instructions,
+ * returns ['bytes'=>...] on success or ['error'=>...] on failure - no side effects, no job state.
+ */
+function mvgreen_run_ai_image_stage($photo_bytes, $photo_mime, $mask_bytes, $stage_instructions, $size) {
+    $prompt = "Toto je SKUTEČNÁ fotografie konkrétní zahrady. Proveď pouze lokální retuš uvnitř průhledné oblasti masky; mimo ni nesmí být změněn ani jeden pixel. Nevytvářej novou scénu, neměň dům, střechu, okna, fasádu, plot, terén, svah, stromy, oblohu ani úhel pohledu. Šedé okraje fotografie ponech šedé. Uprav přiloženou SKUTEČNOU fotografii zahrady jako realistickou fotografickou retuš, nikoliv jako nový obraz. ZACHOVEJ identický úhel kamery, kompozici, geometrii, stávající stromy, dům, plot, pozadí, oblohu, perspektivu a osvětlení. UPRAVUJ POUZE průhledné oblasti masky. Ostatní pixely ponech bez změny. Nové rostliny musí mít věrohodné měřítko, přirozenou strukturu a stíny odpovídající scéně. Žádný malovaný, ilustrativní, CGI, pohádkový ani přehnaně stylizovaný vzhled. Vhodné pro realistickou fotografii skutečně realizovatelné zahrady. Nezobrazuj žádné barevné značky ani text. Zadání: " . $stage_instructions;
+    // WordPress HTTP API does not build multipart files automatically; compose a bounded body.
+    $boundary = 'mvgreen_' . wp_generate_password(24, false, false);
+    $parts = '';
+    $field = function($name, $value) use (&$parts, $boundary) {
+        $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"'."\r\n\r\n".$value."\r\n";
+    };
+    $file = function($name, $filename, $bytes, $content_type) use (&$parts, $boundary) {
+        $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"; filename="'.$filename.'"'."\r\n".'Content-Type: '.$content_type."\r\n\r\n".$bytes."\r\n";
+    };
+    // gpt-image-1.5 is being shut down by OpenAI on 2026-12-01; switched to gpt-image-2.5-sunburst
+    // (OpenAI's own designated replacement, and explicitly their "most capable model for image
+    // generation and editing" where preserved parts must stay intact – exactly this use case).
+    // Same /v1/images/edits endpoint and the same real alpha-mask inpainting mechanism as before,
+    // just with access to the higher "xhigh"/"max" quality tiers 1.5 never had. `input_fidelity`
+    // is dropped here: OpenAI's own docs say it should be omitted for the gpt-image-2 model
+    // family (2.5-sunburst is part of that family, unlike 1.5) – sending it risked an outright
+    // "unknown parameter" error instead of just being ignored.
+    $field('model', 'gpt-image-2.5-sunburst');
+    $field('prompt', $prompt);
+    $field('quality', 'xhigh');
+    $field('size', $size);
+    $file('image[]', $photo_mime === 'image/jpeg' ? 'garden.jpg' : 'garden.png', $photo_bytes, $photo_mime);
+    $file('mask', 'edit-mask.png', $mask_bytes, 'image/png');
+    $parts .= '--'.$boundary."--\r\n";
+    $response = wp_remote_post('https://api.openai.com/v1/images/edits', [
+        'headers'=>['Authorization'=>'Bearer '.MVGREEN_OPENAI_API_KEY,'Content-Type'=>'multipart/form-data; boundary='.$boundary],
+        'body'=>$parts, 'timeout'=>240
+    ]);
+    if (is_wp_error($response)) return ['error' => 'Spojení s AI selhalo: '.$response->get_error_message()];
+    $status = wp_remote_retrieve_response_code($response);
+    $json = json_decode(wp_remote_retrieve_body($response), true);
+    if ($status<200 || $status>=300) {
+        return ['error' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.'];
+    }
+    if (empty($json['data'][0]['b64_json'])) return ['error' => 'AI nevrátila obrázek.'];
+    return ['bytes' => base64_decode($json['data'][0]['b64_json'])];
+}
+
+/** Recursively removes one per-job temp directory (and everything in it) created below. */
+function mvgreen_delete_ai_job_dir($dir) {
+    if (!$dir || !is_dir($dir)) return;
+    $files = @scandir($dir) ?: [];
+    foreach ($files as $f) { if ($f !== '.' && $f !== '..') @unlink($dir . '/' . $f); }
+    @rmdir($dir);
+}
+
+/**
+ * Hygiene sweep for abandoned jobs (tab closed mid-poll, browser crash, etc.) - their job transient
+ * eventually expires on its own, but the on-disk temp directory wouldn't otherwise be cleaned up.
+ * Cheap (one scandir of the jobs folder) and only ever does real work when something was abandoned,
+ * so it's safe to call on every mvgreen_ai_preview_start.
+ */
+function mvgreen_cleanup_stale_ai_jobs($jobs_dir, $max_age = 3600) {
+    if (!is_dir($jobs_dir)) return;
+    $entries = @scandir($jobs_dir) ?: [];
+    foreach ($entries as $entry) {
+        if ($entry === '.' || $entry === '..' || $entry === 'index.php' || $entry === '.htaccess') continue;
+        $path = $jobs_dir . '/' . $entry;
+        if (!is_dir($path) || (time() - (int) @filemtime($path)) < $max_age) continue;
+        mvgreen_delete_ai_job_dir($path);
+    }
+}
+
+/**
+ * Finalizes a finished (or partially finished) job exactly like the old single-request flow did:
+ * saves a rotating debug copy, persists+e-mails the durable result for a real paid code, and builds
+ * the response payload. Pure w.r.t. job state - callers handle the job/lock transients themselves.
+ */
+function mvgreen_finalize_ai_job($original_bytes, $last_mask_bytes, $final_bytes, $is_admin, $result_post_id, $partial_message) {
+    // Keep every paid output (first stage's input, last stage's mask, final result) so a rejected
+    // result can be reviewed without paying again.
+    $up = wp_upload_dir();
+    $dir = trailingslashit($up['basedir']) . 'mvgreen-ai-log';
+    if (wp_mkdir_p($dir)) {
+        mvgreen_harden_upload_dir($dir);
+        $stem = gmdate('Ymd-His') . '-' . wp_generate_password(10, false, false);
+        @file_put_contents($dir . '/' . $stem . '-vstup.png', $original_bytes);
+        @file_put_contents($dir . '/' . $stem . '-maska.png', $last_mask_bytes);
+        @file_put_contents($dir . '/' . $stem . '-ai.png', $final_bytes);
+        $log = glob($dir . '/*.png') ?: [];
+        sort($log);
+        while (count($log) > 60) @unlink(array_shift($log));
+        update_option('mvgreen_ai_last_log', trailingslashit($up['baseurl']) . 'mvgreen-ai-log/' . $stem, false);
+    }
+    $final_b64 = base64_encode($final_bytes);
+    // Durable per-customer copy (never rotated/deleted like the debug log above) plus the
+    // "don't lose your design" e-mail – only for a real paid code, never for admin tests.
+    if ($result_post_id && function_exists('mvgreen_save_result_and_notify')) {
+        mvgreen_save_result_and_notify($result_post_id, $final_b64);
+    }
+    $payload = ['image' => 'data:image/png;base64,' . $final_b64];
+    if ($partial_message !== '') $payload['message'] = 'Část návrhu se nepodařilo dokončit (' . $partial_message . '), zobrazujeme nejlepší dosažený výsledek.';
+    return $payload;
+}
+
+$mvgreen_ai_preview_start_handle = function () {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
     if (!defined('MVGREEN_OPENAI_API_KEY') || !is_string(MVGREEN_OPENAI_API_KEY) || !MVGREEN_OPENAI_API_KEY) {
         wp_send_json_error(['message'=>'Nejprve nastavte MVGREEN_OPENAI_API_KEY ve wp-config.php.'], 400);
@@ -88,9 +191,10 @@ $mvgreen_ai_preview_handle = function () {
     // `instructions` fields, same as always. The staged pipeline ("5 řešení" revamp, step 2 –
     // app.js's buildStagedPlan) instead sends `stages`: a JSON array of {mask, instructions} pairs,
     // each already scoped to its own deterministic geometric mask (bed/path/remove/remainder) by
-    // app.js. Either way this handler ends up with the same $stage_defs shape and chains them, one
-    // OpenAI call per stage, inside this SAME request/redeem/lock cycle – a staged design still only
-    // ever costs the customer one code.
+    // app.js. Either way this handler ends up with the same $stage_defs shape; this request (_start)
+    // only validates it and stages it to disk for mvgreen_ai_preview_step to run one OpenAI call per
+    // stage against, over as many follow-up requests as there are stages – a staged design still
+    // only ever costs the customer one code, redeemed once, right here.
     $image = isset($_POST['image']) ? wp_unslash($_POST['image']) : '';
     $instructions = isset($_POST['instructions']) ? sanitize_textarea_field(wp_unslash($_POST['instructions'])) : '';
     $stages_raw = isset($_POST['stages']) ? wp_unslash($_POST['stages']) : '';
@@ -202,7 +306,11 @@ $mvgreen_ai_preview_handle = function () {
     }
     if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message'=>'Jiný návrh se právě vytváří.'], 429);
     // Lock is acquired before counting the attempt; duplicate clicks cannot start parallel paid calls.
-    set_transient('mvgreen_ai_preview_lock', 1, 240);
+    // A multi-stage chain is now split across several short requests (mvgreen_ai_preview_step, below
+    // runs exactly one stage per call) rather than one long one, so this lock has to stay held for the
+    // whole polled sequence - set with a generous TTL here, refreshed on every _step call, and released
+    // the moment the job finishes, fails outright, or is abandoned long enough for the TTL to lapse.
+    set_transient('mvgreen_ai_preview_lock', 1, 1800);
     // Non-admin success is tied to a specific mvgreen_kod post (the code just redeemed) so the
     // finished result can be saved durably against it and e-mailed – see mvgreen_save_result_and_notify
     // below. Admin tests have no code/post and are never persisted or e-mailed.
@@ -217,100 +325,122 @@ $mvgreen_ai_preview_handle = function () {
         }
         $result_post_id = (int) $redeem;
     }
-    // One stage = one OpenAI edit call, chained: stage i's output bytes become stage i+1's input, all
-    // inside this one redeem/lock cycle. A chain can run several minutes end to end; lift the PHP
-    // time limit (best effort – @ in case the host disables this) so a slow host doesn't kill the
-    // request mid-chain the way a short default could.
-    @set_time_limit(0);
     $size = $image_info[0] > $image_info[1] * 1.15 ? '1536x1024' : ($image_info[1] > $image_info[0] * 1.15 ? '1024x1536' : '1024x1024');
-    $run_stage = function($photo_bytes, $photo_mime, $mask_bytes, $stage_instructions) use ($size) {
-        $prompt = "Toto je SKUTEČNÁ fotografie konkrétní zahrady. Proveď pouze lokální retuš uvnitř průhledné oblasti masky; mimo ni nesmí být změněn ani jeden pixel. Nevytvářej novou scénu, neměň dům, střechu, okna, fasádu, plot, terén, svah, stromy, oblohu ani úhel pohledu. Šedé okraje fotografie ponech šedé. Uprav přiloženou SKUTEČNOU fotografii zahrady jako realistickou fotografickou retuš, nikoliv jako nový obraz. ZACHOVEJ identický úhel kamery, kompozici, geometrii, stávající stromy, dům, plot, pozadí, oblohu, perspektivu a osvětlení. UPRAVUJ POUZE průhledné oblasti masky. Ostatní pixely ponech bez změny. Nové rostliny musí mít věrohodné měřítko, přirozenou strukturu a stíny odpovídající scéně. Žádný malovaný, ilustrativní, CGI, pohádkový ani přehnaně stylizovaný vzhled. Vhodné pro realistickou fotografii skutečně realizovatelné zahrady. Nezobrazuj žádné barevné značky ani text. Zadání: " . $stage_instructions;
-        // WordPress HTTP API does not build multipart files automatically; compose a bounded body.
-        $boundary = 'mvgreen_' . wp_generate_password(24, false, false);
-        $parts = '';
-        $field = function($name, $value) use (&$parts, $boundary) {
-            $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"'."\r\n\r\n".$value."\r\n";
-        };
-        $file = function($name, $filename, $bytes, $content_type) use (&$parts, $boundary) {
-            $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"; filename="'.$filename.'"'."\r\n".'Content-Type: '.$content_type."\r\n\r\n".$bytes."\r\n";
-        };
-        // gpt-image-1.5 is being shut down by OpenAI on 2026-12-01; switched to gpt-image-2.5-sunburst
-        // (OpenAI's own designated replacement, and explicitly their "most capable model for image
-        // generation and editing" where preserved parts must stay intact – exactly this use case).
-        // Same /v1/images/edits endpoint and the same real alpha-mask inpainting mechanism as before,
-        // just with access to the higher "xhigh"/"max" quality tiers 1.5 never had. `input_fidelity`
-        // is dropped here: OpenAI's own docs say it should be omitted for the gpt-image-2 model
-        // family (2.5-sunburst is part of that family, unlike 1.5) – sending it risked an outright
-        // "unknown parameter" error instead of just being ignored.
-        $field('model', 'gpt-image-2.5-sunburst');
-        $field('prompt', $prompt);
-        $field('quality', 'xhigh');
-        $field('size', $size);
-        $file('image[]', $photo_mime === 'image/jpeg' ? 'garden.jpg' : 'garden.png', $photo_bytes, $photo_mime);
-        $file('mask', 'edit-mask.png', $mask_bytes, 'image/png');
-        $parts .= '--'.$boundary."--\r\n";
-        $response = wp_remote_post('https://api.openai.com/v1/images/edits', [
-            'headers'=>['Authorization'=>'Bearer '.MVGREEN_OPENAI_API_KEY,'Content-Type'=>'multipart/form-data; boundary='.$boundary],
-            'body'=>$parts, 'timeout'=>240
-        ]);
-        if (is_wp_error($response)) return ['error' => 'Spojení s AI selhalo: '.$response->get_error_message()];
-        $status = wp_remote_retrieve_response_code($response);
-        $json = json_decode(wp_remote_retrieve_body($response), true);
-        if ($status<200 || $status>=300) {
-            return ['error' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.'];
-        }
-        if (empty($json['data'][0]['b64_json'])) return ['error' => 'AI nevrátila obrázek.'];
-        return ['bytes' => base64_decode($json['data'][0]['b64_json'])];
-    };
-    $current_bytes = $original_bytes; $current_mime = $image_mime;
-    $last_good_bytes = $original_bytes; $partial_message = '';
-    foreach ($stage_defs as $i => $sd) {
-        $r = $run_stage($current_bytes, $current_mime, $sd['mask'], $sd['instructions']);
-        if (isset($r['error'])) {
-            if ($i === 0) {
-                // Nothing usable at all yet – and for the legacy single-call flow this IS the only
-                // stage – so this is a hard failure exactly like before.
-                delete_transient('mvgreen_ai_preview_lock');
-                wp_send_json_error(['message'=>$r['error']], 200);
-            }
-            // A later stage failed after the customer's one code was already redeemed. Rather than
-            // return nothing for a spent credit, keep whatever the chain produced up to here and
-            // tell the customer part of the design could not be finished.
-            $partial_message = $r['error'];
-            break;
-        }
-        $current_bytes = $r['bytes']; $current_mime = 'image/png';
-        $last_good_bytes = $current_bytes;
-    }
-    delete_transient('mvgreen_ai_preview_lock');
-    $final_bytes = $last_good_bytes;
-    // Keep every paid output (first stage's input, last stage's mask, final result) so a rejected
-    // result can be reviewed without paying again.
+    // Each stage used to run as one more OpenAI call chained inside THIS SAME request
+    // (wp_remote_post's own 240s timeout per call, @set_time_limit(0) lifting only PHP's own limit) –
+    // fine for one call, but a realistic multi-area design can now chain up to 10 (see the cap comment
+    // above), and a chain that long can run several minutes end to end and get killed by a
+    // webserver/proxy timeout well before PHP's own limit would ever fire, with the proxy's own HTML
+    // error page breaking the client's JSON parsing – exactly the "Unexpected token '<'" bug this
+    // replaces. Fixed properly, not patched: this request now only VALIDATES and STAGES the job – the
+    // photo, each stage's mask, and the ordered per-stage instructions are written to a per-job temp
+    // directory on disk (never into a transient/wp_options row – up to ~9MB per image x up to 10
+    // stages is far too large for that) and a lightweight pointer to it is returned.
+    // mvgreen_ai_preview_step (below) then runs exactly ONE stage per HTTP request, so no single
+    // request ever waits on more than one OpenAI call, and the client can show real
+    // completedStages/totalStages progress between polls instead of staring at one long spinner.
     $up = wp_upload_dir();
-    $dir = trailingslashit($up['basedir']) . 'mvgreen-ai-log';
-    if (wp_mkdir_p($dir)) {
-        mvgreen_harden_upload_dir($dir);
-        $stem = gmdate('Ymd-His') . '-' . wp_generate_password(10, false, false);
-        @file_put_contents($dir . '/' . $stem . '-vstup.png', $original_bytes);
-        @file_put_contents($dir . '/' . $stem . '-maska.png', end($stage_defs)['mask']);
-        @file_put_contents($dir . '/' . $stem . '-ai.png', $final_bytes);
-        $log = glob($dir . '/*.png') ?: [];
-        sort($log);
-        while (count($log) > 60) @unlink(array_shift($log));
-        update_option('mvgreen_ai_last_log', trailingslashit($up['baseurl']) . 'mvgreen-ai-log/' . $stem, false);
+    $jobs_base = trailingslashit($up['basedir']) . 'mvgreen-ai-jobs';
+    mvgreen_cleanup_stale_ai_jobs($jobs_base);
+    $job_id = bin2hex(random_bytes(16));
+    $job_dir = $jobs_base . '/' . $job_id;
+    if (!wp_mkdir_p($job_dir)) {
+        delete_transient('mvgreen_ai_preview_lock');
+        wp_send_json_error(['message'=>'Server nemůže uložit rozpracovaný návrh.'], 500);
     }
-    $final_b64 = base64_encode($final_bytes);
-    // Durable per-customer copy (never rotated/deleted like the debug log above) plus the
-    // "don't lose your design" e-mail – only for a real paid code, never for admin tests.
-    if ($result_post_id && function_exists('mvgreen_save_result_and_notify')) {
-        mvgreen_save_result_and_notify($result_post_id, $final_b64);
+    mvgreen_harden_upload_dir($jobs_base);
+    @file_put_contents($job_dir . '/original.bin', $original_bytes);
+    @file_put_contents($job_dir . '/current.bin', $original_bytes);
+    foreach ($stage_defs as $i => $sd) {
+        @file_put_contents($job_dir . '/stage-' . $i . '.png', $sd['mask']);
     }
-    $payload = ['image'=>'data:image/png;base64,'.$final_b64];
-    if ($partial_message !== '') $payload['message'] = 'Část návrhu se nepodařilo dokončit (' . $partial_message . '), zobrazujeme nejlepší dosažený výsledek.';
+    $job_meta = [
+        'dir' => $job_dir,
+        'current_mime' => $image_mime,
+        'size' => $size,
+        'stage_count' => count($stage_defs),
+        'next_index' => 0,
+        'instructions' => array_map(function ($sd) { return $sd['instructions']; }, $stage_defs),
+        'is_admin' => $is_admin,
+        'result_post_id' => $result_post_id,
+    ];
+    set_transient('mvgreen_ai_preview_job_' . $job_id, $job_meta, 1800);
+    wp_send_json_success(['jobId' => $job_id, 'totalStages' => count($stage_defs)]);
+};
+add_action('wp_ajax_mvgreen_ai_preview_start', $mvgreen_ai_preview_start_handle);
+add_action('wp_ajax_nopriv_mvgreen_ai_preview_start', $mvgreen_ai_preview_start_handle);
+
+/**
+ * Runs exactly one staged AI edit call per request (see _start above for why), advances the job's
+ * progress, and – on the last stage, or when a later stage fails after the code was already spent –
+ * finalizes exactly like the old single-request flow did (debug log, durable save + e-mail, lock
+ * release, job cleanup). The client (app.js) polls this in a loop after one mvgreen_ai_preview_start
+ * call, updating a real progress bar from completedStages/totalStages between polls.
+ */
+$mvgreen_ai_preview_step_handle = function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    $job_id = isset($_POST['jobId']) ? sanitize_text_field(wp_unslash($_POST['jobId'])) : '';
+    if (!preg_match('/^[a-f0-9]{32}$/', $job_id)) wp_send_json_error(['message'=>'Neplatné ID úlohy.'], 400);
+    $meta = get_transient('mvgreen_ai_preview_job_' . $job_id);
+    if (!is_array($meta) || !isset($meta['dir'], $meta['stage_count'], $meta['next_index'], $meta['instructions'], $meta['size'], $meta['current_mime'])) {
+        wp_send_json_error(['message'=>'Návrh vypršel nebo neexistuje. Zkuste to prosím znovu od začátku.'], 404);
+    }
+    $dir = $meta['dir'];
+    $stage_count = (int) $meta['stage_count'];
+    $i = (int) $meta['next_index'];
+    // Keep the single global generation lock alive for as long as polling continues – a multi-stage
+    // chain can legitimately take several minutes end to end even though each individual request here
+    // now only runs one OpenAI call. (The job transient itself is rewritten below with its updated
+    // next_index once this stage's outcome is known, which refreshes its TTL too.)
+    set_transient('mvgreen_ai_preview_lock', 1, 1800);
+    @set_time_limit(0);
+    $current_bytes = $i < $stage_count ? @file_get_contents($dir . '/current.bin') : false;
+    $mask_bytes = $i < $stage_count ? @file_get_contents($dir . '/stage-' . $i . '.png') : false;
+    if ($current_bytes === false || $mask_bytes === false) {
+        mvgreen_delete_ai_job_dir($dir);
+        delete_transient('mvgreen_ai_preview_job_' . $job_id);
+        delete_transient('mvgreen_ai_preview_lock');
+        wp_send_json_error(['message'=>'Úloha návrhu je poškozená nebo již skončila. Zkuste to prosím znovu.'], 500);
+    }
+    $r = mvgreen_run_ai_image_stage($current_bytes, $meta['current_mime'], $mask_bytes, $meta['instructions'][$i], $meta['size']);
+    $partial_message = '';
+    if (isset($r['error'])) {
+        if ($i === 0) {
+            // Nothing usable at all yet – and for the legacy single-call flow this IS the only
+            // stage – so this is a hard failure exactly like before.
+            mvgreen_delete_ai_job_dir($dir);
+            delete_transient('mvgreen_ai_preview_job_' . $job_id);
+            delete_transient('mvgreen_ai_preview_lock');
+            wp_send_json_error(['message'=>$r['error']], 200);
+        }
+        // A later stage failed after the customer's one code was already redeemed in _start. Rather
+        // than return nothing for a spent credit, keep whatever the chain produced up to here and
+        // tell the customer part of the design could not be finished.
+        $partial_message = $r['error'];
+    } else {
+        @file_put_contents($dir . '/current.bin', $r['bytes']);
+        $meta['current_mime'] = 'image/png';
+        $i++;
+        $meta['next_index'] = $i;
+    }
+    if ($partial_message === '' && $i < $stage_count) {
+        set_transient('mvgreen_ai_preview_job_' . $job_id, $meta, 1800);
+        wp_send_json_success(['done' => false, 'completedStages' => $i, 'totalStages' => $stage_count]);
+    }
+    // Last stage just finished, or a later stage failed – finalize exactly as the old single-request
+    // flow did, then release the lock and clean up this job's temp directory.
+    delete_transient('mvgreen_ai_preview_lock');
+    $final_bytes = @file_get_contents($dir . '/current.bin');
+    $original_bytes = @file_get_contents($dir . '/original.bin');
+    $last_mask_bytes = @file_get_contents($dir . '/stage-' . ($stage_count - 1) . '.png');
+    $payload = mvgreen_finalize_ai_job($original_bytes ?: $final_bytes, $last_mask_bytes ?: '', $final_bytes, $meta['is_admin'], $meta['result_post_id'], $partial_message);
+    delete_transient('mvgreen_ai_preview_job_' . $job_id);
+    mvgreen_delete_ai_job_dir($dir);
+    $payload['done'] = true;
     wp_send_json_success($payload);
 };
-add_action('wp_ajax_mvgreen_ai_preview', $mvgreen_ai_preview_handle);
-add_action('wp_ajax_nopriv_mvgreen_ai_preview', $mvgreen_ai_preview_handle);
+add_action('wp_ajax_mvgreen_ai_preview_step', $mvgreen_ai_preview_step_handle);
+add_action('wp_ajax_nopriv_mvgreen_ai_preview_step', $mvgreen_ai_preview_step_handle);
 // Admin-adjustable daily cap for paid AI tests (Settings REST API, admins only). Default 1.
 add_action('init', function () {
     register_setting('options', 'mvgreen_ai_daily_limit', [

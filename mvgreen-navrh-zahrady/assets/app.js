@@ -995,29 +995,33 @@ function renderAreaDetailFields(){
 }
 function refreshAreaDetailUI(){renderAreaOverview();renderAreaDetailFields();}
 refreshAreaDetailUI();
-// Simulated but honestly-paced progress bar: a single AI image-edit call has no real progress events,
-// so this estimates elapsed-time progress through named stages and always finishes at 100% – it tells
-// the customer "still working, here's roughly how far along" rather than implying exact completion %.
+// Real progress bar: generation now runs as one mvgreen_ai_preview_start call (fast – validation +
+// job setup only) followed by the client polling mvgreen_ai_preview_step once per staged AI call
+// (see runAiGeneration below), so unlike the old single long-running request, completedStages/
+// totalStages is an actual fact, not a time-based guess – this just renders it.
 function startGenerationProgress(){
  const wrap=generationStep.querySelector('#mg-generation-progress');
  const fill=generationStep.querySelector('#mg-generation-progress-fill');
  const label=generationStep.querySelector('#mg-generation-progress-label');
- if(!wrap||!fill||!label)return{stop(){}};
- const stages=['Analyzujeme fotografii…','Rozpoznáváme plochy a rozvržení…','Vybíráme vhodné rostliny…','AI generuje vizualizaci (toto trvá nejdéle)…','Dokončujeme návrh…'];
- let pct=4,stageIndex=0,stopped=false;
- wrap.hidden=false;fill.style.width=pct+'%';label.textContent=stages[0];
- const timer=setInterval(()=>{
-  if(stopped)return;
-  pct=Math.min(92,pct+(92-pct)*0.06+0.6);
-  fill.style.width=pct+'%';
-  const next=Math.min(stages.length-1,Math.floor(pct/19));
-  if(next!==stageIndex){stageIndex=next;label.textContent=stages[stageIndex];}
- },700);
- return{stop(ok){
-  if(stopped)return;stopped=true;clearInterval(timer);
-  fill.style.width='100%';label.textContent=ok?'Hotovo':'Přerušeno';
-  setTimeout(()=>{wrap.hidden=true;fill.style.width='4%';},700);
- }};
+ if(!wrap||!fill||!label)return{update(){},stop(){}};
+ let stopped=false;
+ wrap.hidden=false;fill.style.width='4%';label.textContent='Připravujeme návrh…';
+ return{
+  update(completed,total){
+   if(stopped)return;
+   total=Math.max(1,total||1);completed=Math.max(0,Math.min(completed||0,total));
+   // Reserve the first few % for the already-finished _start call (validation/job setup) and spread
+   // the rest evenly across the real per-stage AI calls, so the bar always reflects an actual fact.
+   const pct=Math.min(96,4+Math.round((completed/total)*92));
+   fill.style.width=pct+'%';
+   label.textContent='AI generuje vizualizaci… krok '+completed+'/'+total+' ('+Math.round(completed/total*100)+'%)';
+  },
+  stop(ok){
+   if(stopped)return;stopped=true;
+   fill.style.width='100%';label.textContent=ok?'Hotovo':'Přerušeno';
+   setTimeout(()=>{wrap.hidden=true;fill.style.width='4%';},700);
+  }
+ };
 }
 // The fake "Varianta 1/2/3" demo (illustration photos presented as if they were the customer's
 // own design, with a draggable before/after slider and a sidebar claiming a style/area/price that
@@ -1523,17 +1527,30 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   trigger.disabled=true;
   const progress=startGenerationProgress();
   try{
-    const data=new URLSearchParams();data.set('action','mvgreen_ai_preview');data.set('nonce',aiConfig.nonce);
-    data.set('image',prepared.image);
-    Object.entries(extraFields||{}).forEach(([k,v])=>data.set(k,v==null?'':String(v)));
+    // "Unexpected token '<'" fix: a multi-stage design used to chain every OpenAI call inside one
+    // single AJAX request, which a slow webserver/proxy could kill mid-chain long before PHP's own
+    // time limit would – the proxy's HTML error page then broke this code's JSON parsing. Generation
+    // is now split server-side into one fast mvgreen_ai_preview_start call (validation + job setup
+    // only) followed by polling mvgreen_ai_preview_step once per staged AI call, so no single request
+    // ever waits on more than one OpenAI call – and completedStages/totalStages gives the customer a
+    // real percentage, not a guess.
+    const startFields=Object.assign({},extraFields||{},{image:prepared.image});
     if(stagedPlan){
-      data.set('stages',JSON.stringify(stagedPlan.map(s=>({mask:S.maskToApi(s.mask,prepared.box),instructions:s.instructions}))));
+      startFields.stages=JSON.stringify(stagedPlan.map(s=>({mask:S.maskToApi(s.mask,prepared.box),instructions:s.instructions})));
     }else{
-      data.set('mask',prepared.mask);data.set('instructions',brief.text);
+      startFields.mask=prepared.mask;startFields.instructions=brief.text;
     }
-    const response=await fetch(aiConfig.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});
-    const json=await response.json();if(!json.success||!json.data?.image)throw new Error(json.data?.message||'AI návrh se nepodařilo vytvořit.');
-    const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=json.data.image});
+    const start=await mgAjax('mvgreen_ai_preview_start',startFields);
+    const totalStages=start.totalStages||1;
+    progress.update(0,totalStages);
+    let step;
+    for(;;){
+      step=await mgAjax('mvgreen_ai_preview_step',{jobId:start.jobId});
+      if(step.done)break;
+      progress.update(step.completedStages||0,step.totalStages||totalStages);
+    }
+    if(!step.image)throw new Error(step.message||'AI návrh se nepodařilo vytvořit.');
+    const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=step.image});
     // Rules 3–4: undo padding, reject a re-drawn scene, hard-lock everything outside the mask. The
     // staged pipeline still checks this ONCE, here, against the whole confirmed area and the true
     // original photo – exactly like the single-call flow – regardless of how many AI calls chained
@@ -1568,7 +1585,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const range=document.createElement('input');range.type='range';range.min='0';range.max='100';range.value='50';range.className='mg-comparison-range';range.setAttribute('aria-label','Posunout hranici porovnání před a po');range.addEventListener('input',()=>comparison.style.setProperty('--mg-reveal',range.value+'%'));
     comparison.append(after,before,labels,range);result.append(comparison);
     const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';result.append(note);
-    if(json.data.message){const warn=document.createElement('p');warn.className='mg-note';warn.textContent=json.data.message;result.append(warn);}
+    if(step.message){const warn=document.createElement('p');warn.className='mg-note';warn.textContent=step.message;result.append(warn);}
     if(brief.rejected.length){const why=document.createElement('p');why.className='mg-note';why.textContent='Do návrhu jsme nedali: '+brief.rejected.join(', ')+' – pro vaše podmínky (slunce, vlhkost, zálivka) se nehodí. Použili jsme vhodnější rostliny.';result.append(why);}
     const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';result.append(used);
     const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
