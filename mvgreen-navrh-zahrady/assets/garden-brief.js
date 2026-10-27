@@ -245,6 +245,16 @@
       // so this is now its own explicit, emphatic rule naming every kind of locked boundary, not a
       // clause tucked into NAVÁZÁNÍ.
       'CELÉ ROSTLINY, NIKDY USEKNUTÉ: žádná nová rostlina (keř, květina, strom) nesmí být nikde vedle zamčeného/needitovatelného prvku (plot, zeď, dům, strom, altán) vykreslená jako uťatá nebo useknutá rovnou čarou podél jeho hranice – jako by pokračovala dál, ale ta část chybí. Pokud by rostlina v přirozené výšce nebo šířce měla zasahovat za hranici odemčené plochy, vykresli ji místo toho CELOU a kompletní (menší, nebo o kousek dál od hranice), tak aby byl vidět celý přirozený tvar rostliny od země až po vrchol, nikdy jen její část.',
+      // 2026-10-27, Martin's explicit requirement + confirmed "ano": "zamčený, ale překryvatelný"
+      // (locked, but occludable) as a universal default. The rule above (CELÉ ROSTLINY) stops a
+      // plant being amputated at the boundary; this rule is the other half – it tells the AI that a
+      // narrow ring just past the true edit boundary (app.js/ai-safety.js's occlusionMask, wired
+      // into the actual mask sent to the API and into finish()'s lenient zone) exists specifically
+      // so a tall/wide plant CAN visually cover part of what's directly behind it, the way it would
+      // in reality (a shrub in front of a fence, a tree in front of a wall, house or altán) – without
+      // that object itself ever being redrawn, moved or changed anywhere it isn't physically covered
+      // by the new growth.
+      'REALISTICKÉ PŘEKRYTÍ ZA HRANICÍ: těsně za hranicí upravované plochy je navíc úzký pomocný pruh, kam nový vzrostlý prvek (keř, strom, živý plot) smí vizuálně zasáhnout, pokud by tak v realitě přirozeně rostl nebo stál – ne proto, že se tam něco bourá nebo mění, ale protože ho zepředu zakrývá nová výsadba, úplně stejně jako by ve skutečném prostoru clonila výhled na plot, zeď, dům nebo altán za ní. Cokoliv v tomto pruhu NENÍ fyzicky zakryté listy, korunou nebo kmenem nové výsadby, musí zůstat vizuálně úplně stejné jako na originální fotografii – nic tam nepřekresluj, nic tam neměň, nic tam nenahrazuj jiným materiálem ani barvou, prostě to jen může být zčásti vidět méně, protože je to teď za rostlinou. Mimo tento úzký pruh platí stoprocentní zákaz jakékoliv změny úplně stejně jako dosud.',
       // Reported 2026-10-27 ("tady to neni dotazeny" + screenshot circling a visible diagonal line
       // cutting across open, otherwise-unmarked lawn) – the mask boundary itself is becoming
       // visible as a seam where it falls across featureless grass with nothing (path/bed/wall) to

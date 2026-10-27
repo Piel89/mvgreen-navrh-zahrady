@@ -1610,6 +1610,18 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   const invalid=S.validate(prepared.coverage);
   if(invalid)return alert(invalid);
   if(!confirm(confirmText(Math.round(prepared.coverage*100))))return;
+  // Occlusion buffer (2026-10-27, Martin's explicit requirement + confirmed "ano"): the mask
+  // actually sent to the AI and to S.finish()'s own lenient ring is editMask grown by a small,
+  // bounded, automatic amount – NOT editMask itself. This is what lets new growth placed right at
+  // the true edit boundary (a shrub against a fence, a tree in front of a wall/house/altán)
+  // visually cover a bounded strip of what's just behind it, instead of either being hard-cut at
+  // the boundary (the old bug) or forced to shrink to fit (rejected by Martin as also wrong).
+  // `prepared` above is deliberately built from the real editMask, unchanged, so the "Upravuje se
+  // X % fotky" confirmation the customer just saw still reflects exactly what they marked – only
+  // the mask that leaves the browser towards the AI, and the tolerance finish() applies on the way
+  // back, grow past that.
+  const bufferMask=S.occlusionMask(editMask,metersPerPixel);
+  const apiMask=S.maskToApi(bufferMask,prepared.box);
   const result=q('mg-ai-result');result.classList.remove('mg-hidden');result.textContent='AI připravuje návrh. Obvykle to trvá asi minutu…';
   trigger.disabled=true;
   generationInFlight=true;
@@ -1623,11 +1635,22 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     // only) followed by polling mvgreen_ai_preview_step once per staged AI call, so no single request
     // ever waits on more than one OpenAI call – and completedStages/totalStages gives the customer a
     // real percentage, not a guess.
-    const startFields=Object.assign({},extraFields||{},{image:prepared.image});
+    // coreMask: the real, un-grown editMask the customer confirmed on step 4 - sent alongside the
+    // buffer-grown mask purely so the server's own "AI may never repaint the whole photo" ceiling
+    // checks the area actually marked, not inflated by the automatic occlusion buffer (see
+    // mvgreen-navrh-zahrady.php's matching comment). Does not affect what the AI is allowed to
+    // touch - that is still apiMask/stages[].mask below.
+    const startFields=Object.assign({},extraFields||{},{image:prepared.image,coreMask:S.maskToApi(editMask,prepared.box)});
     if(stagedPlan){
-      startFields.stages=JSON.stringify(stagedPlan.map(s=>({mask:S.maskToApi(s.mask,prepared.box),instructions:s.instructions})));
+      // Exactly one stage today (the 2026-10-27 combined-call rewrite above), and its own `mask` is
+      // always the SAME editMask reference passed into buildStagedPlan – so the buffer-grown
+      // apiMask (which by construction already contains all of editMask) is simply used in its
+      // place here, same as the non-staged branch below. If a future change ever reintroduces
+      // several stages with genuinely different masks, each would need its own occlusion buffer
+      // computed the same way rather than reusing this one.
+      startFields.stages=JSON.stringify(stagedPlan.map(s=>({mask:apiMask,instructions:s.instructions})));
     }else{
-      startFields.mask=prepared.mask;startFields.instructions=brief.text;
+      startFields.mask=apiMask;startFields.instructions=brief.text;
     }
     const start=await mgAjax('mvgreen_ai_preview_start',startFields);
     const totalStages=start.totalStages||1;
@@ -1663,7 +1686,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     // staged pipeline still checks this ONCE, here, against the whole confirmed area and the true
     // original photo – exactly like the single-call flow – regardless of how many AI calls chained
     // server-side to produce aiPhoto.
-    const done=S.finish(original,editMask,aiPhoto,prepared.box);
+    const done=S.finish(original,editMask,aiPhoto,prepared.box,bufferMask);
     progress.stop(done.ok);
     if(!done.ok){
       result.replaceChildren();

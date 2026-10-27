@@ -93,9 +93,25 @@
     return '';
   }
 
-  /** Crops the AI image back to the photo, checks drift in protected parts, and hard-locks them. */
-  function finish(photo, editMask, aiImage, box) {
+  /**
+   * Crops the AI image back to the photo, checks drift in protected parts, and hard-locks them.
+   *
+   * bufferMask (optional, 2026-10-27, Martin's explicit "ano" to the buffer-zone proposal): the
+   * SAME confirmed editMask grown by occlusionMask() below. Everywhere inside editMask behaves
+   * exactly as before (the real edit). Everywhere OUTSIDE bufferMask also behaves exactly as
+   * before – same MAX_DRIFT check, same hard revert to the original pixel, zero tolerance, not
+   * touched by this change in any way. The only new behaviour is the RING between editMask and
+   * bufferMask: pixels there are no longer forced back to the original and no longer count toward
+   * the drift check, so new growth placed right at the true edit boundary (a shrub against a
+   * fence, a tree in front of a wall or altán) is allowed to visually cover a bounded strip of
+   * what's just behind it – "zamčený, ale překryvatelný" – instead of either being hard-cut at the
+   * boundary or forcing the plant to shrink to fit. Omitting bufferMask (or passing the same
+   * editMask reference) reproduces the old behaviour exactly – no caller is forced onto the new
+   * path.
+   */
+  function finish(photo, editMask, aiImage, box, bufferMask) {
     var w = photo.width, h = photo.height;
+    if (!bufferMask) bufferMask = editMask;
     var back = canvas(w, h), bc = back.getContext('2d');
     // Raw AI pixels (may contain transparency outside the mask).
     var raw = canvas(w, h), rc = raw.getContext('2d');
@@ -110,14 +126,18 @@
     var a = bc.getImageData(0, 0, w, h);
     var ad = a.data;
     var md = editMask.getContext('2d').getImageData(0, 0, w, h).data;
-    // Guard band: ignore a few px around the mask edge (resampling blurs the boundary).
+    var bud = bufferMask.getContext('2d').getImageData(0, 0, w, h).data;
+    // Guard band: ignore a few px around the TRUE edit boundary that's relevant for drift purposes –
+    // the buffer's own outer edge (resampling blurs that boundary too), not editMask's inner one,
+    // since the buffer ring itself is deliberately excluded from the drift sum just below.
     var guard = canvas(w, h), gc = guard.getContext('2d');
-    gc.filter = 'blur(' + Math.max(4, Math.round(w / 300)) + 'px)'; gc.drawImage(editMask, 0, 0); gc.filter = 'none';
+    gc.filter = 'blur(' + Math.max(4, Math.round(w / 300)) + 'px)'; gc.drawImage(bufferMask, 0, 0); gc.filter = 'none';
     var gd = gc.getImageData(0, 0, w, h).data;
     var sum = 0, cnt = 0, insideOpaque = 0, insideCnt = 0;
     for (var i = 0; i < ad.length; i += 4) {
       if ((i >> 2) % 7 !== 0) continue;
       if (md[i + 3] > 127) { insideCnt++; if (rd[i + 3] > 127) insideOpaque++; continue; }
+      if (bud[i + 3] > 127) continue; // inside the occlusion buffer ring: allowed to differ, by design
       if (gd[i + 3] > 8) continue;
       if (rd[i + 3] < 128) continue; // transparent = AI left it alone
       sum += (Math.abs(rd[i] - o[i]) + Math.abs(rd[i + 1] - o[i + 1]) + Math.abs(rd[i + 2] - o[i + 2])) / 3;
@@ -127,9 +147,12 @@
     // AI returned nothing usable inside the garden area.
     var emptyInside = insideCnt > 0 && insideOpaque / insideCnt < 0.5;
 
-    // Soft 6 px feather on the mask edge, then original pixels everywhere outside it.
+    // Soft feather on the BUFFER's edge (editMask's own edge when no buffer was requested – same
+    // math as before in that case), then original pixels everywhere outside it. Pixels inside the
+    // buffer ring get the AI's own content kept (occlusion allowed); only right at the buffer's
+    // outer edge does this fade back into the untouched original, so there's no hard seam there.
     var feather = canvas(w, h), fc = feather.getContext('2d');
-    fc.filter = 'blur(' + Math.max(4, Math.round(w / 150)) + 'px)'; fc.drawImage(editMask, 0, 0); fc.filter = 'none';
+    fc.filter = 'blur(' + Math.max(4, Math.round(w / 150)) + 'px)'; fc.drawImage(bufferMask, 0, 0); fc.filter = 'none';
     var fd = fc.getImageData(0, 0, w, h).data;
     for (var j = 0; j < ad.length; j += 4) {
       // Inward feather: 0 exactly at the mask edge (no AI pixels leak out), 1 inside → soft seam.
@@ -289,6 +312,39 @@
     oc.globalCompositeOperation = 'source-in'; oc.fillStyle = '#1b9c55'; oc.fillRect(0, 0, w, h);
     oc.globalCompositeOperation = 'source-over';
     return out;
+  }
+
+  /**
+   * Occlusion buffer (2026-10-27, Martin's explicit requirement + confirmed "ano"): a small,
+   * bounded, automatic dilation of WHATEVER editMask the customer already confirmed – the real
+   * engineering answer to "plot/dům/altán/zeď musí zůstat neměný, ale nová výsadba ho může
+   * překryt, úplně stejně jako v realitě". No new category, no manual marking, no extra AI call:
+   * this is computed purely from the mask that already exists, and is a universal default applied
+   * to every generation that has calibration or not.
+   *
+   * occlusionBufferPx: how deep (in photo pixels) that ring is allowed to reach. When the customer
+   * calibrated a real-world distance (step 3), this targets a plausible physical reach for new
+   * planting (OCCLUSION_REACH_M) instead of guessing from resolution alone – but is still capped
+   * (both with and without calibration) so a single locked object can never be swallowed whole,
+   * only have a bounded strip near the edit boundary become occludable.
+   */
+  var OCCLUSION_REACH_M = 1.6;
+  function occlusionBufferPx(w, metersPerPixel) {
+    if (metersPerPixel > 0) {
+      var px = Math.round(OCCLUSION_REACH_M / metersPerPixel);
+      return Math.max(24, Math.min(px, Math.round(w * 0.28)));
+    }
+    // No calibration done (it's an optional step) – a resolution-relative estimate, capped more
+    // conservatively since there's no real-world distance to check it against.
+    return Math.max(28, Math.min(Math.round(w * 0.12), 260));
+  }
+  /**
+   * The mask actually handed to the AI (and to finish()'s own lenient ring, above): editMask grown
+   * by the occlusion buffer, edge-smoothed the same way a hand-painted mask is before confirmation
+   * so the ring itself doesn't introduce a scalloped/faceted edge.
+   */
+  function occlusionMask(editMask, metersPerPixel) {
+    return smoothMaskEdge(growMask(editMask, occlusionBufferPx(editMask.width, metersPerPixel)));
   }
 
   /**
@@ -661,7 +717,7 @@
     prepare: prepare, finish: finish, validate: validate, autoMask: autoMask,
     polygonMask: polygonMask, confirmMask: confirmMask, editableShare: editableShare, growMask: growMask,
     maskPreview: maskPreview, smoothMaskEdge: smoothMaskEdge, strokeMask: strokeMask, combineMasks: combineMasks,
-    maskToApi: maskToApi,
-    limits: { MAX_EDITABLE: MAX_EDITABLE, MIN_EDITABLE: MIN_EDITABLE, MAX_DRIFT: MAX_DRIFT }
+    maskToApi: maskToApi, occlusionMask: occlusionMask, occlusionBufferPx: occlusionBufferPx,
+    limits: { MAX_EDITABLE: MAX_EDITABLE, MIN_EDITABLE: MIN_EDITABLE, MAX_DRIFT: MAX_DRIFT, OCCLUSION_REACH_M: OCCLUSION_REACH_M }
   };
 })();

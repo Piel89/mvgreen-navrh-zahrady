@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.138
+ * Version: 0.6.139
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.138');
+define('MVGREEN_VERSION', '0.6.139');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -250,6 +250,15 @@ $mvgreen_ai_preview_start_handle = function () {
     $image = isset($_POST['image']) ? wp_unslash($_POST['image']) : '';
     $instructions = isset($_POST['instructions']) ? sanitize_textarea_field(wp_unslash($_POST['instructions'])) : '';
     $stages_raw = isset($_POST['stages']) ? wp_unslash($_POST['stages']) : '';
+    // coreMask (2026-10-27, occlusion-buffer feature): the actual mask the customer confirmed on
+    // step 4, BEFORE ai-safety.js's occlusionMask() grows it into the larger mask that's really sent
+    // as `mask`/`stages[].mask` to the AI. Used ONLY for the "AI may never repaint the whole photo"
+    // share check below, so that automatic, bounded occlusion growth near the edit boundary never
+    // trips a ceiling meant to catch a customer marking almost the entire photo editable. It changes
+    // nothing about what pixels the AI is actually allowed to touch (that's still `mask`/`stages`,
+    // exactly as sent) - optional and purely advisory for this one sanity check; missing or invalid
+    // falls back to the previous behaviour (union of the real stage masks) further below.
+    $core_mask_raw = isset($_POST['coreMask']) ? wp_unslash($_POST['coreMask']) : '';
     // Styles with more plants (e.g. "Okrasné záhony", max 9) plus the free-text customer-notes
     // field legitimately produce instructions well past 2500 chars (measured ~3000 with no notes
     // at all) – that used to trip this guard and fail with a misleading "photo too large" error
@@ -330,15 +339,31 @@ $mvgreen_ai_preview_start_handle = function () {
         }
         $stage_defs[] = ['mask' => $mask_bytes, 'instructions' => $instructions];
     }
-    // Hard rule: the AI may never repaint the whole photo. Checked against the UNION of every
-    // stage's mask (what ends up unlocked across the whole chained result), not each stage alone –
-    // a staged design is deliberately split into several small masks that can each be well under
-    // the limit on their own but must still add up to a sane total.
+    // coreMask decode (see its $_POST read above) - same PNG decode + dimension check as every
+    // other mask here. Deliberately not fatal if missing/invalid: older cached client JS without
+    // this field, or any other caller, still gets the previous (union-of-real-masks) behaviour.
+    $core_mask_bytes = $core_mask_raw !== '' ? $decode_png($core_mask_raw) : false;
+    if ($core_mask_bytes) {
+        $cmi = @getimagesizefromstring($core_mask_bytes);
+        if (!$cmi || $cmi[0] !== $image_info[0] || $cmi[1] !== $image_info[1] || $cmi[2] !== IMAGETYPE_PNG) {
+            $core_mask_bytes = false;
+        }
+    }
+    // Hard rule: the AI may never repaint the whole photo. Checked against coreMask when the client
+    // sent a valid one - the area the customer actually confirmed on step 4, before ai-safety.js's
+    // occlusionMask() grows it into the larger mask really sent as `mask`/`stages[].mask` above.
+    // Without that bounded, automatic growth this ceiling would otherwise end up checking against
+    // an inflated figure that was never really "the customer marked almost the whole photo", just
+    // "a shrub/tree was allowed its calibrated occlusion reach at the boundary". Falls back to the
+    // UNION of every real stage mask (the previous behaviour) when no usable coreMask was sent - a
+    // staged design is deliberately split into several small masks that can each be well under the
+    // limit on their own but must still add up to a sane total.
     if (function_exists('imagecreatefromstring')) {
         $mw = $image_info[0]; $mh = $image_info[1];
         $cols = (int) ceil($mw / 8); $rows = (int) ceil($mh / 8);
         $union = array_fill(0, max(1, $cols * $rows), false);
-        foreach ($stage_defs as $sd) {
+        $share_sources = $core_mask_bytes ? [['mask' => $core_mask_bytes]] : $stage_defs;
+        foreach ($share_sources as $sd) {
             $m = @imagecreatefromstring($sd['mask']);
             if (!$m) wp_send_json_error(['message'=>'Neplatná maska.'], 400);
             $idx = 0;
