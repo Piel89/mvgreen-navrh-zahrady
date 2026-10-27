@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.127
+ * Version: 0.6.128
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.127');
+define('MVGREEN_VERSION', '0.6.128');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -70,7 +70,7 @@ add_shortcode('mvgreen_navrh_zahrady', function () {
  * logic. Pure function: takes the current photo + this stage's mask + this stage's own instructions,
  * returns ['bytes'=>...] on success or ['error'=>...] on failure - no side effects, no job state.
  */
-function mvgreen_run_ai_image_stage($photo_bytes, $photo_mime, $mask_bytes, $stage_instructions, $size) {
+function mvgreen_run_ai_image_stage($photo_bytes, $photo_mime, $mask_bytes, $stage_instructions, $size, $quality = 'xhigh') {
     $prompt = "Toto je SKUTEČNÁ fotografie konkrétní zahrady. Proveď pouze lokální retuš uvnitř průhledné oblasti masky; mimo ni nesmí být změněn ani jeden pixel. Nevytvářej novou scénu, neměň dům, střechu, okna, fasádu, plot, terén, svah, stromy, oblohu ani úhel pohledu. Šedé okraje fotografie ponech šedé. Uprav přiloženou SKUTEČNOU fotografii zahrady jako realistickou fotografickou retuš, nikoliv jako nový obraz. ZACHOVEJ identický úhel kamery, kompozici, geometrii, stávající stromy, dům, plot, pozadí, oblohu, perspektivu a osvětlení. UPRAVUJ POUZE průhledné oblasti masky. Ostatní pixely ponech bez změny. Nové rostliny musí mít věrohodné měřítko, přirozenou strukturu a stíny odpovídající scéně. Žádný malovaný, ilustrativní, CGI, pohádkový ani přehnaně stylizovaný vzhled. Vhodné pro realistickou fotografii skutečně realizovatelné zahrady. Nezobrazuj žádné barevné značky ani text. Zadání: " . $stage_instructions;
     // WordPress HTTP API does not build multipart files automatically; compose a bounded body.
     $boundary = 'mvgreen_' . wp_generate_password(24, false, false);
@@ -91,7 +91,7 @@ function mvgreen_run_ai_image_stage($photo_bytes, $photo_mime, $mask_bytes, $sta
     // "unknown parameter" error instead of just being ignored.
     $field('model', 'gpt-image-2.5-sunburst');
     $field('prompt', $prompt);
-    $field('quality', 'xhigh');
+    $field('quality', $quality);
     $field('size', $size);
     $file('image[]', $photo_mime === 'image/jpeg' ? 'garden.jpg' : 'garden.png', $photo_bytes, $photo_mime);
     $file('mask', 'edit-mask.png', $mask_bytes, 'image/png');
@@ -454,7 +454,13 @@ $mvgreen_ai_preview_step_handle = function () {
         delete_transient('mvgreen_ai_preview_lock');
         wp_send_json_error(['message'=>'Úloha návrhu je poškozená nebo již skončila. Zkuste to prosím znovu.'], 500);
     }
-    $r = mvgreen_run_ai_image_stage($current_bytes, $meta['current_mime'], $mask_bytes, $meta['instructions'][$i], $meta['size']);
+    // Admin's own test runs (never a paying customer's design - $meta['is_admin'] is only ever true
+    // for the admin-only "Vytvořit testovací AI návrh" button, gated by manage_options in
+    // mvgreen_ai_preview_start_handle above) use OpenAI's cheapest quality tier instead of the
+    // production 'xhigh', so repeated logic/positioning tests during development don't burn real
+    // money at full quality. Every customer-paid design still gets the default 'xhigh' untouched.
+    $admin_test_quality = $meta['is_admin'] ? 'low' : 'xhigh';
+    $r = mvgreen_run_ai_image_stage($current_bytes, $meta['current_mime'], $mask_bytes, $meta['instructions'][$i], $meta['size'], $admin_test_quality);
     $partial_message = '';
     if (isset($r['error'])) {
         if ($i === 0) {
