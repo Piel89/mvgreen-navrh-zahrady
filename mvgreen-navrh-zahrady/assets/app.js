@@ -1658,6 +1658,20 @@ async function runAiGeneration(trigger,extraFields,confirmText){
      try{const url=new URL(window.location.href);url.searchParams.set('mvg',extraFields.code);history.replaceState(null,'',url)}catch(e){}
     }
     result.replaceChildren();
+    // A later stage failing (reported 2026-10-27: API credits ran out mid-generation) used to show
+    // up as one quiet grey note buried below the image and plant list – easy to miss, and the spots
+    // the AI simply never got to (an unfinished wall edge, leftover clutter from before, a bed that
+    // was supposed to replace something removed) then look like separate, unrelated quality bugs
+    // rather than what they are: parts of the SAME design that never ran. This now leads the result,
+    // impossible to miss, and says plainly that those areas are untouched original photo, not an AI
+    // mistake – and that the fix is to resolve the cause and generate a fresh design, not patch this
+    // one (a stage that didn't run can't be added back into an already-finished result).
+    if(step.message){
+      const warn=document.createElement('div');
+      warn.style.cssText='background:#fdecea;border:2px solid #d9453f;border-radius:10px;padding:12px 14px;margin-bottom:14px;color:#7a1f1a;font-weight:600';
+      warn.textContent='⚠️ Návrh se nepodařilo dokončit celý (' + step.message.replace(/^Část návrhu se nepodařilo dokončit \(|\)$/g,'') + '). Plochy, ke kterým se AI kvůli tomu vůbec nedostala, zůstaly na fotce beze změny – nejde o chybu AI, prostě ten krok neproběhl. Po vyřešení příčiny doporučujeme vygenerovat celý design znovu od začátku, tenhle výsledek se nedá dodatečně doplnit.';
+      result.append(warn);
+    }
     const comparison=document.createElement('div');comparison.className='mg-before-after';comparison.setAttribute('aria-label','Porovnání původní fotografie a AI návrhu');
     const before=document.createElement('img');before.src=original.toDataURL('image/png');before.alt='Před úpravou – původní zahrada';before.className='mg-before-image';
     const after=document.createElement('img');after.src=finalImage;after.alt='Po úpravě – AI návrh';after.className='mg-after-image';
@@ -1665,7 +1679,6 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const range=document.createElement('input');range.type='range';range.min='0';range.max='100';range.value='50';range.className='mg-comparison-range';range.setAttribute('aria-label','Posunout hranici porovnání před a po');range.addEventListener('input',()=>comparison.style.setProperty('--mg-reveal',range.value+'%'));
     comparison.append(after,before,labels,range);result.append(comparison);
     const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';result.append(note);
-    if(step.message){const warn=document.createElement('p');warn.className='mg-note';warn.textContent=step.message;result.append(warn);}
     if(brief.rejected.length){const why=document.createElement('p');why.className='mg-note';why.textContent='Do návrhu jsme nedali: '+brief.rejected.join(', ')+' – pro vaše podmínky (slunce, vlhkost, zálivka) se nehodí. Použili jsme vhodnější rostliny.';result.append(why);}
     const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';result.append(used);
     const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
