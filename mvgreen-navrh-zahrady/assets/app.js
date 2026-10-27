@@ -1016,9 +1016,9 @@ function startGenerationProgress(){
    fill.style.width=pct+'%';
    label.textContent='AI generuje vizualizaci… krok '+completed+'/'+total+' ('+Math.round(completed/total*100)+'%)';
   },
-  retrying(attempt){
+  retrying(attempt,max){
    if(stopped)return;
-   label.textContent='Krátký výpadek spojení, zkouším znovu… ('+attempt+'/3)';
+   label.textContent='Displej byl asi vypnutý nebo došlo k výpadku spojení, zkouším znovu… ('+attempt+'/'+(max||attempt)+'). Klidně nechte telefon v klidu, generování pokračuje na pozadí.';
   },
   stop(ok){
    if(stopped)return;stopped=true;
@@ -1497,6 +1497,27 @@ const aiButton=q('mg-ai-test');
 // crash/refresh even though the photo itself is never kept in the browser.
 const resultCodeKey='mvgreen-result-code';
 
+// Generation takes a few minutes, and a phone left untouched for that long auto-locks its screen –
+// that's the real cause behind the mobile "Chyba: Failed to fetch" reports (confirmed 2026-10-27:
+// "displej mobilu se vypne vzdycky jelikoz to trva par minut"), not just a flaky connection. The
+// Wake Lock API keeps the screen on for as long as this tab stays open and in front, which covers
+// that case directly. It can't force anything to keep running if the customer fully switches app or
+// presses the power button to lock the phone manually – no website can prevent that – so the step
+// loop below still gets a long retry grace period regardless, to pick back up once the phone wakes.
+let wakeLockHandle=null,generationInFlight=false;
+async function requestWakeLock(){
+  try{if('wakeLock' in navigator)wakeLockHandle=await navigator.wakeLock.request('screen');}
+  catch(e){/* unsupported, denied, or battery saver – nothing to do here, retries still cover it */}
+}
+function releaseWakeLock(){
+  try{if(wakeLockHandle){wakeLockHandle.release();wakeLockHandle=null;}}catch(e){}
+}
+// The lock is auto-released the moment the tab is hidden (app switch, screen off) – re-request it
+// as soon as the tab is visible again so a quick glance back at the phone re-arms it.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&!wakeLockHandle&&generationInFlight)requestWakeLock();
+});
+
 async function runAiGeneration(trigger,extraFields,confirmText){
   if(!photoReady)return alert('Nejprve nahrajte fotografii zahrady.');
   const S=window.MVGreenAISafety;
@@ -1529,6 +1550,8 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   if(!confirm(confirmText(Math.round(prepared.coverage*100))))return;
   const result=q('mg-ai-result');result.classList.remove('mg-hidden');result.textContent='AI připravuje návrh. Obvykle to trvá asi minutu…';
   trigger.disabled=true;
+  generationInFlight=true;
+  requestWakeLock();
   const progress=startGenerationProgress();
   try{
     // "Unexpected token '<'" fix: a multi-stage design used to chain every OpenAI call inside one
@@ -1548,21 +1571,25 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const totalStages=start.totalStages||1;
     progress.update(0,totalStages);
     let step,stepFails=0;
+    // A mobile connection (network handoff, or the screen-off/app-switch case above when the wake
+    // lock isn't supported or the customer locks the phone manually anyway) can drop one of what
+    // are now several sequential requests without anything actually having gone wrong server-side –
+    // the job (already paid for) just sits waiting for the next poll. Re-polling the SAME _step call
+    // is safe either way: if the server never got the dropped request, this simply resends it; if it
+    // got it but the reply was lost, the job has already moved on and just reports where it now
+    // stands – never re-runs a stage twice. Grace period is generous (capped backoff, ~2 minutes
+    // total) specifically to survive a phone staying locked for a while before the customer checks
+    // back, not just a one-off network blip. Only a run of failures spanning that whole window (a
+    // real, lasting problem) gives up and surfaces the error.
+    const maxStepRetries=8;
     for(;;){
       try{
         step=await mgAjax('mvgreen_ai_preview_step',{jobId:start.jobId});
         stepFails=0;
       }catch(stepErr){
-        // A mobile connection (network handoff, screen-off backgrounding a poll mid-request) can
-        // drop ONE of what are now several sequential requests without anything actually having
-        // gone wrong server-side – the job (already paid for) just sits waiting for the next poll.
-        // Re-polling the SAME _step call is safe either way: if the server never got the dropped
-        // request, this simply resends it; if it got it but the reply was lost, the job has already
-        // moved on and just reports where it now stands – never re-runs a stage twice. Only a run of
-        // several failures in a row (a real, lasting problem) gives up and surfaces the error.
-        if(++stepFails>=4)throw stepErr;
-        progress.retrying(stepFails);
-        await new Promise(r=>setTimeout(r,1500*stepFails));
+        if(++stepFails>maxStepRetries)throw stepErr;
+        progress.retrying(stepFails,maxStepRetries);
+        await new Promise(r=>setTimeout(r,Math.min(2000*stepFails,15000)));
         continue;
       }
       if(step.done)break;
@@ -1610,7 +1637,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';result.append(link);
     const extras=document.createElement('div');extras.className='mg-ai-extras';result.append(extras);
     mgPlanAndAngles(extras,finalImage,original.toDataURL('image/jpeg',0.8),brief,d,editMask,extraFields);
-  }catch(err){progress.stop(false);result.textContent='Chyba: '+err.message;}finally{trigger.disabled=false;}
+  }catch(err){progress.stop(false);result.textContent='Chyba: '+err.message;}finally{trigger.disabled=false;generationInFlight=false;releaseWakeLock();}
 }
 
 if(aiConfig.enabled){
