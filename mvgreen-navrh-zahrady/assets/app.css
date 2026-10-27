@@ -387,6 +387,9 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-wizard-step .mg-actions{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
 .mvgreen-designer .mg-wizard-step .mg-actions button{border-radius:11px!important;min-height:47px;padding:12px 17px!important}
 .mvgreen-designer .mg-wizard-step .mg-hint{background:#f2f8f4;border:1px solid #dce9e0;border-radius:12px;padding:15px;line-height:1.65;color:#5c7162}
+.mvgreen-designer .mg-notes-tip{background:#fdf6e3;border:1px solid #f0e0a8;border-radius:12px;padding:13px 15px;line-height:1.6;color:#6b5a1f;font-size:14px!important;margin:0 0 12px!important}
+.mvgreen-designer .mg-notes-starters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.mvgreen-designer .mg-notes-starters button{font-size:13px;padding:9px 13px}
 @media(max-width:740px){.mvgreen-designer .mg-result-intro{grid-template-columns:1fr}.mvgreen-designer .mg-result-intro-photo{min-height:220px}}
 
 /* Hide duplicate WordPress page heading, retain MVGreen application heading */
