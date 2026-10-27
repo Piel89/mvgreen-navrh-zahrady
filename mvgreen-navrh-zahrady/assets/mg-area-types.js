@@ -97,7 +97,17 @@
     // Give the painted shape a small, fixed allowance to round out past the literal grid cells
     // (see the S = window.MVGreenAISafety comment near the top of this file) instead of staying
     // locked to a blocky, cell-exact outline.
-    return S.growMask ? S.growMask(out) : out;
+    var grown = S.growMask ? S.growMask(out) : out;
+    // 2026-10-27, owner-reported: growMask alone still leaves a stair-step/"zigzag" outline, because
+    // it's a uniform pixel dilation of the same blocky cell shape - it makes the blob bigger, not
+    // smoother. The final edge the AI draws is hard-cropped to this mask (that's the whole point of
+    // the pixel lock: the AI can never paint past what the customer approved), so a jagged mask can
+    // only ever produce a jagged result - no instruction wording can make the AI "round it out"
+    // afterwards, because the compositing boundary is literally this mask's own edge. smoothMaskEdge
+    // (a blur+threshold pass) is exactly the piece step 4's own tool already chains after growMask
+    // for this reason; step 6 was missing it. This keeps the mask at roughly the position/size the
+    // customer marked while turning its boundary into a natural curve instead of a staircase.
+    return S.smoothMaskEdge ? S.smoothMaskEdge(grown) : grown;
   }
 
   function categoryMask(grid, category, matchId, photoW, photoH, W, H) {
