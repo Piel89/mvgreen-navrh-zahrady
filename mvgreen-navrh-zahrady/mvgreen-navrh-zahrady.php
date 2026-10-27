@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.116
+ * Version: 0.6.117
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.116');
+define('MVGREEN_VERSION', '0.6.117');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -135,14 +135,17 @@ $mvgreen_ai_preview_handle = function () {
     // self-contained prompt (see garden-brief.js's buildRemoveStageInstructions and neighbours).
     $stage_defs = [];
     if ($stages_raw !== '') {
-        // buildStagedPlan (app.js) can legitimately produce up to 6 stages: step 4's own "Odstranit"
-        // removal mask, one per painted area type (path/wall/bed/grass – see AREA_TYPE_ORDER), and a
-        // final remainder stage for whatever editable area wasn't explicitly categorized. This cap
-        // used to be 4, left over from before the area-type grid tool could produce this many at
-        // once, and wrongly rejected a real design that used the removal brush plus several area
-        // types as "Neplatné zadání kroků návrhu."
+        // buildStagedPlan (app.js) can legitimately produce up to 10 stages since step 6's numbered-
+        // area redesign: step 4's own "Odstranit" removal mask, up to 2 islands per area type
+        // (path/wall/bed/grass – mg-area-types.js's MAX_INSTANCES_PER_CATEGORY, each painted island
+        // now gets its own stage instead of one shared stage per whole category), and a final
+        // remainder stage for whatever editable area wasn't explicitly categorized. 1 + 4*2 + 1 = 10.
+        // This cap has already had to be raised once before (4 -> 6) when it wrongly rejected a real
+        // design that used the removal brush plus several area types as "Neplatné zadání kroků
+        // návrhu" before a single OpenAI call was ever made – keep it in lockstep with whatever the
+        // client can actually produce.
         $decoded = json_decode($stages_raw, true);
-        if (!is_array($decoded) || !count($decoded) || count($decoded) > 6) {
+        if (!is_array($decoded) || !count($decoded) || count($decoded) > 10) {
             wp_send_json_error(['message'=>'Neplatné zadání kroků návrhu.'], 400);
         }
         foreach ($decoded as $stage) {

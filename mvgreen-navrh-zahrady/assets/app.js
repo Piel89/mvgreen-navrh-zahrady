@@ -745,9 +745,12 @@ areaTypeStep.innerHTML+='<div class="mg-mask-step-body"><p class="mg-mask-step-s
 generationStep.insertAdjacentElement('beforebegin',areaTypeStep);
 // areaCategoryGrid: the raw per-cell classification array, kept only so re-opening this step
 // ("Upravit určení") restores exactly what's already painted – mirrors step 4's own paintCategory.
-// areaTypeMasks: the resolved {grass,path,wall,bed,mulch,paving,hedge}->mask|null dict buildStagedPlan
-// below actually consumes at generation time – mirrors step 4's own confirmedEditMask/paintRemoveMask.
-let areaCategoryGrid=null,areaTypeMasks=null;
+// areaTypeMasks: the resolved {grass,path,wall,bed}->mask|null dict – kept only for the quick
+// "are any areas determined at all" status check below; buildStagedPlan now consumes areaInstances.
+// areaInstances: the resolved {grass,path,wall,bed}->[{index,mask,photoX,photoY,...}] dict – each
+// entry is one connected, addressable island (see mg-area-types.js's buildInstances), what step 6's
+// numbered overview/per-area fields and buildStagedPlan actually use at generation time.
+let areaCategoryGrid=null,areaTypeMasks=null,areaInstances=null;
 function updateAreaTypeStatus(){
  const status=q('mg-areatype-status'),btn=q('mg-areatype-open'),adjustBtn=q('mg-areatype-adjust');
  if(!status||!btn)return;
@@ -777,8 +780,10 @@ async function openAreaTypeConfirmation(editExisting){
  if(result){
   areaCategoryGrid=result.category;
   areaTypeMasks=result.hasAny?result.masksByCategory:null;
+  areaInstances=result.hasAny?result.instancesByCategory:null;
  }
  updateAreaTypeStatus();
+ refreshAreaDetailUI();
 }
 q('mg-areatype-open').addEventListener('click',()=>openAreaTypeConfirmation(false));
 q('mg-areatype-adjust')?.addEventListener('click',()=>openAreaTypeConfirmation(true));
@@ -799,16 +804,23 @@ q('mg-areatype-adjust')?.addEventListener('click',()=>openAreaTypeConfirmation(t
 // instructions buildInstructions() already produces. Returns null when there's nothing worth
 // sending as its own stage, so the caller can fall back to the plain single-call flow.
 var AREA_TYPE_ORDER=['path','wall','bed','grass'];
+// "Záhon" covers planting AND any other material for that same spot (mulch, gravel/kamínky,
+// paving) – owner's explicit simplification to 4 buttons instead of one per material. `detail` is
+// step 6's own per-island note (free text for path/wall/bed, a sun/irrigation sentence for grass –
+// see instanceDetailText below) telling the AI which of those the customer actually wants there,
+// folded in via Brief's withDetail() when present.
 var AREA_TYPE_BUILDERS={
- path:function(){return Brief.buildPathStageInstructions();},
- wall:function(){return Brief.buildWallStageInstructions();},
- // "Záhon" covers planting AND any other material for that same spot (mulch, gravel/kamínky,
- // paving) – owner's explicit simplification to 4 buttons instead of one per material. ctx.detail
- // (once step 6's per-area free-text note exists) is what tells the AI which of those the customer
- // actually wants there; buildBedStageInstructions already accepts it via withDetail().
- bed:function(ctx){return Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants});},
- grass:function(){return Brief.buildGrassStageInstructions();}
+ path:function(ctx,detail){return Brief.buildPathStageInstructions({detail:detail});},
+ wall:function(ctx,detail){return Brief.buildWallStageInstructions(detail);},
+ bed:function(ctx,detail){return Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants,detail:detail});},
+ grass:function(ctx,detail){return Brief.buildGrassStageInstructions(ctx.d,detail);}
 };
+// Step 6's numbered-area redesign: mg-area-types.js now splits each category into its own
+// connected islands (ctx.areaInstances: {grass,path,wall,bed}->[{index,mask,...}]) instead of one
+// combined mask per category, so each island gets its OWN stage – its own precise mask AND its own
+// instructions (incl. that island's own customer note) – rather than blending every island's
+// wishes into one prompt over their combined, possibly disjoint, area. ctx.instanceDetail(catId,
+// index) is app.js's lookup from the step 6 fields into that exact text/choice.
 function buildStagedPlan(S,w,h,editMask,ctx){
  var MIN_SHARE=0.0015; // ~0.15% of the frame – below this a stage mask is effectively empty
  var stages=[],used=null;
@@ -824,10 +836,14 @@ function buildStagedPlan(S,w,h,editMask,ctx){
  // classification, claimed first exactly like before this tool existed.
  var removeMask=ctx.paintRemoveMask?claimMask(ctx.paintRemoveMask):null;
  if(removeMask)stages.push({mask:removeMask,instructions:Brief.buildRemoveStageInstructions()});
- var masks=ctx.areaTypeMasks||{};
- AREA_TYPE_ORDER.forEach(function(id){
-  var m=claimMask(masks[id]);
-  if(m)stages.push({mask:m,instructions:AREA_TYPE_BUILDERS[id](ctx)});
+ var instancesByCategory=ctx.areaInstances||{};
+ AREA_TYPE_ORDER.forEach(function(catId){
+  (instancesByCategory[catId]||[]).forEach(function(inst){
+   var m=claimMask(inst.mask);
+   if(!m)return;
+   var detail=ctx.instanceDetail?ctx.instanceDetail(catId,inst.index):undefined;
+   stages.push({mask:m,instructions:AREA_TYPE_BUILDERS[catId](ctx,detail)});
+  });
  });
  var remainder=used?S.combineMasks('subtract',editMask,used):editMask;
  if(S.editableShare(remainder)>=MIN_SHARE)stages.push({mask:remainder,instructions:ctx.remainderInstructions});
@@ -844,38 +860,141 @@ const hintBox=resultStep.querySelector('.mg-hint');
 const actionsBox=resultStep.querySelector('.mg-actions');
 const outputBox=q('mg-output');
 const generationHeader=generationStep.querySelector('p.mg-note');
-if(notesField&&generationHeader)generationHeader.insertAdjacentElement('afterend',notesField);
-// This free-text field is easy to miss among the surrounding form fields, even though it is the
-// customer's main chance to say what they actually want – so it gets a brief attention highlight
-// that stops as soon as they notice it (focus/type in it, or use one of the starter buttons below).
-const clearNotesSpotlight=()=>notesField?.classList.remove('mg-notes-spotlight');
-if(notesField){
- notesField.classList.add('mg-notes-spotlight');
- const notesEl=q('mg-notes');
- notesEl?.addEventListener('focus',clearNotesSpotlight,{once:true});
- notesEl?.addEventListener('input',clearNotesSpotlight,{once:true});
+// Step 6 numbered-area redesign (owner's explicit request): instead of one shared free-text field
+// for the whole garden, show the marked-up photo with each distinct painted area numbered
+// (mg-area-types.js's buildInstances – one connected island per category) and a matching field per
+// number right below, so "Záhon 1 chci s levandulí, Záhon 2 nízkou údržbou" replaces having to
+// describe position in words ("záhon vpravo uprostřed"). Falls back to just the general note below
+// when step 5 was skipped or nothing was painted (AI decides on its own, exactly as step 5 itself
+// already says it may).
+const areaOverviewWrap=document.createElement('div');
+areaOverviewWrap.className='mg-area-overview-wrap mg-hidden';
+areaOverviewWrap.id='mg-area-overview-wrap';
+areaOverviewWrap.innerHTML='<canvas id="mg-area-overview-canvas"></canvas><div class="mg-area-legend" id="mg-area-legend"></div>';
+const areaFieldsWrap=document.createElement('div');
+areaFieldsWrap.className='mg-area-fields';
+areaFieldsWrap.id='mg-area-fields';
+const areaFieldsEmpty=document.createElement('p');
+areaFieldsEmpty.className='mg-note';
+areaFieldsEmpty.id='mg-area-fields-empty';
+areaFieldsEmpty.textContent='Zatím nejsou vyznačené žádné konkrétní plochy (krok 5 „Co kam patří“) – AI pak rozhodne sama, nebo se vraťte a plochy vyznačte.';
+if(generationHeader){
+ generationHeader.insertAdjacentElement('afterend',areaOverviewWrap);
+ areaOverviewWrap.insertAdjacentElement('afterend',areaFieldsWrap);
+ areaFieldsWrap.insertAdjacentElement('afterend',areaFieldsEmpty);
 }
-// Short "how to write a good brief" tip (same idea as telling a customer how to brief an architect):
-// konkrétní popis beats vague wishes – AI dostane přesnější zadání, když zákazník zmíní materiál,
-// barvu, rostliny nebo rozměr u konkrétní plochy, ne jen obecné přání. Sits right above the field
-// so it's read before typing, not after.
-const notesTip=document.createElement('p');
-notesTip.className='mg-note mg-notes-tip';
-notesTip.innerHTML='💡 <strong>Tip pro lepší výsledek:</strong> pište konkrétně – u jaké plochy (záhon, cesta, zeď…), jaký materiál nebo rostliny, případně barva či velikost. "Záhon u domu s levandulí" dá AI jasnější zadání než jen "chci tam něco kvetoucího". Co nenapíšete, na tom rozhodne AI sama podle zvoleného stylu.';
-if(notesField)notesField.insertAdjacentElement('beforebegin',notesTip);
-const notesStarters=document.createElement('div');
-notesStarters.className='mg-notes-starters';
-notesStarters.innerHTML=['Záhon chci s levandulí a nízkými okrasnými trávami, suchomilné rostliny.','Cesta ať je z mlatu nebo kačírku, šířka asi 1 m.','Opěrná zeď z přírodního kamene, ne z betonových tvárnic.','Chci hlavně nízkou údržbu zahrady.','Mám domácí mazlíčky, prosím bez jedovatých rostlin.','Chtěl/a bych místo na posezení nebo pergolu.','Potřebuji víc soukromí před sousedy nebo ulicí.'].map(t=>'<button type="button" class="mg-secondary" data-mg-note-starter="'+t.replace(/"/g,'&quot;')+'">'+t+'</button>').join('');
-if(notesField)notesField.insertAdjacentElement('afterend',notesStarters);
-notesStarters.querySelectorAll('[data-mg-note-starter]').forEach(btn=>btn.addEventListener('click',()=>{
- const el=q('mg-notes');if(!el)return;
- el.value+=(el.value?'\n':'')+btn.dataset.mgNoteStarter;
- clearNotesSpotlight();
- autoSave();
-}));
-if(hintBox)notesStarters.insertAdjacentElement('afterend',hintBox);
-if(actionsBox)(hintBox||notesStarters).insertAdjacentElement('afterend',actionsBox);
+if(notesField)areaFieldsEmpty.insertAdjacentElement('afterend',notesField);
+// With per-area fields above, this shared field is now just for anything that doesn't belong to one
+// specific marked area (overall style wishes, pets, budget priorities…) – retitled accordingly.
+const notesLabel=notesField?.querySelector('label');
+if(notesLabel)notesLabel.textContent='✍️ Ještě něco k celé zahradě? (nepovinné)';
+const notesTextareaEl=q('mg-notes');
+if(notesTextareaEl)notesTextareaEl.placeholder='Např.: mám domácí mazlíčky, chci hlavně nízkou údržbu, potřebuji víc soukromí od sousedů…';
+if(hintBox)notesField?.insertAdjacentElement('afterend',hintBox);
+if(actionsBox)(hintBox||notesField)?.insertAdjacentElement('afterend',actionsBox);
 if(outputBox&&actionsBox)actionsBox.insertAdjacentElement('afterend',outputBox);
+// areaInstanceDetail: the customer's own per-island note – free text for bed/path/wall, a picked
+// lawn-type label for grass (sun/irrigation are already asked once in step 2 and read straight from
+// `d` by buildGrassStageInstructions, not re-asked per island). Keyed "catId#index" to match
+// mg-area-types.js's own numbering. Lives only in memory for this session, same as areaInstances
+// itself (the whole mask/instance pipeline already doesn't survive a page reload – see app.js's
+// draft-v4 comment – so persisting just this half of it into localStorage would only risk it coming
+// back mismatched against freshly repainted, differently-numbered islands next time).
+let areaInstanceDetail={};
+function instanceDetailKey(catId,index){return catId+'#'+index;}
+function instanceDetailText(catId,index){
+ const v=areaInstanceDetail[instanceDetailKey(catId,index)];
+ return (v&&v!=='Nechám na AI')?v:'';
+}
+function setInstanceDetail(catId,index,val){areaInstanceDetail[instanceDetailKey(catId,index)]=val;}
+const AREA_DETAIL_META={
+ bed:{placeholder:'např. levandule a nízké okrasné trávy, suchomilné rostliny'},
+ path:{placeholder:'např. mlat nebo kačírek, šířka asi 1 m'},
+ wall:{placeholder:'např. přírodní kámen, výška do 40 cm'}
+};
+// Real lawn-type categories, named by the owner himself (MVGreen establishes lawns) instead of
+// free text, so the pick maps cleanly onto a known seed-mix category rather than the AI guessing
+// from prose.
+const GRASS_TYPE_OPTIONS=['Nechám na AI','Anglický trávník','Parkový trávník','Luční trávník','Trávník do sucha (suchovzdorný)','Trávník do stínu'];
+function areaHasAnyInstances(){return !!(areaInstances&&['bed','path','wall','grass'].some(id=>(areaInstances[id]||[]).length));}
+// Tints each painted island with its category color (same palette as mg-area-types.js's own
+// CATEGORIES, read from there so the two never drift apart) and draws a numbered badge at its
+// centroid, directly on the customer's own photo – the "whole marked photo with numbers" the owner
+// asked for, so a field below can say "Záhon 1" instead of describing where it is in words.
+function renderAreaOverview(){
+ const wrap=q('mg-area-overview-wrap'),canvasEl=q('mg-area-overview-canvas'),legend=q('mg-area-legend');
+ if(!wrap||!canvasEl||!legend)return;
+ if(!photoReady||!areaHasAnyInstances()||!canvas.width||!canvas.height){wrap.classList.add('mg-hidden');return;}
+ const W=canvas.width,H=canvas.height;
+ canvasEl.width=W;canvasEl.height=H;
+ const octx=canvasEl.getContext('2d');
+ octx.drawImage(img,0,0,W,H);
+ const CATS=(window.MVGreenAreaTypes&&window.MVGreenAreaTypes.CATEGORIES)||[];
+ const meta=id=>CATS.find(c=>c.id===id)||{label:id,icon:'',color:[255,255,255]};
+ ['bed','path','wall','grass'].forEach(catId=>{
+  (areaInstances[catId]||[]).forEach(inst=>{
+   const col=meta(catId).color;
+   const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;
+   const tctx=tmp.getContext('2d');
+   tctx.drawImage(inst.mask,0,0,W,H);
+   tctx.globalCompositeOperation='source-in';
+   tctx.fillStyle='rgb('+col[0]+','+col[1]+','+col[2]+')';
+   tctx.fillRect(0,0,W,H);
+   octx.globalAlpha=0.5;octx.drawImage(tmp,0,0);octx.globalAlpha=1;
+  });
+ });
+ ['bed','path','wall','grass'].forEach(catId=>{
+  (areaInstances[catId]||[]).forEach(inst=>{
+   const col=meta(catId).color;
+   const r=Math.max(16,Math.round(Math.min(W,H)*0.02));
+   octx.beginPath();octx.arc(inst.photoX,inst.photoY,r,0,Math.PI*2);
+   octx.fillStyle='rgb('+col[0]+','+col[1]+','+col[2]+')';octx.fill();
+   octx.lineWidth=Math.max(2,r*0.18);octx.strokeStyle='#fff';octx.stroke();
+   octx.fillStyle='#fff';octx.font='bold '+Math.round(r*1.15)+'px system-ui,sans-serif';
+   octx.textAlign='center';octx.textBaseline='middle';
+   octx.fillText(String(inst.index),inst.photoX,inst.photoY+1);
+  });
+ });
+ legend.innerHTML=['bed','path','wall','grass'].filter(catId=>(areaInstances[catId]||[]).length).map(catId=>{
+  const m=meta(catId);
+  return '<span><i style="background:rgb('+m.color[0]+','+m.color[1]+','+m.color[2]+')"></i>'+m.icon+' '+m.label+'</span>';
+ }).join('');
+ wrap.classList.remove('mg-hidden');
+}
+// One card per numbered island: a free-text field for bed/path/wall, a lawn-type dropdown for
+// grass (see GRASS_TYPE_OPTIONS above). Rebuilt from scratch on every call (cheap – at most a
+// handful of cards), seeded from areaInstanceDetail so re-rendering after a small step 5 tweak
+// doesn't lose text already typed for islands whose number didn't change.
+function renderAreaDetailFields(){
+ const fieldsWrap=q('mg-area-fields'),emptyNote=q('mg-area-fields-empty');
+ if(!fieldsWrap||!emptyNote)return;
+ fieldsWrap.innerHTML='';
+ if(!areaHasAnyInstances()){emptyNote.classList.remove('mg-hidden');return;}
+ emptyNote.classList.add('mg-hidden');
+ const CATS=(window.MVGreenAreaTypes&&window.MVGreenAreaTypes.CATEGORIES)||[];
+ const meta=id=>CATS.find(c=>c.id===id)||{label:id,icon:''};
+ ['bed','path','wall','grass'].forEach(catId=>{
+  (areaInstances[catId]||[]).forEach(inst=>{
+   const m=meta(catId),key=instanceDetailKey(catId,inst.index),heading=m.icon+' '+m.label+' '+inst.index;
+   const card=document.createElement('div');
+   card.className='mg-area-card';
+   if(catId==='grass'){
+    const current=areaInstanceDetail[key]||GRASS_TYPE_OPTIONS[0];
+    card.innerHTML='<label>'+heading+'</label><select>'+GRASS_TYPE_OPTIONS.map(o=>'<option'+(current===o?' selected':'')+'>'+o+'</option>').join('')+'</select>';
+    card.querySelector('select').addEventListener('change',e=>{setInstanceDetail(catId,inst.index,e.target.value);autoSave();});
+   }else{
+    const placeholder=(AREA_DETAIL_META[catId]&&AREA_DETAIL_META[catId].placeholder)||'';
+    card.innerHTML='<label>'+heading+'</label><textarea rows="2" maxlength="300" placeholder="'+placeholder+'"></textarea>';
+    const ta=card.querySelector('textarea');
+    ta.value=areaInstanceDetail[key]||'';
+    ta.addEventListener('input',()=>{setInstanceDetail(catId,inst.index,ta.value);autoSave();});
+   }
+   fieldsWrap.appendChild(card);
+  });
+ });
+}
+function refreshAreaDetailUI(){renderAreaOverview();renderAreaDetailFields();}
+refreshAreaDetailUI();
 // Simulated but honestly-paced progress bar: a single AI image-edit call has no real progress events,
 // so this estimates elapsed-time progress through named stages and always finishes at 100% – it tells
 // the customer "still working, here's roughly how far along" rather than implying exact completion %.
@@ -1388,9 +1507,9 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   // placement to the AI's reading of a hint line. brief.text is always built the same way either
   // way – it's the general/"remainder" instructions, and its .plants/.rejected drive the result
   // summary further down regardless of which path actually ran.
-  const hasAreaTypes=!!(areaTypeMasks||paintRemoveMask);
+  const hasAreaTypes=!!(areaInstances||paintRemoveMask);
   const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,Object.assign({},styleExtra,{skipHintLine:hasAreaTypes}));
-  const stagedPlan=hasAreaTypes?buildStagedPlan(S,original.width,original.height,editMask,{areaTypeMasks,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max,paintRemoveMask}):null;
+  const stagedPlan=hasAreaTypes?buildStagedPlan(S,original.width,original.height,editMask,{areaInstances,instanceDetail:instanceDetailText,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max,paintRemoveMask}):null;
   // Staged pipeline sends the photo untouched – each area-type mask gets its own precise, fully
   // self-contained AI call, so there's nothing left to usefully burn onto the photo as a hint.
   // `original` itself is deliberately left untouched either way: S.finish() further below still

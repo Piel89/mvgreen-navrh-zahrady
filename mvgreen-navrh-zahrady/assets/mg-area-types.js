@@ -67,11 +67,14 @@
     return { labels: labels, numSegments: cols * rows, cols: cols, rows: rows };
   }
 
-  function categoryMask(grid, category, matchId, photoW, photoH, W, H) {
+  /** Builds a full-photo-res alpha mask (nearest-neighbor upscaled from the W,H grid) for every
+   *  grid cell where predicate(segId) is true. Shared by categoryMask (whole category) and
+   *  instanceMask (one connected island within a category, see buildInstances below). */
+  function maskFromPredicate(grid, predicate, photoW, photoH, W, H) {
     var work = mkCanvas(W, H), wctx = work.getContext('2d');
     var img = wctx.createImageData(W, H), d = img.data;
     for (var i = 0, p = 0; i < W * H; i++, p += 4) {
-      if (category[grid.labels[i]] === matchId) d[p + 3] = 255;
+      if (predicate(grid.labels[i])) d[p + 3] = 255;
     }
     wctx.putImageData(img, 0, 0);
     var out = mkCanvas(photoW, photoH), octx = out.getContext('2d');
@@ -80,6 +83,87 @@
     octx.globalCompositeOperation = 'source-in'; octx.fillStyle = '#1b9c55'; octx.fillRect(0, 0, photoW, photoH);
     octx.globalCompositeOperation = 'source-over';
     return out;
+  }
+
+  function categoryMask(grid, category, matchId, photoW, photoH, W, H) {
+    return maskFromPredicate(grid, function (segId) { return category[segId] === matchId; }, photoW, photoH, W, H);
+  }
+
+  // Groups one category's grid cells into connected "islands" (8-connectivity, so a diagonal
+  // real-world edge traced by the fine grid – e.g. a wall meeting a bed at an angle – stays ONE
+  // island instead of fragmenting into many 1-cell "instances" at every diagonal step). Each kept
+  // island becomes its own addressable, numbered area (e.g. "Záhon 1", "Záhon 2") for step 6: the
+  // customer gets one free-text field per island instead of one shared field for the whole
+  // category, and app.js's buildStagedPlan later gives each island its own AI generation stage
+  // (own mask, own instructions) instead of blending every island's wishes into one blurred prompt
+  // over their combined, possibly disjoint, area.
+  var MIN_INSTANCE_SHARE = 0.003; // drop stray noise islands well below a customer-meaningful size
+  // Each kept island becomes its own sequential OpenAI edit call later (app.js's buildStagedPlan) –
+  // real money and real wait time per call – so this bounds worst-case cost/time per generation
+  // (4 categories x 2 + step 4's own remove + remainder = 10 stages max) exactly as far as
+  // mvgreen-navrh-zahrady.php's matching stage-count cap allows. Extra islands beyond the cap are
+  // not dropped outright (that would silently fall back to generic remainder treatment for a
+  // customer-marked bed/path/wall/grass area) – they're merged into the category's largest island
+  // instead, so they still get correct category-specific AI treatment, just without their own
+  // separate numbered field once there are more islands than the cap allows.
+  var MAX_INSTANCES_PER_CATEGORY = 2;
+  function buildInstances(grid, category, matchId, photoW, photoH, W, H) {
+    var cols = grid.cols, rows = grid.rows;
+    var visited = new Uint8Array(cols * rows);
+    var raw = [];
+    for (var ry = 0; ry < rows; ry++) {
+      for (var rx = 0; rx < cols; rx++) {
+        var ci = ry * cols + rx;
+        if (visited[ci]) continue;
+        if (category[ci + 1] !== matchId) { visited[ci] = 1; continue; }
+        var queue = [ci], cellIds = [], sumRx = 0, sumRy = 0;
+        visited[ci] = 1;
+        while (queue.length) {
+          var cur = queue.pop();
+          var crx = cur % cols, cry = (cur / cols) | 0;
+          cellIds.push(cur + 1);
+          sumRx += crx; sumRy += cry;
+          for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+            if (!dx && !dy) continue;
+            var nrx = crx + dx, nry = cry + dy;
+            if (nrx < 0 || nrx >= cols || nry < 0 || nry >= rows) continue;
+            var nci = nry * cols + nrx;
+            if (visited[nci] || category[nci + 1] !== matchId) continue;
+            visited[nci] = 1;
+            queue.push(nci);
+          }
+        }
+        raw.push({ cellIds: cellIds, cx: sumRx / cellIds.length, cy: sumRy / cellIds.length, cellCount: cellIds.length });
+      }
+    }
+    var totalCells = cols * rows;
+    var significant = raw.filter(function (inst) { return (inst.cellCount / totalCells) >= MIN_INSTANCE_SHARE; });
+    significant.sort(function (a, b) { return b.cellCount - a.cellCount; }); // largest first
+    var kept = significant.slice(0, MAX_INSTANCES_PER_CATEGORY);
+    var overflow = significant.slice(MAX_INSTANCES_PER_CATEGORY);
+    if (overflow.length && kept.length) {
+      var target = kept[0];
+      overflow.forEach(function (inst) {
+        target.cellIds = target.cellIds.concat(inst.cellIds);
+        target.cellCount += inst.cellCount;
+      });
+    }
+    // Reading order: top row first, left-to-right within a row – predictable and matches how a
+    // customer visually scans the numbered photo.
+    kept.sort(function (a, b) { return (a.cy - b.cy) || (a.cx - b.cx); });
+    return kept.map(function (inst, i) {
+      var cellSet = {};
+      inst.cellIds.forEach(function (id) { cellSet[id] = true; });
+      var mask = maskFromPredicate(grid, function (segId) { return !!cellSet[segId]; }, photoW, photoH, W, H);
+      return {
+        index: i + 1,
+        cellCount: inst.cellCount,
+        mask: mask,
+        // Grid-cell centroid -> W,H pixel center -> full photo pixel coords, for the numbered label.
+        photoX: Math.round((inst.cx + 0.5) * (W / cols) * (photoW / W)),
+        photoY: Math.round((inst.cy + 0.5) * (H / rows) * (photoH / H))
+      };
+    });
   }
 
   var TEMPLATE_HEAD = ''
@@ -550,16 +634,21 @@
       });
 
       root.getElementById('act-ok').addEventListener('click', function () {
-        var masksByCategory = {}, hasAny = false;
+        var masksByCategory = {}, instancesByCategory = {}, hasAny = false;
         CATEGORIES.forEach(function (c, idx) {
-          var m = categoryMask(grid, category, idx + 1, photoW, photoH, W, H);
+          var matchId = idx + 1;
+          var m = categoryMask(grid, category, matchId, photoW, photoH, W, H);
           var hasPixels = false;
           var d = m.getContext('2d').getImageData(0, 0, m.width, m.height).data;
           for (var i = 3; i < d.length; i += 400) if (d[i] > 127) { hasPixels = true; break; }
           if (hasPixels) { masksByCategory[c.id] = m; hasAny = true; } else masksByCategory[c.id] = null;
+          // Step 6 (app.js) needs each distinct painted island addressable on its own – see
+          // buildInstances' header comment. Computed for every category (grass included, per the
+          // owner's follow-up request to offer a sun/irrigation choice per lawn island too).
+          instancesByCategory[c.id] = hasPixels ? buildInstances(grid, category, matchId, photoW, photoH, W, H) : [];
         });
         window.removeEventListener('resize', onResize);
-        close({ masksByCategory: masksByCategory, category: category, hasAny: hasAny });
+        close({ masksByCategory: masksByCategory, instancesByCategory: instancesByCategory, category: category, hasAny: hasAny });
       });
 
       root.querySelectorAll('[data-cat],#tool-erase,#tool-precision,#undo-btn,#clear-all').forEach(function (b) { b.disabled = false; });
