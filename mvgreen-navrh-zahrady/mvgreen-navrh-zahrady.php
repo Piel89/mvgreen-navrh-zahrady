@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.111
+ * Version: 0.6.112
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.111');
+define('MVGREEN_VERSION', '0.6.112');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -225,11 +225,18 @@ $mvgreen_ai_preview_handle = function () {
         $file = function($name, $filename, $bytes, $content_type) use (&$parts, $boundary) {
             $parts .= '--'.$boundary."\r\n".'Content-Disposition: form-data; name="'.$name.'"; filename="'.$filename.'"'."\r\n".'Content-Type: '.$content_type."\r\n\r\n".$bytes."\r\n";
         };
-        $field('model', 'gpt-image-1.5');
+        // gpt-image-1.5 is being shut down by OpenAI on 2026-12-01; switched to gpt-image-2.5-sunburst
+        // (OpenAI's own designated replacement, and explicitly their "most capable model for image
+        // generation and editing" where preserved parts must stay intact – exactly this use case).
+        // Same /v1/images/edits endpoint and the same real alpha-mask inpainting mechanism as before,
+        // just with access to the higher "xhigh"/"max" quality tiers 1.5 never had. `input_fidelity`
+        // is dropped here: OpenAI's own docs say it should be omitted for the gpt-image-2 model
+        // family (2.5-sunburst is part of that family, unlike 1.5) – sending it risked an outright
+        // "unknown parameter" error instead of just being ignored.
+        $field('model', 'gpt-image-2.5-sunburst');
         $field('prompt', $prompt);
-        $field('quality', 'high');
+        $field('quality', 'xhigh');
         $field('size', $size);
-        $field('input_fidelity', 'high');
         $file('image[]', $photo_mime === 'image/jpeg' ? 'garden.jpg' : 'garden.png', $photo_bytes, $photo_mime);
         $file('mask', 'edit-mask.png', $mask_bytes, 'image/png');
         $parts .= '--'.$boundary."--\r\n";
