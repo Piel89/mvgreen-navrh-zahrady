@@ -915,19 +915,17 @@ if(outputBox&&actionsBox)actionsBox.insertAdjacentElement('afterend',outputBox);
 // back mismatched against freshly repainted, differently-numbered islands next time).
 let areaInstanceDetail={};
 function instanceDetailKey(catId,index){return catId+'#'+index;}
-// Returns {text,isGeneral} for this one numbered island, or null when there's nothing at all to
-// pass. isGeneral=false: the customer's own free text/pick for THIS exact island (step 6's own
-// per-area field). isGeneral=true: that field was left empty, so this falls back to the shared
-// "Ještě něco k celé zahradě?" field (mg-notes) instead of sending the stage nothing – reported
-// 2026-10-27: a customer typed one combined description of two different beds into that single
-// shared field rather than each bed's own, and neither bed's AI call saw any of it, so both beds
-// came out generic/mismatched. garden-brief.js's withDetail() uses isGeneral to tell the model this
-// text is a whole-garden summary, not a wish specific to this one masked spot.
+// Returns {text,isGeneral:false} for this one numbered island's OWN step-6 field, or null.
+// Owner's explicit correction 2026-10-27: an empty per-area field means the customer has no
+// specific wish for THAT one spot and leaves it entirely to the AI's own judgement – it must NOT
+// be read as "go check the shared note for something that might apply here instead". A previous
+// version of this function fell back to the shared "Ještě něco k celé zahradě?" field when empty;
+// that's reverted. garden-brief.js's withDetail() keeps its isGeneral branch (now simply never
+// triggered from here) in case a future, clearly-labeled "general context for every stage" feature
+// is wanted later – it is not the same thing as this per-area field's own emptiness.
 function instanceDetailText(catId,index){
  const v=areaInstanceDetail[instanceDetailKey(catId,index)];
- if(v&&v!=='Nechám na AI')return {text:v,isGeneral:false};
- const general=(notesTextareaEl&&notesTextareaEl.value||'').trim();
- return general?{text:general,isGeneral:true}:null;
+ return (v&&v!=='Nechám na AI')?{text:v,isGeneral:false}:null;
 }
 function setInstanceDetail(catId,index,val){areaInstanceDetail[instanceDetailKey(catId,index)]=val;}
 const AREA_DETAIL_META={
