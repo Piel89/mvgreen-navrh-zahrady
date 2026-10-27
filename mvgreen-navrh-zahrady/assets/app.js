@@ -793,19 +793,20 @@ q('mg-areatype-adjust')?.addEventListener('click',()=>openAreaTypeConfirmation(t
 // with the live editMask and keep stages from overlapping. Priority order (first claim wins a given
 // pixel, in the unlikely case two sources disagree): the old step-4 "🟥 Odstranit" removal mask
 // first (predates this tool, lives in its own variable, unrelated to area-type classification),
-// then path/wall/bed/mulch/paving/hedge, with grass last (grass is the "nothing special" default,
+// then path/wall/bed, with grass last (grass is the "nothing special" default,
 // so any contested pixel favors whichever more specific type claimed it first). Whatever is left
 // over inside the confirmed area becomes one last "remainder" stage using the same general styling
 // instructions buildInstructions() already produces. Returns null when there's nothing worth
 // sending as its own stage, so the caller can fall back to the plain single-call flow.
-var AREA_TYPE_ORDER=['path','wall','bed','mulch','paving','hedge','grass'];
+var AREA_TYPE_ORDER=['path','wall','bed','grass'];
 var AREA_TYPE_BUILDERS={
  path:function(){return Brief.buildPathStageInstructions();},
  wall:function(){return Brief.buildWallStageInstructions();},
+ // "Záhon" covers planting AND any other material for that same spot (mulch, gravel/kamínky,
+ // paving) – owner's explicit simplification to 4 buttons instead of one per material. ctx.detail
+ // (once step 6's per-area free-text note exists) is what tells the AI which of those the customer
+ // actually wants there; buildBedStageInstructions already accepts it via withDetail().
  bed:function(ctx){return Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants});},
- mulch:function(){return Brief.buildMulchStageInstructions();},
- paving:function(){return Brief.buildPavingStageInstructions();},
- hedge:function(){return Brief.buildHedgeStageInstructions();},
  grass:function(){return Brief.buildGrassStageInstructions();}
 };
 function buildStagedPlan(S,w,h,editMask,ctx){

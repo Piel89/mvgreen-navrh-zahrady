@@ -275,10 +275,13 @@
 
   /*
    * ---------- mg-area-types.js's grid classification step (replaces the old freehand bed/path
-   * sketch) – one instruction builder per category, same "self-contained, no cross-stage memory"
-   * rule as the three above. detail is an optional free-text note the customer typed for THIS
-   * specific area (step 6, "co v něm chcete" per-area description) – folded in verbatim when
-   * present, left out entirely when not (never invent a placeholder in its absence).
+   * sketch) – one instruction builder per category (grass/wall here; path/bed reuse the two
+   * builders above), same "self-contained, no cross-stage memory" rule as those two. Only 4
+   * category buttons exist (owner's explicit simplification) – "záhon" stands in for any other
+   * material in that same spot (mulch, gravel, paving, hedge…), resolved via `detail`: an optional
+   * free-text note the customer typed for THIS specific area (step 6, "co v něm chcete" per-area
+   * description) – folded in verbatim when present, left out entirely when not (never invent a
+   * placeholder in its absence).
    */
   function withDetail(base, detail) {
     return base + (detail ? ' Zákazníkovo upřesnění pro tuhle konkrétní plochu: "' + detail + '". Řiď se jím, pokud neodporuje výše uvedenému.' : '');
@@ -292,18 +295,6 @@
     return withDetail('V CELÉ průhledné části masky vytvoř nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm) a musí navazovat na úroveň terénu po obou stranách. Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail);
   }
 
-  function buildMulchStageInstructions(detail) {
-    return withDetail('V CELÉ průhledné části masky vytvoř souvislou vrstvu mulčovací kůry (hnědá, přírodní, nepravidelná textura), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku, bez rostlin. Fotorealistický výsledek, žádný malovaný ani ilustrativní vzhled.', detail);
-  }
-
-  function buildPavingStageInstructions(detail) {
-    return withDetail('V CELÉ průhledné části masky vytvoř zpevněnou plochu (dlažba nebo terasová prkna, podle stylu zbytku zahrady), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku, bez rostlin. Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail);
-  }
-
-  function buildHedgeStageInstructions(detail) {
-    return withDetail('V CELÉ průhledné části masky vysaď hustý, rovnoměrně sestřižený živý plot (keře vhodné pro živý plot, podle stylu zbytku zahrady), vyplňující celou odemčenou plochu až po samý okraj, beze zbytku. Realistická výška vzhledem k okolí. Fotorealistický výsledek, žádný malovaný ani ilustrativní vzhled.', detail);
-  }
-
   window.MVGreenBrief = {
     analyze: analyze, renderCheck: renderCheck, guideHtml: guideHtml,
     favoritesHtml: favoritesHtml, bindFavorites: bindFavorites,
@@ -312,9 +303,6 @@
     buildPathStageInstructions: buildPathStageInstructions,
     buildBedStageInstructions: buildBedStageInstructions,
     buildGrassStageInstructions: buildGrassStageInstructions,
-    buildWallStageInstructions: buildWallStageInstructions,
-    buildMulchStageInstructions: buildMulchStageInstructions,
-    buildPavingStageInstructions: buildPavingStageInstructions,
-    buildHedgeStageInstructions: buildHedgeStageInstructions
+    buildWallStageInstructions: buildWallStageInstructions
   };
 })();

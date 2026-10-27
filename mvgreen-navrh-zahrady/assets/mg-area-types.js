@@ -3,9 +3,11 @@
  * úklidu" sketch step. Instead of a rough stroke the AI had to interpret loosely, the customer
  * paints a REGULAR grid of small cells, restricted to exactly the editable zone step 4 already
  * confirmed (the "Zůstane" area is locked here too – shown dimmed, not paintable), picking what
- * each part of that zone should actually become: tráva, cesta, opěrná zeď, záhon, mulč, dlažba/
- * terasa, živý plot. Each painted type becomes its own precise mask/instruction pair for app.js's
- * existing staged-generation pipeline (buildStagedPlan) – the same mechanism step 4's "Odstranit"
+ * each part of that zone should actually become: tráva, cesta, opěrná zeď, nebo záhon (which also
+ * covers mulch/gravel/paving/hedge etc. within that same spot – material specifics are left to a
+ * free-text note per area, not a separate button per material). Each painted type becomes its own
+ * precise mask/instruction pair for app.js's existing staged-generation pipeline
+ * (buildStagedPlan) – the same mechanism step 4's "Odstranit"
  * and the old bed/path marks already fed, just with a uniform grid standing in for both the old
  * freehand strokes AND step 4's SLIC segments, since a fixed small square is the simplest shape
  * that is both easy to paint accurately and easy to lock to the editable zone pixel-for-pixel.
@@ -27,14 +29,15 @@
   // one by this id) so adding an 8th type later is one entry here + one function there, no other
   // wiring. Colors are deliberately all distinct from step 4's own green(protect)/red(remove) so a
   // customer who has both tools open in memory doesn't read this step's tint as "will be removed".
+  // Owner's explicit simplification: only 4 buttons. "Záhon" covers planting AND any other material
+  // that goes in that same spot (mulch, gravel/kamínky, paving) – the customer types which one they
+  // want (or leaves it to AI) as free text once step 6 (per-area description) exists, instead of
+  // picking a separate category button per material here.
   var CATEGORIES = [
     { id: 'grass', icon: '🌱', label: 'Tráva', color: [58, 150, 75] },
     { id: 'path', icon: '🟫', label: 'Cesta', color: [181, 129, 80] },
     { id: 'wall', icon: '🧱', label: 'Opěrná zeď', color: [138, 141, 147] },
-    { id: 'bed', icon: '🌸', label: 'Záhon', color: [217, 73, 156] },
-    { id: 'mulch', icon: '🪵', label: 'Mulč / kůra', color: [107, 68, 35] },
-    { id: 'paving', icon: '⬛', label: 'Dlažba / terasa', color: [150, 156, 163] },
-    { id: 'hedge', icon: '🌳', label: 'Živý plot', color: [31, 107, 58] }
+    { id: 'bed', icon: '🌸', label: 'Záhon', color: [217, 73, 156] }
   ];
 
   function mkCanvasFrom(photo, w, h) { var c = mkCanvas(w, h); c.getContext('2d').drawImage(photo, 0, 0, w, h); return c; }
