@@ -133,6 +133,7 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-welcome-copy h2{font-size:clamp(27px,3.2vw,40px);line-height:1.13;letter-spacing:-.025em;color:#183d2a;margin:0;max-width:530px}
 .mvgreen-designer .mg-welcome-copy p{font-size:16px;line-height:1.75;color:#475c4d;margin:0;max-width:540px}
 .mvgreen-designer .mg-welcome-copy small{font-size:13px;color:#55705c}
+.mvgreen-designer .mg-trust-note{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.55;color:#1f5c38;background:#eaf6ee;border:1px solid #bfe3cb;border-radius:10px;padding:10px 14px;margin:0;max-width:480px}
 .mvgreen-designer .mg-eyebrow{display:inline-block;font-size:13px;letter-spacing:.03em;font-weight:750;color:#29704b}
 .mvgreen-designer .mg-start{padding:17px 28px!important;font-size:18px!important;min-height:57px;border-radius:13px!important;box-shadow:0 8px 20px #15633325}
 .mvgreen-designer .mg-welcome-image{min-height:360px;background:linear-gradient(0deg,#0e322564,transparent 65%),url('https://images.pexels.com/photos/14399431/pexels-photo-14399431.jpeg?auto=compress&cs=tinysrgb&w=1200') center/cover;border-radius:18px;display:flex;align-items:flex-end;padding:23px}
