@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.134
+ * Version: 0.6.135
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.134');
+define('MVGREEN_VERSION', '0.6.135');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -291,15 +291,17 @@ $mvgreen_ai_preview_start_handle = function () {
     // self-contained prompt (see garden-brief.js's buildRemoveStageInstructions and neighbours).
     $stage_defs = [];
     if ($stages_raw !== '') {
-        // buildStagedPlan (app.js) can legitimately produce up to 10 stages since step 6's numbered-
-        // area redesign: step 4's own "Odstranit" removal mask, up to 2 islands per area type
-        // (path/wall/bed/grass – mg-area-types.js's MAX_INSTANCES_PER_CATEGORY, each painted island
-        // now gets its own stage instead of one shared stage per whole category), and a final
-        // remainder stage for whatever editable area wasn't explicitly categorized. 1 + 4*2 + 1 = 10.
-        // This cap has already had to be raised once before (4 -> 6) when it wrongly rejected a real
-        // design that used the removal brush plus several area types as "Neplatné zadání kroků
-        // návrhu" before a single OpenAI call was ever made – keep it in lockstep with whatever the
-        // client can actually produce.
+        // v0.6.134 architecture rewrite (app.js's buildStagedPlan): every category-instance used to
+        // get its OWN separate masked stage (up to 10: 1 remove + 2 islands × 4 categories + 1
+        // remainder), each with a short, self-contained prompt well under the old 6000-char cap
+        // below. That per-instance HARD mask boundary is exactly what caused the reported seams/
+        // zigzag edges, so it's gone: buildStagedPlan now returns AT MOST ONE stage (mask = the full
+        // editMask), whose single `instructions` string instead concatenates the general/remainder
+        // text (buildInstructions() alone was already sized close to the old 6000-char budget, see
+        // the matching comment in garden-brief.js) PLUS a text block for every category-instance
+        // (up to 8) and the remove mask. Measured worst case with max-length customer notes on every
+        // field comes to ~16-18k characters, so the per-stage cap is raised well past that (array-
+        // size cap left as-is at 10 – still correct, just now never actually reached by the client).
         $decoded = json_decode($stages_raw, true);
         if (!is_array($decoded) || !count($decoded) || count($decoded) > 10) {
             wp_send_json_error(['message'=>'Neplatné zadání kroků návrhu.'], 400);
@@ -310,7 +312,7 @@ $mvgreen_ai_preview_start_handle = function () {
             }
             $stage_mask_bytes = $decode_png($stage['mask']);
             $stage_instructions = sanitize_textarea_field($stage['instructions']);
-            if (!$stage_mask_bytes || strlen($stage_instructions) > 6000) wp_send_json_error(['message'=>'Neplatné zadání kroků návrhu.'], 400);
+            if (!$stage_mask_bytes || strlen($stage_instructions) > 24000) wp_send_json_error(['message'=>'Neplatné zadání kroků návrhu.'], 400);
             $mi = @getimagesizefromstring($stage_mask_bytes);
             if (!$mi || $mi[0] !== $image_info[0] || $mi[1] !== $image_info[1] || $mi[2] !== IMAGETYPE_PNG) {
                 wp_send_json_error(['message'=>'Maska kroku musí mít stejnou velikost jako fotografie.'], 400);
