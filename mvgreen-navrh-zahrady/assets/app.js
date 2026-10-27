@@ -814,53 +814,60 @@ var AREA_TYPE_ORDER=['path','wall','bed','grass'];
 // this specific island's own field, so every builder below needs it threaded through to phrase the
 // prompt accordingly (see withDetail in garden-brief.js).
 var AREA_TYPE_BUILDERS={
- path:function(ctx,detail){return Brief.buildPathStageInstructions({detail:detail&&detail.text,detailGeneral:detail&&detail.isGeneral});},
- wall:function(ctx,detail){return Brief.buildWallStageInstructions(detail&&detail.text,detail&&detail.isGeneral);},
- bed:function(ctx,detail){return Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants,detail:detail&&detail.text,detailGeneral:detail&&detail.isGeneral});},
- grass:function(ctx,detail){return Brief.buildGrassStageInstructions(ctx.d,detail&&detail.text,detail&&detail.isGeneral);}
+ path:function(ctx,detail,pos){return Brief.buildPathStageInstructions({detail:detail&&detail.text,detailGeneral:detail&&detail.isGeneral,pos:pos});},
+ wall:function(ctx,detail,pos){return Brief.buildWallStageInstructions(detail&&detail.text,detail&&detail.isGeneral,pos);},
+ bed:function(ctx,detail,pos){return Brief.buildBedStageInstructions(ctx.d,ctx.curatedPlants,ctx.lastPlan,{maxPlants:ctx.maxPlants,detail:detail&&detail.text,detailGeneral:detail&&detail.isGeneral,pos:pos});},
+ grass:function(ctx,detail,pos){return Brief.buildGrassStageInstructions(ctx.d,detail&&detail.text,detail&&detail.isGeneral,pos);}
 };
-// Step 6's numbered-area redesign: mg-area-types.js now splits each category into its own
-// connected islands (ctx.areaInstances: {grass,path,wall,bed}->[{index,mask,...}]) instead of one
-// combined mask per category, so each island gets its OWN stage – its own precise mask AND its own
-// instructions (incl. that island's own customer note) – rather than blending every island's
-// wishes into one prompt over their combined, possibly disjoint, area. ctx.instanceDetail(catId,
-// index) is app.js's lookup from the step 6 fields into that exact text/choice.
+// Plain-language position hint from an instance's real photo-pixel centroid (photoX/photoY, set by
+// mg-area-types.js's buildInstances) – e.g. "vlevo vzadu na fotografii". This is the ONLY way an
+// area-type's rough location now reaches the AI (see the 2026-10-27 architecture rewrite below):
+// words, not a separate hard mask, because a customer's own grid-square scribble is a hint about
+// where/what he wants, never a literal shape to fill exactly to the edge.
+function instancePositionLabel(inst,w,h){
+ if(!inst||!w||!h||!(inst.photoX>=0)||!(inst.photoY>=0))return '';
+ var fx=inst.photoX/w,fy=inst.photoY/h;
+ var hLabel=fx<0.34?'vlevo':(fx>0.66?'vpravo':'uprostřed');
+ var vLabel=fy<0.34?'vzadu':(fy>0.66?'vpředu':'');
+ if(hLabel==='uprostřed')return (vLabel?vLabel+' ':'')+'uprostřed fotografie';
+ return hLabel+(vLabel?' '+vLabel:'')+' na fotografii';
+}
+// --- 2026-10-27 architecture rewrite ---
+// Until now, every category-instance (and the remove mask) got its OWN separate OpenAI image-edit
+// call, each with its own narrow mask = a HARD compositing crop boundary the API enforces pixel for
+// pixel. Smoothing/growing that mask's edge (v0.6.133) only changed how jagged that hard boundary
+// was – it never gave the AI real freedom over the final shape, because "the mask IS the final
+// shape" either way. The owner diagnosed this exactly and rejected the whole approach: step 6's
+// grid-square marking is explicitly NOT meant to be a literal stencil ("to je jenom ukazatel toho,
+// že zákazník si tam něco přeje... Nebrat tu masku jako fixní") – only step 4's "Zůstane" lock is a
+// real, non-negotiable boundary. So every category-instance and the remove mask now become one
+// single TEXT block each (via AREA_TYPE_BUILDERS / buildRemoveStageInstructions, now phrased as
+// approximate position+intent hints, not "fill the whole mask to the edge"), and ALL of them run as
+// ONE combined AI call whose mask is simply the full, true `editMask` (step 4's hard lock, completely
+// unchanged) – giving the AI one shared canvas to design across instead of stitching together
+// several independently-decided islands. ctx.instanceDetail(catId,index) is still app.js's lookup
+// from the step 6 fields into that instance's own free text/choice.
 function buildStagedPlan(S,w,h,editMask,ctx){
- var MIN_SHARE=0.0015; // ~0.15% of the frame – below this a stage mask is effectively empty
- var stages=[],used=null;
- function claimMask(mask){
-  if(!mask)return null;
-  var m=S.combineMasks('intersect',mask,editMask);
-  if(used)m=S.combineMasks('subtract',m,used);
-  if(S.editableShare(m)<MIN_SHARE)return null;
-  used=used?S.combineMasks('union',used,m):m;
-  return m;
- }
- // A spot marked "🟥 Odstranit" (step 4) very often sits under a bed/path/wall/grass area the
- // customer separately marked over roughly the same place (clear a mixer away, then put a bed where
- // it stood) – area-types now claim their pixels BEFORE the generic remove mask does, so that
- // overlap goes to the specific, useful instruction ("build a bed here", which now also says to
- // clear away whatever object is already there – see CLEAR_EXISTING_NOTE in garden-brief.js) instead
- // of remove's catch-all "tidy up, don't add anything". It used to be the other way round (remove
- // claimed first), which SHRANK an overlapping bed down to only its non-overlapping sliver and left
- // the overlap with remove's "don't add anything" treatment – exactly the "AI didn't do anything
- // there" gaps reported 2026-10-27 ("míchačku smazalo, ale vynechalo tam úplně záhon"). Execution
- // order (which AI call runs first) is unaffected – remove still goes first in the stage list,
- // there's just no instance mask left for it to steal from once an area-type already claimed it.
+ var MIN_SHARE=0.0015; // ~0.15% of the frame – below this an instance's own area is effectively empty
+ var blocks=[];
  var instancesByCategory=ctx.areaInstances||{};
  AREA_TYPE_ORDER.forEach(function(catId){
   (instancesByCategory[catId]||[]).forEach(function(inst){
-   var m=claimMask(inst.mask);
-   if(!m)return;
+   var m=S.combineMasks('intersect',inst.mask,editMask);
+   if(S.editableShare(m)<MIN_SHARE)return;
    var detail=ctx.instanceDetail?ctx.instanceDetail(catId,inst.index):undefined;
-   stages.push({mask:m,instructions:AREA_TYPE_BUILDERS[catId](ctx,detail)});
+   var pos=instancePositionLabel(inst,w,h);
+   blocks.push(AREA_TYPE_BUILDERS[catId](ctx,detail,pos));
   });
  });
- var removeMask=ctx.paintRemoveMask?claimMask(ctx.paintRemoveMask):null;
- if(removeMask)stages.unshift({mask:removeMask,instructions:Brief.buildRemoveStageInstructions()});
- var remainder=used?S.combineMasks('subtract',editMask,used):editMask;
- if(S.editableShare(remainder)>=MIN_SHARE)stages.push({mask:remainder,instructions:ctx.remainderInstructions});
- return stages.length?stages:null;
+ if(ctx.paintRemoveMask){
+  var rm=S.combineMasks('intersect',ctx.paintRemoveMask,editMask);
+  if(S.editableShare(rm)>=MIN_SHARE)blocks.unshift(Brief.buildRemoveStageInstructions());
+ }
+ if(!blocks.length)return null; // nothing specific marked – caller falls back to the plain single-call flow
+ if(ctx.remainderInstructions)blocks.push('Pro JAKOUKOLIV JINOU část odemčené plochy, kterou žádné z výše uvedených zákaznických přání nepopisuje, platí tato obecná instrukce pro úpravu zahrady: '+ctx.remainderInstructions);
+ var intro='Tohle je JEDNA souvislá úprava celé odemčené plochy fotografie najednou (viz maska), ne několik na sobě nezávislých zásahů. Zákazník níže popisuje různá místa v téže fotce, kde chce různé věci (záhon, cestu, zídku, trávník, uklidit nepořádek) – ber to jako jeho orientační přání o tom, KDE a CO přibližně chce, NE jako přesný předpis tvaru nebo hranice žádné konkrétní plochy. Přesný tvar, hranici, zakřivení i vzájemnou návaznost jednotlivých prvků zvol sama podle toho, co na fotce dává smysl, tak aby výsledek vypadal jako JEDEN promyšlený, vizuálně sourodý zahradní návrh profesionálního zahradního architekta – ne jako poskládané oddělené kousky. Kde se dvě různá přání dotýkají nebo na sebe navazují (např. záhon podél zídky, cesta mezi dvěma záhony), ať na sebe hladce a logicky navazují, bez mezer, překryvů nebo viditelných předělů. Nový záhon ani jiný prvek nikdy nenech "plavat" jako ostrůvek uprostřed trávníku bez návaznosti na okraj pozemku nebo jiný prvek, pokud si to zákazník výslovně nepřeje. Pokud zákazník u dvou míst stejného typu (např. dva záhony) nenapsal jinak, udržuj jejich styl (materiál okraje, charakter výsadby) mezi sebou konzistentní, aby zahrada působila jako jeden navržený celek. Jediné, co je naprosto pevné a nesmí se změnit, je cokoliv MIMO odemčenou (průhlednou) část masky – to zůstává přesně podle originální fotografie. Uvnitř odemčené plochy ale máš plnou tvůrčí volnost nad přesným tvarem, hranicemi a uspořádáním jednotlivých prvků.';
+ return [{mask:editMask,instructions:[intro].concat(blocks).join('\n\n')}];
 }
 
 // Consolidate "Co přesně chcete" (now step 6): the notes field, the privacy hint, and the

@@ -270,9 +270,12 @@
    * same way it wraps buildInstructions()'s text today.
    */
 
-  /** Cleanup stage: the customer's own "⬛ Tohle odstranit" mark – one narrow mask per object/pile. */
-  function buildRemoveStageInstructions() {
-    return 'V CELÉ průhledné části masky je konkrétní předmět nebo nepořádek, který si zákazník sám označil jako věc k odstranění (typicky stavební nářadí nebo technika jako míchačka, kolečko, žebřík, hadice, nebo hromada hlíny, písku, dřeva či jiného materiálu). Odstraň ho úplně a beze zbytku – nenechej viditelnou jeho žádnou část ani stín ani obrys po něm. Nahraď to místo tím, co by tam realisticky navazovalo podle bezprostředního okolí těsně za hranicí masky (trávník, dlažba, mulč nebo štěrk – podle toho, co na fotografii sousedí). Nepřidávej žádné nové rostliny ani prvky, jen uveď plochu do čistého, upraveného stavu jako součást zbytku zahrady. Fotorealistický výsledek, žádné jiné změny, žádný malovaný ani ilustrativní vzhled.';
+  /** Cleanup: whatever the customer marked "⬛ Tohle odstranit" (step 4/5) – now folded into the
+   *  SAME single combined-design call as everything else (see app.js's buildStagedPlan, rewritten
+   *  2026-10-27), not its own isolated masked call, so the replacement material blends with
+   *  whatever gets built next to it instead of being generated in visual isolation. */
+  function buildRemoveStageInstructions(pos) {
+    return 'Na fotografii' + (pos ? ' (' + pos + ')' : '') + ' je konkrétní předmět nebo nepořádek, který si zákazník sám označil jako věc k odstranění (typicky stavební nářadí nebo technika jako míchačka, kolečko, žebřík, hadice, nebo hromada hlíny, písku, dřeva či jiného materiálu). Najdi ho a odstraň ho úplně a beze zbytku – nenechej viditelnou jeho žádnou část ani stín ani obrys po něm. Nahraď to místo tím, co by tam realisticky navazovalo podle bezprostředního okolí (trávník, dlažba, mulč nebo štěrk, nebo to, co je popsané níže pro totéž místo). Fotorealistický výsledek, žádný malovaný ani ilustrativní vzhled.';
   }
 
   // A spot the customer marked for removal (step 4) very often sits under a new bed/path/wall/grass
@@ -289,11 +292,16 @@
   // marked area as one job, not leave untouched gaps inside it).
   var CLEAR_EXISTING_NOTE = ' Pokud je v této ploše na fotce nějaký existující předmět, materiál, stavební technika nebo nepořádek, odstraň ho úplně jako součást téhle úpravy a nahraď ho tím, co je popsané níže – nenech z něj nic viditelného ani jím nic neobcházej.';
 
-  /** Hardscape stage: the customer's own "🔵 Tady chci cestu" mark, already buffered into a real path-shaped mask. */
+  /** Hardscape: the customer's own "🔵 Tady chci cestu" mark. `extra.pos` is an optional plain-language
+   *  position label (e.g. "vlevo u plotu") – a HINT about where, not a shape to fill exactly; see the
+   *  2026-10-27 rewrite note above buildRemoveStageInstructions for why this is no longer its own mask. */
   function buildPathStageInstructions(extra) {
     var material = (extra && extra.pathMaterial) || 'mlatová nebo štěrková cestička s přírodním, nepravidelným okrajem';
     var sizeHint = extra && extra.sizeHint;
-    var base = 'V CELÉ průhledné části masky vytvoř ' + material + ', která plynule a realisticky navazuje na úroveň a materiál bezprostředního okolí (tam, kde maska sousedí s trávníkem, zůstává za okrajem cesty trávník; kde sousedí s domem nebo zdí, cesta k nim přiléhá). Cesta musí vyplnit celou odemčenou plochu až po samý okraj, beze zbytku, bez mezer ani nedotažených koutů. Nepřidávej v této ploše žádné rostliny ani záhon, jen zpevněný povrch.' + CLEAR_EXISTING_NOTE + (sizeHint ? ' Zákazník tuhle plochu přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, nic nezaokrouhluj ani nezvětšuj.' : '') + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    var pos = extra && extra.pos;
+    var base = 'Zákazník na fotce vyznačil' + (pos ? ' (' + pos + ')' : '') + ', že si tam přeje ' + material + '. ' + (sizeHint
+      ? 'Zákazník tuhle plochu přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, nic nezaokrouhluj ani nezvětšuj.'
+      : 'Jeho vyznačení je jen orientační – poloha a přibližná šířka, ne přesný předpis tvaru. Skutečnou linii, šířku, zakřivení a okraje zvol sama tak, aby cesta vedla přirozeně a plynule k tomu, kam zjevně směřuje (ne podle hranic čtverečků, které si zákazník vymaloval).') + ' Cesta plynule a realisticky navazuje na úroveň a materiál bezprostředního okolí (kde sousedí s trávníkem, zůstává za jejím okrajem trávník; kde sousedí s domem, zdí nebo jiným fixním prvkem, cesta k němu přiléhá bez mezery a bez viditelné spáry). Nepřidávej podél cesty žádné rostliny ani záhon, jen zpevněný povrch.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
     return withDetail(base, extra && extra.detail, extra && extra.detailGeneral);
   }
 
@@ -331,7 +339,11 @@
     var speciesLine = detail
       ? ' Pro cokoliv, co zákazníkovo přání samo nespecifikuje, použij tyto ověřené druhy: ' + plantListLine(pick) + '.'
       : ' POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí.';
-    var base = 'V CELÉ průhledné části masky vytvoř záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou (pokud zákazníkovo přání níže neurčuje jinak).' + wishLine + speciesLine + (!detail ? ' Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' : '') + (cols.length && !detail ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + (sizeHint ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.' : '') + terrainHint + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    var pos = extra && extra.pos;
+    var shapeLine = sizeHint
+      ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.'
+      : ' Zákazníkovo vyznačení na fotce je jen orientační poloha a přibližný tvar, ne přesný předpis – skutečný tvar, hranici a rozměry zvol sama tak, aby záhon vypadal přirozeně a opticky vyvážené (např. plynulý oblouk podél zdi nebo plotu, ne klikatý okraj kopírující čtverečky mřížky, kterou si zákazník vymaloval). Pokud záhon sousedí s plotem, zdí nebo jiným fixním prvkem, nech ho podél něj souvisle lemovat (žádná mezera, žádný "ostrov" uprostřed trávníku).';
+    var base = 'Zákazník na fotce vyznačil' + (pos ? ' (' + pos + ')' : '') + ', že si tam přeje záhon, s jasnou hranicí lemovanou mulčem nebo kůrou (pokud zákazníkovo přání níže neurčuje jinak).' + shapeLine + wishLine + speciesLine + (!detail ? ' Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' : '') + (cols.length && !detail ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + terrainHint + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
     return base;
   }
 
@@ -377,7 +389,7 @@
       : ' ZÁKAZNÍKOVO VÝSLOVNÉ PŘÁNÍ PRO TUHLE KONKRÉTNÍ PLOCHU (má přednost před obecným popisem výše, pokud se od něj liší): "' + detail + '".');
   }
 
-  function buildGrassStageInstructions(d, detail, detailGeneral) {
+  function buildGrassStageInstructions(d, detail, detailGeneral, pos) {
     // Staged per-island grass prompts had no access to step 2's site data before (unlike
     // buildInstructions' single-call/remainder path, which always included it) – an AI call that
     // genuinely had zero idea whether the spot is sunny/shaded or irrigated. Passing `d` through
@@ -385,12 +397,12 @@
     // of whichever specific grass-type category the customer picked in step 6 (`detail`).
     var sunText = ({ 'Slunce': 'plné slunce', 'Polostín': 'polostín', 'Stín': 'stín' })[d && d['mg-sun']] || 'různé oslunění na zahradě';
     var irrText = ['automatická závlaha je k dispozici', 'zalévá se ručně', 'zahrada se nezalévá – jen suchovzdorné řešení'][+(d && d['mg-irrigation'] || 1)] || 'zalévá se ručně';
-    var base = 'V CELÉ průhledné části masky vytvoř zdravý, rovnoměrně sestřižený trávník stejné barvy a textury jako zbytek trávníku na fotografii, plynule navazující na své okolí až po samý okraj masky, beze zbytku. Podmínky této konkrétní plochy: ' + sunText + '; ' + irrText + ' – zvol travní směs a hustotu odpovídající těmto podmínkám (např. stín snášející směs do stínu, odolnou/suchovzdornou směs tam, kde se nezalévá). Žádné rostliny, dlažba ani jiné prvky v této ploše.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    var base = 'Zákazník na fotce vyznačil' + (pos ? ' (' + pos + ')' : '') + ', že si v téhle oblasti přeje trávník – zdravý, rovnoměrně sestřižený, stejné barvy a textury jako zbytek trávníku na fotografii. Jeho vyznačení je jen orientační poloha, ne přesná hranice – skutečný okraj zvol sama tak, aby plynule a přirozeně navazoval na okolí (žádná ostrá čtvercová hrana kopírující mřížku, kterou si zákazník vymaloval). Podmínky této oblasti: ' + sunText + '; ' + irrText + ' – zvol travní směs a hustotu odpovídající těmto podmínkám (např. stín snášející směs do stínu, odolnou/suchovzdornou směs tam, kde se nezalévá). Žádné rostliny, dlažba ani jiné prvky v této ploše.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
     return withDetail(base, detail, detailGeneral);
   }
 
-  function buildWallStageInstructions(detail, detailGeneral) {
-    return withDetail('V CELÉ průhledné části masky vytvoř nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady), která vyplní celou odemčenou plochu až po samý okraj, beze zbytku. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm) a musí navazovat na úroveň terénu po obou stranách.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail, detailGeneral);
+  function buildWallStageInstructions(detail, detailGeneral, pos) {
+    return withDetail('Zákazník na fotce vyznačil' + (pos ? ' (' + pos + ')' : '') + ', že si tam přeje nízkou opěrnou zídku (přírodní kámen nebo betonové tvárnice, podle stylu zbytku zahrady). Jeho vyznačení je jen orientační poloha a přibližná délka, ne přesný předpis tvaru – skutečný průběh, délku a napojení na okolí zvol sama podle toho, co na fotce dává smysl. Zídka musí mít realistickou výšku vzhledem k okolí (typicky 20–60 cm), navazovat na úroveň terénu po obou stranách, a KDE navazuje na jakoukoliv již existující část zdi nebo zídky, která na fotce zůstává (fixní, needitovaná), musí na ni plynule stylově navázat (stejný kámen/materiál, stejná výška a linie) – bez viditelné spáry, předělu nebo změny stylu v místě napojení.' + CLEAR_EXISTING_NOTE + ' Fotorealistický výsledek, stíny a perspektiva odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.', detail, detailGeneral);
   }
 
   window.MVGreenBrief = {
