@@ -132,6 +132,17 @@
     };
   }
 
+  /** Fisher–Yates, non-mutating. Used by choosePlants so the catalog's fixed listing order never
+   * determines which species keep getting picked (see choosePlants' own comment below). */
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
   /**
    * Picks the plants the AI is allowed to draw: customer favourites that fit the site first,
    * then the plan, then curated plants for the conditions. Max 6 species for a coherent look.
@@ -160,7 +171,14 @@
     curated.filter(function (p) { return favLatin.indexOf(p.latin) >= 0; }).forEach(function (p) { if (fits(p)) add(p, 'oblíbená'); });
     var rejected = curated.filter(function (p) { return favLatin.indexOf(p.latin) >= 0 && !fits(p); }).map(function (p) { return p.name; });
     if (lastPlan && lastPlan.items) lastPlan.items.filter(function (x) { return x.kind === 'rostlina'; }).forEach(function (x) { add({ name: x.name, latin: x.latin, height: x.height }, 'plán'); });
-    var pool = curated.filter(fits);
+    // Catalog order is fixed (whatever order catalog-805.js/legacyPlants happen to list species in),
+    // so filtering straight out of `curated` picked the SAME first ~6 matching species every single
+    // time for any two gardens with the same sun/water conditions - the 805-species catalog's actual
+    // variety never surfaced ("pořád ty samé kytky dokola", owner's own words - lavender near the
+    // top of the list for sun+dry conditions, which most CZ gardens have, made it look baked in).
+    // A fresh shuffle per call means two different designs - or two different beds in the same one -
+    // can land on genuinely different, still fully verified/catalog-matched species.
+    var pool = shuffle(curated.filter(fits));
     if (colors.length && colors.indexOf('green') < 0) pool.sort(function (a, b) { return (colors.indexOf(colorOf(b)) >= 0) - (colors.indexOf(colorOf(a)) >= 0); });
     if (colors.length === 1 && colors[0] === 'green') pool = pool.filter(function (p) { return colorOf(p) === 'green' || p.category === 'grasses'; }).concat(pool);
     // Make sure there is one ornamental grass for structure, then fill up.
@@ -270,9 +288,26 @@
     var pick = choosePlants(d, curated, lastPlan, { max: (extra && extra.maxPlants) || 6 });
     var cols = favoriteColorNames(d);
     var sizeHint = extra && extra.sizeHint;
+    var detail = extra && extra.detail;
     var terrainHint = (d['mg-slope'] && d['mg-slope'] !== 'flat') ? ' Záhon je na svahu (' + ({ mild: 'mírný', steep: 'výrazný' }[d['mg-slope']] || d['mg-slope']) + ') – zohledni to rozmístěním i volbou druhů (odolnost vůči splavování vody).' : '';
-    var base = 'V CELÉ průhledné části masky vytvoř hustě osázený záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou. POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí. Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' + (cols.length ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + (sizeHint ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.' : '') + terrainHint + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
-    return withDetail(base, extra && extra.detail);
+    // A customer's own wish for THIS bed (e.g. "jen strom a mulčovací kůra", "bílý oblázek", "jen
+    // okrasné trávy a buxusy") used to be appended at the very end via withDetail, AFTER an
+    // unconditional "POUŽIJ POUZE TYTO DRUHY ... Žádné jiné druhy nepřidávej" (use ONLY these
+    // species, add no others) a few sentences earlier – a direct, explicit contradiction the prompt
+    // itself then told the model to resolve by ignoring the customer ("řiď se jím, pokud neodporuje
+    // výše uvedenému"). That's exactly backwards for a feature whose whole point is per-area
+    // customer control, and it's why specific wishes (different species, gravel instead of planting,
+    // just a tree with no dense bed) were silently dropped. Now: when a wish is given, it comes
+    // FIRST and is stated as the authority for this bed; the catalog species list becomes a fallback
+    // for whatever the wish itself leaves unspecified, instead of a hard whitelist that overrides it.
+    var wishLine = detail
+      ? ' ZÁKAZNÍKOVO VÝSLOVNÉ PŘÁNÍ PRO TUHLE KONKRÉTNÍ PLOCHU – ŘIĎ SE JÍM PŘESNĚ, I KDYŽ SE LIŠÍ OD OBECNÉHO POPISU NÍŽE: "' + detail + '". Pokud přání jmenuje vlastní rostliny nebo materiál (např. štěrk, oblázky, mulčovací kůra) nebo žádá jen strom či keř bez husté výsadby, udělej přesně to.'
+      : '';
+    var speciesLine = detail
+      ? ' Pro cokoliv, co zákazníkovo přání samo nespecifikuje, použij tyto ověřené druhy: ' + plantListLine(pick) + '.'
+      : ' POUŽIJ POUZE TYTO DRUHY: ' + plantListLine(pick) + '. Žádné jiné druhy nepřidávej, respektuj uvedené výšky a skutečné měřítko vůči okolí.';
+    var base = 'V CELÉ průhledné části masky vytvoř záhon, který vyplní celou plochu až po samý okraj, beze zbytku, s jasnou hranicí lemovanou mulčem nebo kůrou (pokud zákazníkovo přání níže neurčuje jinak).' + wishLine + speciesLine + (!detail ? ' Rostliny saď ve skupinách po 3–7 kusech stejného druhu vedle sebe, nikdy jednotlivě roztroušené.' : '') + (cols.length && !detail ? ' BARVY KVĚTŮ: převažuje ' + cols.join(', ') + '.' : '') + (sizeHint ? ' Zákazník tenhle záhon přesně obkreslil podle skutečných rozměrů (' + sizeHint + ') – respektuj přesně tento tvar a měřítko, počet rostlin tomu přizpůsob.' : '') + terrainHint + ' Fotorealistický výsledek, stíny odpovídající zbytku fotografie, žádný malovaný ani ilustrativní vzhled.';
+    return base;
   }
 
   /*
@@ -295,7 +330,13 @@
    * redundant site-condition text. Same withDetail() mechanism either way.
    */
   function withDetail(base, detail) {
-    return base + (detail ? ' Zákazníkovo upřesnění pro tuhle konkrétní plochu: "' + detail + '". Řiď se jím, pokud neodporuje výše uvedenému.' : '');
+    // Was "Řiď se jím, pokud neodporuje výše uvedenému" (follow it only if it doesn't contradict the
+    // above) - too weak: a customer's specific wish for THIS exact spot is, almost by definition,
+    // more specific than the generic description above it, so treating any difference as a
+    // "contradiction" to defer to made real per-area requests (e.g. "jen strom a mulčovací kůra",
+    // "bílý oblázek") get silently dropped in favor of the generic default. Now stated as a clear
+    // override instead of a tie-breaker.
+    return base + (detail ? ' ZÁKAZNÍKOVO VÝSLOVNÉ PŘÁNÍ PRO TUHLE KONKRÉTNÍ PLOCHU (má přednost před obecným popisem výše, pokud se od něj liší): "' + detail + '".' : '');
   }
 
   function buildGrassStageInstructions(d, detail) {
