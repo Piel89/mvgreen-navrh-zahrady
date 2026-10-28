@@ -81,7 +81,7 @@
 
   /** Builds a full-photo-res alpha mask (nearest-neighbor upscaled from the W,H grid) for every
    *  grid cell where predicate(segId) is true. Shared by categoryMask (whole category) and
-   *  instanceMask (one connected island within a category, see buildInstances below). */
+   *  instanceMask (one connected island within a category, see finalizeInstances below). */
   function maskFromPredicate(grid, predicate, photoW, photoH, W, H) {
     var work = mkCanvas(W, H), wctx = work.getContext('2d');
     var img = wctx.createImageData(W, H), d = img.data;
@@ -119,20 +119,9 @@
   // island instead of fragmenting into many 1-cell "instances" at every diagonal step). Each kept
   // island becomes its own addressable, numbered area (e.g. "Záhon 1", "Záhon 2") for step 6: the
   // customer gets one free-text field per island instead of one shared field for the whole
-  // category, and app.js's buildStagedPlan later gives each island its own AI generation stage
-  // (own mask, own instructions) instead of blending every island's wishes into one blurred prompt
-  // over their combined, possibly disjoint, area.
-  var MIN_INSTANCE_SHARE = 0.003; // drop stray noise islands well below a customer-meaningful size
-  // Each kept island becomes its own sequential OpenAI edit call later (app.js's buildStagedPlan) –
-  // real money and real wait time per call – so this bounds worst-case cost/time per generation
-  // (4 categories x 2 + step 4's own remove + remainder = 10 stages max) exactly as far as
-  // mvgreen-navrh-zahrady.php's matching stage-count cap allows. Extra islands beyond the cap are
-  // not dropped outright (that would silently fall back to generic remainder treatment for a
-  // customer-marked bed/path/wall/grass area) – they're merged into the category's largest island
-  // instead, so they still get correct category-specific AI treatment, just without their own
-  // separate numbered field once there are more islands than the cap allows.
-  var MAX_INSTANCES_PER_CATEGORY = 2;
-  function buildInstances(grid, category, matchId, photoW, photoH, W, H) {
+  // category. Pure island detection only – no cap, no filtering; see significantInstances and
+  // allocateInstanceBudget below for those.
+  function findRawInstances(grid, category, matchId) {
     var cols = grid.cols, rows = grid.rows;
     var visited = new Uint8Array(cols * rows);
     var raw = [];
@@ -161,11 +150,71 @@
         raw.push({ cellIds: cellIds, cx: sumRx / cellIds.length, cy: sumRy / cellIds.length, cellCount: cellIds.length });
       }
     }
-    var totalCells = cols * rows;
+    return raw;
+  }
+
+  var MIN_INSTANCE_SHARE = 0.003; // drop stray noise islands well below a customer-meaningful size
+  /** Drops noise-sized islands and sorts the rest largest-first (so allocateInstanceBudget below
+   *  always trims/keeps in a predictable, size-based order). */
+  function significantInstances(raw, totalCells) {
     var significant = raw.filter(function (inst) { return (inst.cellCount / totalCells) >= MIN_INSTANCE_SHARE; });
-    significant.sort(function (a, b) { return b.cellCount - a.cellCount; }); // largest first
-    var kept = significant.slice(0, MAX_INSTANCES_PER_CATEGORY);
-    var overflow = significant.slice(MAX_INSTANCES_PER_CATEGORY);
+    significant.sort(function (a, b) { return b.cellCount - a.cellCount; });
+    return significant;
+  }
+
+  // 2026-10-28, owner-reported: painted 3 separate "Záhon" islands, only "Záhon 1" and "Záhon 2"
+  // got their own field – the old MAX_INSTANCES_PER_CATEGORY=2 capped every category independently,
+  // regardless of how many categories the customer actually used. That flat per-category cap dates
+  // from when every kept island became its own SEPARATE OpenAI edit call (real money/time each) –
+  // app.js's buildStagedPlan was rewritten 2026-10-27 to combine everything into exactly ONE call
+  // instead (see its own "Exactly one stage today" comment), so the real remaining constraint is
+  // just mvgreen-navrh-zahrady.php's instructions-text length cap (24000 chars), not a call-count
+  // budget – and that php comment already confirms "up to 8" instances measured ~16-18k chars
+  // worst case, comfortably inside that cap. So instead of 2-per-category regardless of need, the
+  // SAME total-of-8 budget (the one already measured safe) is now shared across however many
+  // categories the customer actually used, biggest islands first – a customer with 3 beds and only
+  // 1 path/1 wall/2 grass (7 total, exactly this report's shape) gets every one of them its own
+  // field, while PER_CATEGORY_CEILING still stops one category from claiming the whole shared
+  // budget and leaving the others with none.
+  var TOTAL_INSTANCE_BUDGET = 8;
+  var PER_CATEGORY_CEILING = 4;
+  /** byCategory: {catId: significant islands, largest first}. Returns {kept, overflow}, each
+   *  {catId: [...]}; overflow islands still get full category treatment (finalizeInstances merges
+   *  them into that category's largest kept island) but lose their own numbered field. */
+  function allocateInstanceBudget(byCategory) {
+    var kept = {}, overflow = {};
+    Object.keys(byCategory).forEach(function (catId) {
+      var list = byCategory[catId];
+      kept[catId] = list.slice(0, PER_CATEGORY_CEILING);
+      overflow[catId] = list.slice(PER_CATEGORY_CEILING);
+    });
+    function flatten() {
+      var all = [];
+      Object.keys(kept).forEach(function (catId) {
+        kept[catId].forEach(function (inst) { all.push({ catId: catId, inst: inst }); });
+      });
+      return all;
+    }
+    var all = flatten();
+    while (all.length > TOTAL_INSTANCE_BUDGET) {
+      // Smallest kept instance anywhere loses its own field first – least visual/customer-intent
+      // weight to give up, same principle as the old per-category merge, just decided globally.
+      all.sort(function (a, b) { return a.inst.cellCount - b.inst.cellCount; });
+      var drop = all[0];
+      var idx = kept[drop.catId].indexOf(drop.inst);
+      kept[drop.catId].splice(idx, 1);
+      overflow[drop.catId].unshift(drop.inst);
+      all = flatten();
+    }
+    return { kept: kept, overflow: overflow };
+  }
+
+  /** Turns one category's {kept, overflow} into the final numbered, masked instance list step 6
+   *  and buildStagedPlan consume. Overflow (beyond the shared budget) is merged into the largest
+   *  kept island so it still gets correct category-specific AI treatment, just without its own
+   *  separate numbered field. */
+  function finalizeInstances(grid, kept, overflow, photoW, photoH, W, H) {
+    var cols = grid.cols, rows = grid.rows;
     if (overflow.length && kept.length) {
       var target = kept[0];
       overflow.forEach(function (inst) {
@@ -694,7 +743,11 @@
       });
 
       root.getElementById('act-ok').addEventListener('click', function () {
-        var masksByCategory = {}, instancesByCategory = {}, hasAny = false;
+        var masksByCategory = {}, hasAny = false;
+        // Pass 1: per-category mask + raw significant islands (no cap yet – see
+        // allocateInstanceBudget's header comment for why the cap now has to look at every
+        // category together instead of one at a time).
+        var significantByCategory = {};
         CATEGORIES.forEach(function (c, idx) {
           var matchId = idx + 1;
           var m = categoryMask(grid, category, matchId, photoW, photoH, W, H);
@@ -702,10 +755,19 @@
           var d = m.getContext('2d').getImageData(0, 0, m.width, m.height).data;
           for (var i = 3; i < d.length; i += 400) if (d[i] > 127) { hasPixels = true; break; }
           if (hasPixels) { masksByCategory[c.id] = m; hasAny = true; } else masksByCategory[c.id] = null;
-          // Step 6 (app.js) needs each distinct painted island addressable on its own – see
-          // buildInstances' header comment. Computed for every category (grass included, per the
-          // owner's follow-up request to offer a sun/irrigation choice per lawn island too).
-          instancesByCategory[c.id] = hasPixels ? buildInstances(grid, category, matchId, photoW, photoH, W, H) : [];
+          // Step 6 (app.js) needs each distinct painted island addressable on its own. Computed for
+          // every category (grass included, per the owner's follow-up request to offer a
+          // sun/irrigation choice per lawn island too).
+          significantByCategory[c.id] = hasPixels
+            ? significantInstances(findRawInstances(grid, category, matchId), grid.cols * grid.rows)
+            : [];
+        });
+        // Pass 2: split the one shared instance budget across whichever categories the customer
+        // actually used, then build each category's final numbered, masked instance list.
+        var budget = allocateInstanceBudget(significantByCategory);
+        var instancesByCategory = {};
+        CATEGORIES.forEach(function (c) {
+          instancesByCategory[c.id] = finalizeInstances(grid, budget.kept[c.id] || [], budget.overflow[c.id] || [], photoW, photoH, W, H);
         });
         window.removeEventListener('resize', onResize);
         close({ masksByCategory: masksByCategory, instancesByCategory: instancesByCategory, category: category, hasAny: hasAny });
