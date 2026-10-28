@@ -295,6 +295,55 @@
   }
 
   /**
+   * Dual of growMask() right above: shrinks a mask inward by px instead of outward, using the same
+   * 8-direction offset approximation but intersecting ('destination-in') instead of unioning – a
+   * pixel survives only when every one of those shifted samples is also inside the original mask.
+   * Used by occlusionMask() below to shrink a locked object's own silhouette down to a protected
+   * "core" that must always survive, however generous the occlusion buffer around it is.
+   */
+  function erodeMask(mask, px) {
+    if (!px) return mask;
+    var w = mask.width, h = mask.height, out = canvas(w, h), oc = out.getContext('2d');
+    oc.drawImage(mask, 0, 0);
+    var steps = 8;
+    for (var i = 0; i < steps; i++) {
+      var ang = (Math.PI * 2 * i) / steps;
+      oc.globalCompositeOperation = 'destination-in';
+      oc.drawImage(mask, Math.round(Math.cos(ang) * px), Math.round(Math.sin(ang) * px));
+    }
+    oc.globalCompositeOperation = 'source-in'; oc.fillStyle = '#1b9c55'; oc.fillRect(0, 0, w, h);
+    oc.globalCompositeOperation = 'source-over';
+    return out;
+  }
+
+  /**
+   * Labels 4-connected components of a boolean grid (true = locked). Same flood-fill/BFS idea as
+   * keepGrounded()/fillHoles() above, just made reusable and returning full pixel membership per
+   * component instead of mutating anything. occlusionMask() below uses this to find small, isolated
+   * locked objects that a flat buffer dilation could swallow whole.
+   */
+  function labelComponents(bin, w, h) {
+    var labels = new Int32Array(w * h); for (var z = 0; z < labels.length; z++) labels[z] = -1;
+    var comps = [], id = 0;
+    for (var start = 0; start < w * h; start++) {
+      if (!bin[start] || labels[start] !== -1) continue;
+      var stack = [start], minX = w, minY = h, maxX = 0, maxY = 0, count = 0, pixels = [];
+      labels[start] = id;
+      while (stack.length) {
+        var p = stack.pop(), px = p % w, py = (p / w) | 0;
+        count++; pixels.push(p);
+        if (px < minX) minX = px; if (px > maxX) maxX = px;
+        if (py < minY) minY = py; if (py > maxY) maxY = py;
+        var nb = [px > 0 ? p - 1 : -1, px < w - 1 ? p + 1 : -1, py > 0 ? p - w : -1, py < h - 1 ? p + w : -1];
+        for (var k = 0; k < 4; k++) { var q = nb[k]; if (q >= 0 && bin[q] && labels[q] === -1) { labels[q] = id; stack.push(q); } }
+      }
+      comps.push({ minX: minX, minY: minY, maxX: maxX, maxY: maxY, count: count, pixels: pixels });
+      id++;
+    }
+    return comps;
+  }
+
+  /**
    * Rounds a mask's edge into calmer curves (blur+threshold) right before it's confirmed – the
    * same idea as autoMask's own outline-smoothing step, but safe to run on ANY mask: it only
    * rounds the boundary, never fills holes or drops a region not touching the bottom edge (which
@@ -325,8 +374,18 @@
    * occlusionBufferPx: how deep (in photo pixels) that ring is allowed to reach. When the customer
    * calibrated a real-world distance (step 3), this targets a plausible physical reach for new
    * planting (OCCLUSION_REACH_M) instead of guessing from resolution alone – but is still capped
-   * (both with and without calibration) so a single locked object can never be swallowed whole,
-   * only have a bounded strip near the edit boundary become occludable.
+   * (both with and without calibration) relative to the WHOLE PHOTO's width, so on a typical photo
+   * a single large locked object (a fence, a house wall) can only have a bounded strip near the
+   * edit boundary become occludable, never be swallowed whole.
+   *
+   * That per-photo cap says nothing about any one SMALL locked object, though – a well-house, a
+   * shed, a tree trunk sitting right at the edit boundary can easily be narrower than this ring
+   * even though the ring itself is "small" relative to the photo. occlusionMask() below is what
+   * actually enforces the "never swallowed whole" guarantee for those – found the hard way on
+   * 2026-10-28: a small stone well-house marked "Zůstane" was engulfed by the buffer and redrawn by
+   * the AI as a different, larger gazebo, which is exactly the violation this project's #1 safety
+   * rule forbids. A new plant may grow in FRONT of a locked object (occlusion, allowed, by design);
+   * the locked object itself must never be the thing that changes.
    */
   var OCCLUSION_REACH_M = 1.6;
   function occlusionBufferPx(w, metersPerPixel) {
@@ -340,11 +399,83 @@
   }
   /**
    * The mask actually handed to the AI (and to finish()'s own lenient ring, above): editMask grown
-   * by the occlusion buffer, edge-smoothed the same way a hand-painted mask is before confirmation
-   * so the ring itself doesn't introduce a scalloped/faceted edge.
+   * by the occlusion buffer – but with a protected "core" carved back out of that buffer for any
+   * small, isolated locked object the flat dilation would otherwise cover almost entirely. Without
+   * this, occlusionBufferPx's per-photo cap can still be bigger than one particular locked object
+   * standing right at the edit boundary (see the long comment above occlusionBufferPx), and the
+   * flat buffer would then engulf that object completely – finish() would have no original pixel
+   * left near it to lock back to, and the AI would be free to redraw it as anything, same as the
+   * well-house → gazebo bug from 2026-10-28.
+   *
+   * Approach: build the normal flat buffer first (unchanged for the overwhelming common case – a
+   * fence, a wall, the house, all far bigger than any buffer this function ever produces). Then,
+   * at a small working resolution (exact pixel precision isn't needed to tell "basically swallowed"
+   * from "only grazed at one edge", and a full-resolution flood fill on every generation would be
+   * slow), find every locked connected component the flat buffer covers almost completely (≥90% –
+   * a buffer only grazing one edge of something big is the intended, allowed occlusion behaviour
+   * and is deliberately left alone). For each one that's small enough to plausibly BE fully covered
+   * (narrower than ~6× the buffer itself; anything bigger genuinely can't be swallowed by this
+   * buffer and is skipped for speed), rebuild its real silhouette at full resolution, shrink it
+   * inward by roughly 30% of its own narrowest dimension, and subtract that shrunken core back out
+   * of the buffer – so a meaningful, visibly protected part of every small locked object always
+   * survives hard-locked to the real photo, however generous the flat buffer around it is.
    */
   function occlusionMask(editMask, metersPerPixel) {
-    return smoothMaskEdge(growMask(editMask, occlusionBufferPx(editMask.width, metersPerPixel)));
+    var w = editMask.width, h = editMask.height;
+    var bufferPx = occlusionBufferPx(w, metersPerPixel);
+    var flat = growMask(editMask, bufferPx);
+
+    var scale = Math.min(1, 400 / Math.max(w, h));
+    var sw = Math.max(1, Math.round(w * scale)), sh = Math.max(1, Math.round(h * scale));
+    var small = canvas(sw, sh), sc = small.getContext('2d');
+    sc.drawImage(editMask, 0, 0, sw, sh);
+    var ed = sc.getImageData(0, 0, sw, sh).data;
+    var lockedSmall = new Uint8Array(sw * sh);
+    for (var i = 0; i < sw * sh; i++) lockedSmall[i] = ed[i * 4 + 3] <= 127 ? 1 : 0;
+
+    var fsmall = canvas(sw, sh), fc = fsmall.getContext('2d');
+    fc.drawImage(flat, 0, 0, sw, sh);
+    var fd = fc.getImageData(0, 0, sw, sh).data;
+
+    var comps = labelComponents(lockedSmall, sw, sh);
+    var toProtect = [];
+    comps.forEach(function (c) {
+      var minDim = Math.min(c.maxX - c.minX + 1, c.maxY - c.minY + 1) / scale;
+      if (minDim > bufferPx * 6) return; // far too big to be fully swallowed by this buffer
+      var inBuffer = 0;
+      for (var p = 0; p < c.pixels.length; p++) if (fd[c.pixels[p] * 4 + 3] > 127) inBuffer++;
+      if (inBuffer / c.count >= 0.9) toProtect.push({ comp: c, minDim: minDim });
+    });
+    if (!toProtect.length) return smoothMaskEdge(flat);
+
+    // True locked silhouette at full resolution, to intersect each coarse blob back against –
+    // keeps the protected core following the object's real edge, not the small working grid.
+    var lockedFull = canvas(w, h), lf = lockedFull.getContext('2d');
+    lf.fillStyle = '#1b9c55'; lf.fillRect(0, 0, w, h);
+    lf.globalCompositeOperation = 'destination-out'; lf.drawImage(editMask, 0, 0);
+    lf.globalCompositeOperation = 'source-over';
+
+    var coreUnion = canvas(w, h), cu = coreUnion.getContext('2d');
+    toProtect.forEach(function (entry) {
+      var c = entry.comp;
+      var blob = canvas(sw, sh), bc = blob.getContext('2d'), bimg = bc.createImageData(sw, sh);
+      for (var p = 0; p < c.pixels.length; p++) bimg.data[c.pixels[p] * 4 + 3] = 255;
+      bc.putImageData(bimg, 0, 0);
+      var full = canvas(w, h), fcx = full.getContext('2d');
+      fcx.drawImage(blob, 0, 0, w, h);
+      var fimg = fcx.getImageData(0, 0, w, h);
+      for (var z = 3; z < fimg.data.length; z += 4) fimg.data[z] = fimg.data[z] > 96 ? 255 : 0;
+      fcx.putImageData(fimg, 0, 0);
+      fcx.globalCompositeOperation = 'source-in'; fcx.fillStyle = '#1b9c55'; fcx.fillRect(0, 0, w, h);
+      fcx.globalCompositeOperation = 'destination-in'; fcx.drawImage(lockedFull, 0, 0);
+      fcx.globalCompositeOperation = 'source-over';
+      var margin = Math.max(3, Math.round(entry.minDim * 0.3));
+      cu.drawImage(erodeMask(full, margin), 0, 0);
+    });
+    cu.globalCompositeOperation = 'source-in'; cu.fillStyle = '#1b9c55'; cu.fillRect(0, 0, w, h);
+    cu.globalCompositeOperation = 'source-over';
+
+    return smoothMaskEdge(combineMasks('subtract', flat, coreUnion));
   }
 
   /**
