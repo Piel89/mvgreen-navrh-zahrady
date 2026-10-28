@@ -1979,6 +1979,19 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 /* 0.6.50: půdorys a jiné pohledy */
 .mvgreen-designer .mg-plan-box,.mvgreen-designer .mg-angle-box{margin-top:22px;padding:18px;border:1px solid #dce8dd;border-radius:14px;background:#fff}
 .mvgreen-designer .mg-plan-box h4,.mvgreen-designer .mg-angle-box h4{margin:0 0 10px;color:#0f3d27;font-size:18px}
+/* 0.6.143: "hero" adresní widget – jedno velké pole "Zadejte svoji adresu" mimo úzký 2sloupcový
+   grid (dřív se odznaky podmínek vešly jen 1 do řady vedle sebe a vypadaly jako úzká hranatá
+   věž). Teď má celou šířku karty, odznaky se po zjištění srovnají vedle sebe do řady/mřížky. */
+.mvgreen-designer .mg-location-hero{background:linear-gradient(165deg,#f3faf4,#eaf4ec);border:1px solid #d7e8da;border-radius:16px;padding:18px 20px 16px;margin:4px 0 20px}
+.mvgreen-designer .mg-loc-hero-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.mvgreen-designer .mg-loc-hero-badge{flex:none;width:40px;height:40px;border-radius:12px;background:var(--mg);color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 3px 10px #15633335}
+.mvgreen-designer .mg-loc-hero-text h4{margin:0 0 3px;font-size:17px;color:#0f3d27}
+.mvgreen-designer .mg-loc-hero-text p{margin:0;font-size:13px}
+.mvgreen-designer .mg-loc-hero-row{display:flex;gap:10px}
+.mvgreen-designer .mg-loc-hero-row input{flex:1;min-width:0}
+.mvgreen-designer .mg-loc-hero-row button{flex:none;white-space:nowrap}
+.mvgreen-designer .mg-location-hero .mg-period-toggle{margin:10px 0 2px}
+@media(max-width:480px){.mvgreen-designer .mg-loc-hero-row{flex-direction:column}.mvgreen-designer .mg-loc-hero-row button{width:100%}.mvgreen-designer .mg-loc-hero-badge{width:34px;height:34px;font-size:16px}}
 /* 0.6.141: automatické zjištění podmínek lokality (výška/sklon/vítr/vlhkost) u pole Obec. */
 .mvgreen-designer .mg-period-toggle{display:flex;align-items:center;gap:8px;margin:8px 0}
 .mvgreen-designer .mg-period-label{font-size:13px;color:#5a6f61;font-weight:650;margin:0}
@@ -1992,12 +2005,13 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-location-status{margin:6px 0 2px}
 .mvgreen-designer .mg-location-status>small{color:#5a6f61}
 .mvgreen-designer .mg-cchip-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin:6px 0 8px}
-.mvgreen-designer .mg-cchip{background:#fff;border:1px solid #e2e8df;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;box-shadow:0 2px 8px rgba(20,40,25,.07);animation:mgChipIn .45s ease both}
-.mvgreen-designer .mg-cchip:nth-child(1){animation-delay:.02s}
-.mvgreen-designer .mg-cchip:nth-child(2){animation-delay:.1s}
-.mvgreen-designer .mg-cchip:nth-child(3){animation-delay:.18s}
-.mvgreen-designer .mg-cchip:nth-child(4){animation-delay:.26s}
-@keyframes mgChipIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.mvgreen-designer .mg-cchip{background:#fff;border:1px solid #e2e8df;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;box-shadow:0 2px 8px rgba(20,40,25,.07);animation:mgChipIn .55s cubic-bezier(.34,1.56,.64,1) both}
+.mvgreen-designer .mg-cchip:nth-child(1){animation-delay:.03s}
+.mvgreen-designer .mg-cchip:nth-child(2){animation-delay:.13s}
+.mvgreen-designer .mg-cchip:nth-child(3){animation-delay:.23s}
+.mvgreen-designer .mg-cchip:nth-child(4){animation-delay:.33s}
+/* odznaky se "snesou" shora dolů na místo, místo pouhého vykreslení nad sebou */
+@keyframes mgChipIn{from{opacity:0;transform:translateY(-18px) scale(.92)}60%{opacity:1}to{opacity:1;transform:translateY(0) scale(1)}}
 .mvgreen-designer .mg-cchip-ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
 .mvgreen-designer .mg-cchip-ic svg{width:16px;height:16px}
 .mvgreen-designer .mg-cchip-val{font-size:15px;font-weight:800;color:#0f3d27;line-height:1.1}
