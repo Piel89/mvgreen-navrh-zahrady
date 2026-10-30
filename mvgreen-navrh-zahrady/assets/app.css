@@ -85,7 +85,6 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-stage.mg-fullscreen-fallback .mg-exit-fullscreen{position:fixed!important;right:12px!important;top:12px!important;z-index:30!important}
 .mvgreen-designer .mg-stage.mg-fullscreen-fallback .mg-fullscreen-bar{position:fixed!important;z-index:30!important}
 
-.mvgreen-designer .mg-advanced-hidden{display:none!important}
 .mvgreen-designer .mg-plant-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px;margin:16px 0}
 .mvgreen-designer .mg-plant-card{display:flex;gap:12px;padding:10px;border:1px solid #dbe7dc;border-radius:10px;align-items:center;background:#fff}
 .mvgreen-designer .mg-plant-card>div:last-child{flex:1;min-width:0}.mvgreen-designer .mg-plant-card small{display:block;color:#607265;font-size:12px;margin:3px 0}
