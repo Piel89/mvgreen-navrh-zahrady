@@ -619,7 +619,12 @@ if(detailStep&&styleStep){
  conditions.querySelectorAll('[data-mg-sun]').forEach(b=>b.addEventListener('click',()=>{q('mg-sun').value=b.dataset.mgSun;conditions.querySelectorAll('[data-mg-sun]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));autoSave()}));
  conditions.querySelectorAll('[data-mg-moisture]').forEach(b=>b.addEventListener('click',()=>{q('mg-water').value=b.dataset.mgMoisture;conditions.querySelectorAll('[data-mg-moisture]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));autoSave()}));
  const budgetPanel=document.createElement('div');budgetPanel.className='mg-ref-budget-choices';
- budgetPanel.innerHTML='<h4>Rozpočet (orientačně)</h4>'+[['50000','Do 50 000 Kč'],['150000','50–150 000 Kč'],['300000','Nad 150 000 Kč']].map((x,i)=>'<button type="button" data-mg-budget-choice="'+x[0]+'" aria-pressed="'+(i===1)+'">◉ &nbsp;'+x[1]+'</button>').join('')+'<h4>Další informace</h4><ul><li>Chci zahradu s minimem údržby</li><li>Mám děti / domácí mazlíčky</li><li>Chci jedlé rostliny</li><li>Zajímá mě automatická závlaha</li><li>Preferuji přírodní vzhled</li></ul>';
+ // The former "Další informace" bullet list here (nízká údržba, děti/mazlíčci, jedlé rostliny,
+ // automatická závlaha, přírodní vzhled) was plain <li> text with no click handler anywhere - purely
+ // decorative, and every one of those five items already has a REAL working field elsewhere (Údržba,
+ // mg-irrigation, the "Moderní/Přírodní/…" styl select, or is literally given as an example in the
+ // Poznámky placeholder) - removed rather than wired up, since wiring it would only duplicate those.
+ budgetPanel.innerHTML='<h4>Rozpočet (orientačně)</h4>'+[['50000','Do 50 000 Kč'],['150000','50–150 000 Kč'],['300000','Nad 150 000 Kč']].map((x,i)=>'<button type="button" data-mg-budget-choice="'+x[0]+'" aria-pressed="'+(i===1)+'">◉ &nbsp;'+x[1]+'</button>').join('');
  detailStep.insertBefore(budgetPanel,detailFields); // floats right beside the fields (no absolute overlap)
  budgetPanel.querySelectorAll('[data-mg-budget-choice]').forEach(b=>b.addEventListener('click',()=>{q('mg-max').value=b.dataset.mgBudgetChoice;budgetPanel.querySelectorAll('[data-mg-budget-choice]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));autoSave()}));
  const styleControl=q('mg-style')?.closest('.mg-field');
@@ -1106,19 +1111,24 @@ const budgetPlan=detailStep?.querySelector('.mg-plan');
 if(budgetPlan)budgetStep.appendChild(budgetPlan);
 const budgetSummary=document.createElement('div');
 budgetSummary.className='mg-budget-summary';
-budgetSummary.innerHTML='<div><h4>Souhrn návrhu</h4><p id="mg-budget-summary-info">Zatím bez výpočtu</p><button type="button" id="mg-budget-show-summary">Zobrazit celé zadání</button></div><div><h4>Orientační rozpočet</h4><p>Výsledná cena se vypočítá podle zadaných podmínek a vybraných rostlin. Nejde o závaznou nabídku.</p><button type="button" class="mg-primary" id="mg-budget-create">🌿 Vypočítat rozpočet</button></div></div>';
+budgetSummary.innerHTML='<div><h4>Souhrn návrhu</h4><p id="mg-budget-summary-info">Zatím bez výpočtu</p><button type="button" id="mg-budget-show-summary">Zobrazit celé zadání</button></div><div><h4>Orientační rozpočet</h4><p>Výsledná cena se vypočítá podle zadaných podmínek a vybraných rostlin. Nejde o závaznou nabídku.</p><button type="button" class="mg-primary" id="mg-budget-create">🌿 Vypočítat rozpočet</button></div>';
 budgetStep.prepend(budgetSummary);
- const refBudgetTable=document.createElement('div');refBudgetTable.className='mg-ref-budget-table';
- refBudgetTable.innerHTML='<h4>Orientační rozpočet</h4>'+[['Zemní úpravy','25000'],['Trávník','18000'],['Výsadba rostlin','42000'],['Mulč / štěrk','12000'],['Zahradní prvky','28000']].map(x=>'<div><span>♧ &nbsp; '+x[0]+'</span><strong>'+Number(x[1]).toLocaleString('cs-CZ')+' Kč</strong></div>').join('')+'<div class="mg-ref-budget-total"><strong>Cena celkem</strong><strong>125 000 Kč</strong></div><p>Ilustrační položky z předlohy. Skutečný rozpočet vypočtěte z údajů o zahradě.</p><button type="button" class="mg-primary" id="mg-ref-budget-real">Vypočítat vlastní rozpočet</button>';
- budgetStep.append(refBudgetTable);
  const planDetails=document.createElement('details');planDetails.className='mg-ref-plan-details';planDetails.innerHTML='<summary>Podrobné nastavení a výpočet rostlin</summary>';planDetails.append(budgetPlan);budgetStep.append(planDetails);
- refBudgetTable.querySelector('#mg-ref-budget-real').addEventListener('click',()=>{planDetails.open=true;q('mg-plan-create').click()});
+// Found during the 2026-10 pricing audit, fixed here: this real "🌿 Vypočítat rozpočet" button only
+// ever did q('mg-plan-create').click() - it never opened the <details> the real plant list/plan
+// output lives in, so on the live modal (app.css hides this button's OWN sibling markup only in
+// that mode - unrelated) the calculation ran but its result rendered invisibly inside a still-closed
+// <details>. A second, duplicate button existed purely to paper over that (a static, fabricated
+// "125 000 Kč" example table, Ilustrační položky z předlohy, including a "Zemní úpravy" line - work
+// the owner has been explicit he doesn't do, no excavator - whose own click handler happened to also
+// open the <details> first). Fixing the real button's handler removes the need for that whole fake
+// table and its misleading line item; one real, correct, visible button replaces both.
+q('mg-budget-create').addEventListener('click',()=>{planDetails.open=true;q('mg-plan-create').click()});
 
 // "Zobrazit celé zadání" triggers the same summary click as the "Zobrazit zadání" button, whose
 // output (#mg-output) now lives on step 5 ("Co přesně chcete") alongside it, not on the results
 // step – so this must land back on step 5, not step 6.
 q('mg-budget-show-summary').addEventListener('click',()=>{q('mg-summary').click();showWizardStep(6);});
-q('mg-budget-create').addEventListener('click',()=>q('mg-plan-create').click());
 // The old step 9 "Chatový průvodce" (a scripted, not-actually-AI chat FAQ) is retired entirely –
 // its content doesn't need to survive the restructuring.
 

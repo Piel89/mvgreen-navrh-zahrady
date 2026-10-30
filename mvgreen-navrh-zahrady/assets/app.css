@@ -667,7 +667,6 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices h4:not(:first-child){margin-top:18px}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices button{display:block;width:100%;text-align:left;background:#fff;border:1px solid #d9e5dc;border-radius:7px;margin-bottom:7px;padding:10px;font-size:12px;color:#284b35}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices button[aria-pressed="true"]{border-color:#156333;background:#eaf9ef;font-weight:800}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices ul{padding-left:18px;font-size:11px;line-height:1.9;color:#315b41}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-conditions{grid-column:1/-1}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-conditions h4{font-size:13px;margin:10px 0 8px}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-sun-options,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-moisture-options{display:flex;gap:7px}
@@ -682,22 +681,18 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-6 .mg-generation-status p{padding:8px 0!important;font-size:13px!important}
 /* Step 8 — overview at left, line-item budget at right (was step 7, before the bed/path sketch step
    was inserted; step 7 used to be the plant/material/lighting checklist step, removed – dead and
-   duplicate of the free-text wishes step). */
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary{width:49%;display:block!important;margin:12px 0!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary>div:nth-child(2){display:none!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table{position:absolute;top:78px;left:53%;width:45%;padding:14px;border:1px solid #e1ebe3;border-radius:11px;background:#fff}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 [data-mg-step="8"]{position:relative;min-height:470px}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table h4{font-size:16px;margin:0 0 14px;color:#213c2c}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table>div{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #e8eee8;font-size:12px;color:#47614f}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table .mg-ref-budget-total{font-size:15px;font-weight:900;color:#153d2a}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table p{font-size:11px;line-height:1.5;color:#627869}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table button{width:100%}
+   duplicate of the free-text wishes step). The former right-hand "mg-ref-budget-table" (a static,
+   fabricated example total, including a "Zemní úpravy" line the owner doesn't offer) and the CSS
+   rule hiding this panel's own real "Vypočítat rozpočet" button are gone (2026-10 pricing audit) -
+   that button's handler now opens the plan details itself, so it's the one real, visible control. */
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary{width:100%;display:block!important;margin:12px 0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 [data-mg-step="8"]{position:relative}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details{margin-top:20px;max-width:50%;font-size:12px}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details summary{cursor:pointer;font-weight:800;color:#156333}
 @media(max-width:1180px){
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-9 .mg-measure-layout{grid-template-columns:1fr!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-reference-details,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-budget-summary{width:100%!important}
-.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices,.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-budget-table{position:static!important;width:auto!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-2 .mg-ref-budget-choices{position:static!important;width:auto!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal.mg-view-step-8 .mg-ref-plan-details{max-width:100%}
 }
 
