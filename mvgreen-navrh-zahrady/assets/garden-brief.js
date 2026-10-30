@@ -239,6 +239,11 @@
       // osvědčeným principem jako sklon/orientace).
       d['mg-wind'] === 'strong' ? 'VÍTR: lokalita má podle klimatických dat v průměru silnější vítr. Upřednostni nižší, kompaktnější a mechanicky odolnější druhy z nabídnutého seznamu před vysokými/křehkými stonky; pokud návrh obsahuje vyšší keř nebo strom u okraje pozemku, umísti ho tak, aby přirozeně fungoval i jako větrolam pro zbytek záhonu za ním.' : (d['mg-wind'] === 'moderate' ? 'VÍTR: lokalita má mírně větrnější klima – dej přednost druhům, co to dobře snáší, ale není to tak zásadní jako u silného větru.' : ''),
       'ÚDRŽBA: ' + (d['mg-maint'] || 'nízká') + '. Rozpočet do ' + (d['mg-max'] || '50000') + ' Kč – žádné drahé prvky (jezírka, pergoly, zídky, terasy).',
+      // 2026-10 audit: mg-build ("Způsob realizace") was asked on step 1 and shown back in the
+      // review summary, but never actually fed into the AI's own instructions - a real garden
+      // designer DOES tailor what they propose to who's building it, so this makes the question
+      // actually change the result instead of just echoing it back unused.
+      d['mg-build'] === 'Svépomocí' ? 'REALIZACE: zákazník bude sázet a stavět sám, bez zahradnické firmy. Upřednostni nenáročné, běžně dostupné rostliny a jednoduché, amatérsky zvládnutelné prvky (mulč, kačírek, nízký nezpevněný záhon) – vyhni se technicky náročným konstrukcím (opěrné zídky nad cca 30 cm, zpevňované/dlažené cesty, závlahové rozvody), které by bez odborné firmy byly obtížně realizovatelné.' : (d['mg-build'] === 'Zahradnickou firmou' ? 'REALIZACE: výsadbu i stavební prvky provede zahradnická firma – technicky náročnější řešení (zpevněné cesty, vyšší opěrné zídky, závlaha) jsou tedy v pořádku, pokud se vejdou do rozpočtu.' : ''),
       extra.layout ? 'ROZVRŽENÍ: ' + extra.layout : '',
       hintLine,
       'NAVÁZÁNÍ: nové záhony a rostliny ukonči s odstupem od okraje upravované plochy; u okraje nech pruh trávníku nebo mulče, aby výsledek plynule navazoval na původní fotografii.',
