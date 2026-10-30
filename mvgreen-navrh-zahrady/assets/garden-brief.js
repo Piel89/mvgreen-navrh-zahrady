@@ -101,7 +101,7 @@
       ['Mám automatickou závlahu', 'Zalévám ručně', 'Nechci zalévat'].map(function (t, i) {
         return '<button type="button" class="mg-chip" data-fav-water="' + i + '" aria-pressed="' + (i === 1) + '">' + t + '</button>';
       }).join('') + '</div>' +
-      '<input type="hidden" id="mg-fav-colors"><input type="hidden" id="mg-fav-plants"><input type="hidden" id="mg-irrigation" value="1">' +
+      '<input type="hidden" id="mg-fav-colors"><input type="hidden" id="mg-irrigation" value="1">' +
       '</section>';
   }
 
