@@ -1300,9 +1300,37 @@ const legacyPlants=[
 const normalizeLatin=s=>String(s||'').toLocaleLowerCase().replace(/[×✕]/g,'x').replace(/[„“'"’]/g,'').replace(/\s+/g,' ').trim();
 const legacyByLatin=new Map(legacyPlants.map(p=>[normalizeLatin(p.latin),p]));
 const plants=(Array.isArray(window.MVGreenPlantCatalog)?window.MVGreenPlantCatalog:[]).map(entry=>{
- const legacy=legacyByLatin.get(normalizeLatin(entry.latin));
- return legacy?{...entry,...legacy,id:entry.id,source:entry.source||legacy.source}:entry;
+ const entryLatin=normalizeLatin(entry.latin);
+ const exact=legacyByLatin.get(entryLatin);
+ if(exact)return{...entry,...exact,id:entry.id,source:entry.source||exact.source};
+ // legacyPlants is priced per CULTIVAR ("Lavandula angustifolia Munstead", "...Rosea"...), but the
+ // 805-plant catalog only ever carries ONE entry per bare SPECIES ("Lavandula angustifolia") - so
+ // the exact-latin lookup above only ever hits a cultivar whose own latin happens to be bare
+ // already. Every other priced cultivar (most of them: lavender, festuca, rudbeckia, nepeta,
+ // salvia, geranium, sedum…) would otherwise sit unused even though we have a real CZ retail price
+ // for a plant of that exact species. Match any legacy entry whose latin is "<this species> <cultivar
+ // name>" (a literal prefix of the catalog's own bare latin, so it works for multi-word/hybrid
+ // species too - e.g. "Nepeta × faassenii Purrsian Blue" still starts with "Nepeta × faassenii "),
+ // skip anything marked sold out, and take the cheapest in-stock match as a real-world "from" price
+ // for the species - better than the flat per-category guess, honestly labelled 'approx' since it's
+ // one cultivar's price standing in for the species, not necessarily the exact variety requested.
+ if(!entryLatin)return entry;
+ let best=null;
+ legacyPlants.forEach(function(p){
+  const full=normalizeLatin(p.latin);
+  if(full===entryLatin||full.indexOf(entryLatin+' ')!==0)return;
+  if(typeof p.price!=='number'||!(p.price>0)||p.availability==='vyprodáno')return;
+  if(!best||p.price<best.price)best=p;
+ });
+ return best?{...entry,price:best.price,priceType:'approx',size:best.size||entry.size,source:entry.source||best.source}:entry;
 });
+// Publish the enriched (805-catalog + 57 hand-verified CZ retail prices, exact and species-level
+// approximate) list back onto the global so garden-plan.js's own price lookup sees real prices too,
+// not just the raw null-price catalog it would otherwise re-read from window.MVGreenPlantCatalog.
+// Safe: garden-plan.js reads this lazily (inside its functions, not captured at script-load time),
+// and this assignment runs synchronously during this same page load, well before any customer
+// interaction reaches it.
+window.MVGreenPlantCatalog=plants;
 let lastPlan=null;
 // Customer favourites, photo guide and photo check (garden-brief.js).
 const Brief=window.MVGreenBrief;

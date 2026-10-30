@@ -364,14 +364,37 @@
   // Orientační maloobchodní ceny (Kč s DPH) podle skupiny – jediné místo k úpravě.
   var PRICES = { flowers: [70, 130, 'trvalka v květináči 9–11 cm'], grasses: [90, 180, 'travina v květináči 1–2 l'], shrubs: [180, 380, 'keř v kontejneru 2–3 l'], trees: [900, 2500, 'strom 150–200 cm'] };
   var MULCH_M2 = [70, 110]; // kůra 5 cm + netkaná textilie / m²
+  /** Same fuzzy name match categoryOf() always did, factored out so priceRangeOf() below can reuse
+   *  it instead of re-scanning the catalog a second time per plant. */
+  function findCatalogEntry(name) {
+    var cat = window.MVGreenPlantCatalog || [], n = String(name || '').toLowerCase().replace(/[„“"].*$/, '').trim();
+    for (var i = 0; i < cat.length; i++) { var c = String(cat[i].name || '').toLowerCase(); if (c && (n.indexOf(c) === 0 || c.indexOf(n) === 0)) return cat[i]; }
+    return null;
+  }
   function categoryOf(name) {
     // Malé polokeře (levandule, šalvěj…) se prodávají a sázejí jako trvalky.
     if (/levandul|šalvěj|yzop|tymián|mateřídouš/i.test(String(name))) return 'flowers';
-    var cat = window.MVGreenPlantCatalog || [], n = String(name || '').toLowerCase().replace(/[„“"].*$/, '').trim();
-    for (var i = 0; i < cat.length; i++) { var c = String(cat[i].name || '').toLowerCase(); if (c && (n.indexOf(c) === 0 || c.indexOf(n) === 0)) return cat[i].category; }
+    var entry = findCatalogEntry(name);
+    if (entry && entry.category) return entry.category;
+    var n = String(name || '').toLowerCase();
     if (/tráv|kostřav|ostřic|miskant|vousat|dochan/.test(n)) return 'grasses';
     if (/keř|tavolník|zimolez|hortenzi|levandul|zákula|dřišťál/.test(n)) return 'shrubs';
     return 'flowers';
+  }
+  /**
+   * Real retail price for one species where the catalog has hand-verified CZ e-shop data (see
+   * legacyPlants in app.js, merged into window.MVGreenPlantCatalog before this ever runs) - a tight
+   * band around that one real number, rather than the flat per-category guess below. Falls back to
+   * the flat PRICES range (today's only option) for species we have no verified CZ retail price
+   * for yet - most of the 805-species catalog, which was built from a US botanical reference, not
+   * a CZ nursery, so most of it was never going to have a real price anyway.
+   */
+  function priceRangeOf(name) {
+    var entry = findCatalogEntry(name), fallback = PRICES[categoryOf(name)] || PRICES.flowers;
+    if (entry && typeof entry.price === 'number' && entry.price > 0) {
+      return [Math.round(entry.price * 0.85), Math.round(entry.price * 1.25), entry.size || fallback[2]];
+    }
+    return fallback;
   }
   function kc(v) { return Math.round(v / 10) * 10 >= 1000 ? (Math.round(v / 100) * 100).toLocaleString('cs-CZ') : String(Math.round(v / 10) * 10); }
 
@@ -388,7 +411,7 @@
       (e.plants || []).forEach(function (p) { var k = String(p.name || '').trim(); if (k) shop[k] = (shop[k] || 0) + (+p.count || 0); });
     });
     var keys = Object.keys(shop).sort();
-    keys.forEach(function (k) { var pr = PRICES[categoryOf(k)] || PRICES.flowers, n = shop[k]; lo += n * pr[0]; hi += n * pr[1]; });
+    keys.forEach(function (k) { var pr = priceRangeOf(k), n = shop[k]; lo += n * pr[0]; hi += n * pr[1]; });
     var bed = r.totals.bed, mlo = bed * MULCH_M2[0], mhi = bed * MULCH_M2[1];
     if (bed > 0) { lo += mlo; hi += mhi; }
     return { shop: shop, keys: keys, lo: lo, hi: hi, bed: bed, mlo: mlo, mhi: mhi, hasItems: keys.length > 0 };
@@ -405,7 +428,7 @@
     var c = computeShopping(plan, opts || {});
     if (!c.hasItems) return '';
     var rows = c.keys.map(function (k) {
-      var pr = PRICES[categoryOf(k)] || PRICES.flowers, n = c.shop[k];
+      var pr = priceRangeOf(k), n = c.shop[k];
       return '<tr><td>' + esc(k) + '<br><small>' + pr[2] + '</small></td><td>' + n + ' ks</td><td>' + kc(n * pr[0]) + '–' + kc(n * pr[1]) + ' Kč</td></tr>';
     }).join('');
     if (c.bed > 0) rows += '<tr><td>Mulčovací kůra a textilie<br><small>≈ ' + fmtM2(c.bed) + ' záhonů</small></td><td></td><td>' + kc(c.mlo) + '–' + kc(c.mhi) + ' Kč</td></tr>';
