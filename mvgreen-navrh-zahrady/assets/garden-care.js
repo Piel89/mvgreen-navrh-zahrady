@@ -104,7 +104,7 @@
       { i: 5, tasks: ['4. dávka: ' + dose('C', areaM2, soilMult) + '.', 'Sečení výš (7-8 cm) v horkých dnech, aby trávník lépe snášel sucho.' + waterNote] },
       { i: 6, tasks: ['5. dávka: ' + dose('C', areaM2, soilMult) + '.', 'Zálivka podle potřeby, raději zřídka a vydatně než často a málo.' + waterNote + slopeNote] },
       { i: 7, tasks: ['6. dávka: ' + dose('C', areaM2, soilMult) + '.', 'Nekosit na krátko v suchu a horku.' + waterNote] },
-      { i: 8, tasks: ['Vertikutace (prořezání plsti) a aerace trávníku.', '7. dávka: ' + dose('N', areaM2, soilMult) + ' - obnova po letním stresu.', 'Podzimní přísev prořídlých míst.'] },
+      { i: 8, tasks: ['Vertikutace (prořezání plsti) a aerace trávníku.', '7. dávka: ' + dose('N', areaM2, soilMult) + ' - obnova po letním stresu.', 'Podzimní přísev prořídlých míst - před výsevem použijte startovací hnojivo s vysokým fosforem pro rychlé zakořenění semen, ne běžné sezónní hnojivo.'] },
       { i: 9, tasks: ['8. dávka: ' + dose('C', areaM2, soilMult) + '.', 'Snižujeme frekvenci sečení.'] },
       { i: 10, tasks: ['9. (poslední) dávka: ' + dose('K', areaM2, soilMult, 'end') + ' - zazimování, posílení odolnosti proti mrazu.', 'Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.', 'Nářadí a hadice vyklidit, aby nezmrzly.'] },
       { i: 11, tasks: ['Zimní klid - trávník nezatěžovat, nenechávat na něm hromady listí ani sníh z lopaty.'] },
@@ -133,7 +133,8 @@
     }).join('');
     return '<div class="mg-care-plan">' + rows + '</div>'
       + '<p class="mg-note">Program vychází z profesionálního 9dávkového hnojení (NPK poměry a dávky 20-30 g/m²), upraveného podle typu půdy a nadmořské výšky. Konkrétní obchodní značku hnojiva si vyberte podle uvedeného NPK poměru - kterýkoliv odpovídající produkt funguje stejně.</p>'
-      + '<p class="mg-note">⚠️ Minerální hnojivo aplikujte na suchý trávník, nejlépe před deštěm, a pokud neprší, do pár hodin ho zalijte - jinak hrozí spálení trávníku.</p>';
+      + '<p class="mg-note">⚠️ Minerální hnojivo aplikujte na suchý trávník, nejlépe před deštěm, a pokud neprší, do pár hodin ho zalijte - jinak hrozí spálení trávníku. Nikdy nehnojte mokrý trávník.</p>'
+      + '<p class="mg-note">⚠️ Hnojivo vždy rozmetejte ručním elektrickým rozmetadlem nebo tažným rozmetacím vozíkem - nikdy ne z ruky (nerovnoměrné rozprostření a riziko spálení v místech, kam se dostane víc granulí). Secí vozík na výsev trávy není na hnojivo určený a nepoužívejte ho k němu.</p>';
   }
 
   var api = { computeCarePlan: computeCarePlan, renderCarePlanHTML: renderCarePlanHTML };
