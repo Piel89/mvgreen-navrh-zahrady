@@ -132,3 +132,14 @@
 .mvg-site .mvg-price td:last-child{text-align:right;font-weight:800;color:#156333;white-space:nowrap;padding-left:18px!important}
 .mvg-site .mvg-price tr:hover td{color:#0f3d27}
 .mvg-site .mvg-price .mvg-note{margin-top:auto!important;padding:12px 14px;border-radius:10px;background:#f4f9f5}
+
+/* Obchodní podmínky (shortcode mvgreen_obchodni_podminky) */
+.mvg-legal{max-width:760px;padding-top:48px;padding-bottom:64px}
+.mvg-legal h1{font-size:30px;margin-bottom:10px}
+.mvg-legal__intro{color:var(--muted);margin:0 0 32px;line-height:1.6}
+.mvg-legal__sec{margin:0 0 30px}
+.mvg-legal__sec h2{font-size:18px;margin:0 0 10px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+.mvg-legal__sec p{margin:0 0 10px;line-height:1.65;color:var(--text)}
+.mvg-legal__sec ul{margin:0 0 10px;padding-left:20px;line-height:1.65;color:var(--text)}
+.mvg-legal__sec li{margin-bottom:6px}
+.mvg-legal__sec a{color:var(--g700)}

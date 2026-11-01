@@ -74,7 +74,7 @@ add_shortcode('mvgreen_paticka', function () {
         . '<div><strong>Stránky</strong><ul><li><a href="' . esc_url(home_url('/cenik/')) . '">Služby a ceny</a></li><li><a href="' . esc_url(home_url('/naseprace/')) . '">Naše práce</a></li><li><a href="' . esc_url(home_url('/kontakty/')) . '">Kontakt</a></li></ul></div>'
         . '<div><strong>Sledujte nás</strong><ul><li><a href="https://www.facebook.com/profile.php?id=61588551020349">Facebook</a></li><li><a href="https://www.instagram.com/mvgreen.cz/">Instagram</a></li><li><a href="https://www.youtube.com/watch?v=-uCsuuhrGrI">YouTube</a></li></ul></div>'
         . '</div><div class="mvg-footer__bottom"><span>© ' . $y . ' MV GREEN · Martin Vondrovic · IČO 21119121</span>'
-        . '<span><a href="' . esc_url(home_url('/ochrana-osobnich-udaju/')) . '">Ochrana osobních údajů</a> · <a href="' . esc_url(home_url('/zasady-cookies-eu/')) . '">Zásady cookies</a> · <a href="#" class="cmplz-show-banner">Nastavení cookies</a></span></div></footer>'
+        . '<span><a href="' . esc_url(home_url('/obchodni-podminky/')) . '">Obchodní podmínky</a> · <a href="' . esc_url(home_url('/ochrana-osobnich-udaju/')) . '">Ochrana osobních údajů</a> · <a href="' . esc_url(home_url('/zasady-cookies-eu/')) . '">Zásady cookies</a> · <a href="#" class="cmplz-show-banner">Nastavení cookies</a></span></div></footer>'
         . '<nav class="mvg-callbar" aria-label="Rychlý kontakt">'
         . '<a class="mvg-call" href="tel:' . MVGREEN_PHONE_INTL . '">' . mvgreen_web_icon('phone', 20) . 'Zavolat</a>'
         . '<a href="https://wa.me/420723339650">' . mvgreen_web_icon('chat', 20) . 'WhatsApp</a>'
@@ -108,4 +108,54 @@ add_shortcode('mvgreen_srovnani', function ($a) {
         . '<span class="mvg-ba__knob">' . mvgreen_web_icon('arrows', 20) . '</span>'
         . '<span class="mvg-ba__tag mvg-ba__tag--before">PŘED</span><span class="mvg-ba__tag mvg-ba__tag--after">PO</span>'
         . '</div>' . $cap . '</figure>';
+});
+
+/**
+ * Obchodní podmínky pro placený digitální obsah (AI návrh zahrady / roční plán péče o trávník),
+ * prodávaný přes mvgreen.cz a placený kartou přes GoPay. Vlož shortcode [mvgreen_obchodni_podminky]
+ * na novou stránku se slugem /obchodni-podminky/ (na ten odkazuje souhlas při placení v návrháři
+ * i patička webu). Datum účinnosti v textu se bere z data poslední úpravy této stránky ve WP.
+ */
+add_shortcode('mvgreen_obchodni_podminky', function () {
+    $ucinnost = get_option('mvgreen_vop_ucinnost');
+    if (!$ucinnost) {
+        $ucinnost = date_i18n('j. n. Y');
+        update_option('mvgreen_vop_ucinnost', $ucinnost, false);
+    }
+    $sec = function ($h, $body) {
+        return '<section class="mvg-legal__sec"><h2>' . esc_html($h) . '</h2>' . $body . '</section>';
+    };
+    $out = '<div class="mvg-legal mvg-site mvg-wrap">'
+        . '<h1>Obchodní podmínky</h1>'
+        . '<p class="mvg-legal__intro">Těmito obchodními podmínkami se řídí nákup digitálního obsahu (AI návrh zahrady a/nebo roční plán péče o trávník) na webu mvgreen.cz. Podmínky jsou vydané podle § 1751 zákona č. 89/2012 Sb., občanský zákoník, a jsou účinné od ' . esc_html($ucinnost) . '.</p>';
+
+    $out .= $sec('1. Prodávající', '<ul>'
+        . '<li>Martin Vondrovic, podnikající pod obchodním označením MV GREEN</li>'
+        . '<li>IČO: 21119121, místo podnikání: Pelechy 46, 344 01 Domažlice</li>'
+        . '<li>fyzická osoba podnikající na základě živnostenského oprávnění, nezapsaná v obchodním rejstříku</li>'
+        . '<li>není plátcem DPH – uvedené ceny jsou konečné</li>'
+        . '<li>kontakt: <a href="mailto:' . MVGREEN_EMAIL . '">' . MVGREEN_EMAIL . '</a>, <a href="tel:' . MVGREEN_PHONE_INTL . '">' . esc_html(MVGREEN_PHONE) . '</a></li>'
+        . '</ul>');
+
+    $out .= $sec('2. Co se prodává', '<p>Předmětem prodeje je výhradně digitální obsah nedodávaný na hmotném nosiči, vygenerovaný na základě údajů, které kupující sám zadá:</p><ul>'
+        . '<li><strong>AI návrh zahrady (89 Kč)</strong> – vizualizace zahrady vytvořená pomocí umělé inteligence z fotografie a popisu zadaného kupujícím, včetně orientačního rozmístění výsadby, seznamu rostlin s cenou a plánu péče.</li>'
+        . '<li><strong>Roční plán péče o trávník (49 Kč)</strong> – dvanáctiměsíční plán hnojení a péče o trávník sestavený podle plochy, lokality a stavu trávníku, které kupující zadá.</li>'
+        . '<li><strong>Balíček AI návrh + roční plán péče (119 Kč)</strong> – obojí výše zvýhodněně.</li>'
+        . '</ul><p>Nejde o odbornou zahradnickou ani zahradně-architektonickou konzultaci na místě, ani o závazné projektové či stavební řešení. Výstupy jsou orientační a vycházejí z údajů zadaných kupujícím a obecných agronomických doporučení – před realizací je vhodné je ověřit na místě.</p>');
+
+    $out .= $sec('3. Objednávka a uzavření smlouvy', '<p>Kupující zadá e-mail, potvrdí souhlas podle čl. 5 a zaplatí cenu předem přes platební bránu. Kupní smlouva je uzavřena okamžikem připsání platby a aktivace přístupového kódu.</p>');
+
+    $out .= $sec('4. Cena a platba', '<p>Ceny jednotlivých balíčků jsou uvedeny na webu a jsou konečné (prodávající není plátcem DPH). Platbu lze provést výhradně online přes platební bránu <strong><a href="https://www.gopay.com" target="_blank" rel="noopener">GoPay</a></strong>, platební kartou nebo dalším způsobem podle aktuální nabídky brány. Údaje o platební kartě prodávající nikdy nevidí ani neukládá – zpracovává je výhradně GoPay, podle vlastních obchodních podmínek dostupných na gopay.com.</p>');
+
+    $out .= $sec('5. Dodání a souhlas s okamžitým zahájením plnění', '<p>Digitální obsah je dodán ihned po úspěšném zaplacení: přístupový kód se zároveň zašle na zadaný e-mail a výsledek (AI návrh, resp. plán péče) se zobrazí přímo na webu po zadání kódu. Žádné fyzické zboží se nezasílá, doprava se neúčtuje.</p><p>Spotřebitel má podle § 1829 občanského zákoníku právo odstoupit od smlouvy uzavřené na dálku do 14 dnů bez udání důvodu. Protože ale jde o digitální obsah nedodávaný na hmotném nosiči, který je dodán okamžitě, uplatní se výjimka podle § 1837 písm. l) občanského zákoníku: <strong>právo na odstoupení od smlouvy zaniká, jakmile bylo s výslovným souhlasem kupujícího zahájeno plnění před uplynutím 14denní lhůty.</strong> Tento souhlas kupující uděluje zaškrtnutím políčka před zaplacením; bez něj se plnění nezahájí. Udělením souhlasu kupující bere na vědomí, že tím právo na odstoupení od smlouvy ztrácí.</p>');
+
+    $out .= $sec('6. Reklamace', '<p>Právo na odstoupení se podle čl. 5 na tento obsah nevztahuje, odpovědnost prodávajícího za vady (např. nedoručený kód, nefunkční odkaz, chybně vypočtený plán) tím ale není dotčena. Reklamaci uplatněte na <a href="mailto:' . MVGREEN_EMAIL . '">' . MVGREEN_EMAIL . '</a>; prodávající ji vyřídí nejpozději do 30 dnů. Je-li reklamace oprávněná, má kupující právo na nápravu (opravné vygenerování či zaslání obsahu) nebo na vrácení zaplacené částky.</p>');
+
+    $out .= $sec('7. Mimosoudní řešení sporů', '<p>Spotřebitel má právo na mimosoudní řešení sporu u <a href="https://www.coi.cz" target="_blank" rel="noopener">České obchodní inspekce</a> (www.coi.cz) nebo prostřednictvím platformy <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ODR Evropské komise</a>.</p>');
+
+    $out .= $sec('8. Ochrana osobních údajů', '<p>Zpracování osobních údajů (e-mail, fotografie zahrady apod.) upravuje samostatná stránka <a href="' . esc_url(home_url('/ochrana-osobnich-udaju/')) . '">Ochrana osobních údajů</a>.</p>');
+
+    $out .= $sec('9. Závěrečná ustanovení', '<p>Tyto podmínky se řídí právním řádem České republiky, zejména občanským zákoníkem (č. 89/2012 Sb.) a zákonem o ochraně spotřebitele (č. 634/1992 Sb.). Prodávající může podmínky v přiměřeném rozsahu měnit; pro konkrétní objednávku platí znění účinné v okamžiku jejího učinění.</p>');
+
+    return $out . '</div>';
 });
