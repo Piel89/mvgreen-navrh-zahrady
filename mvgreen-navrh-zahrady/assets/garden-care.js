@@ -20,6 +20,20 @@
  * husqvarna.cz: 20-30 g/m², 2-3x až 3x dlouhoúčinné hnojivo za sezónu) - tenhle plán je bohatší,
  * profesionální verze toho samého principu, ne vymyšlená navíc.
  *
+ * Rozšíření (2026-11-01, na základě shrnutí agronomického výzkumu, co poslal Martin -
+ * https://share.gemini.google/RvqdPP8K8R74 - tabulka "7. Návrh celoročního plánu údržby a
+ * hnojení" se třemi úrovněmi péče): přidán parametr `tier` (nízkoúdržbový / standardní rodinný /
+ * reprezentativní), který mění POČET dávek a měsíce, ne jen násobí dávku:
+ *   - "high" (Reprezentativní/profesionální, 6-10 hnojení/rok) = PŮVODNÍ 9dávkový plán beze
+ *     změny - to je Martinův ověřený reálný plán, nehýbat s ním.
+ *   - "standard" (Standardní rodinný, 3-4 hnojení/rok: duben/červen/září/říjen) = odlehčená
+ *     verze, 4 dávky.
+ *   - "low" (Nízkoúdržbový, 2 hnojení/rok: duben/září) = jen 2 dávky, žádná aerifikace.
+ * Dále `problems` (pole: moss/weeds/bare/snowmold/compaction), `lastFertilized`
+ * (spring_done/none/unknown), `irrigation` (auto/manual/none) a `fertType`
+ * (fast/crf/organic/auto) - viz PROBLEM_NOTES a FERT_TYPE_NOTE níže. Tyhle čtyři jen DOPLŇUJÍ
+ * texty/poznámky, nemění strukturu měsíců (aby se nerozbily tiery výše).
+ *
  * Standing rule: popisujeme jen běžné zahradní práce (hnojení, sečení, zálivka, aerace, přísev,
  * zazimování) - podle obchodního omezení smí odkaz na vlastní služby MVGreen padnout jen u
  * revitalizace trávníku nebo nové výsadby trávníku, nikdy u úpravy terénu (bagr) ani u záhonů.
@@ -36,6 +50,23 @@
     K: { name: 'zátěžové hnojivo s vysokým draslíkem', npk: '12-0-42 +2MgO', doseGPerM2: { start: 20, end: 30 } },
     N: { name: 'rychlé hnojivo s dusíkem a sírou', npk: '27-6-6 +2S', doseGPerM2: 20 },
     C: { name: 'vyvážené hnojivo s hořčíkem a železem', npk: '12-4-9 +2MgO +1Fe', doseGPerM2: 30 },
+  };
+
+  /** Jen informační dovětek k dávce podle preferovaného TYPU hnojiva - NPK poměr a gramáž níže
+   * zůstávají stejné orientační číslo, ať zákazník sáhne po jakékoliv značce/formě se stejným
+   * přibližným složením; tohle mu jen řekne, na co se dívat v obchodě. */
+  var FERT_TYPE_NOTE = {
+    fast: 'rychlorozpustné minerální (působí 1-3 týdny, nejlevnější, ale po aplikaci je potřeba brzy zalít, jinak hrozí spálení)',
+    crf: 's pomalým uvolňováním - CRF (působí 2-3 měsíce, dražší, ale minimální riziko spálení a nemusíte na něj tak často myslet)',
+    organic: 'organické/organominerální (působí 1-3 měsíce, nulové riziko spálení, navíc dlouhodobě zlepšuje půdu, ale účinek je pomalejší)',
+  };
+
+  var PROBLEM_NOTES = {
+    moss: 'Mech v trávníku bývá signál kyselé půdy, zastínění nebo zhutnění - doporučujeme změřit pH (levné soupravy v zahradnictví) a v hnojivu upřednostnit variantu se železem, které mech navíc mechanicky potlačuje a dodá sytě zelenou barvu.',
+    weeds: 'Dvouděložné plevele (jetel, pampeliška apod.) jde ručně vytrhávat, nebo použít schválený herbicid pro neprofesionální uživatele - ideálně v květnu/červnu, ne ve stejném týdnu jako hnojení.',
+    bare: 'Na holá a řídká místa počítejte s přísevem při podzimní regeneraci - cca 15-25 g osiva/m², zapravit hráběmi max. 0,5 cm hluboko a první 2 týdny udržovat povrch trvale vlhký.',
+    snowmold: 'Loni jste měli plíseň sněžnou - po 15. září proto nehnojte už nic s dusíkem, jen draslíkaté podzimní hnojivo, pravidelně hrabejte spadané listí a strniště před zimou nenechávejte vyšší než 5 cm.',
+    compaction: 'Zhutněná půda nebo voda, co se drží na povrchu, = aerifikace dutými hroty letos jednoznačně doporučujeme, i kdyby to zvolená úroveň péče jinak nevyžadovala - jinak kořeny nemají dost vzduchu a trávník se nebude zlepšovat.',
   };
 
   /**
@@ -64,18 +95,78 @@
     return 1;
   }
 
-  function dose(fertKey, areaM2, soilMult, variant) {
+  function dose(fertKey, areaM2, soilMult, variant, fertType) {
     var base = FERT[fertKey].doseGPerM2;
     var gPerM2 = Math.round((typeof base === 'object' ? base[variant || 'start'] : base) * soilMult);
     var kg = areaM2 > 0 ? Math.max(0.1, Math.round(areaM2 * gPerM2) / 1000) : null;
     var label = FERT[fertKey].name + ' (NPK ' + FERT[fertKey].npk + ', ' + gPerM2 + ' g/m²';
     label += kg ? ', cca ' + kg + ' kg na ' + areaM2 + ' m²)' : ')';
+    if (fertType && FERT_TYPE_NOTE[fertType]) label += ' - typ: ' + FERT_TYPE_NOTE[fertType];
     return label;
+  }
+
+  /** Harmonogram pro tier="high" (Reprezentativní/profesionální, 6-10 hnojení/rok) - původní,
+   * neměněný 9dávkový program březen-listopad. */
+  function scheduleHigh(areaM2, soilMult, waterNote, slopeNote, fertType) {
+    return [
+      { i: 0, tasks: ['Zimní klid - trávník nesekat, nehnojit, nevstupovat na zmrzlý nebo podmáčený povrch.'] },
+      { i: 1, tasks: ['Zimní klid, příprava na sezónu - naostřit nůž sekačky, zkontrolovat techniku a rozmetadlo hnojiva.'] },
+      { i: 2, tasks: ['Jarní vyhrabání napadaného listí a plsti.', '1. dávka: ' + dose('K', areaM2, soilMult, 'start', fertType) + ' po oschnutí trávníku - zahájení sezóny, posílení kořenů.'] },
+      { i: 3, tasks: ['Pravidelné sečení (začínáme vyšší výškou, cca 5-6 cm).', '2. dávka: ' + dose('N', areaM2, soilMult, null, fertType) + ' - rychlé nastartování růstu a obarvení po zimě.'] },
+      { i: 4, tasks: ['Sečení cca 1x týdně.', '3. dávka: ' + dose('C', areaM2, soilMult, null, fertType) + ' - hlavní růstová sezóna začíná.'] },
+      { i: 5, tasks: ['4. dávka: ' + dose('C', areaM2, soilMult, null, fertType) + '.', 'Sečení výš (7-8 cm) v horkých dnech, aby trávník lépe snášel sucho.' + waterNote] },
+      { i: 6, tasks: ['5. dávka: ' + dose('C', areaM2, soilMult, null, fertType) + '.', 'Zálivka podle potřeby, raději zřídka a vydatně než často a málo.' + waterNote + slopeNote] },
+      { i: 7, tasks: ['6. dávka: ' + dose('C', areaM2, soilMult, null, fertType) + '.', 'Nekosit na krátko v suchu a horku.' + waterNote] },
+      { i: 8, tasks: ['Vertikutace (prořezání plsti) a aerace trávníku.', '7. dávka: ' + dose('N', areaM2, soilMult, null, fertType) + ' - obnova po letním stresu.', 'Podzimní přísev prořídlých míst - před výsevem použijte startovací hnojivo s vysokým fosforem pro rychlé zakořenění semen, ne běžné sezónní hnojivo.'] },
+      { i: 9, tasks: ['8. dávka: ' + dose('C', areaM2, soilMult, null, fertType) + '.', 'Snižujeme frekvenci sečení.'] },
+      { i: 10, tasks: ['9. (poslední) dávka: ' + dose('K', areaM2, soilMult, 'end', fertType) + ' - zazimování, posílení odolnosti proti mrazu.', 'Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.', 'Nářadí a hadice vyklidit, aby nezmrzly.'] },
+      { i: 11, tasks: ['Zimní klid - trávník nezatěžovat, nenechávat na něm hromady listí ani sníh z lopaty.'] },
+    ];
+  }
+
+  /** Harmonogram pro tier="standard" (Standardní rodinný, 3-4 hnojení/rok: duben/červen/
+   * září/říjen, N 15-20 g/m²/rok, vertikutace 2x, aerifikace cca 1x za 2 roky) - odlehčená
+   * verze pro běžné použití (děti, pes, chce to vypadat hezky, ale bez profi režimu). */
+  function scheduleStandard(areaM2, soilMult, waterNote, slopeNote, fertType) {
+    return [
+      { i: 0, tasks: ['Zimní klid - trávník nesekat, nehnojit, nevstupovat na zmrzlý nebo podmáčený povrch.'] },
+      { i: 1, tasks: ['Zimní klid, příprava na sezónu - naostřit nůž sekačky, zkontrolovat techniku.'] },
+      { i: 2, tasks: ['Jarní vyhrabání napadaného listí a plsti, lehká jarní vertikutace (2-3 mm) na prohřáté a mírně suché půdě.'] },
+      { i: 3, tasks: ['1. dávka: ' + dose('K', areaM2, soilMult, 'start', fertType) + ' po oschnutí trávníku - start sezóny, posílení kořenů.', 'Pravidelné sečení (začínáme vyšší výškou, cca 5 cm).'] },
+      { i: 4, tasks: ['Sečení cca 1x týdně, hlavní růstová sezóna.'] },
+      { i: 5, tasks: ['2. dávka: ' + dose('C', areaM2, soilMult, null, fertType) + '.', 'Sečení výš (6-7 cm) v horkých dnech, aby trávník lépe snášel sucho.' + waterNote + slopeNote] },
+      { i: 6, tasks: ['Nekosit na krátko v suchu a horku.' + waterNote] },
+      { i: 7, tasks: ['Intenzitu zatížení (sport, grilování) v tropických vedrech trochu omezte, trávník si v tu dobu hůř regeneruje.'] },
+      { i: 8, tasks: ['Podzimní vertikutace a přísev prořídlých míst.', '3. dávka: ' + dose('N', areaM2, soilMult, null, fertType) + ' - obnova po letním stresu.', 'Aerifikace se u tohoto režimu doporučuje cca 1x za 2 roky - pokud letos (nebo loni) ještě nebyla, je teď dobrý čas.'] },
+      { i: 9, tasks: ['4. (poslední) dávka: ' + dose('K', areaM2, soilMult, 'end', fertType) + ' - zazimování, posílení odolnosti proti mrazu.'] },
+      { i: 10, tasks: ['Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.', 'Nářadí a hadice vyklidit, aby nezmrzly.'] },
+      { i: 11, tasks: ['Zimní klid - trávník nezatěžovat, nenechávat na něm hromady listí ani sníh z lopaty.'] },
+    ];
+  }
+
+  /** Harmonogram pro tier="low" (Nízkoúdržbový, 2 hnojení/rok: duben/září, N 8-10 g/m²/rok,
+   * vertikutace jen 1x zjara, aerifikace se vynechává). Záměrně obsahuje jen pár řádků - to je
+   * přesně smysl téhle úrovně. */
+  function scheduleLow(areaM2, soilMult, waterNote, slopeNote, fertType) {
+    return [
+      { i: 2, tasks: ['Jarní vyhrabání napadaného listí, volitelně lehká jarní vertikutace (stačí 1x ročně).'] },
+      { i: 3, tasks: ['Jediná jarní dávka: ' + dose('K', areaM2, soilMult, 'start', fertType) + ' - na celé jaro a léto to stačí.', 'Sečení cca 1x za 10-14 dní, na vyšší výšku (5-7 cm) - nenáročný režim.'] },
+      { i: 8, tasks: ['Podzimní (poslední) dávka: ' + dose('K', areaM2, soilMult, 'end', fertType) + ' - tím letos hnojení končí.', 'Přísev prořídlých míst, pokud je potřeba.'] },
+      { i: 10, tasks: ['Poslední seč sezóny, úklid spadaného listí z trávníku.'] },
+    ];
   }
 
   /**
    * Hlavní výpočet. Vstup: plocha trávníku v m² a podmínky z kroku 2 formuláře (stejné hodnoty,
-   * co používá i createPlan() v app.js pro bezplatný návrh rostlin).
+   * co používá i createPlan() v app.js pro bezplatný návrh rostlin), plus volitelné:
+   *  - tier: 'low' | 'standard' | 'high' (default 'standard')
+   *  - problems: pole z ['moss','weeds','bare','snowmold','compaction']
+   *  - lastFertilized: 'spring_done' | 'none' | 'unknown' (default 'unknown')
+   *  - irrigation: 'auto' | 'manual' | 'none' (default '' = neznámo, nic se nedoplní)
+   *  - fertType: 'fast' | 'crf' | 'organic' | 'auto' (default 'auto' = nic se nedoplňuje k dávkám)
+   * Vrací pole měsíců (pro zpětnou kompatibilitu se staršími voláními, co žádné z nových polí
+   * neposílají) - obecné poznámky navíc visí jako .notes a .startNote PŘÍMO NA TOM POLI (JS
+   * pole je objekt, tohle nerozbije žádné .map()/.length volání u starších volajících).
    */
   function computeCarePlan(input) {
     input = input || {};
@@ -84,6 +175,11 @@
     var soil = input.soil || 'unknown'; // normal | clay | sand | unknown
     var water = input.water || 'normal'; // normal | dry | wet
     var slope = input.slope || 'flat'; // flat | mild | steep
+    var tier = input.tier === 'low' || input.tier === 'high' ? input.tier : 'standard';
+    var problems = Array.isArray(input.problems) ? input.problems.filter(function (p) { return PROBLEM_NOTES[p]; }) : [];
+    var lastFertilized = input.lastFertilized || 'unknown';
+    var irrigation = input.irrigation || '';
+    var fertType = input.fertType && FERT_TYPE_NOTE[input.fertType] ? input.fertType : '';
     var shift = altitudeShift(altitude);
     var soilMult = soilMultiplier(soil);
 
@@ -94,29 +190,35 @@
         : '';
     var slopeNote = slope === 'steep' ? ' Na svahu zalévejte pomalu a po menších dávkách, aby voda nestékala bez užitku.' : '';
 
-    // 9dávkový profesionální program (březen-listopad, žádné hnojení v zimě) - viz komentář nahoře.
-    var months = [
-      { i: 0, tasks: ['Zimní klid - trávník nesekat, nehnojit, nevstupovat na zmrzlý nebo podmáčený povrch.'] },
-      { i: 1, tasks: ['Zimní klid, příprava na sezónu - naostřit nůž sekačky, zkontrolovat techniku a rozmetadlo hnojiva.'] },
-      { i: 2, tasks: ['Jarní vyhrabání napadaného listí a plsti.', '1. dávka: ' + dose('K', areaM2, soilMult, 'start') + ' po oschnutí trávníku - zahájení sezóny, posílení kořenů.'] },
-      { i: 3, tasks: ['Pravidelné sečení (začínáme vyšší výškou, cca 5-6 cm).', '2. dávka: ' + dose('N', areaM2, soilMult) + ' - rychlé nastartování růstu a obarvení po zimě.'] },
-      { i: 4, tasks: ['Sečení cca 1x týdně.', '3. dávka: ' + dose('C', areaM2, soilMult) + ' - hlavní růstová sezóna začíná.'] },
-      { i: 5, tasks: ['4. dávka: ' + dose('C', areaM2, soilMult) + '.', 'Sečení výš (7-8 cm) v horkých dnech, aby trávník lépe snášel sucho.' + waterNote] },
-      { i: 6, tasks: ['5. dávka: ' + dose('C', areaM2, soilMult) + '.', 'Zálivka podle potřeby, raději zřídka a vydatně než často a málo.' + waterNote + slopeNote] },
-      { i: 7, tasks: ['6. dávka: ' + dose('C', areaM2, soilMult) + '.', 'Nekosit na krátko v suchu a horku.' + waterNote] },
-      { i: 8, tasks: ['Vertikutace (prořezání plsti) a aerace trávníku.', '7. dávka: ' + dose('N', areaM2, soilMult) + ' - obnova po letním stresu.', 'Podzimní přísev prořídlých míst - před výsevem použijte startovací hnojivo s vysokým fosforem pro rychlé zakořenění semen, ne běžné sezónní hnojivo.'] },
-      { i: 9, tasks: ['8. dávka: ' + dose('C', areaM2, soilMult) + '.', 'Snižujeme frekvenci sečení.'] },
-      { i: 10, tasks: ['9. (poslední) dávka: ' + dose('K', areaM2, soilMult, 'end') + ' - zazimování, posílení odolnosti proti mrazu.', 'Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.', 'Nářadí a hadice vyklidit, aby nezmrzly.'] },
-      { i: 11, tasks: ['Zimní klid - trávník nezatěžovat, nenechávat na něm hromady listí ani sníh z lopaty.'] },
-    ];
+    var builder = tier === 'high' ? scheduleHigh : tier === 'low' ? scheduleLow : scheduleStandard;
+    var months = builder(areaM2, soilMult, waterNote, slopeNote, fertType);
 
     // Výstup zůstává v přirozeném pořadí od ledna (m.i), jen LABEL měsíce se posune podle výšky -
     // takže "leden" v horách může nést úkoly, co v nížině platí už pro únor, ale řádek zůstává
     // na svém místě v kalendáři tak, jak ho zákazník čte shora dolů.
-    return months.map(function (m) {
+    var result = months.map(function (m) {
       var idx = shiftMonth(m.i, shift);
       return { key: idx, label: MONTHS[idx], tasks: m.tasks.slice() };
     });
+
+    // Obecné poznámky navíc (zavlažování, problémy, poslední hnojení) - nejsou vázané na
+    // konkrétní měsíc, zobrazují se jednou nahoře nad kalendářem.
+    var notes = [];
+    if (irrigation === 'auto') {
+      notes.push('Automatickou závlahu nastavte podle teploty: do 20 °C cca 10-15 l/m²/týden, 20-25 °C 15-25 l/m²/týden, nad 30 °C až 35-50 l/m²/týden - ideálně spouštět mezi 4:00 a 8:00 ráno, aby se co nejméně vypařilo a tráva do večera oschla.');
+    } else if (irrigation === 'manual') {
+      notes.push('Zalévejte vydatně a méně často (15-25 l/m² najednou) místo denního krátkého kropení - ideálně ráno mezi 4:00 a 8:00, aby tráva do večera oschla a nevznikaly houbové choroby.');
+    } else if (irrigation === 'none') {
+      notes.push('Bez zálivky trávník v suchých vedrech přirozeně zežloutne a utlumí růst (letní dormance) - to je normální obranná reakce, ne poškození, po dešti se zase zazelená. V tomto období navíc nehnojte, dusík bez vody trávník spíš poškodí.');
+    }
+    problems.forEach(function (p) { notes.push(PROBLEM_NOTES[p]); });
+    if (lastFertilized === 'spring_done') {
+      notes.push('Jarní dávku jste letos už aplikovali - první dávku v kalendáři níže letos vynechejte a pokračujte až další v pořadí.');
+    } else if (lastFertilized === 'none') {
+      notes.push('Letos jste ještě nehnojili - klidně začněte první dávkou z kalendáře co nejdřív, i když aktuální měsíc úplně neodpovídá; jen pokud je už po polovině září, přeskočte rovnou na poslední podzimní (draslíkovou) dávku.');
+    }
+    result.notes = notes;
+    return result;
   }
 
   function htmlEscape(s) {
@@ -126,13 +228,17 @@
   }
 
   function renderCarePlanHTML(months) {
+    var noteRows = (months && months.notes && months.notes.length)
+      ? '<div class="mg-care-extra-notes"><ul>' + months.notes.map(function (n) { return '<li>' + htmlEscape(n) + '</li>'; }).join('') + '</ul></div>'
+      : '';
     var rows = months.map(function (m) {
       return '<div class="mg-care-month"><strong>' + htmlEscape(m.label) + '</strong><ul>' +
         m.tasks.map(function (t) { return '<li>' + htmlEscape(t) + '</li>'; }).join('') +
         '</ul></div>';
     }).join('');
-    return '<div class="mg-care-plan">' + rows + '</div>'
-      + '<p class="mg-note">Program vychází z profesionálního 9dávkového hnojení (NPK poměry a dávky 20-30 g/m²), upraveného podle typu půdy a nadmořské výšky. Konkrétní obchodní značku hnojiva si vyberte podle uvedeného NPK poměru - kterýkoliv odpovídající produkt funguje stejně.</p>'
+    return noteRows
+      + '<div class="mg-care-plan">' + rows + '</div>'
+      + '<p class="mg-note">Program vychází z profesionálního hnojení (NPK poměry a dávky orientačně 20-30 g/m²), upraveného podle zvolené úrovně péče, typu půdy a nadmořské výšky. Konkrétní obchodní značku hnojiva si vyberte podle uvedeného NPK poměru - kterýkoliv odpovídající produkt funguje stejně.</p>'
       + '<p class="mg-note">⚠️ Minerální hnojivo aplikujte na suchý trávník, nejlépe před deštěm, a pokud neprší, do pár hodin ho zalijte - jinak hrozí spálení trávníku. Nikdy nehnojte mokrý trávník.</p>'
       + '<p class="mg-note">⚠️ Hnojivo vždy rozmetejte ručním elektrickým rozmetadlem nebo tažným rozmetacím vozíkem - nikdy ne z ruky (nerovnoměrné rozprostření a riziko spálení v místech, kam se dostane víc granulí). Secí vozík na výsev trávy není na hnojivo určený a nepoužívejte ho k němu.</p>';
   }
