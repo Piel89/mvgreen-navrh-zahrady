@@ -132,7 +132,8 @@
         '</ul></div>';
     }).join('');
     return '<div class="mg-care-plan">' + rows + '</div>'
-      + '<p class="mg-note">Program vychází z profesionálního 9dávkového hnojení (NPK poměry a dávky 20-30 g/m²), upraveného podle typu půdy a nadmořské výšky. Konkrétní obchodní značku hnojiva si vyberte podle uvedeného NPK poměru - kterýkoliv odpovídající produkt funguje stejně.</p>';
+      + '<p class="mg-note">Program vychází z profesionálního 9dávkového hnojení (NPK poměry a dávky 20-30 g/m²), upraveného podle typu půdy a nadmořské výšky. Konkrétní obchodní značku hnojiva si vyberte podle uvedeného NPK poměru - kterýkoliv odpovídající produkt funguje stejně.</p>'
+      + '<p class="mg-note">⚠️ Minerální hnojivo aplikujte na suchý trávník, nejlépe před deštěm, a pokud neprší, do pár hodin ho zalijte - jinak hrozí spálení trávníku.</p>';
   }
 
   var api = { computeCarePlan: computeCarePlan, renderCarePlanHTML: renderCarePlanHTML };
