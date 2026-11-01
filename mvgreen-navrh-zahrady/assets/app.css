@@ -133,8 +133,6 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-welcome-copy p{font-size:16px;line-height:1.75;color:#475c4d;margin:0;max-width:540px}
 .mvgreen-designer .mg-welcome-copy small{font-size:13px;color:#55705c}
 .mvgreen-designer .mg-trust-note{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.55;color:#1f5c38;background:#eaf6ee;border:1px solid #bfe3cb;border-radius:10px;padding:10px 14px;margin:0;max-width:480px}
-.mvgreen-designer .mg-deliverables{display:flex;flex-wrap:wrap;gap:8px 10px;list-style:none;margin:0;padding:0;max-width:540px}
-.mvgreen-designer .mg-deliverables li{font-size:13px;font-weight:650;color:#1f5c38;background:#fff;border:1px solid #d5ecd9;border-radius:999px;padding:7px 13px;box-shadow:0 2px 6px #0b2a1c12}
 .mvgreen-designer .mg-care-plan{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:14px 0}
 .mvgreen-designer .mg-care-month{background:#fff;border:1px solid #e0ece2;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px #0b2a1c0d}
 .mvgreen-designer .mg-care-month strong{display:block;color:#1f5c38;font-size:14px;margin-bottom:6px}
@@ -310,17 +308,11 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-welcome-copy .mg-start{font-size:18px!important;padding:18px 22px!important;min-height:60px!important;box-shadow:0 7px 19px #0c53301c!important}
 .mvgreen-designer .mg-welcome-image{grid-column:2;grid-row:1;min-height:465px!important;height:auto!important;align-self:stretch;border-radius:15px!important;overflow:hidden!important;background:linear-gradient(180deg,transparent 60%,#0a271a77),url('https://images.pexels.com/photos/1105019/pexels-photo-1105019.jpeg?auto=compress&cs=tinysrgb&w=1200') center/cover!important}
 .mvgreen-designer .mg-welcome-image span{font-size:15px!important;font-weight:800!important;left:24px!important;bottom:23px!important}
-.mvgreen-designer .mg-welcome-styles{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 0 4px}
-.mvgreen-designer .mg-welcome-styles button{display:flex;flex-direction:column;text-align:left;padding:0 0 14px;border:1px solid #e2eae3;border-radius:13px;background:#fff;box-shadow:0 3px 13px #15482c0b;overflow:hidden;cursor:pointer;font:inherit;color:#16342c;transition:transform .2s,box-shadow .2s}
-.mvgreen-designer .mg-welcome-styles button:hover{transform:translateY(-3px);box-shadow:0 11px 23px #15482c20}
-.mvgreen-designer .mg-welcome-styles img{width:100%;height:125px;object-fit:cover;display:block}
-.mvgreen-designer .mg-welcome-styles strong{font-size:13px;line-height:1.35;margin:12px 12px 5px}
-.mvgreen-designer .mg-welcome-styles small{font-size:11px;line-height:1.55;color:#506777;margin:0 12px}
 .mvgreen-designer .mg-redesign-tips{background:#f7faf8!important;padding:25px 13px!important}
 .mvgreen-designer .mg-redesign-tips h3{font-size:17px!important;background:#ecf5ee;border-radius:11px;padding:15px 12px;margin:0 0 12px!important}
 .mvgreen-designer .mg-redesign-tips p{font-size:13px!important;min-height:87px;display:flex;align-items:center;border-radius:13px!important}
-@media(max-width:1250px){.mvgreen-designer .mg-redesign-frame{grid-template-columns:235px minmax(0,1fr)!important}.mvgreen-designer .mg-redesign-tips{grid-column:2}.mvgreen-designer .mg-sidebar-story{margin-top:65px}.mvgreen-designer .mg-welcome-styles img{height:100px}}
-@media(max-width:800px){.mvgreen-designer .mg-redesign-frame{display:block!important}.mvgreen-designer .mg-redesign-side{display:flex!important;flex-direction:row!important;background:#03412b!important;padding:12px!important}.mvgreen-designer .mg-sidebar-story,.mvgreen-designer .mg-sidebar-benefits,.mvgreen-designer .mg-sidebar-quote{display:none!important}.mvgreen-designer .mg-redesign-main{padding:0 15px 16px!important}.mvgreen-designer .mg-welcome{grid-template-columns:1fr!important;grid-template-rows:auto!important}.mvgreen-designer .mg-welcome-copy{grid-column:1;grid-row:auto}.mvgreen-designer .mg-welcome-image{grid-column:1;grid-row:auto;min-height:330px!important}.mvgreen-designer .mg-welcome-styles{grid-column:1;grid-row:auto;grid-template-columns:repeat(2,minmax(0,1fr))}.mvgreen-designer .mg-welcome-copy h2{font-size:37px!important}.mvgreen-designer .mg-welcome-styles img{height:125px}.mvgreen-designer .mg-redesign-tips{display:block!important}}
+@media(max-width:1250px){.mvgreen-designer .mg-redesign-frame{grid-template-columns:235px minmax(0,1fr)!important}.mvgreen-designer .mg-redesign-tips{grid-column:2}.mvgreen-designer .mg-sidebar-story{margin-top:65px}}
+@media(max-width:800px){.mvgreen-designer .mg-redesign-frame{display:block!important}.mvgreen-designer .mg-redesign-side{display:flex!important;flex-direction:row!important;background:#03412b!important;padding:12px!important}.mvgreen-designer .mg-sidebar-story,.mvgreen-designer .mg-sidebar-benefits,.mvgreen-designer .mg-sidebar-quote{display:none!important}.mvgreen-designer .mg-redesign-main{padding:0 15px 16px!important}.mvgreen-designer .mg-welcome{grid-template-columns:1fr!important;grid-template-rows:auto!important}.mvgreen-designer .mg-welcome-copy{grid-column:1;grid-row:auto}.mvgreen-designer .mg-welcome-image{grid-column:1;grid-row:auto;min-height:330px!important}.mvgreen-designer .mg-welcome-copy h2{font-size:37px!important}.mvgreen-designer .mg-redesign-tips{display:block!important}}
 
 /* Landing polish – contextual photographic guide */
 .mvgreen-designer .mg-redesign-tips{background:#f7fbf8!important;padding:22px 14px!important}
@@ -389,12 +381,8 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-plan h3{color:#0f3d27!important;font-size:20px!important}
 .mvgreen-designer .mg-wizard-footer{border-top:1px solid #e1eae3!important;padding-top:18px!important;margin-top:25px!important}
 .mvgreen-designer .mg-wizard-footer button{min-height:47px!important;padding:12px 21px!important;border-radius:11px!important}
-.mvgreen-designer .mg-welcome-styles{grid-template-columns:repeat(4,minmax(0,1fr))!important}
-.mvgreen-designer .mg-welcome-styles img{height:145px!important}
-.mvgreen-designer .mg-welcome-styles strong{font-size:13px!important}
-.mvgreen-designer .mg-welcome-styles button{border:1px solid #dce9df!important}
-@media(max-width:1200px){.mvgreen-designer .mg-variant-picture{height:165px!important}.mvgreen-designer .mg-welcome-styles img{height:115px!important}}
-@media(max-width:800px){.mvgreen-designer .mg-variant-grid{grid-template-columns:1fr!important}.mvgreen-designer .mg-variant-picture{height:205px!important}.mvgreen-designer .mg-welcome-styles{grid-template-columns:repeat(2,minmax(0,1fr))!important}.mvgreen-designer .mg-welcome-styles img{height:130px!important}.mvgreen-designer .mg-wizard-step{min-height:0}.mvgreen-designer .mg-tailored-options{grid-template-columns:1fr!important}}
+@media(max-width:1200px){.mvgreen-designer .mg-variant-picture{height:165px!important}}
+@media(max-width:800px){.mvgreen-designer .mg-variant-grid{grid-template-columns:1fr!important}.mvgreen-designer .mg-variant-picture{height:205px!important}.mvgreen-designer .mg-wizard-step{min-height:0}.mvgreen-designer .mg-tailored-options{grid-template-columns:1fr!important}}
 
 .mvgreen-designer .mg-result-intro{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);border:1px solid #e0eae1;border-radius:17px;overflow:hidden;background:#f3faf5;margin:20px 0 24px;min-height:260px}
 .mvgreen-designer .mg-result-intro-photo{min-height:260px;background:url('https://mvgreen.cz/wp-content/uploads/2026/10/mvgreen-ai-navrh.png') center/cover}
@@ -2356,21 +2344,12 @@ body.mg-bp-fs-open{overflow:hidden!important}
 @keyframes mg-crossfade{0%,38%{opacity:0}55%,85%{opacity:1}100%{opacity:0}}
 .mvgreen-designer .mg-hero-comparison:hover .mg-hero-before,.mvgreen-designer .mg-hero-comparison.mg-show-before .mg-hero-before{animation:none;opacity:1}
 
-.mvgreen-designer .mg-welcome-styles button{animation:mg-fade-up .55s cubic-bezier(.2,.7,.3,1) both;overflow:hidden}
-.mvgreen-designer .mg-welcome-styles button:nth-child(1){animation-delay:.3s}
-.mvgreen-designer .mg-welcome-styles button:nth-child(2){animation-delay:.37s}
-.mvgreen-designer .mg-welcome-styles button:nth-child(3){animation-delay:.44s}
-.mvgreen-designer .mg-welcome-styles button:nth-child(4){animation-delay:.51s}
-.mvgreen-designer .mg-welcome-styles img{transition:transform .45s cubic-bezier(.2,.7,.3,1)}
-.mvgreen-designer .mg-welcome-styles button:hover{transform:translateY(-6px);box-shadow:0 18px 34px #15482c2c}
-.mvgreen-designer .mg-welcome-styles button:hover img{transform:scale(1.09)}
 
 @media(prefers-reduced-motion:reduce){
  .mvgreen-designer .mg-welcome::before,.mvgreen-designer .mg-welcome-copy .mg-eyebrow,.mvgreen-designer .mg-welcome-copy h2,
  .mvgreen-designer .mg-welcome-copy p,.mvgreen-designer .mg-welcome-copy small,.mvgreen-designer .mg-trust-note,
  .mvgreen-designer .mg-welcome-copy .mg-start,.mvgreen-designer .mg-welcome-copy .mg-start::before,
  .mvgreen-designer .mg-hero-comparison,.mvgreen-designer .mg-hero-comparison .mg-hero-before,
- .mvgreen-designer .mg-welcome-styles button{animation:none!important}
 }
 
 /* Idle auto-crossfade keeps a single, neutral label ("AI návrh zahrady") instead of chasing the
