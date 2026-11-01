@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.167
+ * Version: 0.6.168
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.167');
+define('MVGREEN_VERSION', '0.6.168');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -536,6 +536,89 @@ add_action('init', function () {
         'sanitize_callback' => function ($v) { return max(0, min(20, (int) $v)); },
     ]);
 });
+
+/**
+ * Pl@ntNet plant identification from the customer's own garden photo ("AI Landscape Design
+ * Architecture" review, 2026-11-01 - cheap-wins scope: a free, already-held API key, no GPU, no
+ * new paid service, purely informational). Separate from the OpenAI design pipeline entirely -
+ * this never touches or feeds into the image-edit prompt, it just tells the customer what Pl@ntNet
+ * thinks is already growing in their photo, the same way the climate chips are "nice to know", not
+ * something the AI blindly trusts. Key lives server-side only (MVGREEN_PLANTNET_API_KEY in
+ * wp-config.php, same pattern as MVGREEN_OPENAI_API_KEY) - never shipped to the browser, so it
+ * can't be scraped out of the page source and run up against the free daily quota by someone else.
+ */
+function mvgreen_plantnet_rate_limited() {
+    $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'x';
+    $key = 'mvgreen_pn_rl_' . md5($ip);
+    $count = (int) get_transient($key);
+    // Deliberately tighter than the 20/hour code-guessing limit elsewhere in this plugin - this
+    // calls a THIRD PARTY's free daily quota shared across the whole site, not just this server's
+    // own resources, so a much lower per-visitor ceiling protects every other visitor's access to
+    // the same shared quota for the rest of the day.
+    if ($count >= 6) return true;
+    set_transient($key, $count + 1, HOUR_IN_SECONDS);
+    return false;
+}
+$mvgreen_plantnet_identify_handle = function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (!defined('MVGREEN_PLANTNET_API_KEY') || !is_string(MVGREEN_PLANTNET_API_KEY) || !MVGREEN_PLANTNET_API_KEY) {
+        wp_send_json_error(['message' => 'Rozpoznávání rostlin zatím není nastavené.'], 400);
+    }
+    if (mvgreen_plantnet_rate_limited()) {
+        wp_send_json_error(['message' => 'Příliš mnoho pokusů o rozpoznání rostlin. Zkuste to prosím za chvíli.'], 429);
+    }
+    $image = isset($_POST['image']) ? wp_unslash($_POST['image']) : '';
+    if (strlen($image) > 9000000) wp_send_json_error(['message' => 'Fotografie je příliš velká.'], 413);
+    if (!preg_match('~^data:(image/(?:png|jpeg));base64,([A-Za-z0-9+/=]+)$~D', $image, $m)) {
+        wp_send_json_error(['message' => 'Neplatná fotografie.'], 400);
+    }
+    $bytes = base64_decode($m[2], true);
+    $is_png = $bytes !== false && substr($bytes, 0, 8) === "\x89PNG\r\n\x1a\n";
+    $is_jpeg = $bytes !== false && substr($bytes, 0, 3) === "\xFF\xD8\xFF";
+    if ($bytes === false || strlen($bytes) > 6000000 || !(($m[1] === 'image/png' && $is_png) || ($m[1] === 'image/jpeg' && $is_jpeg))) {
+        wp_send_json_error(['message' => 'Neplatná fotografie.'], 400);
+    }
+    if (!function_exists('getimagesizefromstring') || !@getimagesizefromstring($bytes)) {
+        wp_send_json_error(['message' => 'Neplatná fotografie.'], 400);
+    }
+    $boundary = 'mvgreen_' . wp_generate_password(24, false, false);
+    $filename = $m[1] === 'image/jpeg' ? 'garden.jpg' : 'garden.png';
+    $parts = '--' . $boundary . "\r\n"
+        . 'Content-Disposition: form-data; name="organs"' . "\r\n\r\nauto\r\n"
+        . '--' . $boundary . "\r\n"
+        . 'Content-Disposition: form-data; name="images"; filename="' . $filename . '"' . "\r\n"
+        . 'Content-Type: ' . $m[1] . "\r\n\r\n" . $bytes . "\r\n"
+        . '--' . $boundary . "--\r\n";
+    $url = 'https://my-api.plantnet.org/v2/identify/all?lang=cs&api-key=' . rawurlencode(MVGREEN_PLANTNET_API_KEY);
+    $response = wp_remote_post($url, [
+        'headers' => ['Content-Type' => 'multipart/form-data; boundary=' . $boundary],
+        'body' => $parts, 'timeout' => 30,
+    ]);
+    if (is_wp_error($response)) {
+        wp_send_json_error(['message' => 'Spojení s Pl@ntNet selhalo: ' . $response->get_error_message()], 502);
+    }
+    $status = wp_remote_retrieve_response_code($response);
+    $json = json_decode(wp_remote_retrieve_body($response), true);
+    if ($status === 429) wp_send_json_error(['message' => 'Dnešní bezplatný limit Pl@ntNet byl vyčerpán. Zkuste to zítra.'], 429);
+    if ($status === 404) wp_send_json_success(['results' => []]);
+    if ($status < 200 || $status >= 300 || !is_array($json)) {
+        wp_send_json_error(['message' => isset($json['message']) ? sanitize_text_field($json['message']) : 'Pl@ntNet vrátila chybu.'], 502);
+    }
+    $results = [];
+    foreach ((array) ($json['results'] ?? []) as $r) {
+        if (count($results) >= 3) break;
+        $species = $r['species'] ?? [];
+        $latin = isset($species['scientificNameWithoutAuthor']) ? sanitize_text_field($species['scientificNameWithoutAuthor']) : '';
+        if ($latin === '') continue;
+        $common = isset($species['commonNames'][0]) ? sanitize_text_field($species['commonNames'][0]) : '';
+        $score = isset($r['score']) ? round(((float) $r['score']) * 100) : null;
+        $results[] = ['latin' => $latin, 'common' => $common, 'score' => $score];
+    }
+    wp_send_json_success(['results' => $results]);
+};
+add_action('wp_ajax_mvgreen_plantnet_identify', $mvgreen_plantnet_identify_handle);
+add_action('wp_ajax_nopriv_mvgreen_plantnet_identify', $mvgreen_plantnet_identify_handle);
+
 require_once __DIR__ . '/poptavka.php';
 require_once __DIR__ . '/web.php';
 require_once __DIR__ . '/github-updater.php';
