@@ -2217,11 +2217,14 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     // Bundle kódy (grant 'care' navíc k 'design') dostávají roční plán péče rovnou jako další
     // kapitolu projektu, bez dalšího klikání - to je přesně "jeden celek", co Martin chtěl, ne
     // roztroušené kusy. Admin test (bez kódu) tuto kapitolu nemá, protože nemá žádný kód ke kontrole.
+    // Číslo 6, ne 5 - kapitola "5. Péče po celý rok" (P.careHtml, mgPlanAndAngles výše) už existuje
+    // jako obecný dvouměsíční kalendář pro celou zahradu (trávník i záhony); tohle je navíc, hlubší
+    // trávníkové hnojení (konkrétní NPK a dávky), ne náhrada za ni - proto i jiný název a číslo.
     if(extraFields&&extraFields.code){
       mgAjax('mvgreen_kod_check',{code:extraFields.code}).then(r=>{
         if(!r.grants||!r.grants.includes('care')||!window.MVGreenCarePlan)return;
         const careChapter=document.createElement('div');careChapter.className='mg-plan-box mg-project-chapter';
-        careChapter.innerHTML=mgChapterHeader('5','Roční plán hnojení a péče','care','green');
+        careChapter.innerHTML=mgChapterHeader('6','Podrobný plán hnojení trávníku','care','green');
         const months=window.MVGreenCarePlan.computeCarePlan(getCareInputs());
         careChapter.insertAdjacentHTML('beforeend',window.MVGreenCarePlan.renderCarePlanHTML(months));
         project.append(careChapter);
