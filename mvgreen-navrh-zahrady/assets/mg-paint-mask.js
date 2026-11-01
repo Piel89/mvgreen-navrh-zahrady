@@ -155,19 +155,30 @@
     + ':host([data-theme="dark"]){--bg:#13201a;--panel:#182820;--ink:#eaf2ec;--muted:#9fb3a5;--line:#2a3d33;--accent:#4fd184;--accent-soft:#1f3a2a;--protect:#39c15f;--remove:#e4645c;--erase:#8b95a1;color-scheme:dark;}'
     + '*{box-sizing:border-box;}'
     + '[hidden]{display:none !important;}'
-    + '#app{position:fixed;inset:0;margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-top:max(6px, env(safe-area-inset-top,0px));padding-bottom:max(6px, env(safe-area-inset-bottom,0px));}'
+    // 2026-11-01 visual pass (Martinovo zadání: "vypadá to jako malování z Windows 95" - potřeba
+    // skutečná hloubka/pohyb, ne jen přerovnaná tlačítka). Soft gradient app background instead of a
+    // flat fill, every interactive element gets a real transition (not just instant color swap), and
+    // the tool clusters are frosted/glass panels (backdrop-filter blur + translucent fill) with a
+    // glow-shadow + gentle lift on the active tool, so picking a tool visibly responds instead of
+    // silently flipping a color.
+    + '#app{position:fixed;inset:0;margin:0;background:radial-gradient(ellipse 120% 90% at 15% -10%,color-mix(in srgb,var(--protect) 10%,var(--bg)),var(--bg) 55%);color:var(--ink);font:15px/1.5 system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-top:max(6px, env(safe-area-inset-top,0px));padding-bottom:max(6px, env(safe-area-inset-bottom,0px));}'
     + '.headerbar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 2px;}'
-    + 'h1{font-size:16px;margin:0;}'
-    + '.info-btn{padding:4px 11px;font-size:14px;border-radius:999px;flex:0 0 auto;}'
+    + 'h1{font-size:16px;margin:0;font-weight:800;letter-spacing:-.01em;}'
+    + '.info-btn{padding:4px 11px;font-size:14px;border-radius:999px;flex:0 0 auto;transition:background-color .18s ease,transform .12s ease;}'
+    + '.info-btn:hover{transform:scale(1.08);}'
+    + '.info-btn:active{transform:scale(.94);}'
     + '.info-panel{flex:0 0 auto;padding-bottom:6px;}'
     + 'p.note{font-size:13px;color:var(--muted);margin:0 0 8px;}'
     + '.toolbar{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;}'
-    + 'button{border:0;border-radius:9px;padding:9px 12px;font:inherit;font-size:13px;font-weight:600;background:var(--accent-soft);color:var(--accent);cursor:pointer;}'
+    + 'button{border:0;border-radius:9px;padding:9px 12px;font:inherit;font-size:13px;font-weight:600;background:var(--accent-soft);color:var(--accent);cursor:pointer;transition:background-color .2s cubic-bezier(.2,.7,.3,1),color .2s cubic-bezier(.2,.7,.3,1),transform .15s cubic-bezier(.2,.7,.3,1),box-shadow .2s cubic-bezier(.2,.7,.3,1);}'
     + 'button:disabled{opacity:.5;cursor:not-allowed;}'
+    + 'button:not(:disabled):hover{transform:translateY(-1px);}'
+    + 'button:not(:disabled):active{transform:translateY(0) scale(.96);}'
     + 'button.active{background:var(--protect);color:#fff;}'
     + 'button#tool-remove.active{background:var(--remove);color:#fff;}'
     + 'button#tool-erase.active{background:var(--erase);color:#fff;}'
-    + 'button.primary{background:var(--accent);color:#fff;}'
+    + 'button.primary{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 75%,#000));color:#fff;box-shadow:0 3px 14px -2px color-mix(in srgb,var(--accent) 55%,transparent);}'
+    + 'button.primary:not(:disabled):hover{box-shadow:0 5px 20px -2px color-mix(in srgb,var(--accent) 65%,transparent);}'
     + 'button#tool-precision.active{background:#a6670a;color:#fff;}'
     // Grouped "pill clusters" replace the old flat row of identical buttons: the three paint tools
     // (zůstane/odstranit/smazat) live inside one rounded, bordered strip so they read as one segmented
@@ -175,26 +186,28 @@
     // auto/zpět/vymazat) get their own quieter strip so they don't visually compete with the paint
     // tools customers actually touch most. Icon on top, short label below - bigger, clearer touch
     // targets than the old single-line emoji+text buttons, especially on a phone.
-    + '.tool-cluster{display:flex;gap:2px;padding:3px;border-radius:13px;background:var(--panel);border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.04);}'
+    + '.tool-cluster{display:flex;gap:2px;padding:3px;border-radius:13px;background:color-mix(in srgb,var(--panel) 72%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid color-mix(in srgb,var(--line) 80%,transparent);box-shadow:0 2px 10px -2px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.4);}'
     + '.tool-cluster button{background:transparent;border-radius:10px;padding:7px 11px;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:56px;}'
     + '.tool-cluster-paint button{min-width:64px;}'
-    + '.tool-cluster button .ic{font-size:17px;line-height:1;}'
+    + '.tool-cluster button .ic{font-size:17px;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}'
+    + '.tool-cluster button.active .ic{transform:scale(1.18);}'
     + '.tool-cluster button .lbl{font-size:10.5px;font-weight:700;letter-spacing:.01em;}'
-    + '.tool-cluster-utility{background:var(--bg);}'
+    + '.tool-cluster-utility{background:color-mix(in srgb,var(--bg) 60%,transparent);}'
     + '.tool-cluster-utility button{color:var(--muted);}'
-    + '.tool-pill{display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:13px;border:1px solid var(--line);background:var(--panel);box-shadow:0 1px 2px rgba(0,0,0,.04);min-width:64px;}'
-    + '.tool-pill .ic{font-size:17px;line-height:1;}'
+    + '.tool-pill{display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:13px;border:1px solid color-mix(in srgb,var(--line) 80%,transparent);background:color-mix(in srgb,var(--panel) 72%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 2px 10px -2px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.4);min-width:64px;}'
+    + '.tool-pill .ic{font-size:17px;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}'
     + '.tool-pill .lbl{font-size:10.5px;font-weight:700;}'
-    + '.tool-pill.active{background:#a6670a;border-color:#a6670a;}'
+    + '.tool-pill.active{background:#a6670a;border-color:#a6670a;box-shadow:0 3px 14px -2px rgba(166,103,10,.5);}'
+    + '.tool-pill.active .ic{transform:scale(1.18);}'
     + '.tool-pill.active .lbl,.tool-pill.active .ic{color:#fff;}'
     + '.zoomrow{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;}'
     + '.tool-cluster-zoom button{min-width:44px;font-size:14px;}'
     // Re-asserted AFTER the cluster rules above (equal CSS specificity, so source order decides) -
     // without this, ".tool-cluster button{background:transparent}" silently wins over
     // "button.active{background:var(--protect)}" and the selected tool loses its highlight color.
-    + '.tool-cluster button.active{background:var(--protect);color:#fff;}'
-    + '.tool-cluster button#tool-remove.active{background:var(--remove);color:#fff;}'
-    + '.tool-cluster button#tool-erase.active{background:var(--erase);color:#fff;}'
+    + '.tool-cluster button.active{background:var(--protect);color:#fff;box-shadow:0 3px 14px -2px color-mix(in srgb,var(--protect) 55%,transparent);}'
+    + '.tool-cluster button#tool-remove.active{background:var(--remove);color:#fff;box-shadow:0 3px 14px -2px color-mix(in srgb,var(--remove) 55%,transparent);}'
+    + '.tool-cluster button#tool-erase.active{background:var(--erase);color:#fff;box-shadow:0 3px 14px -2px color-mix(in srgb,var(--erase) 55%,transparent);}'
     + '.stage-wrap{position:relative;flex:1 1 auto;min-height:0;margin-bottom:8px;display:flex;}'
     + '.stage-viewport{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;background:#111;touch-action:none;}'
     + '.stage{position:relative;width:100%;margin:0 auto;}'
