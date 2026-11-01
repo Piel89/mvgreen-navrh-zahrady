@@ -65,7 +65,15 @@
     var n = 0;
     var used = {};
     (plan.elements || []).forEach(function (e) { if (e.type === 'bed' && +e.no > 0 && !used[+e.no]) { e._no = +e.no; used[e._no] = 1; n = Math.max(n, e._no); } });
-    (plan.elements || []).forEach(function (e) { if (e.type === 'bed' && !e._no && e.polygon && e.polygon.length >= 3 && !plan._markers) e._no = ++n; });
+    // Záhony bez čísla od AI se číslují zleva doprava podle středu obrysu (centroid x), ne podle
+    // pořadí v poli - stejné pravidlo, podle kterého detectBeds() řadí reálně nalezené body na
+    // fotce (viz jeho "sort(function(u,v){return u.x-v.x;})" na konci). Díky tomu číslo záhonu v
+    // půdorysu odpovídá stejnému pořadí jako číslo na očíslované fotce v kapitole 2, i když jde o
+    // dvě různé souřadnicové soustavy (fotka vs. odhadovaný půdorys) - není to pixelové navázání,
+    // ale zabraňuje to zmatení "záhon č.2 na fotce" vs. "záhon č.2 v půdorysu" being different beds.
+    var unnumbered = (plan.elements || []).filter(function (e) { return e.type === 'bed' && !e._no && e.polygon && e.polygon.length >= 3 && !plan._markers; });
+    unnumbered.sort(function (a, b) { return centroid(pts(a))[0] - centroid(pts(b))[0]; });
+    unnumbered.forEach(function (e) { e._no = ++n; });
     // Počet kusů nesmí přesáhnout reálnou hustotu výsadby pro plochu záhonu.
     var Wm = +(plan.site && plan.site.width_m) || 15, Dm = +(plan.site && plan.site.depth_m) || 10;
     (plan.elements || []).forEach(function (e) {
@@ -87,7 +95,7 @@
     var measured = +opts.width > 0 && +opts.length > 0;
     var VW = 900, pad = 34, inner = VW - pad * 2;
     var sx = inner / 100, sy = (inner * D / W) / 100;
-    var VH = Math.round(pad * 2 + 100 * sy + 40);
+    var VH = Math.round(pad * 2 + 100 * sy + 68);
     var X = function (x) { return (pad + x * sx).toFixed(1); };
     var Y = function (y) { return (pad + y * sy).toFixed(1); };
     var m2 = function (a) { return a / 10000 * W * D; };
@@ -101,6 +109,11 @@
       '<pattern id="mgp-gravel" width="7" height="7" patternUnits="userSpaceOnUse"><rect width="7" height="7" fill="#dcdcd6"/><circle cx="2" cy="2" r=".9" fill="#b9b9b1"/><circle cx="5" cy="5" r=".8" fill="#c4c4bc"/></pattern>' +
       '<pattern id="mgp-house" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="10" fill="#d6d1c9"/><path d="M0 0v10" stroke="#c4beb4" stroke-width="3"/></pattern>' +
       '<pattern id="mgp-slope" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#cfe3c0"/><path d="M2 3h8M4 8h4" stroke="#9fbe8a" stroke-width="1"/></pattern>' +
+      // Koruna stromu/keře jako kruh s přechodem barvy (pohled shora) + jemný lesk, místo ploché
+      // tečky - vizuální přiblížení profesionálně kreslených zahradních plánů (2026-11-01).
+      '<radialGradient id="mgp-canopy-tree" cx="38%" cy="32%" r="72%"><stop offset="0%" stop-color="#8fc271"/><stop offset="60%" stop-color="#5f9e5a"/><stop offset="100%" stop-color="#3f7536"/></radialGradient>' +
+      '<radialGradient id="mgp-canopy-shrub" cx="38%" cy="32%" r="72%"><stop offset="0%" stop-color="#a7cf84"/><stop offset="60%" stop-color="#7cb36b"/><stop offset="100%" stop-color="#4a8140"/></radialGradient>' +
+      '<filter id="mgp-shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1" stdDeviation="1.1" flood-color="#000" flood-opacity=".22"/></filter>' +
       '</defs>';
     var fillOf = { bed: 'url(#mgp-bed)', lawn: 'url(#mgp-lawn)', gravel: 'url(#mgp-gravel)', house: 'url(#mgp-house)', slope: 'url(#mgp-slope)' };
 
@@ -120,8 +133,9 @@
         // radius keeps that from recurring even for a genuinely new, deliberately large shrub.
         if (!e.is_new || !p.length) return;
         var c = p[0], r = Math.min(e.type === 'tree' ? Math.max(14, 2.2 / W * inner) : Math.max(8, 0.8 / W * inner), inner * 0.05);
-        shapes += '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="' + r.toFixed(1) + '" fill="' + st.fill + '" fill-opacity=".85" stroke="' + st.stroke + '" stroke-width="1.5"/>' +
-          '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="2" fill="' + st.stroke + '"/>';
+        var canopyGrad = e.type === 'tree' ? 'url(#mgp-canopy-tree)' : 'url(#mgp-canopy-shrub)';
+        shapes += '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="' + r.toFixed(1) + '" fill="' + canopyGrad + '" stroke="' + st.stroke + '" stroke-width="1.3" filter="url(#mgp-shadow)"/>' +
+          '<circle cx="' + (+X(c[0]) - r * 0.28).toFixed(1) + '" cy="' + (+Y(c[1]) - r * 0.28).toFixed(1) + '" r="' + (r * 0.3).toFixed(1) + '" fill="#fff" opacity=".22"/>';
         legend.push({ no: '', type: st.name, label: e.label || st.name, area: '', plants: e.plants || [], isNew: true });
         (e.plants || []).forEach(function (pl) { totals.plants += +pl.count || 0; });
         return;
@@ -133,7 +147,7 @@
       if (e.type === 'bed') {
         bedNo = e._no || bedNo + 1; totals.bed += a;
         (e.plants || []).forEach(function (pl) { totals.plants += +pl.count || 0; });
-        labels += '<g><circle cx="' + X(cen[0]) + '" cy="' + Y(cen[1]) + '" r="13" fill="#0f3d27" stroke="#fff" stroke-width="2"/><text x="' + X(cen[0]) + '" y="' + (+Y(cen[1]) + 4.5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">' + bedNo + '</text></g>';
+        labels += '<g filter="url(#mgp-shadow)"><circle cx="' + X(cen[0]) + '" cy="' + Y(cen[1]) + '" r="13" fill="#0f3d27" stroke="#fff" stroke-width="2"/><text x="' + X(cen[0]) + '" y="' + (+Y(cen[1]) + 4.5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">' + bedNo + '</text></g>';
         legend.push({ no: bedNo, type: st.name, label: e.label || ('Záhon ' + bedNo), area: fmtM2(a), plants: e.plants || [], isNew: e.is_new !== false });
         // Scatter one small, individually-numbered dot per plant inside the bed outline (same
         // number reused for every specimen of a species, as on a real planting plan), plus a
@@ -163,15 +177,36 @@
     });
 
     // Měřítko
-    var step = W > 30 ? 10 : W > 12 ? 5 : 2, barPx = step / W * inner, by = VH - 22;
+    var step = W > 30 ? 10 : W > 12 ? 5 : 2, barPx = step / W * inner, by = VH - 50;
     var scale = '<g font-size="11" fill="#33473a"><rect x="' + pad + '" y="' + by + '" width="' + barPx.toFixed(1) + '" height="6" fill="#33473a"/><rect x="' + (pad + barPx / 2).toFixed(1) + '" y="' + by + '" width="' + (barPx / 2).toFixed(1) + '" height="6" fill="#fff" stroke="#33473a"/>' +
       '<text x="' + pad + '" y="' + (by - 4) + '">0</text><text x="' + (pad + barPx).toFixed(1) + '" y="' + (by - 4) + '" text-anchor="middle">' + step + ' m</text>' +
       '<text x="' + (VW - pad) + '" y="' + (by + 6) + '" text-anchor="end">' + (measured ? 'Rozměry podle zadání ' : 'Orientační odhad ') + String(Math.round(W * 10) / 10).replace('.', ',') + ' × ' + String(Math.round(D * 10) / 10).replace('.', ',') + ' m · pohled shora, dům nahoře</text></g>';
 
+    // Barevná legenda (swatch-key) dole, stejný princip jako na ručně kreslených zahradních
+    // plánech - čtvereček barvy + popisek, nezávisle na číslované tabulce záhonů (legendHtml()).
+    var swatchItems = [];
+    var seenTypes = {};
+    els.forEach(function (e) {
+      var key = (e.type === 'tree' || e.type === 'shrub') ? 'tree' : e.type;
+      if (seenTypes[key]) return;
+      if (key === 'tree' && !e.is_new) return;
+      if (key === 'fence') return;
+      seenTypes[key] = 1;
+      var fillSw = key === 'tree' ? 'url(#mgp-canopy-tree)' : (fillOf[e.type] || STYLE[e.type].fill);
+      swatchItems.push({ fill: fillSw, stroke: STYLE[e.type].stroke || '#555', label: key === 'tree' ? 'Dřeviny (nová výsadba)' : STYLE[e.type].name });
+    });
+    var swX = pad, swY = VH - 18, swatch = '<g font-size="11" fill="#33473a">';
+    swatchItems.forEach(function (it) {
+      swatch += '<rect x="' + swX + '" y="' + (swY - 11) + '" width="14" height="11" rx="2" fill="' + it.fill + '" stroke="' + it.stroke + '" stroke-width=".8"/>' +
+        '<text x="' + (swX + 19) + '" y="' + swY + '">' + esc(it.label) + '</text>';
+      swX += 19 + it.label.length * 6 + 18;
+    });
+    swatch += '</g>';
+
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + VW + ' ' + VH + '" width="100%" role="img" aria-label="Půdorys zahrady" font-family="Inter,Segoe UI,Arial,sans-serif">' + defs +
       '<rect width="' + VW + '" height="' + VH + '" fill="#fbfcf9"/>' +
       '<rect x="' + pad + '" y="' + pad + '" width="' + inner + '" height="' + (100 * sy).toFixed(1) + '" fill="#f1f4ec" stroke="#cfd8c8"/>' +
-      shapes + plantShapes + labels + scale + '</svg>';
+      shapes + plantShapes + labels + scale + swatch + '</svg>';
     plantLegend.sort(function (u, v) { return u.no - v.no; });
     return { svg: svg, legend: legend, plantLegend: plantLegend, totals: totals, width: W, depth: D, measured: measured, notes: plan.notes || '' };
   }
