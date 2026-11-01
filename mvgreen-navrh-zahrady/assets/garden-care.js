@@ -45,6 +45,23 @@
 
   var MONTHS = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
 
+  /** Krátký popis úrovně péče pro hlavičku výstupního dokumentu (viz TIER_META použití níže). */
+  var TIER_META = {
+    low: { label: 'Nízká údržba', freq: '2× ročně', nRange: '8-10 g N/m²/rok' },
+    standard: { label: 'Běžný rodinný trávník', freq: '4× ročně', nRange: '15-20 g N/m²/rok' },
+    high: { label: 'Reprezentativní / sportovní', freq: '9× ročně', nRange: '20-30 g N/m²/rok' },
+  };
+
+  /** Měsíc (0=Leden..11=Prosinec) -> meteorologické roční období, pro seskupení výstupu -
+   * 12 jednotlivých měsíců v řadě bylo nepřehledné, 4 sezóny s ikonou jsou skenovatelné na první
+   * pohled (Martin, 2026-11-01: "tohle po mesici je neprehledne a neprofesionalni"). */
+  var SEASONS = [
+    { key: 'spring', label: 'Jaro', icon: '🌱', months: [2, 3, 4] },
+    { key: 'summer', label: 'Léto', icon: '☀️', months: [5, 6, 7] },
+    { key: 'autumn', label: 'Podzim', icon: '🍂', months: [8, 9, 10] },
+    { key: 'winter', label: 'Zima', icon: '❄️', months: [11, 0, 1] },
+  ];
+
   /** Tři typy hnojiva podle účelu - viz komentář nahoře. doseGPerM2 je základní dávka pro "normal" půdu. */
   var FERT = {
     K: { name: 'zátěžové hnojivo s vysokým draslíkem', npk: '12-0-42 +2MgO', doseGPerM2: { start: 20, end: 30 } },
@@ -218,6 +235,13 @@
       notes.push('Letos jste ještě nehnojili - klidně začněte první dávkou z kalendáře co nejdřív, i když aktuální měsíc úplně neodpovídá; jen pokud je už po polovině září, přeskočte rovnou na poslední podzimní (draslíkovou) dávku.');
     }
     result.notes = notes;
+    // Metadata pro hezčí výstupní dokument (hlavička se jménem plánu, přehledová lišta) -
+    // visí na vráceném poli stejným trikem jako .notes, aby se nerozbilo žádné starší volání,
+    // co o nich neví.
+    result.tier = tier;
+    result.tierMeta = TIER_META[tier];
+    result.areaM2 = areaM2;
+    result.planName = (input.planName || '').toString().trim() || null;
     return result;
   }
 
@@ -227,20 +251,65 @@
     });
   }
 
+  function fmtToday() {
+    var d = new Date();
+    return d.getDate() + '. ' + (d.getMonth() + 1) + '. ' + d.getFullYear();
+  }
+
+  /** Výstupní "dokument", ne jen prostý seznam měsíců (Martin, 2026-11-01: "musi to byt nejaky
+   * hezky vystupni formular ... tohle po mesici je neprehledne a neprofesionalni"): hlavička se
+   * jménem plánu (pokud ho zákazník zadal - viz computeCarePlan .planName), přehledová lišta se
+   * statistikami, kalendář seskupený podle 4 ročních období (ne 12 řádků zvlášť) a tlačítko na
+   * tisk/uložení jako PDF. Celý výstup je obalený v .mg-care-report, aby ho šlo cíleně vytisknout
+   * (viz @media print v app.css) bez zbytku formuláře okolo. */
   function renderCarePlanHTML(months) {
-    var noteRows = (months && months.notes && months.notes.length)
-      ? '<div class="mg-care-extra-notes"><ul>' + months.notes.map(function (n) { return '<li>' + htmlEscape(n) + '</li>'; }).join('') + '</ul></div>'
+    var title = (months && months.planName) || 'Roční plán péče o trávník';
+    var tierMeta = (months && months.tierMeta) || null;
+    var areaM2 = months && months.areaM2;
+
+    var statChips = [];
+    if (areaM2 > 0) statChips.push({ label: 'Plocha trávníku', value: areaM2 + ' m²' });
+    if (tierMeta) {
+      statChips.push({ label: 'Úroveň péče', value: tierMeta.label });
+      statChips.push({ label: 'Hnojení za rok', value: tierMeta.freq });
+      statChips.push({ label: 'Dusík (N)', value: tierMeta.nRange });
+    }
+    var statHtml = statChips.length
+      ? '<div class="mg-care-stats">' + statChips.map(function (s) {
+        return '<div class="mg-care-stat"><small>' + htmlEscape(s.label) + '</small><strong>' + htmlEscape(s.value) + '</strong></div>';
+      }).join('') + '</div>'
       : '';
-    var rows = months.map(function (m) {
-      return '<div class="mg-care-month"><strong>' + htmlEscape(m.label) + '</strong><ul>' +
-        m.tasks.map(function (t) { return '<li>' + htmlEscape(t) + '</li>'; }).join('') +
-        '</ul></div>';
+
+    var noteRows = (months && months.notes && months.notes.length)
+      ? '<div class="mg-care-extra-notes"><h4>Na co si dát pozor u vás</h4><ul>' + months.notes.map(function (n) { return '<li>' + htmlEscape(n) + '</li>'; }).join('') + '</ul></div>'
+      : '';
+
+    // Seskupení měsíců (months[].key je 0=Leden..11=Prosinec) do 4 sezón, v pořadí Jaro->Zima -
+    // přirozený čtenářský tok "co dělat teď na jaře, pak v létě, ..." i pro nízkoúdržbový tier,
+    // kterému chybí celé měsíce (SEASONS sekce bez položek se prostě vynechá).
+    var byKey = {};
+    (months || []).forEach(function (m) { byKey[m.key] = m; });
+    var seasonsHtml = SEASONS.map(function (season) {
+      var items = season.months.map(function (k) { return byKey[k]; }).filter(Boolean);
+      if (!items.length) return '';
+      var monthsHtml = items.map(function (m) {
+        return '<div class="mg-care-month"><strong>' + htmlEscape(m.label) + '</strong><ul>' +
+          m.tasks.map(function (t) { return '<li>' + htmlEscape(t) + '</li>'; }).join('') +
+          '</ul></div>';
+      }).join('');
+      return '<section class="mg-care-season"><h4><span class="mg-care-season-icon" aria-hidden="true">' + season.icon + '</span>' + season.label + '</h4><div class="mg-care-season-months">' + monthsHtml + '</div></section>';
     }).join('');
-    return noteRows
-      + '<div class="mg-care-plan">' + rows + '</div>'
+
+    return '<div class="mg-care-report">'
+      + '<header class="mg-care-report-head"><span class="mg-care-report-eyebrow">🌿 MVGreen · Roční plán péče</span><h3>' + htmlEscape(title) + '</h3><small>Vytvořeno ' + fmtToday() + '</small>'
+      + '<button type="button" class="mg-care-print" onclick="window.print()">🖨️ Vytisknout / uložit jako PDF</button></header>'
+      + statHtml
+      + noteRows
+      + '<div class="mg-care-plan">' + seasonsHtml + '</div>'
       + '<p class="mg-note">Program vychází z profesionálního hnojení (NPK poměry a dávky orientačně 20-30 g/m²), upraveného podle zvolené úrovně péče, typu půdy a nadmořské výšky. Konkrétní obchodní značku hnojiva si vyberte podle uvedeného NPK poměru - kterýkoliv odpovídající produkt funguje stejně.</p>'
       + '<p class="mg-note">⚠️ Minerální hnojivo aplikujte na suchý trávník, nejlépe před deštěm, a pokud neprší, do pár hodin ho zalijte - jinak hrozí spálení trávníku. Nikdy nehnojte mokrý trávník.</p>'
-      + '<p class="mg-note">⚠️ Hnojivo vždy rozmetejte ručním elektrickým rozmetadlem nebo tažným rozmetacím vozíkem - nikdy ne z ruky (nerovnoměrné rozprostření a riziko spálení v místech, kam se dostane víc granulí). Secí vozík na výsev trávy není na hnojivo určený a nepoužívejte ho k němu.</p>';
+      + '<p class="mg-note">⚠️ Hnojivo vždy rozmetejte ručním elektrickým rozmetadlem nebo tažným rozmetacím vozíkem - nikdy ne z ruky (nerovnoměrné rozprostření a riziko spálení v místech, kam se dostane víc granulí). Secí vozík na výsev trávy není na hnojivo určený a nepoužívejte ho k němu.</p>'
+      + '</div>';
   }
 
   var api = { computeCarePlan: computeCarePlan, renderCarePlanHTML: renderCarePlanHTML };

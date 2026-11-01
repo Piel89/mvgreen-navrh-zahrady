@@ -2422,7 +2422,34 @@ body.mg-bp-fs-open{overflow:hidden!important}
 .mvgreen-designer .mg-care-prob-choice label{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:20px;border:1.3px solid #e3ebe3;font-size:12.5px;color:#2d3f33;cursor:pointer;background:#fbfdfb}
 .mvgreen-designer .mg-care-prob-choice label:has(input:checked){border-color:#b9790a;background:#fdf4e5;color:#8a4e05}
 .mvgreen-designer .mg-care-prob-choice input{accent-color:#b9790a}
-.mvgreen-designer .mg-care-extra-notes{margin:0 0 14px}
+.mvgreen-designer .mg-care-extra-notes{margin:0 0 16px}
+.mvgreen-designer .mg-care-extra-notes h4{margin:0 0 8px;font-size:13px;color:#2d3f33}
 .mvgreen-designer .mg-care-extra-notes ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
 .mvgreen-designer .mg-care-extra-notes li{font-size:12.5px;line-height:1.55;color:#4a5c50;background:#fbf8f0;border:1px solid #f0e3c8;border-radius:8px;padding:8px 10px;list-style:none;margin-left:-18px}
+
+/* --- Výstupní "dokument" plánu péče (hlavička se jménem, statistiky, sezóny, tisk) --- */
+.mvgreen-designer .mg-care-report{background:#fff}
+.mvgreen-designer .mg-care-report-head{position:relative;padding:18px 20px 20px;margin:0 0 16px;border-radius:14px;background:linear-gradient(135deg,#0b3d24,#156333 60%,#1f7a3f);color:#fff}
+.mvgreen-designer .mg-care-report-eyebrow{display:block;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#bfe8cd;margin-bottom:6px}
+.mvgreen-designer .mg-care-report-head h3{margin:0 0 4px;font-size:21px;font-weight:850;color:#fff;letter-spacing:-.01em}
+.mvgreen-designer .mg-care-report-head small{display:block;font-size:11.5px;color:#cfe9d8}
+.mvgreen-designer .mg-care-print{position:absolute;top:18px;right:20px;background:#fff;color:#0b3d24;border:0;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:750;cursor:pointer}
+.mvgreen-designer .mg-care-print:hover{background:#eaf6ee}
+.mvgreen-designer .mg-care-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin:0 0 16px}
+.mvgreen-designer .mg-care-stat{background:#f7faf7;border:1px solid #e3ebe3;border-radius:11px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.mvgreen-designer .mg-care-stat small{font-size:10.5px;color:#6b7a70;text-transform:uppercase;letter-spacing:.03em}
+.mvgreen-designer .mg-care-stat strong{font-size:14px;color:#14301f}
+.mvgreen-designer .mg-care-season{margin:0 0 18px}
+.mvgreen-designer .mg-care-season h4{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:14px;font-weight:800;color:#156333;padding-bottom:6px;border-bottom:2px solid #e3ebe3}
+.mvgreen-designer .mg-care-season-icon{font-size:16px}
+.mvgreen-designer .mg-care-season-months{display:flex;flex-direction:column;gap:10px;padding-left:4px;border-left:2px solid #e3ebe3;margin-left:7px}
+@media(min-width:620px){.mvgreen-designer .mg-care-season-months{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-left:0;padding-left:0;margin-left:0}}
+@media print{
+  body *{visibility:hidden}
+  .mg-care-report,.mg-care-report *{visibility:visible}
+  .mvgreen-designer .mg-care-modal{position:static!important;background:none!important;backdrop-filter:none!important;padding:0!important}
+  .mvgreen-designer .mg-care-box{box-shadow:none!important;max-height:none!important;overflow:visible!important;padding:0!important}
+  .mvgreen-designer .mg-care-report{position:absolute;left:0;top:0;width:100%}
+  .mvgreen-designer .mg-care-close,.mvgreen-designer .mg-care-print{display:none!important}
+}
 @media(max-width:600px){.mvgreen-designer .mg-care-box{padding:20px 16px;border-radius:14px}.mvgreen-designer .mg-care-row{flex-direction:column;align-items:stretch}}
