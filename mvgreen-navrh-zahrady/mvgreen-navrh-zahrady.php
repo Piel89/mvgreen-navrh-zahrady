@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.173
+ * Version: 0.6.174
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.173');
+define('MVGREEN_VERSION', '0.6.174');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -47,7 +47,8 @@ add_shortcode('mvgreen_navrh_zahrady', function () {
     wp_enqueue_script('mvgreen-area-types', plugin_dir_url(__FILE__) . 'assets/mg-area-types.js', ['mvgreen-ai-safety'], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-brief', plugin_dir_url(__FILE__) . 'assets/garden-brief.js', [], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], MVGREEN_VERSION, true);
-    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-area-types', 'mvgreen-brief', 'mvgreen-plan'], MVGREEN_VERSION, true);
+    wp_enqueue_script('mvgreen-care', plugin_dir_url(__FILE__) . 'assets/garden-care.js', [], MVGREEN_VERSION, true);
+    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-area-types', 'mvgreen-brief', 'mvgreen-plan', 'mvgreen-care'], MVGREEN_VERSION, true);
     wp_add_inline_script('mvgreen-designer', 'window.MVGreenAI = '.wp_json_encode(['ajaxUrl'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('mvgreen_ai_test'),'enabled'=>current_user_can('manage_options'),'workerUrl'=>plugins_url('assets/mg-segment-worker.js', __FILE__)]).';', 'before');
     // Use the exact WordPress site logo; supports classic and block themes.
     $mvgreen_logo_id = (int) get_theme_mod('custom_logo', 0);
@@ -237,6 +238,11 @@ $mvgreen_ai_preview_start_handle = function () {
         if (mvgreen_code_rate_limited()) wp_send_json_error(['message'=>'Příliš mnoho pokusů. Zkuste to prosím za chvíli.'], 429);
         $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
         if ($code === '') wp_send_json_error(['message'=>'Zadejte prosím kód z e-mailu.'], 400);
+        // Kódy jen pro "roční plán péče" (grant 'care' bez 'design') nejdou směnit za AI návrh -
+        // ten plán se počítá a zobrazuje přímo v prohlížeči (mvgreen_kod_check), nic se tu nečerpá.
+        if (function_exists('mvgreen_code_has_grant') && !mvgreen_code_has_grant($code, 'design')) {
+            wp_send_json_error(['message'=>'Tento kód neobsahuje AI návrh zahrady - jen roční plán péče. Zobrazte si ho tlačítkem "Zobrazit roční plán péče" níže.'], 400);
+        }
     }
     if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message'=>'Jiný návrh se právě vytváří. Zkuste to později.'], 429);
     // The photo is a PNG/JPEG data URL. The plain single-call flow sends its own `mask`+

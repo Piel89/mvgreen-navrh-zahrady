@@ -15,16 +15,44 @@
  */
 if (!defined('ABSPATH')) exit;
 
-/** Jeden balíček pro start. Pole do budoucna umožňuje přidat další bez změny toku. */
+/**
+ * Balíčky, co se dá koupit. 'grants' říká, co kód po zaplacení odemyká:
+ *  - 'design' = jedno vygenerování AI návrhu zahrady (čerpá se, stojí nás OpenAI volání)
+ *  - 'care'   = roční plán hnojení a péče o zahradu (deterministický výpočet, nic nás nestojí,
+ *               takže se nečerpá jako "použití" - jen se kontroluje, že kód tento grant má)
+ * 'bundle' dává oba zvýhodněně (119 Kč místo 89+49=138 Kč, úspora 19 Kč).
+ */
 function mvgreen_packages() {
     return [
-        '1' => ['uses' => 1, 'price' => 89, 'label' => '1 AI návrh zahrady'],
+        'design' => ['uses' => 1, 'price' => 89,  'label' => '1 AI návrh zahrady (jako od zahradního architekta)', 'grants' => ['design']],
+        'care'   => ['uses' => 1, 'price' => 49,  'label' => 'Roční plán hnojení a péče o zahradu', 'grants' => ['care']],
+        'bundle' => ['uses' => 1, 'price' => 119, 'label' => 'AI návrh zahrady + roční plán péče (zvýhodněně)', 'grants' => ['design', 'care']],
     ];
 }
 
 function mvgreen_package($id) {
     $packages = mvgreen_packages();
     return isset($packages[$id]) ? $packages[$id] : null;
+}
+
+/** Uloží, co kód odemyká (čárkou oddělený seznam grantů z balíčku). */
+function mvgreen_store_grants($post_id, $package) {
+    update_post_meta($post_id, '_mvg_grants', implode(',', $package['grants']));
+}
+
+/** Seznam grantů kódu (prázdné pole pro starší kódy bez meta - bezpečný default, ne přístup navíc). */
+function mvgreen_code_grants($post) {
+    $raw = get_post_meta($post->ID, '_mvg_grants', true);
+    if ($raw === '') return [];
+    return array_filter(array_map('trim', explode(',', (string) $raw)));
+}
+
+/** True jen když je kód zaplacený A obsahuje daný grant ('design' nebo 'care'). */
+function mvgreen_code_has_grant($code, $grant) {
+    $post = mvgreen_find_code_post($code);
+    if (!$post) return false;
+    if (get_post_meta($post->ID, '_mvg_status', true) !== 'paid') return false;
+    return in_array($grant, mvgreen_code_grants($post), true);
 }
 
 /* ---------------------------------------------------------------------- *
@@ -227,7 +255,7 @@ function mvgreen_buy_handle() {
     if (!$email || !is_email($email)) mvgreen_buy_redirect($back, 'chyba-email');
     if (empty($_POST['mvg_consent'])) mvgreen_buy_redirect($back, 'chyba-udaje');
 
-    $package_id = isset($_POST['mvg_package']) ? sanitize_key(wp_unslash($_POST['mvg_package'])) : '1';
+    $package_id = isset($_POST['mvg_package']) ? sanitize_key(wp_unslash($_POST['mvg_package'])) : 'design';
     $package = mvgreen_package($package_id);
     if (!$package) mvgreen_buy_redirect($back, 'chyba-udaje');
 
@@ -248,6 +276,7 @@ function mvgreen_buy_handle() {
     update_post_meta($post_id, '_mvg_amount', (int) $package['price']);
     update_post_meta($post_id, '_mvg_status', 'pending');
     update_post_meta($post_id, '_mvg_order_number', $order_number);
+    mvgreen_store_grants($post_id, $package);
 
     $payment = mvgreen_gopay_create_payment((int) $package['price'], $order_number, $email, $package['label'], $back);
     if (is_wp_error($payment)) {
@@ -386,9 +415,14 @@ function mvgreen_kod_check_handle() {
     if (!$post) wp_send_json_error(['message' => 'Neplatný kód.']);
     $status = get_post_meta($post->ID, '_mvg_status', true);
     if ($status !== 'paid') wp_send_json_error(['message' => $status === 'pending' ? 'Platba se ještě zpracovává. Zkuste to prosím za chvíli.' : 'Tento kód není platný.']);
+    $grants = mvgreen_code_grants($post);
     $left = (int) get_post_meta($post->ID, '_mvg_uses_left', true);
-    if ($left <= 0) wp_send_json_error(['message' => 'Tento kód je už vyčerpaný.']);
-    wp_send_json_success(['left' => $left]);
+    // "Vyčerpaný" platí jen pro AI návrh (uses_left se čerpá jen při jeho generování) - kód jen
+    // s grantem 'care' žádné 'uses' nepotřebuje, plán péče se nečerpá, jen se odemyká.
+    if (in_array('design', $grants, true) && $left <= 0 && !in_array('care', $grants, true)) {
+        wp_send_json_error(['message' => 'Tento kód je už vyčerpaný.']);
+    }
+    wp_send_json_success(['left' => $left, 'grants' => $grants]);
 }
 
 /**
@@ -431,7 +465,9 @@ function mvgreen_kod_buy_handle() {
     if (empty($_POST['consent'])) wp_send_json_error(['message' => 'Potvrďte prosím souhlas se zahájením plnění před odesláním platby.']);
     if (!mvgreen_gopay_configured()) wp_send_json_error(['message' => 'Platby zatím nejsou spuštěné. Zkuste to prosím později.']);
 
-    $package = mvgreen_package('1');
+    $package_id = isset($_POST['package']) ? sanitize_key(wp_unslash($_POST['package'])) : 'design';
+    $package = mvgreen_package($package_id);
+    if (!$package) wp_send_json_error(['message' => 'Neplatný balíček.']);
     $code = mvgreen_generate_unique_code();
     $post_id = wp_insert_post(['post_type' => 'mvgreen_kod', 'post_status' => 'publish', 'post_title' => $code], true);
     if (is_wp_error($post_id) || !$post_id) wp_send_json_error(['message' => 'Platbu se nepodařilo připravit.']);
@@ -443,6 +479,7 @@ function mvgreen_kod_buy_handle() {
     update_post_meta($post_id, '_mvg_amount', (int) $package['price']);
     update_post_meta($post_id, '_mvg_status', 'pending');
     update_post_meta($post_id, '_mvg_order_number', $order_number);
+    mvgreen_store_grants($post_id, $package);
 
     $back = wp_get_referer() ?: home_url('/'); // same-origin AJAX request – referer is reliable here
     $payment = mvgreen_gopay_create_payment((int) $package['price'], $order_number, $email, $package['label'], $back);
@@ -466,7 +503,8 @@ add_action('wp_ajax_mvgreen_kod_simulate', function () {
         wp_send_json_error(['message' => 'Simulace je dostupná jen v testovacím (sandbox) režimu.'], 403);
     }
     $email = sanitize_email(wp_unslash($_POST['email'] ?? 'test@example.com')) ?: 'test@example.com';
-    $package = mvgreen_package('1');
+    $package_id = isset($_POST['package']) ? sanitize_key(wp_unslash($_POST['package'])) : 'design';
+    $package = mvgreen_package($package_id) ?: mvgreen_package('design');
     $code = mvgreen_generate_unique_code();
     $post_id = wp_insert_post(['post_type' => 'mvgreen_kod', 'post_status' => 'publish', 'post_title' => $code], true);
     if (is_wp_error($post_id) || !$post_id) wp_send_json_error(['message' => 'Simulaci se nepodařilo vytvořit.']);
@@ -475,6 +513,7 @@ add_action('wp_ajax_mvgreen_kod_simulate', function () {
     update_post_meta($post_id, '_mvg_amount', (int) $package['price']);
     update_post_meta($post_id, '_mvg_order_number', 'SIM-' . $post_id);
     update_post_meta($post_id, '_mvg_gopay_id', 'sim-' . $post_id);
+    mvgreen_store_grants($post_id, $package);
     mvgreen_activate_code($post_id);
     wp_send_json_success(['code' => $code, 'left' => (int) get_post_meta($post_id, '_mvg_uses_left', true)]);
 });
