@@ -2022,10 +2022,12 @@ html body #mg-fullscreen-overlay > #mg-stage.mg-fs-no-tools #mg-canvas:not(.mg-h
 .mvgreen-designer .mg-cchip-ic.mg-c-amber{animation:mgSlideX 2.3s ease-in-out infinite}
 .mvgreen-designer .mg-cchip-ic.mg-c-teal{animation:mgWiggle 2.8s ease-in-out infinite}
 .mvgreen-designer .mg-cchip-ic.mg-c-violet{animation:mgDrip 1.9s ease-in-out infinite}
+.mvgreen-designer .mg-cchip-ic.mg-c-pink{animation:mgSpin 5.5s linear infinite}
 @keyframes mgFloatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @keyframes mgSlideX{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
 @keyframes mgWiggle{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 @keyframes mgDrip{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(2px) scale(.93)}}
+@keyframes mgSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion: reduce){
   .mvgreen-designer .mg-cchip-ic,.mvgreen-designer .mg-cchip,.mvgreen-designer .mg-chapter-ic,
   .mvgreen-designer .mg-project-chapter,.mvgreen-designer .mg-project-summary{animation:none!important;opacity:1!important;transform:none!important}

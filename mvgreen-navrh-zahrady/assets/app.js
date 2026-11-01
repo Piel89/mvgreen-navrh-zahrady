@@ -1644,6 +1644,30 @@ function mgWaterFromPrecip(avgAnnualMm){
  if(avgAnnualMm>750)return 'wet';
  return 'normal';
 }
+// 2026-11-01 "AI Landscape Design Architecture" doc review (Martinovo zadání): zavedení
+// skutečné mrazuvzdornostní zóny (USDA zóny, přizpůsobené pro ČR na rozpětí 5a-8b) ze
+// STEJNÝCH dat, co už dnes stahujeme zdarma z NASA POWER (žádný nový zdroj/náklad) - jen
+// přidán parametr T2M_MIN (denní minimální teplota v 2 m, viz mgPowerClimate níže). Zóna =
+// průměr z ROČNÍCH minim (ne jedno absolutní minimum za celé období), přesně podle definice
+// USDA zón. Hranice (°C) odpovídají standardním USDA pásům po 10 °F (≈5,56 °C), rozdělených
+// na a/b po 5 °F. Zatím JEN informační chip - skutečné filtrování katalogu rostlin podle
+// zóny by potřebovalo ověřenou mrazuvzdornost u každého z 805 druhů, což tu dnes není.
+// Each entry's "min" is that zone's own LOWER (colder) boundary - the zone applies to every
+// value from its own min up to (but not including) the next zone's min.
+const MVGREEN_HARDINESS_ZONES=[
+ {zone:'4a',min:-34.4},{zone:'4b',min:-31.7},{zone:'5a',min:-28.9},{zone:'5b',min:-26.1},
+ {zone:'6a',min:-23.3},{zone:'6b',min:-20.6},{zone:'7a',min:-17.8},{zone:'7b',min:-15.0},
+ {zone:'8a',min:-12.2},{zone:'8b',min:-9.4},{zone:'9a',min:-6.7}
+];
+function mgHardinessZone(avgAnnualMinC){
+ if(!Number.isFinite(avgAnnualMinC))return null;
+ if(avgAnnualMinC<MVGREEN_HARDINESS_ZONES[0].min)return 'pod 4a';
+ let result=MVGREEN_HARDINESS_ZONES[0].zone;
+ for(const z of MVGREEN_HARDINESS_ZONES){
+   if(avgAnnualMinC>=z.min)result=z.zone;else break;
+ }
+ return result;
+}
 async function mgElevationGrid(lat,lon){
  const d=0.0009,dLon=0.0009/Math.cos(lat*Math.PI/180); // ~100 m v zeměpisné šířce i délce
  const lats=[lat,lat+d,lat-d,lat,lat].join(','),lons=[lon,lon,lon,lon+dLon,lon-dLon].join(',');
@@ -1656,7 +1680,9 @@ async function mgElevationGrid(lat,lon){
 async function mgPowerClimate(lat,lon,years){
  const end=new Date(),start=new Date();start.setFullYear(end.getFullYear()-years);
  const fmt=dt=>dt.toISOString().slice(0,10).replace(/-/g,'');
- const url='https://power.larc.nasa.gov/api/temporal/daily/point?parameters=WS10M,PRECTOTCORR&community=AG&longitude='+encodeURIComponent(lon)+'&latitude='+encodeURIComponent(lat)+'&start='+fmt(start)+'&end='+fmt(end)+'&format=JSON';
+ // T2M_MIN (daily minimum air temperature at 2 m) added for the hardiness-zone estimate -
+ // same free, no-key NASA POWER call as before, just one more parameter on the same request.
+ const url='https://power.larc.nasa.gov/api/temporal/daily/point?parameters=WS10M,PRECTOTCORR,T2M_MIN&community=AG&longitude='+encodeURIComponent(lon)+'&latitude='+encodeURIComponent(lat)+'&start='+fmt(start)+'&end='+fmt(end)+'&format=JSON';
  const r=await fetch(url);
  if(!r.ok)throw new Error('nasa-power');
  const j=await r.json();
@@ -1667,7 +1693,24 @@ async function mgPowerClimate(lat,lon,years){
  if(!windVals.length||!precVals.length)throw new Error('nasa-power-empty');
  const avgWindMs=windVals.reduce((a,b)=>a+b,0)/windVals.length;
  const avgAnnualPrecipMm=(precVals.reduce((a,b)=>a+b,0)/precVals.length)*365;
- return {avgWindKmh:avgWindMs*3.6,avgAnnualPrecipMm};
+ // USDA's own definition: the AVERAGE of each calendar year's own minimum, not one absolute
+ // minimum over the whole lookback window (which would be colder/unrepresentative, and would
+ // keep getting colder the further back "years" reaches). Missing/unusable T2M_MIN silently
+ // leaves avgAnnualMinC undefined - caller treats that as "no zone chip", same fail-soft
+ // pattern as wind/rain above, never a guess presented as real data.
+ let avgAnnualMinC;
+ if(par.T2M_MIN){
+   const minByYear=new Map();
+   Object.entries(par.T2M_MIN).forEach(([dateKey,v])=>{
+     const num=Number(v);
+     if(!Number.isFinite(num)||num<-60||num>50)return;
+     const y=dateKey.slice(0,4);
+     if(!minByYear.has(y)||num<minByYear.get(y))minByYear.set(y,num);
+   });
+   const yearMins=[...minByYear.values()];
+   if(yearMins.length)avgAnnualMinC=yearMins.reduce((a,b)=>a+b,0)/yearMins.length;
+ }
+ return {avgWindKmh:avgWindMs*3.6,avgAnnualPrecipMm,avgAnnualMinC};
 }
 q('mg-climate-years').value='1';
 document.querySelectorAll('[data-mg-period]').forEach(b=>b.addEventListener('click',()=>{
@@ -1702,10 +1745,12 @@ const mgConditionIcons={
  alt:'<path d="M3 18.5 9 8l3.5 5.5L15 10l6 8.5H3z"/>',
  slope:'<path d="M3.5 17.5h3.8L17 7.3"/><path d="M12.6 7.3h4.4v4.4"/>',
  wind:'<path d="M3 8.5h10.5a2.6 2.6 0 1 0-2.6-2.6"/><path d="M3 13h13.8a2.6 2.6 0 1 1-2.6 2.6"/><path d="M3 17.5h7.2"/>',
- rain:'<path d="M12 3.2s5.6 6.6 5.6 10.4a5.6 5.6 0 1 1-11.2 0C6.4 9.8 12 3.2 12 3.2z"/>'
+ rain:'<path d="M12 3.2s5.6 6.6 5.6 10.4a5.6 5.6 0 1 1-11.2 0C6.4 9.8 12 3.2 12 3.2z"/>',
+ // Snowflake - mrazuvzdornostní zóna (2026-11-01, "AI Landscape Design Architecture" review).
+ zone:'<path d="M12 2.5v19"/><path d="M4.5 7 19.5 17"/><path d="M19.5 7 4.5 17"/><path d="M12 2.5 9.5 5M12 2.5 14.5 5"/><path d="M12 21.5 9.5 19M12 21.5 14.5 19"/>'
 };
-// colorKey: sky|amber|teal|violet (viz app.css .mg-cchip-ic.mg-c-*). numeric: číslo pro mgCountUp,
-// nebo null pro čistě textovou hodnotu (sklon terénu je kategorie, ne číslo).
+// colorKey: sky|amber|teal|violet|pink (viz app.css .mg-cchip-ic.mg-c-*). numeric: číslo pro mgCountUp,
+// nebo null pro čistě textovou hodnotu (sklon terénu a mrazuvzdornostní zóna jsou kategorie, ne číslo).
 function mgConditionChip(iconKey,colorKey,label,numeric,suffix,textValue){
  const rounded=numeric!=null?Math.round(numeric):null;
  const valueHtml=rounded!=null?'<span class="mg-cnt" data-final="'+rounded+'">'+rounded+'</span>'+(suffix||''):(textValue||'');
@@ -1761,7 +1806,9 @@ q('mg-location-lookup').addEventListener('click',async()=>{
      const windCat=mgWindCategory(clim.avgWindKmh),waterCat=mgWaterFromPrecip(clim.avgAnnualPrecipMm);
      if(windCat){q('mg-wind').value=windCat;chips.push(mgConditionChip('wind','teal','Vítr',Math.round(clim.avgWindKmh),' km/h'));}
      if(waterCat){q('mg-water').value=waterCat;chips.push(mgConditionChip('rain','violet','Srážky/rok',Math.round(clim.avgAnnualPrecipMm),' mm'));}
-     climNote=' Klimatický průměr NASA POWER za posledních '+years+(years===1?' rok':' let')+'. Vše lze ručně opravit.';
+     const zone=mgHardinessZone(clim.avgAnnualMinC);
+     if(zone)chips.push(mgConditionChip('zone','pink','Mrazuvzdornost',null,null,'Zóna '+zone));
+     climNote=' Klimatický průměr NASA POWER za posledních '+years+(years===1?' rok':' let')+' (vítr, srážky, mrazuvzdornostní zóna). Vše lze ručně opravit.';
    }catch(e3){climFailNote=' Vítr a vlhkost se z klimatických dat nepodařilo zjistit, zůstávají na ruční volbě.';}
    status.innerHTML='<div class="mg-cchip-row">'+chips.join('')+'</div>'+
      '<small class="mg-cchip-note">≈ '+height+' m n. m. · '+(p.name+(p.admin2?', '+p.admin2:'')).replace(/[<>&]/g,'')+'.'+slopeNote+climNote+climFailNote+'</small>';
