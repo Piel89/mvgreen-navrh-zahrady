@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.188
+ * Version: 0.6.189
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.188');
+define('MVGREEN_VERSION', '0.6.189');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -64,6 +64,14 @@ function mvgreen_enqueue_designer_assets() {
 }
 
 add_shortcode('mvgreen_navrh_zahrady', function () {
+    // 2026-11-02: defense in depth. WordPress core only auto-replaces the_content() with the
+    // password form when the active page TEMPLATE itself checks post_password_required() before
+    // rendering - some templates (e.g. the theme's own default page template, as opposed to
+    // Elementor's canvas template used on this plugin's other protected page) don't, which let
+    // this shortcode render the full designer to anyone regardless of the page's own password
+    // setting. Checking it directly here means the gate holds no matter which template a page
+    // using this shortcode ends up on.
+    if (post_password_required()) return get_the_password_form();
     mvgreen_enqueue_designer_assets();
     return '<div class="mvgreen-designer" data-mvgreen-designer><div class="mvgreen-loading">Načítání návrháře…</div></div>';
 });
@@ -76,6 +84,8 @@ add_shortcode('mvgreen_navrh_zahrady', function () {
  * zobrazí jen tenhle formulář místo celého 8krokového návrháře, viz assets/app.js.
  */
 add_shortcode('mvgreen_plan_pece', function () {
+    // Same defense-in-depth password check as mvgreen_navrh_zahrady above.
+    if (post_password_required()) return get_the_password_form();
     mvgreen_enqueue_designer_assets();
     return '<div class="mvgreen-designer" data-mvgreen-designer data-mvgreen-standalone="care"><div class="mvgreen-loading">Načítání…</div></div>';
 });
