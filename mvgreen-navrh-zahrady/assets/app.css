@@ -2431,6 +2431,14 @@ body.mg-bp-fs-open{overflow:hidden!important}
 .mvgreen-designer.mg-standalone-care .mg-care-box{max-width:none;margin:0 auto;max-height:none;overflow:visible;box-shadow:0 12px 44px #04140d1f}
 .mvgreen-designer.mg-standalone-care #mg-care2-close{display:none}
 .mvgreen-designer.mg-standalone-care .mg-care-box h3{font-size:25px}
+/* 2026-11-02: na samostatné stránce /rocni-plan-pece-a-hnojeni-travniku/ má stránka svůj vlastní
+   nadpis (eyebrow "ROČNÍ PLÁN PÉČE" + H1 "Roční plán péče a hnojení trávníku") renderovaný přes
+   stránku samotnou - formulář pod tím měl navíc svůj vlastní "📅 Roční plán péče o trávník" +
+   podnadpis, takže se stejný text objevoval 3x nad sebou (Martin, 2026-11-02: "3x nadsebou ten
+   samy text"). V samostatném režimu proto první nadpis formuláře i jeho úvodní větu schováme -
+   v modalu uvnitř návrháře zůstávají beze změny, protože tam žádný stránkový nadpis není. */
+.mvgreen-designer.mg-standalone-care .mg-care-box > h3,
+.mvgreen-designer.mg-standalone-care .mg-care-box > h3 + .mg-care-sub{display:none}
 @media(max-width:600px){.mvgreen-designer.mg-standalone-care .mg-care-box{padding:20px 16px;border-radius:14px}}
 .mvgreen-designer .mg-rich-select{position:relative}
 .mvgreen-designer .mg-rich-select-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:9px;border:1.3px solid #d7e2da;font-size:14px;background:#fbfdfb;color:#2d3f33;text-align:left;cursor:pointer;font-family:inherit}
