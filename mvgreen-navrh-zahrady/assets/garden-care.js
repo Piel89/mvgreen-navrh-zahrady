@@ -49,7 +49,19 @@
   var TIER_META = {
     low: { label: 'Nízká údržba', freq: '2× ročně', nRange: '8-10 g N/m²/rok' },
     standard: { label: 'Běžný rodinný trávník', freq: '4× ročně', nRange: '15-20 g N/m²/rok' },
+    representative: { label: 'Anglický trávník', freq: 'cca každé 4 týdny (III-XI)', nRange: '20-30 g N/m²/rok' },
+    sportovni: { label: 'Sportovní trávník', freq: '9× ročně', nRange: '20-30 g N/m²/rok' },
+    // "high" zůstává jako starší alias pro reprezentativní (zpětná kompatibilita se staršími voláními,
+    // co ho posílaly jako jednu kolonku "Reprezentativní / sportovní" - viz 2026-11-02 oprava níže).
     high: { label: 'Reprezentativní / sportovní', freq: '9× ročně', nRange: '20-30 g N/m²/rok' },
+  };
+
+  /** Poznámka navíc podle TYPU zátěže u nejvyšší úrovně péče - Martin upozornil (2026-11-02), že
+   * "reprezentativní" (vzhled, nízké opotřebení) a "sportovní" (pravidelná zátěž, časté opotřebení)
+   * jsou odlišné potřeby, i když hnojivový harmonogram (schedule High) je pro obě stejný. */
+  var USE_NOTES = {
+    sportovni: 'Sportovní zátěž trávník mechanicky opotřebovává - po náročnějším víkendu nebo zápase poškozená místa co nejdřív dosejte (15-25 g osiva/m²) a aerifikaci dutými hroty plánujte častěji než jednou za rok, aby půda pod zátěží nezhutněla.',
+    representative: 'Anglický trávník se hnojí pravidelně cca každé 4 týdny po celou hlavní sezónu (březen až listopad, 9 dávek v kalendáři níže) - sekejte častěji a na nižší výšku (cca 3-4 cm) pro hustý, jemný trávník, okraje pravidelně zarovnávejte a vyhýbejte se zbytečnému zatěžování čerstvě posečené plochy.',
   };
 
   /** Měsíc (0=Leden..11=Prosinec) -> meteorologické roční období, pro seskupení výstupu -
@@ -192,7 +204,7 @@
     var soil = input.soil || 'unknown'; // normal | clay | sand | unknown
     var water = input.water || 'normal'; // normal | dry | wet
     var slope = input.slope || 'flat'; // flat | mild | steep
-    var tier = input.tier === 'low' || input.tier === 'high' ? input.tier : 'standard';
+    var tier = ['low', 'high', 'representative', 'sportovni'].indexOf(input.tier) !== -1 ? input.tier : 'standard';
     var problems = Array.isArray(input.problems) ? input.problems.filter(function (p) { return PROBLEM_NOTES[p]; }) : [];
     var lastFertilized = input.lastFertilized || 'unknown';
     var irrigation = input.irrigation || '';
@@ -207,7 +219,7 @@
         : '';
     var slopeNote = slope === 'steep' ? ' Na svahu zalévejte pomalu a po menších dávkách, aby voda nestékala bez užitku.' : '';
 
-    var builder = tier === 'high' ? scheduleHigh : tier === 'low' ? scheduleLow : scheduleStandard;
+    var builder = (tier === 'high' || tier === 'representative' || tier === 'sportovni') ? scheduleHigh : tier === 'low' ? scheduleLow : scheduleStandard;
     var months = builder(areaM2, soilMult, waterNote, slopeNote, fertType);
 
     // Výstup zůstává v přirozeném pořadí od ledna (m.i), jen LABEL měsíce se posune podle výšky -
@@ -221,6 +233,7 @@
     // Obecné poznámky navíc (zavlažování, problémy, poslední hnojení) - nejsou vázané na
     // konkrétní měsíc, zobrazují se jednou nahoře nad kalendářem.
     var notes = [];
+    if (USE_NOTES[tier]) notes.push(USE_NOTES[tier]);
     if (irrigation === 'auto') {
       notes.push('Automatickou závlahu nastavte podle teploty: do 20 °C cca 10-15 l/m²/týden, 20-25 °C 15-25 l/m²/týden, nad 30 °C až 35-50 l/m²/týden - ideálně spouštět mezi 4:00 a 8:00 ráno, aby se co nejméně vypařilo a tráva do večera oschla.');
     } else if (irrigation === 'manual') {
@@ -312,7 +325,10 @@
       + '</div>';
   }
 
-  var api = { computeCarePlan: computeCarePlan, renderCarePlanHTML: renderCarePlanHTML };
+  // FERT_TYPE_NOTE se exportuje i samo o sobě (ne jen zabalené v textu poznámky u dávky), aby ho
+  // mohl app.js 2026-11-02 znovu použít jako popisky "ⓘ" u vlastního výběru typu hnojiva (#mg-care2-ferttype)
+  // - stejný text na dvou místech, ale psaný jen jednou, ať se časem nerozjedou.
+  var api = { computeCarePlan: computeCarePlan, renderCarePlanHTML: renderCarePlanHTML, FERT_TYPE_NOTE: FERT_TYPE_NOTE };
   if (typeof window !== 'undefined') window.MVGreenCarePlan = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
