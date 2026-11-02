@@ -2500,16 +2500,31 @@ body.mg-bp-fs-open{overflow:hidden!important}
 .mvgreen-designer .mg-care-stat{background:#f7faf7;border:1px solid #e3ebe3;border-radius:11px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
 .mvgreen-designer .mg-care-stat small{font-size:10.5px;color:#6b7a70;text-transform:uppercase;letter-spacing:.03em}
 .mvgreen-designer .mg-care-stat strong{font-size:14px;color:#14301f}
-.mvgreen-designer .mg-care-season{margin:0 0 18px}
-.mvgreen-designer .mg-care-season h4{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:14px;font-weight:800;color:#156333;padding-bottom:6px;border-bottom:2px solid #e3ebe3}
-.mvgreen-designer .mg-care-season-icon{font-size:16px}
-.mvgreen-designer .mg-care-season-months{display:flex;flex-direction:column;gap:10px;padding-left:4px;border-left:2px solid #e3ebe3;margin-left:7px}
-@media(min-width:620px){.mvgreen-designer .mg-care-season-months{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-left:0;padding-left:0;margin-left:0}}
+/* Časová osa (2026-11-02, Martin si z vizuálních náhledů vybral "D - Osa"): sezóny jako velké
+   milníky na svislé ose (kruh s ikonou vlevo od nadpisu, viz data-icon v HTML), jednotlivé měsíce
+   jako menší uzly pod nimi - nahrazuje dřívější mřížku karet. mg-care-timeline je svislá čára
+   (::before), mg-care-milestone je jeden milník (jedna sezóna) s kruhem jako ::before pseudo-
+   element (obsah z data-icon atributu, aby se emoji nemuselo escapovat v CSS content). */
+.mvgreen-designer .mg-care-timeline{position:relative;padding-left:34px}
+.mvgreen-designer .mg-care-timeline::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;background:#e3ebe3}
+.mvgreen-designer .mg-care-milestone{position:relative;margin:0 0 22px}
+.mvgreen-designer .mg-care-milestone::before{content:attr(data-icon);position:absolute;left:-34px;top:-2px;width:26px;height:26px;border-radius:50%;background:#156333;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 0 4px #fff}
+.mvgreen-designer .mg-care-milestone h4{margin:0 0 10px;font-size:14px;font-weight:800;color:#156333}
+.mvgreen-designer .mg-care-node{position:relative;margin:0 0 10px 6px;padding-left:18px}
+.mvgreen-designer .mg-care-node::before{content:"";position:absolute;left:-28px;top:6px;width:9px;height:9px;border-radius:50%;background:#9bc9a6}
+.mvgreen-designer .mg-care-node-month{margin:0 0 4px;font-size:13px;font-weight:700;color:#1f5c38}
 /* 2026-11-02: rady platné pro celou sezónu (ne jeden měsíc - viz SEASON_GENERAL v garden-care.js),
-   zobrazené jednou nad měsíčními kartami, ať zákazník nekosí nakrátko v srpnu jen proto, že si
-   přečetl červenec. Jemně odlišené pozadí, ať je jasné, že tohle není vázané na jeden měsíc. */
+   zobrazené jednou u nadpisu milníku, PŘED jednotlivými měsíčními uzly, ať zákazník nekosí
+   nakrátko v srpnu jen proto, že si přečetl červenec. Jemně odlišené pozadí, ať je jasné, že
+   tohle není vázané na jeden měsíc. */
 .mvgreen-designer .mg-care-season-general{background:#f6faf6;border:1px dashed #cfe3d1;border-radius:10px;padding:10px 12px;margin:0 0 10px}
 .mvgreen-designer .mg-care-season-general-label{margin:0 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#5b6b5e}
+/* Poznámka k druhu trávníku (2026-11-02, viz GRASS_SPECIES v garden-care.js) - stejný vzor karty
+   jako mg-care-season-general výš, ať obě "vysvětlující" poznámky působí jako jeden vizuální styl. */
+.mvgreen-designer .mg-care-grass-note{background:#f6faf6;border:1px solid #dcebe0;border-radius:10px;padding:12px 14px}
+.mvgreen-designer .mg-care-grass-note h4{margin:0 0 6px;font-size:13px;color:#156333}
+.mvgreen-designer .mg-care-grass-note p{margin:0;font-size:12.5px;line-height:1.55;color:#44594a}
+.mvgreen-designer .mg-care-grass-note-unknown{color:#6b7a70;font-size:12px}
 /* "Nechte to na nás" nabídka pod hotovým plánem (2026-11-02) - samostatná karta, mimo
    .mg-care-plan, ať vizuálně nepůsobí jako další měsíc/sezóna, ale jako oddělená nabídka. */
 .mvgreen-designer .mg-care-upsell{display:flex;align-items:flex-start;gap:14px;margin-top:20px;padding:18px 20px;background:#f4f9f5;border:1px solid #dcebe0;border-radius:14px}

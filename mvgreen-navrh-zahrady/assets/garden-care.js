@@ -535,21 +535,22 @@
     var byKey = {};
     (months || []).forEach(function (m) { byKey[m.key] = m; });
     var seasonGeneral = (months && months.seasonGeneral) || {};
+    // Časová osa (2026-11-02, Martinovo rozhodnutí z vizuálních náhledů - "libi se mi D osa"):
+    // sezóny jako velké milníky na svislé ose, jednotlivé měsíce pod nimi jako menší uzly -
+    // nahrazuje dřívější mřížku karet (.mg-care-season-months), styl vycházející z přípravných
+    // náhledů (viz calendar_variants.html, varianta D). Sezónní obecné rady zůstávají stejně jako
+    // dřív hned u nadpisu sezóny, PŘED jednotlivými měsíci (viz SEASON_GENERAL výš).
     var seasonsHtml = SEASONS.map(function (season) {
       var items = season.months.map(function (k) { return byKey[k]; }).filter(function (m) { return m && m.tasks && m.tasks.length; });
       var generalTasks = seasonGeneral[season.key] || [];
       if (!items.length && !generalTasks.length) return '';
-      // Sezónní rady (platí celé období, ne jeden měsíc - viz SEASON_GENERAL) se zobrazí jednou
-      // hned pod nadpisem sezóny, PŘED jednotlivými měsíci, aby je zákazník nemohl minout jen
-      // proto, že si přečetl jiný letní měsíc než ten, kde dřív náhodou visely.
       var generalHtml = generalTasks.length
         ? '<div class="mg-care-season-general"><p class="mg-care-season-general-label">Platí pro celé období:</p>' + taskListHtml(generalTasks) + '</div>'
         : '';
-      var monthsHtml = items.map(function (m) {
-        return '<div class="mg-care-month"><strong>' + htmlEscape(m.label) + '</strong>' + taskListHtml(m.tasks) + '</div>';
+      var nodesHtml = items.map(function (m) {
+        return '<div class="mg-care-node"><p class="mg-care-node-month">' + htmlEscape(m.label) + '</p>' + taskListHtml(m.tasks) + '</div>';
       }).join('');
-      var monthsWrapHtml = items.length ? '<div class="mg-care-season-months">' + monthsHtml + '</div>' : '';
-      return '<section class="mg-care-season"><h4><span class="mg-care-season-icon" aria-hidden="true">' + season.icon + '</span>' + season.label + '</h4>' + generalHtml + monthsWrapHtml + '</section>';
+      return '<div class="mg-care-milestone" data-icon="' + season.icon + '"><h4>' + season.label + '</h4>' + generalHtml + nodesHtml + '</div>';
     }).join('');
 
     return '<div class="mg-care-report">'
@@ -561,7 +562,7 @@
       + fertTableHtml
       + '<h4 class="mg-care-cal-title">📅 Kalendář péče podle ročních období</h4>'
       + legendHtml
-      + '<div class="mg-care-plan">' + seasonsHtml + '</div>'
+      + '<div class="mg-care-plan mg-care-timeline">' + seasonsHtml + '</div>'
       + renderExpertTips()
       + '<p class="mg-note">Program vychází z profesionálního hnojení (NPK poměry a dávky orientačně 20-30 g/m²), upraveného podle zvolené úrovně péče, typu půdy a nadmořské výšky. Konkrétní obchodní značku hnojiva si vyberte podle uvedeného NPK poměru - kterýkoliv odpovídající produkt funguje stejně.</p>'
       + '<p class="mg-note">⚠️ Minerální hnojivo aplikujte na suchý trávník, nejlépe před deštěm, a pokud neprší, do pár hodin ho zalijte - jinak hrozí spálení trávníku. Nikdy nehnojte mokrý trávník.</p>'
