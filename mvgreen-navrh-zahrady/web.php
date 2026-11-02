@@ -33,6 +33,7 @@ function mvgreen_web_icon($name, $size = 18) {
         'menu' => '<path d="M4 7h16M4 12h16M4 17h16"/>',
         'arrows' => '<path d="m9 6-6 6 6 6"/><path d="m15 6 6 6-6 6"/>',
         'clock' => '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+        'chevron' => '<path d="m6 9 6 6 6-6"/>',
     ];
     return '<svg aria-hidden="true" width="' . (int) $size . '" height="' . (int) $size . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' . ($paths[$name] ?? '') . '</svg>';
 }
@@ -47,20 +48,37 @@ function mvgreen_web_logo_url() {
 add_shortcode('mvgreen_hlavicka', function () {
     $items = [
         ['Úvod', home_url('/')],
-        // 2026-11-02, na přání Martina: dvě nové záložky nahoře v hlavním menu pro samostatné
-        // produkty z pluginu Navrhni si zahradu - ať jsou vidět hned vedle Úvodu, ne schované.
-        ['Plán hnojení a údržby zahrady', home_url('/rocni-plan-pece-a-hnojeni-travniku/')],
-        ['AI zahradní architekt', home_url('/navrhni-si-zahradu/')],
         ['Služby a ceny', home_url('/cenik/')],
         ['Naše práce', home_url('/naseprace/')],
         ['Pro obce a firmy', home_url('/#obce')],
         ['Kontakt', home_url('/kontakty/')],
     ];
+    // 2026-11-02, na přání Martina: nástroje z pluginu Navrhni si zahradu (plán péče, AI návrh)
+    // nejsou samostatné položky v hlavním menu (bylo nabité/nepřehledné na jednom řádku), ale
+    // rozbalovací nabídka "Nástroje" hned za Úvodem - viz .mvg-nav__drop v assets/web.css.
+    $tools = [
+        ['Plán hnojení a údržby zahrady', home_url('/rocni-plan-pece-a-hnojeni-travniku/')],
+        ['AI zahradní architekt', home_url('/navrhni-si-zahradu/')],
+    ];
     $current = trailingslashit(strtok(home_url(add_query_arg([])), '?'));
-    $nav = '';
-    foreach ($items as [$label, $url]) {
+    $link = function ($label, $url) use ($current) {
         $is = trailingslashit($url) === $current && strpos($url, '#') === false;
-        $nav .= '<a href="' . esc_url($url) . '"' . ($is ? ' aria-current="page"' : '') . '>' . esc_html($label) . '</a>';
+        return ['html' => '<a href="' . esc_url($url) . '"' . ($is ? ' aria-current="page"' : '') . '>' . esc_html($label) . '</a>', 'active' => $is];
+    };
+    $nav = $link($items[0][0], $items[0][1])['html'];
+    $tools_html = '';
+    $tools_active = false;
+    foreach ($tools as [$label, $url]) {
+        $l = $link($label, $url);
+        $tools_html .= $l['html'];
+        if ($l['active']) $tools_active = true;
+    }
+    $nav .= '<div class="mvg-nav__drop' . ($tools_active ? ' mvg-nav__drop--active' : '') . '">'
+        . '<button type="button" class="mvg-nav__drop-btn" aria-expanded="false">Nástroje' . mvgreen_web_icon('chevron', 15) . '</button>'
+        . '<div class="mvg-nav__drop-panel">' . $tools_html . '</div>'
+        . '</div>';
+    for ($i = 1; $i < count($items); $i++) {
+        $nav .= $link($items[$i][0], $items[$i][1])['html'];
     }
     return '<header class="mvg-header mvg-site"><div class="mvg-header__in">'
         . '<a class="mvg-brand" href="' . esc_url(home_url('/')) . '"><img src="' . esc_url(mvgreen_web_logo_url()) . '" alt="MVGreen" width="54" height="52"><span><strong>MV GREEN</strong><span>Péče o zeleň bez starostí</span></span></a>'
@@ -84,6 +102,27 @@ add_shortcode('mvgreen_paticka', function () {
         . '<a href="https://wa.me/420723339650">' . mvgreen_web_icon('chat', 20) . 'WhatsApp</a>'
         . '<a href="' . esc_url(home_url('/kontakty/#poptavka')) . '">' . mvgreen_web_icon('form', 20) . 'Poptávka</a>'
         . '</nav>';
+});
+
+// 2026-11-02, na přání Martina: stránky chráněné heslem (zatím Plán péče a AI architekt, dokud
+// nejede platba) mají mít místo strohé výchozí WP hlášky přívětivé "připravujeme" sdělení, ať
+// návštěvníci vědí, že se mají na co těšit, a kdo heslo zná (Martin, GoPay recenze), se dostane dál.
+add_filter('the_password_form', function ($form) {
+    ob_start(); ?>
+    <div class="mvg-wrap" style="max-width:560px;padding:56px 24px;text-align:center">
+        <div class="mvg-card" style="padding:36px 28px">
+            <span class="mvg-eyebrow">Připravujeme</span>
+            <h2 style="margin:0 0 12px">Brzy v provozu 🌱</h2>
+            <p class="mvg-lead" style="margin:0 auto 24px;font-size:17px">Na téhle stránce chystáme pro MV GREEN něco nového. Dejte nám prosím ještě chvilku a sledujte nás na Facebooku nebo Instagramu – dáme vědět, jakmile bude spuštěno.</p>
+            <form action="<?php echo esc_url(home_url('/wp-login.php?action=postpass', 'login_post')); ?>" method="post" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+                <label for="mvg-pwbox" class="screen-reader-text">Heslo</label>
+                <input name="post_password" id="mvg-pwbox" type="password" placeholder="Máte heslo? Zadejte ho zde" size="24" style="flex:1;min-width:220px;max-width:280px;border:1px solid #c9dccf;border-radius:10px;padding:13px 16px;font:inherit">
+                <input type="submit" name="Submit" value="Vstoupit" class="mvg-btn mvg-btn--primary" style="border:0">
+            </form>
+        </div>
+    </div>
+    <?php
+    return '<div class="mvg-site">' . ob_get_clean() . '</div>';
 });
 
 add_shortcode('mvgreen_srovnani', function ($a) {

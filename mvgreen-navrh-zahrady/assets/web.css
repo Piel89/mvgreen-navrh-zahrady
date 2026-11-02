@@ -36,6 +36,17 @@
 .mvg-nav{display:flex;flex-wrap:wrap;align-items:center;gap:6px 26px;margin-left:auto;font-size:15px;font-weight:600}
 .mvg-nav a{color:var(--text)!important;text-decoration:none!important;padding:6px 0;border-bottom:2px solid transparent}
 .mvg-nav a:hover,.mvg-nav a[aria-current=page]{color:var(--g700)!important;border-bottom-color:var(--g700)}
+
+/* Rozbalovací "Nástroje" v hlavním menu (plán péče + AI návrh) */
+.mvg-nav__drop{position:relative}
+.mvg-nav__drop-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:0;font:inherit;font-weight:600;color:var(--text);cursor:pointer;padding:6px 0;border-bottom:2px solid transparent}
+.mvg-nav__drop-btn svg{transition:transform .15s}
+.mvg-nav__drop:hover .mvg-nav__drop-btn,.mvg-nav__drop.is-open .mvg-nav__drop-btn,.mvg-nav__drop--active .mvg-nav__drop-btn{color:var(--g700);border-bottom-color:var(--g700)}
+.mvg-nav__drop:hover .mvg-nav__drop-btn svg,.mvg-nav__drop.is-open .mvg-nav__drop-btn svg{transform:rotate(180deg)}
+.mvg-nav__drop-panel{display:none;position:absolute;top:100%;left:0;margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 28px rgba(15,61,39,.14);padding:8px;min-width:250px;z-index:60}
+.mvg-nav__drop-panel a{display:block!important;padding:10px 12px!important;border-radius:8px;border-bottom:0!important;white-space:nowrap}
+.mvg-nav__drop-panel a:hover{background:var(--g50)}
+.mvg-nav__drop:hover .mvg-nav__drop-panel,.mvg-nav__drop.is-open .mvg-nav__drop-panel{display:block}
 .mvg-header__call{display:inline-flex;align-items:center;gap:8px;background:var(--g700);color:#fff!important;text-decoration:none!important;font-weight:700;font-size:15px;padding:12px 18px;border-radius:10px;min-height:44px}
 .mvg-menu-btn{display:none;width:44px;height:44px;margin-left:auto;border:1px solid #d3e1d7;border-radius:10px;background:#fff;color:var(--ink);align-items:center;justify-content:center;cursor:pointer;padding:0}
 
@@ -110,6 +121,11 @@
  .mvg-nav a{padding:12px 4px;border-bottom:1px solid #eef3ef}
  .mvg-header.is-open .mvg-nav{display:flex}
  .mvg-header__call{display:none}
+ .mvg-nav__drop-btn{width:100%;justify-content:space-between;padding:12px 4px;border-bottom:1px solid #eef3ef}
+ .mvg-nav__drop-panel{position:static;box-shadow:none;border:0;padding:0 0 0 16px;margin:0;min-width:0}
+ .mvg-nav__drop-panel a{padding:10px 4px!important}
+ .mvg-nav__drop:hover .mvg-nav__drop-panel{display:none}
+ .mvg-nav__drop.is-open .mvg-nav__drop-panel{display:block}
 }
 @media (max-width:760px){
  .mvg-sec{padding:52px 0}
