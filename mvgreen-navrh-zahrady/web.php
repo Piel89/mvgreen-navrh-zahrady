@@ -47,6 +47,10 @@ function mvgreen_web_logo_url() {
 add_shortcode('mvgreen_hlavicka', function () {
     $items = [
         ['Úvod', home_url('/')],
+        // 2026-11-02, na přání Martina: dvě nové záložky nahoře v hlavním menu pro samostatné
+        // produkty z pluginu Navrhni si zahradu - ať jsou vidět hned vedle Úvodu, ne schované.
+        ['Plán hnojení a údržby zahrady', home_url('/rocni-plan-pece-a-hnojeni-travniku/')],
+        ['AI zahradní architekt', home_url('/navrhni-si-zahradu/')],
         ['Služby a ceny', home_url('/cenik/')],
         ['Naše práce', home_url('/naseprace/')],
         ['Pro obce a firmy', home_url('/#obce')],
