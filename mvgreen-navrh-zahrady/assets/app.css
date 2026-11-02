@@ -2478,12 +2478,25 @@ body.mg-bp-fs-open{overflow:hidden!important}
 .mvgreen-designer .mg-care-season-icon{font-size:16px}
 .mvgreen-designer .mg-care-season-months{display:flex;flex-direction:column;gap:10px;padding-left:4px;border-left:2px solid #e3ebe3;margin-left:7px}
 @media(min-width:620px){.mvgreen-designer .mg-care-season-months{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-left:0;padding-left:0;margin-left:0}}
+/* "Nechte to na nás" nabídka pod hotovým plánem (2026-11-02) - samostatná karta, mimo
+   .mg-care-plan, ať vizuálně nepůsobí jako další měsíc/sezóna, ale jako oddělená nabídka. */
+.mvgreen-designer .mg-care-upsell{display:flex;align-items:flex-start;gap:14px;margin-top:20px;padding:18px 20px;background:#f4f9f5;border:1px solid #dcebe0;border-radius:14px}
+.mvgreen-designer .mg-care-upsell-ic{font-size:26px;line-height:1;flex:none}
+.mvgreen-designer .mg-care-upsell-txt{flex:1 1 auto;min-width:200px}
+.mvgreen-designer .mg-care-upsell-txt strong{display:block;font-size:15px;color:#0f3d27;margin-bottom:4px}
+.mvgreen-designer .mg-care-upsell-txt p{margin:0;font-size:13.5px;line-height:1.5;color:#44564c}
+.mvgreen-designer .mg-care-upsell-btns{display:flex;flex-direction:column;gap:8px;flex:none}
+.mvgreen-designer .mg-care-upsell-btn{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;font-size:13px;font-weight:750;padding:10px 16px;border-radius:9px;text-decoration:none!important;background:#fff;color:#156333!important;border:1px solid #c9dccf}
+.mvgreen-designer .mg-care-upsell-btn--primary{background:#156333;color:#fff!important;border-color:#156333}
+.mvgreen-designer .mg-care-upsell-btn--primary:hover{background:#0f3d27}
+.mvgreen-designer .mg-care-upsell-btn:not(.mg-care-upsell-btn--primary):hover{background:#eef5f0}
+@media(max-width:480px){.mvgreen-designer .mg-care-upsell{flex-direction:column}.mvgreen-designer .mg-care-upsell-btns{flex-direction:row;width:100%}.mvgreen-designer .mg-care-upsell-btn{flex:1}}
 @media print{
   body *{visibility:hidden}
   .mg-care-report,.mg-care-report *{visibility:visible}
   .mvgreen-designer .mg-care-modal{position:static!important;background:none!important;backdrop-filter:none!important;padding:0!important}
   .mvgreen-designer .mg-care-box{box-shadow:none!important;max-height:none!important;overflow:visible!important;padding:0!important}
   .mvgreen-designer .mg-care-report{position:absolute;left:0;top:0;width:100%}
-  .mvgreen-designer .mg-care-close,.mvgreen-designer .mg-care-print{display:none!important}
+  .mvgreen-designer .mg-care-close,.mvgreen-designer .mg-care-print,.mvgreen-designer .mg-care-upsell{display:none!important}
 }
 @media(max-width:600px){.mvgreen-designer .mg-care-box{padding:20px 16px;border-radius:14px}.mvgreen-designer .mg-care-row{flex-direction:column;align-items:stretch}}

@@ -322,7 +322,23 @@
       + '<p class="mg-note">Program vychází z profesionálního hnojení (NPK poměry a dávky orientačně 20-30 g/m²), upraveného podle zvolené úrovně péče, typu půdy a nadmořské výšky. Konkrétní obchodní značku hnojiva si vyberte podle uvedeného NPK poměru - kterýkoliv odpovídající produkt funguje stejně.</p>'
       + '<p class="mg-note">⚠️ Minerální hnojivo aplikujte na suchý trávník, nejlépe před deštěm, a pokud neprší, do pár hodin ho zalijte - jinak hrozí spálení trávníku. Nikdy nehnojte mokrý trávník.</p>'
       + '<p class="mg-note">⚠️ Hnojivo vždy rozmetejte ručním elektrickým rozmetadlem nebo tažným rozmetacím vozíkem - nikdy ne z ruky (nerovnoměrné rozprostření a riziko spálení v místech, kam se dostane víc granulí). Secí vozík na výsev trávy není na hnojivo určený a nepoužívejte ho k němu.</p>'
+      + renderUpsell()
       + '</div>';
+  }
+
+  /** Nabídka "nechte to na nás" pod hotovým plánem (2026-11-02, na přání Martina): zákazník má
+   * i po koupi plánu pořád možnost nechat samotné provedení (sekání, hnojení) na MV GREEN místo
+   * aby si ho dělal sám podle plánu. Schovává se při tisku/PDF (viz @media print v app.css) -
+   * do vytištěného/uloženého dokumentu nepatří, je to jen nabídka na obrazovce. */
+  function renderUpsell() {
+    return '<div class="mg-care-upsell">'
+      + '<div class="mg-care-upsell-ic" aria-hidden="true">🌱</div>'
+      + '<div class="mg-care-upsell-txt"><strong>Nechcete to řešit sami?</strong>'
+      + '<p>Tenhle plán vám klidně i rovnou splníme - přijedeme, pohnojíme a posekáme přesně podle něj, vy se nemusíte starat o nic. Péče o zeleň je přesně to, co MV GREEN dělá.</p></div>'
+      + '<div class="mg-care-upsell-btns">'
+      + '<a class="mg-care-upsell-btn mg-care-upsell-btn--primary" href="tel:+420723339650">Zavolat 723 339 650</a>'
+      + '<a class="mg-care-upsell-btn" href="/kontakty/">Nezávazná poptávka</a>'
+      + '</div></div>';
   }
 
   // FERT_TYPE_NOTE se exportuje i samo o sobě (ne jen zabalené v textu poznámky u dávky), aby ho
