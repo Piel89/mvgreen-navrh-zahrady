@@ -76,6 +76,33 @@
     representative: 'Anglický trávník se hnojí pravidelně cca každé 4 týdny po celou hlavní sezónu (březen až listopad, 8 dávek v tabulce níže - v srpnu se při vedru a riziku chorob vynechává) - sekejte co 3-4 dny (nikdy víc než 1/3 výšky stébla najednou) a na nižší výšku (cca 3-4 cm) pro hustý, jemný trávník, okraje pravidelně zarovnávejte a vyhýbejte se zbytečnému zatěžování čerstvě posečené plochy.',
   };
 
+  /** Rady, co neplatí pro jeden konkrétní měsíc, ale pro celou sezónu podle počasí (Martin,
+   * 2026-11-02: "jsou veci co plati pro cely leto treba nekosit na kratko ne jen pro Srpen") -
+   * dřív byly přibité k jednomu náhodnému měsíci uprostřed léta, takže zákazník čtoucí jiný
+   * letní měsíc je snadno přehlédl. Teď se zobrazují jednou nahoře u sezóny (viz
+   * renderCarePlanHTML), ne schované v kartě jednoho měsíce. Nízkoúdržbový tier žádné nemá -
+   * to je u něj záměr, ne mezera. */
+  var SEASON_GENERAL = {
+    high: {
+      summer: [
+        W('Sečení výš (7-8 cm) v horkých dnech, aby trávník lépe snášel sucho.{{WATER}}'),
+        W('Zálivka podle potřeby, raději zřídka a vydatně než často a málo.{{WATER}}{{SLOPE}}'),
+        A('Nekosit na krátko v suchu a horku.{{WATER}}'),
+        W('Ve vlhku a horku hlídejte i jiné choroby než plíseň sněžnou - rezavé skvrny (rez travní) nebo hnědé skvrny s tmavým okrajem (listová skvrnitost) signalizují, že trávník potřebuje míň dusíku a víc vzduchu (prořídnout zálivku, nesekat nakrátko).'),
+      ],
+    },
+    standard: {
+      summer: [
+        W('Sečení výš (6-7 cm) v horkých dnech, aby trávník lépe snášel sucho.{{WATER}}{{SLOPE}}'),
+        A('Nekosit na krátko v suchu a horku.{{WATER}}'),
+        W('Ve vlhku a horku hlídejte i jiné choroby než plíseň sněžnou - rezavé skvrny (rez travní) nebo hnědé skvrny s tmavým okrajem (listová skvrnitost) signalizují, že trávník potřebuje míň dusíku a víc vzduchu.'),
+      ],
+    },
+  };
+  // "representative"/"sportovni" sdílí harmonogram i sezónní rady se starším aliasem "high".
+  SEASON_GENERAL.representative = SEASON_GENERAL.high;
+  SEASON_GENERAL.sportovni = SEASON_GENERAL.high;
+
   /** Měsíc (0=Leden..11=Prosinec) -> meteorologické roční období, pro seskupení výstupu -
    * 12 jednotlivých měsíců v řadě bylo nepřehledné, 4 sezóny s ikonou jsou skenovatelné na první
    * pohled (Martin, 2026-11-01: "tohle po mesici je neprehledne a neprofesionalni"). */
@@ -170,9 +197,8 @@
       { i: 2, tasks: [D('Jarní vyhrabání napadaného listí a plsti.')], fert: { key: 'K', variant: 'start', action: 'Jarní vyhrabání, 1. dávka po oschnutí trávníku - zahájení sezóny, posílení kořenů' } },
       { i: 3, tasks: [D('Pravidelné sečení (začínáme vyšší výškou, cca 5-6 cm).')], fert: { key: 'N', action: '2. dávka - rychlé nastartování růstu a obarvení po zimě' } },
       { i: 4, tasks: [D('V hlavní růstové sezóně sekejte co 3-4 dny (u anglického trávníku je častější sečení žádoucí a dělá hustotu i jemnost trávníku) - nikdy ale neseřezávejte najednou víc než 1/3 výšky stébla, jinak trávník zbytečně stresujete.'), D('Při sečení rovnou zarovnejte i okraje trávníku podél záhonů a chodníků (hranová seč) - udrží to ostrou, upravenou hranici, ne jen posekanou plochu.')], fert: { key: 'C', action: '3. dávka - hlavní růstová sezóna začíná' } },
-      { i: 5, tasks: [W('Sečení výš (7-8 cm) v horkých dnech, aby trávník lépe snášel sucho.{{WATER}}')], fert: { key: 'C', action: '4. dávka' } },
-      { i: 6, tasks: [W('Zálivka podle potřeby, raději zřídka a vydatně než často a málo.{{WATER}}{{SLOPE}}'), D('V polovině sezóny nůž znovu naostřete - po pár měsících sečení už spíš trhá, než řeže, a natržená stébla snáz napadají houbové choroby.')], fert: { key: 'C', action: '5. dávka' } },
-      { i: 7, tasks: [A('Nekosit na krátko v suchu a horku.{{WATER}}'), W('Ve vlhku a horku hlídejte i jiné choroby než plíseň sněžnou - rezavé skvrny (rez travní) nebo hnědé skvrny s tmavým okrajem (listová skvrnitost) signalizují, že trávník potřebuje míň dusíku a víc vzduchu (prořídnout zálivku, nesekat nakrátko).')] },
+      { i: 5, tasks: [], fert: { key: 'C', action: '4. dávka' } },
+      { i: 6, tasks: [D('V polovině sezóny nůž znovu naostřete - po pár měsících sečení už spíš trhá, než řeže, a natržená stébla snáz napadají houbové choroby.')], fert: { key: 'C', action: '5. dávka' } },
       { i: 8, tasks: [D('Vertikutace (prořezání plsti) a aerace trávníku.'), D('Podzimní přísev prořídlých míst - před výsevem použijte startovací hnojivo s vysokým fosforem pro rychlé zakořenění semen, ne běžné sezónní hnojivo.'), W('Zkontrolujte drn, jestli se dá lehce nadzvednout nebo odchlípnout jako koberec - znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte buď biologicky (hlístice do zalévané půdy) nebo chemickým přípravkem proti ponravám podle návodu.')], fert: { key: 'N', action: '6. dávka - obnova po letním stresu' } },
       { i: 9, tasks: [D('Snižujeme frekvenci sečení.')], fert: { key: 'C', action: '7. dávka' } },
       { i: 10, tasks: [D('Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.'), D('Nářadí a hadice vyklidit, aby nezmrzly.')], fert: { key: 'K', variant: 'end', action: '8. (poslední) dávka - zazimování, posílení odolnosti proti mrazu' } },
@@ -194,8 +220,7 @@
       { i: 2, tasks: [D('Jarní vyhrabání napadaného listí a plsti.'), W('Na vertikutaci je ještě brzy - počkejte na duben, až bude půda trvale prohřátá nad 8-10 °C. Dřív by zásah trávníku spíš uškodil, než pomohl.')] },
       { i: 3, tasks: [D('Jarní vertikutace (2-3 mm) na prohřáté (nad 8-10 °C) a mírně suché půdě.'), D('Pravidelné sečení (začínáme vyšší výškou, cca 5 cm).')], fert: { key: 'K', variant: 'start', action: '1. dávka po oschnutí trávníku - start sezóny, posílení kořenů' } },
       { i: 4, tasks: [D('Sečení cca 1x týdně, hlavní růstová sezóna.'), D('Při sečení zarovnejte i okraje podél záhonů a chodníků (hranová seč) - rychlá věc, co zlepší vzhled víc než samotné sečení.')] },
-      { i: 5, tasks: [W('Sečení výš (6-7 cm) v horkých dnech, aby trávník lépe snášel sucho.{{WATER}}{{SLOPE}}'), D('V polovině sezóny nůž znovu naostřete - po pár měsících sečení už spíš trhá, než řeže.')], fert: { key: 'C', action: '2. dávka' } },
-      { i: 6, tasks: [A('Nekosit na krátko v suchu a horku.{{WATER}}'), W('Ve vlhku a horku hlídejte i jiné choroby než plíseň sněžnou - rezavé skvrny (rez travní) nebo hnědé skvrny s tmavým okrajem (listová skvrnitost) signalizují, že trávník potřebuje míň dusíku a víc vzduchu.')] },
+      { i: 5, tasks: [D('V polovině sezóny nůž znovu naostřete - po pár měsících sečení už spíš trhá, než řeže.')], fert: { key: 'C', action: '2. dávka' } },
       { i: 7, tasks: [W('Intenzitu zatížení (sport, grilování) v tropických vedrech trochu omezte, trávník si v tu dobu hůř regeneruje.')] },
       { i: 8, tasks: [D('Podzimní vertikutace a přísev prořídlých míst.'), W('Aerifikace se u tohoto režimu doporučuje cca 1x za 2 roky - pokud letos (nebo loni) ještě nebyla, je teď dobrý čas.'), W('Zkontrolujte drn, jestli se dá lehce nadzvednout - znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte biologicky (hlístice) nebo chemickým přípravkem proti ponravám.')], fert: { key: 'N', action: '3. dávka - obnova po letním stresu' } },
       { i: 9, tasks: [], fert: { key: 'K', variant: 'end', action: '4. (poslední) dávka - zazimování, posílení odolnosti proti mrazu' } },
@@ -295,6 +320,16 @@
       notes.push('Letos jste ještě nehnojili - klidně začněte první dávkou z tabulky co nejdřív, i když aktuální měsíc úplně neodpovídá; jen pokud je už po polovině září, přeskočte rovnou na poslední podzimní (draslíkovou) dávku.');
     }
     result.notes = notes;
+    // Sezónní obecné rady (viz SEASON_GENERAL výš) - stejná {{WATER}}/{{SLOPE}} substituce jako
+    // u měsíčních úkolů, jen aplikovaná na tenhle samostatný, sezónou (ne měsícem) klíčovaný set.
+    var seasonGeneralSrc = SEASON_GENERAL[tier] || {};
+    var seasonGeneral = {};
+    Object.keys(seasonGeneralSrc).forEach(function (seasonKey) {
+      seasonGeneral[seasonKey] = seasonGeneralSrc[seasonKey].map(function (t) {
+        return { text: t.text.replace('{{WATER}}', waterNote).replace('{{SLOPE}}', slopeNote), type: t.type };
+      });
+    });
+    result.seasonGeneral = seasonGeneral;
     // Metadata pro hezčí výstupní dokument (hlavička se jménem plánu, přehledová lišta, tabulka
     // hnojení) - visí na vráceném poli stejným trikem jako .notes, aby se nerozbilo žádné starší
     // volání, co o nich neví.
@@ -423,13 +458,22 @@
     // (jen hnojení v tabulce výše) se taky vynechají, ať v kartě nezůstává prázdné místo.
     var byKey = {};
     (months || []).forEach(function (m) { byKey[m.key] = m; });
+    var seasonGeneral = (months && months.seasonGeneral) || {};
     var seasonsHtml = SEASONS.map(function (season) {
       var items = season.months.map(function (k) { return byKey[k]; }).filter(function (m) { return m && m.tasks && m.tasks.length; });
-      if (!items.length) return '';
+      var generalTasks = seasonGeneral[season.key] || [];
+      if (!items.length && !generalTasks.length) return '';
+      // Sezónní rady (platí celé období, ne jeden měsíc - viz SEASON_GENERAL) se zobrazí jednou
+      // hned pod nadpisem sezóny, PŘED jednotlivými měsíci, aby je zákazník nemohl minout jen
+      // proto, že si přečetl jiný letní měsíc než ten, kde dřív náhodou visely.
+      var generalHtml = generalTasks.length
+        ? '<div class="mg-care-season-general"><p class="mg-care-season-general-label">Platí pro celé období:</p>' + taskListHtml(generalTasks) + '</div>'
+        : '';
       var monthsHtml = items.map(function (m) {
         return '<div class="mg-care-month"><strong>' + htmlEscape(m.label) + '</strong>' + taskListHtml(m.tasks) + '</div>';
       }).join('');
-      return '<section class="mg-care-season"><h4><span class="mg-care-season-icon" aria-hidden="true">' + season.icon + '</span>' + season.label + '</h4><div class="mg-care-season-months">' + monthsHtml + '</div></section>';
+      var monthsWrapHtml = items.length ? '<div class="mg-care-season-months">' + monthsHtml + '</div>' : '';
+      return '<section class="mg-care-season"><h4><span class="mg-care-season-icon" aria-hidden="true">' + season.icon + '</span>' + season.label + '</h4>' + generalHtml + monthsWrapHtml + '</section>';
     }).join('');
 
     return '<div class="mg-care-report">'
