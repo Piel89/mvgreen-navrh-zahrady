@@ -2394,6 +2394,25 @@ body.mg-bp-fs-open{overflow:hidden!important}
 .mvgreen-designer .mg-care-field input:not([type="checkbox"]):not([type="radio"]):focus,.mvgreen-designer .mg-care-field select:focus{outline:2px solid #b9790a;outline-offset:1px}
 .mvgreen-designer .mg-care-row{display:flex;gap:10px;align-items:flex-end}
 .mvgreen-designer .mg-care-row .mg-care-field{flex:1;margin-bottom:0}
+/* Samostatná stránka "jen roční plán péče" ([mvgreen_plan_pece], 2026-11-02) - schová vše z 8krokového
+   AI návrháře a zobrazí plán péče jako běžný obsah stránky místo modalu nad wizardem. */
+.mvgreen-designer.mg-standalone-care .mg-head,
+.mvgreen-designer.mg-standalone-care #mg-welcome,
+.mvgreen-designer.mg-standalone-care #mg-wizard-progress,
+.mvgreen-designer.mg-standalone-care .mg-wizard-step,
+.mvgreen-designer.mg-standalone-care #mg-wizard-footer,
+.mvgreen-designer.mg-standalone-care .mg-redesign-side,
+.mvgreen-designer.mg-standalone-care .mg-redesign-tips{display:none!important}
+/* .mg-redesign-frame/.mg-redesign-main mají výš v souboru desítky !important pravidel pro 3sloupcový
+   layout návrháře (i pro .mg-is-modal variantu) - na stránce "jen plán péče" je zjednodušíme na
+   jediný sloupec bez okolních panelů, proto i tady !important, ať to vždy vyhraje. */
+.mvgreen-designer.mg-standalone-care .mg-redesign-frame{display:block!important;max-width:680px!important;margin:0 auto!important;border:0!important;box-shadow:none!important;background:none!important;border-radius:0!important;min-height:0!important}
+.mvgreen-designer.mg-standalone-care .mg-redesign-main{padding:0!important;min-height:0!important;height:auto!important;overflow:visible!important}
+.mvgreen-designer.mg-standalone-care .mg-care-modal{position:static;inset:auto;z-index:auto;display:block;padding:0;background:none;backdrop-filter:none}
+.mvgreen-designer.mg-standalone-care .mg-care-box{max-width:none;margin:0 auto;max-height:none;overflow:visible;box-shadow:0 12px 44px #04140d1f}
+.mvgreen-designer.mg-standalone-care #mg-care2-close{display:none}
+.mvgreen-designer.mg-standalone-care .mg-care-box h3{font-size:25px}
+@media(max-width:600px){.mvgreen-designer.mg-standalone-care .mg-care-box{padding:20px 16px;border-radius:14px}}
 .mvgreen-designer .mg-rich-select{position:relative}
 .mvgreen-designer .mg-rich-select-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:9px;border:1.3px solid #d7e2da;font-size:14px;background:#fbfdfb;color:#2d3f33;text-align:left;cursor:pointer;font-family:inherit}
 .mvgreen-designer .mg-rich-select-btn:focus,.mvgreen-designer .mg-rich-select-btn[aria-expanded="true"]{outline:2px solid #b9790a;outline-offset:1px}

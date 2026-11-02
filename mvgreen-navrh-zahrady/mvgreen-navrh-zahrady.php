@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.185
+ * Version: 0.6.186
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.185');
+define('MVGREEN_VERSION', '0.6.186');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -29,7 +29,12 @@ function mvgreen_harden_upload_dir($dir) {
     }
 }
 
-add_shortcode('mvgreen_navrh_zahrady', function () {
+/**
+ * Společné enqueue pro obě shortcode stránky (plný návrhář i samostatný roční plán péče) – jeden
+ * zdroj pravdy pro JS/CSS balíček (2026-11-02, při vyčlenění plánu péče na vlastní stránku), ať se
+ * při přidání/aktualizaci assetu nezapomene na jedno z obou míst.
+ */
+function mvgreen_enqueue_designer_assets() {
     // Matches the real mvgreen.cz site, verified by inspecting its live computed styles:
     // Montserrat for headings (700/800), Inter for body text/buttons (400–900). Previously this
     // loaded Roboto Condensed under a mistaken assumption that it matched the real site – it
@@ -56,8 +61,23 @@ add_shortcode('mvgreen_navrh_zahrady', function () {
     $mvgreen_logo_url = $mvgreen_logo_id ? wp_get_attachment_image_url($mvgreen_logo_id, 'full') : false;
     if (!$mvgreen_logo_url) $mvgreen_logo_url = get_site_icon_url(192);
     wp_add_inline_script('mvgreen-designer', 'window.MVGreenBrand = '.wp_json_encode(['logoUrl' => $mvgreen_logo_url ?: '']).';', 'before');
+}
 
+add_shortcode('mvgreen_navrh_zahrady', function () {
+    mvgreen_enqueue_designer_assets();
     return '<div class="mvgreen-designer" data-mvgreen-designer><div class="mvgreen-loading">Načítání návrháře…</div></div>';
+});
+
+/**
+ * Samostatná stránka jen s ročním plánem péče a hnojení (49 Kč), odpojená od stránky s AI návrhem
+ * (2026-11-02, na přání Martina – AI návrh se ještě dlouho bude vyvíjet, plán péče má být hotový
+ * produkt na vlastní adrese). Používá stejný JS balíček a stejné #mg-care2-* UI jako modal uvnitř
+ * [mvgreen_navrh_zahrady] (žádná duplikace logiky) – jen app.js podle data-mvgreen-standalone="care"
+ * zobrazí jen tenhle formulář místo celého 8krokového návrháře, viz assets/app.js.
+ */
+add_shortcode('mvgreen_plan_pece', function () {
+    mvgreen_enqueue_designer_assets();
+    return '<div class="mvgreen-designer" data-mvgreen-designer data-mvgreen-standalone="care"><div class="mvgreen-loading">Načítání…</div></div>';
 });
 
 /**
