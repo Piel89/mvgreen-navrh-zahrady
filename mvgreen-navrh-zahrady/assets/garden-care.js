@@ -458,13 +458,18 @@
    * jsou rovnou v kalendáři u konkrétního měsíce, ne tady.) */
   function renderExpertTips() {
     var tips = [
-      'Zlaté pravidlo sečení: nikdy nesečte víc než 1/3 výšky stébla najednou - víc trávník vážně stresuje, zpomaluje regeneraci a dělá ho náchylnějším na choroby a plevel. Když roste rychle (hlavní sezóna, po dešti), raději sekejte častěji místo toho, abyste jednou za čas sjeli dolů víc.',
-      'Test pH půdy: udělejte ho jednou za 2-3 roky (levná souprava ze zahradnictví), nejlépe na podzim. Trávník má rád pH 5,5-7,0 - pod touhle hranicí přestává přijímat živiny i při pravidelném hnojení a šíří se mech. Vápnění ale dělejte VÝHRADNĚ podle naměřené hodnoty, nikdy preventivně "naslepo".',
-      'Karenční doba po hnojení a postřiku: po minerálním hnojivu nechte děti a zvířata na trávník až po zaschnutí/zálivce (pár hodin). Po herbicidu proti plevelům počkejte s jejich přístupem alespoň 24-48 hodin, podle návodu na konkrétním přípravku.',
-      'Stín pod stromy a keři: v zastíněných částech trávník roste pomaleji a je náchylnější na houby - dávky hnojiva tam snižte cca o třetinu, sekejte o 1 cm výš než na slunci a pokud je stín trvalý, zvažte při příštím přísevu směs s vyšším podílem kostřavy červené, která stín snáší líp než jílek.',
-      'Střídání směru sečení: při každém dalším sečení měňte směr (nahoru-dolů, pak napříč nebo diagonálně) - pořád stejný směr tvoří kolejové stopy a trávník roste nakřivo.',
+      { icon: '✂️', group: 'Sečení', title: 'Zlaté pravidlo 1/3', text: 'Nikdy nesečte víc než 1/3 výšky stébla najednou - víc trávník stresuje, zpomaluje regeneraci a zvyšuje riziko chorob a plevele. Když roste rychle (hlavní sezóna, po dešti), sekejte raději častěji, než abyste jednou za čas sjeli dolů víc.' },
+      { icon: '🔄', group: 'Sečení', title: 'Střídejte směr', text: 'Při každém dalším sečení měňte směr (nahoru-dolů, pak napříč nebo diagonálně) - pořád stejný směr tvoří kolejové stopy a trávník roste nakřivo.' },
+      { icon: '🧪', group: 'Půda', title: 'Test pH jednou za 2-3 roky', text: 'Levná souprava ze zahradnictví, nejlépe na podzim. Trávník má rád pH 5,5-7,0 - pod touhle hranicí přestává přijímat živiny i při pravidelném hnojení a šíří se mech. Vápnění dělejte výhradně podle naměřené hodnoty, nikdy "naslepo".' },
+      { icon: '⏳', group: 'Bezpečnost', title: 'Karenční doba po hnojení a postřiku', text: 'Po minerálním hnojivu nechte děti a zvířata na trávník až po zaschnutí/zálivce (pár hodin). Po herbicidu proti plevelům počkejte alespoň 24-48 hodin, podle návodu na konkrétním přípravku.' },
+      { icon: '🌳', group: 'Stín', title: 'Stín pod stromy a keři', text: 'V zastíněných částech trávník roste pomaleji a je náchylnější na houby - dávky hnojiva tam snižte cca o třetinu, sekejte o 1 cm výš než na slunci. Je-li stín trvalý, zvažte při příštím přísevu směs s vyšším podílem kostřavy červené, která stín snáší líp než jílek.' },
     ];
-    return '<section class="mg-care-tips"><h4>📖 Další odborné rady</h4><ul>' + tips.map(function (t) { return '<li>' + htmlEscape(t) + '</li>'; }).join('') + '</ul></section>';
+    var cardsHtml = tips.map(function (t) {
+      return '<div class="mg-advice-card"><p class="mg-advice-group">' + htmlEscape(t.group) + '</p>' +
+        '<div class="mg-advice-head"><span class="mg-advice-ic" aria-hidden="true">' + t.icon + '</span><h5>' + htmlEscape(t.title) + '</h5></div>' +
+        '<p class="mg-advice-text">' + htmlEscape(t.text) + '</p></div>';
+    }).join('');
+    return '<section class="mg-care-tips"><h4>📖 Další odborné rady</h4><div class="mg-advice-grid">' + cardsHtml + '</div></section>';
   }
 
   /** Výstupní "dokument", ne jen prostý seznam měsíců (Martin, 2026-11-01: "musi to byt nejaky
