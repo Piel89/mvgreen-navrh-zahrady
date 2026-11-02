@@ -133,11 +133,26 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-welcome-copy p{font-size:16px;line-height:1.75;color:#475c4d;margin:0;max-width:540px}
 .mvgreen-designer .mg-welcome-copy small{font-size:13px;color:#55705c}
 .mvgreen-designer .mg-trust-note{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.55;color:#1f5c38;background:#eaf6ee;border:1px solid #bfe3cb;border-radius:10px;padding:10px 14px;margin:0;max-width:480px}
-.mvgreen-designer .mg-care-plan{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:14px 0}
+.mvgreen-designer .mg-care-plan{display:block;margin:14px 0}
 .mvgreen-designer .mg-care-month{background:#fff;border:1px solid #e0ece2;border-radius:12px;padding:12px 14px;box-shadow:0 2px 8px #0b2a1c0d}
 .mvgreen-designer .mg-care-month strong{display:block;color:#1f5c38;font-size:14px;margin-bottom:6px}
-.mvgreen-designer .mg-care-month ul{margin:0;padding-left:18px;font-size:13px;line-height:1.5;color:#44594a}
-.mvgreen-designer .mg-care-month li{margin-bottom:4px}
+.mvgreen-designer .mg-care-tasks{margin:0;padding:0;list-style:none;font-size:13px;line-height:1.5;color:#44594a;display:flex;flex-direction:column;gap:5px}
+.mvgreen-designer .mg-care-tasks li{display:flex;align-items:flex-start;gap:7px;border-radius:8px;padding:5px 8px}
+.mvgreen-designer .mg-task-ic{flex:none;line-height:1.4;font-size:12px}
+.mvgreen-designer .mg-task-do{background:#f1f9f2;color:#1f5c38}
+.mvgreen-designer .mg-task-warn{background:#fff6e6;color:#8a5d05}
+.mvgreen-designer .mg-task-avoid{background:#fdeeee;color:#9a2a1f;font-weight:600}
+.mvgreen-designer .mg-care-legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 12px;font-size:12px;font-weight:650}
+.mvgreen-designer .mg-care-legend span{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px}
+.mvgreen-designer .mg-care-legend .mg-task-ic{font-size:12px}
+.mvgreen-designer .mg-care-cal-title{margin:20px 0 10px;font-size:15px;color:#14301f}
+.mvgreen-designer .mg-fert-table-wrap{margin:16px 0 20px}
+.mvgreen-designer .mg-fert-table-wrap h4{margin:0 0 10px;font-size:15px;color:#14301f}
+.mvgreen-designer .mg-fert-table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border:1px solid #e0ece2;border-radius:10px;overflow:hidden}
+.mvgreen-designer .mg-fert-table th{text-align:left;background:#f1f9f2;color:#1f5c38;font-weight:750;padding:9px 10px;border-bottom:1px solid #e0ece2}
+.mvgreen-designer .mg-fert-table td{padding:9px 10px;border-bottom:1px solid #eef3ee;color:#2d3f33;vertical-align:top}
+.mvgreen-designer .mg-fert-table tr:last-child td{border-bottom:0}
+.mvgreen-designer .mg-fert-table small{color:#6b7a70}
 .mvgreen-designer .mg-care-upsell{background:#f4faf5;border:1px dashed #bfe3cb;border-radius:10px;padding:12px 14px;font-size:13px;color:#2a5c3c;margin:12px 0}
 .mvgreen-designer .mg-pkg-choice{display:flex;flex-direction:column;gap:8px;margin:10px 0}
 .mvgreen-designer .mg-pkg-choice label{display:flex;align-items:flex-start;gap:9px;font-size:13px;line-height:1.45;border:1px solid #e0ece2;border-radius:10px;padding:10px 12px;cursor:pointer}
