@@ -61,11 +61,11 @@
   var TIER_META = {
     low: { label: 'Nízká údržba', freq: '2× ročně', nRange: '8-10 g N/m²/rok' },
     standard: { label: 'Běžný rodinný trávník', freq: '4× ročně', nRange: '15-20 g N/m²/rok' },
-    representative: { label: 'Anglický trávník', freq: 'cca každé 4 týdny (III-XI)', nRange: '20-30 g N/m²/rok' },
-    sportovni: { label: 'Sportovní trávník', freq: '9× ročně', nRange: '20-30 g N/m²/rok' },
+    representative: { label: 'Anglický trávník', freq: '8× ročně (III-XI, bez srpna)', nRange: '20-30 g N/m²/rok' },
+    sportovni: { label: 'Sportovní trávník', freq: '8× ročně', nRange: '20-30 g N/m²/rok' },
     // "high" zůstává jako starší alias pro reprezentativní (zpětná kompatibilita se staršími voláními,
     // co ho posílaly jako jednu kolonku "Reprezentativní / sportovní" - viz 2026-11-02 oprava níže).
-    high: { label: 'Reprezentativní / sportovní', freq: '9× ročně', nRange: '20-30 g N/m²/rok' },
+    high: { label: 'Reprezentativní / sportovní', freq: '8× ročně', nRange: '20-30 g N/m²/rok' },
   };
 
   /** Poznámka navíc podle TYPU zátěže u nejvyšší úrovně péče - Martin upozornil (2026-11-02), že
@@ -73,7 +73,7 @@
    * jsou odlišné potřeby, i když hnojivový harmonogram (schedule High) je pro obě stejný. */
   var USE_NOTES = {
     sportovni: 'Sportovní zátěž trávník mechanicky opotřebovává - po náročnějším víkendu nebo zápase poškozená místa co nejdřív dosejte (15-25 g osiva/m²) a aerifikaci dutými hroty plánujte častěji než jednou za rok, aby půda pod zátěží nezhutněla.',
-    representative: 'Anglický trávník se hnojí pravidelně cca každé 4 týdny po celou hlavní sezónu (březen až listopad, 9 dávek v tabulce níže) - sekejte častěji a na nižší výšku (cca 3-4 cm) pro hustý, jemný trávník, okraje pravidelně zarovnávejte a vyhýbejte se zbytečnému zatěžování čerstvě posečené plochy.',
+    representative: 'Anglický trávník se hnojí pravidelně cca každé 4 týdny po celou hlavní sezónu (březen až listopad, 8 dávek v tabulce níže - v srpnu se při vedru a riziku chorob vynechává) - sekejte co 3-4 dny (nikdy víc než 1/3 výšky stébla najednou) a na nižší výšku (cca 3-4 cm) pro hustý, jemný trávník, okraje pravidelně zarovnávejte a vyhýbejte se zbytečnému zatěžování čerstvě posečené plochy.',
   };
 
   /** Měsíc (0=Leden..11=Prosinec) -> meteorologické roční období, pro seskupení výstupu -
@@ -169,13 +169,13 @@
       { i: 1, tasks: [D('Zimní klid, příprava na sezónu - naostřit nůž sekačky, zkontrolovat techniku a rozmetadlo hnojiva.')] },
       { i: 2, tasks: [D('Jarní vyhrabání napadaného listí a plsti.')], fert: { key: 'K', variant: 'start', action: 'Jarní vyhrabání, 1. dávka po oschnutí trávníku - zahájení sezóny, posílení kořenů' } },
       { i: 3, tasks: [D('Pravidelné sečení (začínáme vyšší výškou, cca 5-6 cm).')], fert: { key: 'N', action: '2. dávka - rychlé nastartování růstu a obarvení po zimě' } },
-      { i: 4, tasks: [D('Sečení cca 1x týdně.'), D('Při sečení rovnou zarovnejte i okraje trávníku podél záhonů a chodníků (hranová seč) - udrží to ostrou, upravenou hranici, ne jen posekanou plochu.')], fert: { key: 'C', action: '3. dávka - hlavní růstová sezóna začíná' } },
+      { i: 4, tasks: [D('V hlavní růstové sezóně sekejte co 3-4 dny (u anglického trávníku je častější sečení žádoucí a dělá hustotu i jemnost trávníku) - nikdy ale neseřezávejte najednou víc než 1/3 výšky stébla, jinak trávník zbytečně stresujete.'), D('Při sečení rovnou zarovnejte i okraje trávníku podél záhonů a chodníků (hranová seč) - udrží to ostrou, upravenou hranici, ne jen posekanou plochu.')], fert: { key: 'C', action: '3. dávka - hlavní růstová sezóna začíná' } },
       { i: 5, tasks: [W('Sečení výš (7-8 cm) v horkých dnech, aby trávník lépe snášel sucho.{{WATER}}')], fert: { key: 'C', action: '4. dávka' } },
       { i: 6, tasks: [W('Zálivka podle potřeby, raději zřídka a vydatně než často a málo.{{WATER}}{{SLOPE}}'), D('V polovině sezóny nůž znovu naostřete - po pár měsících sečení už spíš trhá, než řeže, a natržená stébla snáz napadají houbové choroby.')], fert: { key: 'C', action: '5. dávka' } },
       { i: 7, tasks: [A('Nekosit na krátko v suchu a horku.{{WATER}}'), W('Ve vlhku a horku hlídejte i jiné choroby než plíseň sněžnou - rezavé skvrny (rez travní) nebo hnědé skvrny s tmavým okrajem (listová skvrnitost) signalizují, že trávník potřebuje míň dusíku a víc vzduchu (prořídnout zálivku, nesekat nakrátko).')] },
-      { i: 8, tasks: [D('Vertikutace (prořezání plsti) a aerace trávníku.'), D('Podzimní přísev prořídlých míst - před výsevem použijte startovací hnojivo s vysokým fosforem pro rychlé zakořenění semen, ne běžné sezónní hnojivo.'), W('Zkontrolujte drn, jestli se dá lehce nadzvednout nebo odchlípnout jako koberec - znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte buď biologicky (hlístice do zalévané půdy) nebo chemickým přípravkem proti ponravám podle návodu.')], fert: { key: 'N', action: '7. dávka - obnova po letním stresu' } },
-      { i: 9, tasks: [D('Snižujeme frekvenci sečení.')], fert: { key: 'C', action: '8. dávka' } },
-      { i: 10, tasks: [D('Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.'), D('Nářadí a hadice vyklidit, aby nezmrzly.')], fert: { key: 'K', variant: 'end', action: '9. (poslední) dávka - zazimování, posílení odolnosti proti mrazu' } },
+      { i: 8, tasks: [D('Vertikutace (prořezání plsti) a aerace trávníku.'), D('Podzimní přísev prořídlých míst - před výsevem použijte startovací hnojivo s vysokým fosforem pro rychlé zakořenění semen, ne běžné sezónní hnojivo.'), W('Zkontrolujte drn, jestli se dá lehce nadzvednout nebo odchlípnout jako koberec - znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte buď biologicky (hlístice do zalévané půdy) nebo chemickým přípravkem proti ponravám podle návodu.')], fert: { key: 'N', action: '6. dávka - obnova po letním stresu' } },
+      { i: 9, tasks: [D('Snižujeme frekvenci sečení.')], fert: { key: 'C', action: '7. dávka' } },
+      { i: 10, tasks: [D('Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.'), D('Nářadí a hadice vyklidit, aby nezmrzly.')], fert: { key: 'K', variant: 'end', action: '8. (poslední) dávka - zazimování, posílení odolnosti proti mrazu' } },
       { i: 11, tasks: [A('Zimní klid - trávník nezatěžovat, nenechávat na něm hromady listí ani sníh z lopaty.')] },
     ];
   }
@@ -363,6 +363,7 @@
    * jsou rovnou v kalendáři u konkrétního měsíce, ne tady.) */
   function renderExpertTips() {
     var tips = [
+      'Zlaté pravidlo sečení: nikdy nesečte víc než 1/3 výšky stébla najednou - víc trávník vážně stresuje, zpomaluje regeneraci a dělá ho náchylnějším na choroby a plevel. Když roste rychle (hlavní sezóna, po dešti), raději sekejte častěji místo toho, abyste jednou za čas sjeli dolů víc.',
       'Test pH půdy: udělejte ho jednou za 2-3 roky (levná souprava ze zahradnictví), nejlépe na podzim. Trávník má rád pH 5,5-7,0 - pod touhle hranicí přestává přijímat živiny i při pravidelném hnojení a šíří se mech. Vápnění ale dělejte VÝHRADNĚ podle naměřené hodnoty, nikdy preventivně "naslepo".',
       'Karenční doba po hnojení a postřiku: po minerálním hnojivu nechte děti a zvířata na trávník až po zaschnutí/zálivce (pár hodin). Po herbicidu proti plevelům počkejte s jejich přístupem alespoň 24-48 hodin, podle návodu na konkrétním přípravku.',
       'Stín pod stromy a keři: v zastíněných částech trávník roste pomaleji a je náchylnější na houby - dávky hnojiva tam snižte cca o třetinu, sekejte o 1 cm výš než na slunci a pokud je stín trvalý, zvažte při příštím přísevu směs s vyšším podílem kostřavy červené, která stín snáší líp než jílek.',
