@@ -129,6 +129,47 @@
     organic: 'organické/organominerální (působí 1-3 měsíce, nulové riziko spálení, navíc dlouhodobě zlepšuje půdu, ale účinek je pomalejší)',
   };
 
+  /** Druh/směs trávníku (2026-11-02, Martinovo zadání: "potrebujeme jeste zjistit jakej druh
+   * travniku maji nebo chteji jilky nebo kostravy ... nemame vubec informace na kolik se jaky
+   * travnik seka jaky jsou jeho minimalni a maximalni dylky") - dřív se výška sečení řešila jen
+   * podle úrovně péče (tier), bez ohledu na to, jaká tráva v trávníku vůbec roste. mowMin/mowMax
+   * jsou REÁLNÁ doporučená rozmezí pro běžně udržovaný rodinný trávník (ne extrémy jako golfové
+   * jamkoviště), ověřená proti agronomickým zdrojům (SZÚZ "Zakládání trávníků a péče o trávníky",
+   * poster_9 Mendelovy univerzity - viz commit message). Prázdný klíč '' = "nevím/poraďte", beze
+   * změny chování (stejná čísla jako dřív, podle tier). */
+  var GRASS_SPECIES = {
+    rye: {
+      label: 'Jílek vytrvalý',
+      mowMin: 3,
+      mowMax: 5,
+      note: 'Jílek vytrvalý je rychlý a houževnatý - vzchází za 5-7 dní a po zátěži či sešlapu se dobře sám zahojí, proto je základem většiny sportovních a často používaných trávníků. Snese i časté nízké sečení (3-5 cm), ale potřebuje víc vody a živin než kostřava a sám o sobě vydrží jen 3-6 let, než prořídne - počítejte s pravidelným přísevem.',
+    },
+    fescue: {
+      label: 'Kostřava (červená / rákosovitá)',
+      mowMin: 4,
+      mowMax: 6,
+      note: 'Kostřavy snáší polostín, sucho i nižší hnojení lépe než jílek, proto se používají v parkových, stínových a suchovzdorných směsích. Rostou pomaleji (vzcházení kolem 4 týdnů) a hůř snáší velmi nízké sečení a častou zátěž - držte se spíš horní hranice doporučené výšky, zvlášť v suchu a horku.',
+    },
+    mix: {
+      label: 'Smíšený trávník (neznám přesný poměr)',
+      mowMin: 4,
+      mowMax: 5,
+      note: 'Většina travních směsí v obchodech kombinuje jílek vytrvalý (rychlost, odolnost) s kostřavami a lipnicí (hustota, nenáročnost) - bez rozboru přesný poměr nepoznáme, proto doporučujeme střední výšku sečení a sledovat, jak trávník na péči reaguje.',
+    },
+  };
+
+  /** Výchozí rozmezí výšky sečení PODLE ÚROVNĚ PÉČE, použité, dokud zákazník nevyplní (nebo neví)
+   * druh trávníku - stejná čísla, co už dřív plán fakticky používal v textu jednotlivých úkolů
+   * (viz scheduleLow/scheduleStandard/scheduleHigh), teď jen i jako samostatné dostupné číslo. */
+  var TIER_MOW_FALLBACK = {
+    low: { mowMin: 5, mowMax: 7 },
+    standard: { mowMin: 4, mowMax: 5 },
+    high: { mowMin: 3, mowMax: 4 },
+  };
+  function tierMowFallback(tier) {
+    return TIER_MOW_FALLBACK[tier === 'representative' || tier === 'sportovni' ? 'high' : tier] || TIER_MOW_FALLBACK.standard;
+  }
+
   var PROBLEM_NOTES = {
     moss: 'Mech v trávníku bývá signál kyselé půdy, zastínění nebo zhutnění - doporučujeme změřit pH (levné soupravy v zahradnictví) a v hnojivu upřednostnit variantu se železem, které mech navíc mechanicky potlačuje a dodá sytě zelenou barvu.',
     weeds: 'Dvouděložné plevele (jetel, pampeliška apod.) jde ručně vytrhávat, nebo použít schválený herbicid pro neprofesionální uživatele - ideálně v květnu/červnu, ne ve stejném týdnu jako hnojení.',
@@ -266,6 +307,7 @@
     var lastFertilized = input.lastFertilized || 'unknown';
     var irrigation = input.irrigation || '';
     var fertType = input.fertType && FERT_TYPE_NOTE[input.fertType] ? input.fertType : '';
+    var grassType = input.grassType && GRASS_SPECIES[input.grassType] ? input.grassType : '';
     var shift = altitudeShift(altitude);
     var soilMult = soilMultiplier(soil);
 
@@ -339,6 +381,24 @@
     result.fertType = fertType;
     result.fertTable = fertTable;
     result.planName = (input.planName || '').toString().trim() || null;
+    // Výška sečení (2026-11-02, viz GRASS_SPECIES výš): druh trávníku, pokud ho zákazník zná/vybral,
+    // má přednost před obecným odhadem podle úrovně péče; jinak padáme zpátky na tierMowFallback,
+    // takže tahle hodnota je VŽDY k dispozici, i když zákazník druh nevyplnil.
+    var grassSpecies = grassType ? GRASS_SPECIES[grassType] : null;
+    var mowFallback = tierMowFallback(tier);
+    // Nízkoúdržbový tier seká záměrně řidč/méně často (viz scheduleLow), takže i trávník, co by
+    // jinak snesl nízké sečení (jílek), se tu drží o 2 cm výš - delší mezery mezi sečením potřebují
+    // vyšší startovní výšku, ať se mezitím neseřízne přes 1/3 pravidlo. Jinak (standard/high) platí
+    // druh trávníku beze změny - tam se seká pravidelně, takže na tom tolik nezáleží.
+    var lowBump = (tier === 'low' && grassSpecies) ? 2 : 0;
+    result.grassType = grassType;
+    result.mowHeight = {
+      min: (grassSpecies ? grassSpecies.mowMin : mowFallback.mowMin) + lowBump,
+      max: (grassSpecies ? grassSpecies.mowMax : mowFallback.mowMax) + lowBump,
+      bySpecies: !!grassSpecies,
+      speciesLabel: grassSpecies ? grassSpecies.label : null,
+      speciesNote: grassSpecies ? grassSpecies.note : null,
+    };
     return result;
   }
 
@@ -427,6 +487,8 @@
     var tierMeta = (months && months.tierMeta) || null;
     var areaM2 = months && months.areaM2;
 
+    var mowHeight = months && months.mowHeight;
+
     var statChips = [];
     if (areaM2 > 0) statChips.push({ label: 'Plocha trávníku', value: areaM2 + ' m²' });
     if (tierMeta) {
@@ -434,11 +496,25 @@
       statChips.push({ label: 'Hnojení za rok', value: tierMeta.freq });
       statChips.push({ label: 'Dusík (N)', value: tierMeta.nRange });
     }
+    // Výška sečení (2026-11-02): dřív se tohle číslo vůbec neuvádělo jako samostatný údaj, jen
+    // schované v textu jednotlivých měsíců - teď je to vlastní dlaždice, přesná podle druhu
+    // trávníku, pokud ho zákazník zná/vybral (viz GRASS_SPECIES), jinak podle úrovně péče.
+    if (mowHeight) {
+      statChips.push({ label: 'Výška sečení', value: mowHeight.min + '-' + mowHeight.max + ' cm' + (mowHeight.bySpecies ? '' : ' *') });
+    }
     var statHtml = statChips.length
       ? '<div class="mg-care-stats">' + statChips.map(function (s) {
         return '<div class="mg-care-stat"><small>' + htmlEscape(s.label) + '</small><strong>' + htmlEscape(s.value) + '</strong></div>';
       }).join('') + '</div>'
       : '';
+
+    // Vysvětlující poznámka k druhu trávníku - stejný vzor jako typeNote u hnojiva (FERT_TYPE_NOTE):
+    // když zákazník druh zná/vybral, dostane konkrétní výhody/nevýhody a odůvodnění výšky sečení
+    // výš; když ne, aspoň krátké vysvětlení, že hvězdička u výšky sečení je jen obecný odhad podle
+    // úrovně péče, a ať se mrkne na pytel od osiva nebo fakturu od zakládání, pokud ji chce zpřesnit.
+    var grassNoteHtml = (mowHeight && mowHeight.bySpecies)
+      ? '<div class="mg-care-extra-notes mg-care-grass-note"><h4>🌱 ' + htmlEscape(mowHeight.speciesLabel) + '</h4><p>' + htmlEscape(mowHeight.speciesNote) + '</p></div>'
+      : (mowHeight ? '<p class="mg-note mg-care-grass-note-unknown">* Výška sečení je obecný odhad podle úrovně péče. Znáte-li druh trávníku (jílek/kostřava/směs - najdete na pytli od osiva nebo na faktuře od založení), vyplňte ho výš pro přesnější rozmezí.</p>' : '');
 
     var noteRows = (months && months.notes && months.notes.length)
       ? '<div class="mg-care-extra-notes"><h4>Na co si dát pozor u vás</h4><ul>' + months.notes.map(function (n) { return '<li>' + htmlEscape(n) + '</li>'; }).join('') + '</ul></div>'
@@ -480,6 +556,7 @@
       + '<header class="mg-care-report-head"><span class="mg-care-report-eyebrow">🌿 MVGreen · Roční plán péče</span><h3>' + htmlEscape(title) + '</h3><small>Vytvořeno ' + fmtToday() + '</small>'
       + '<button type="button" class="mg-care-print" onclick="window.print()">🖨️ Vytisknout / uložit jako PDF</button></header>'
       + statHtml
+      + grassNoteHtml
       + noteRows
       + fertTableHtml
       + '<h4 class="mg-care-cal-title">📅 Kalendář péče podle ročních období</h4>'
@@ -511,7 +588,7 @@
   // FERT_TYPE_NOTE se exportuje i samo o sobě (ne jen zabalené v textu poznámky u dávky), aby ho
   // mohl app.js 2026-11-02 znovu použít jako popisky "ⓘ" u vlastního výběru typu hnojiva (#mg-care2-ferttype)
   // - stejný text na dvou místech, ale psaný jen jednou, ať se časem nerozjedou.
-  var api = { computeCarePlan: computeCarePlan, renderCarePlanHTML: renderCarePlanHTML, FERT_TYPE_NOTE: FERT_TYPE_NOTE };
+  var api = { computeCarePlan: computeCarePlan, renderCarePlanHTML: renderCarePlanHTML, FERT_TYPE_NOTE: FERT_TYPE_NOTE, GRASS_SPECIES: GRASS_SPECIES };
   if (typeof window !== 'undefined') window.MVGreenCarePlan = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
