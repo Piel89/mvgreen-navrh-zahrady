@@ -328,6 +328,16 @@ const styleLayout={
  'meadow':{max:9,layout:'Většinu nebo celou označenou plochu přeměň na pestrou květnatou louku: hustý přirozený mix lučních trvalek a letniček (vlčí máky, chrpy, kopretiny, řimbaba, jetel apod.) prorostlý vyššími okrasnými trávami, v nepravidelných přírodních skupinách – žádné řady ani geometrické záhony. Tráva se nestříhá naakorát, nejvýš jedna neformální sečená pěšina nebo malé posezení, pokud je na ploše místo.',hint:'Pro luční zahradu označte štětcem i větší plochu trávníku, který se má přeměnit v louku.'},
  'low-care':{max:5,layout:'Menší trávník (asi 40–50 % plochy), zbytek odolné keře a půdopokryvné rostliny v mulči nebo kamenivu. Jednoduché tvary, nic náročného na péči.',hint:'Místa, kde nechcete sekat (u domu, u plotu), přidejte štětcem „＋ Přidat plochu“.'}
 };
+// "3 koncepty" (2026-11-03, Martin: chce iterativní návrh - nejdřív 3 levné náhledy na výběr,
+// místo jednoho rovnou finálního obrázku). Tři pevné styly pro všechny zákazníky (ne volný text –
+// jednodušší na pochopení i na odladění promptů). Každý má vlastní `ai` (celkový charakter) a
+// `layout` (rozvržení trávník/záhony) text, stejná role jako styleLayout[x].layout výše, jen psané
+// rovnou pro tenhle účel místo recyklace variantOptions A/B/C.
+const conceptStyles=[
+ {key:'c-modern',name:'Moderní minimalistický',ai:'Moderní, minimalistická zahrada: čisté geometrické linie, decentní barevná paleta, menší počet druhů rostlin, zato ve výrazných souvislých skupinách. Upravený, architektonický dojem, žádná změť barev ani tvarů.',layout:'Trávník s rovnými čistými hranami na cca 50–60 % upravované plochy. Podél hran geometrické záhony s okrasnými travinami nebo nízkými stálezelenými keři, štěrk nebo mlat jako doplňkový materiál, 1–2 solitérní dřeviny jako výrazový prvek.',maxPlants:5},
+ {key:'c-rustic',name:'Venkovský rustikální',ai:'Venkovská, neformální zahrada: měkké křivky záhonů, pestrá směs kvetoucích trvalek a nižších keřů, přírodní materiály (dřevo, přírodní kámen). Útulný, pečovaný dojem jako na staré venkovské zahradě, ne okrasná výstavní záhonová skladba.',layout:'Trávník zůstává hlavní otevřenou plochou, záhony ho měkce lemují podél domu, plotu nebo cesty – ne jako rovné geometrické pásy, ale s přirozeně zvlněným okrajem. Hustě vysazené trvalky v neformálních skupinách, případně nízký keř nebo dva. Kde to prostor dovolí, i malá skupinka bylinek blízko domu.',maxPlants:7},
+ {key:'c-natural',name:'Přírodní naturalistický',ai:'Naturalistická zahrada, co nejblíž přirozené krajině: nepravidelné, volně plynoucí skupiny trvalek, okrasných trav a keřů bez rovných řad či symetrie, kombinace výšek a textur jako v přírodě. Výsledek má působit, jako by tam rostliny rostly samy roky, ne jako čerstvě založená okrasná výsadba.',layout:'Místo ostrých hranic mezi trávníkem a výsadbou nech přechody měkké a nepravidelné. Vyšší traviny a trvalky vzadu/uprostřed skupin, nižší druhy vpředu, volně rozmístěné, ne v řadách. Pokud je na ploše místo, nech část jako přírodě blízkou pestrou výsadbu bez jasně vymezeného tvaru záhonu.',maxPlants:8}
+];
 function chooseVariant(code,applySettings=true,styleChoice=null){
  const selected=variantOptions[code]?code:'B';
  const wanted=styleChoice||q('mg-style-card').value;
@@ -2088,6 +2098,92 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&!wakeLockHandle&&generationInFlight)requestWakeLock();
 });
 
+// "3 koncepty" picker: polls mvgreen_ai_preview_step, which (in the 'concepts' phase) runs exactly
+// ONE concept per call and returns it as {conceptIndex,conceptOk,conceptImage} rather than batching
+// all of them into one response - this helper keeps polling (one call per concept, 'done' only once
+// every concept has been attempted) and collects each successful image client-side by its real
+// index, then renders the ones that succeeded as pickable cards inside the same #mg-ai-result
+// element the rest of generation uses. A concept that failed (conceptOk:false, a transient OpenAI
+// error) simply has no card - the customer still picks from whichever concepts did come through.
+// Lets the customer pick one (plus an optional free-text refinement), then calls
+// mvgreen_ai_concepts_finalize to produce the single full-quality final image. Resolves to
+// {step,pickedIndex} where `step` is shaped exactly like the ordinary mvgreen_ai_preview_step
+// 'done' response ({image,message,done:true}) so every line of runAiGeneration after this call
+// (S.finish(), chapter-building, etc.) runs unchanged.
+async function runConceptsPicker(jobId,totalStages,progress,result){
+  const concepts=new Array(totalStages).fill(null);
+  let step,stepFails=0;
+  const maxStepRetries=8;
+  for(;;){
+    try{
+      step=await mgAjax('mvgreen_ai_preview_step',{jobId});
+      stepFails=0;
+    }catch(stepErr){
+      if(++stepFails>maxStepRetries)throw stepErr;
+      progress.retrying(stepFails,maxStepRetries);
+      await new Promise(r=>setTimeout(r,Math.min(2000*stepFails,15000)));
+      continue;
+    }
+    if(typeof step.conceptIndex==='number'&&step.conceptOk&&step.conceptImage){
+      concepts[step.conceptIndex]=step.conceptImage;
+    }
+    progress.update(step.completedStages||0,step.totalStages||totalStages);
+    if(step.done)break;
+  }
+  const available=concepts.map((image,index)=>image?{index,image}:null).filter(Boolean);
+  if(!available.length)throw new Error('AI návrhy se bohužel nepodařilo vytvořit. Zkuste to prosím znovu.');
+  progress.stop(true);
+  return await new Promise((resolve,reject)=>{
+    result.replaceChildren();
+    const wrap=document.createElement('div');wrap.className='mg-concepts';
+    const title=document.createElement('p');title.className='mg-concepts-title';title.textContent='Vyberte si jeden ze '+available.length+' konceptů návrhu:';
+    wrap.append(title);
+    const grid=document.createElement('div');grid.className='mg-concepts-grid';
+    let chosen=-1;
+    const cards=available.map(({index,image})=>{
+      const label=(conceptStyles[index]&&conceptStyles[index].name)||('Koncept '+(index+1));
+      const card=document.createElement('div');card.className='mg-concept-card';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label',label);
+      const img=document.createElement('img');img.src=image;img.alt=label;
+      const name=document.createElement('div');name.className='mg-concept-label';name.textContent=label;
+      card.append(img,name);
+      const pick=()=>{
+        cards.forEach(c2=>c2.classList.remove('mg-concept-selected'));
+        card.classList.add('mg-concept-selected');
+        chosen=index;continueBtn.disabled=false;
+      };
+      card.addEventListener('click',pick);
+      card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}});
+      grid.append(card);
+      return card;
+    });
+    wrap.append(grid);
+    const refineWrap=document.createElement('div');refineWrap.className='mg-concepts-refine';
+    const refineLabel=document.createElement('label');refineLabel.textContent='Doplňující upřesnění (nepovinné):';
+    const refineInput=document.createElement('textarea');refineInput.className='mg-concepts-refine-input';refineInput.placeholder='Např. více záhonů u plotu, méně trávníku…';refineInput.rows=2;
+    refineWrap.append(refineLabel,refineInput);
+    wrap.append(refineWrap);
+    const errMsg=document.createElement('p');errMsg.className='mg-concepts-error';errMsg.hidden=true;
+    const continueBtn=document.createElement('button');continueBtn.type='button';continueBtn.className='mg-primary mg-concepts-continue';continueBtn.textContent='Pokračovat s vybraným konceptem';continueBtn.disabled=true;
+    wrap.append(errMsg,continueBtn);
+    result.append(wrap);
+    continueBtn.addEventListener('click',async()=>{
+      if(chosen<0)return;
+      continueBtn.disabled=true;continueBtn.textContent='Vytváří se finální návrh ve vysoké kvalitě…';errMsg.hidden=true;
+      cards.forEach(c=>{c.style.pointerEvents='none';c.tabIndex=-1;});
+      const finalizeProgress=startGenerationProgress();
+      try{
+        const fin=await mgAjax('mvgreen_ai_concepts_finalize',{jobId,chosenIndex:chosen,refine:refineInput.value||''});
+        finalizeProgress.stop(true);
+        resolve({step:fin,pickedIndex:chosen});
+      }catch(finErr){
+        finalizeProgress.stop(false);
+        errMsg.hidden=false;errMsg.textContent=finErr.message||'Finální návrh se nepodařilo vytvořit. Zkuste to znovu nebo vyberte jiný koncept.';
+        continueBtn.disabled=false;continueBtn.textContent='Pokračovat s vybraným konceptem';
+        cards.forEach(c=>{c.style.pointerEvents='';c.tabIndex=0;});
+      }
+    });
+  });
+}
 async function runAiGeneration(trigger,extraFields,confirmText){
   if(!photoReady)return alert('Nejprve nahrajte fotografii zahrady.');
   const S=window.MVGreenAISafety;
@@ -2100,15 +2196,29 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   original.getContext('2d').drawImage(img,0,0,original.width,original.height);
   const editMask=confirmedEditMask;
   const d=getData();const sl=styleLayout[d['mg-style-card']]||styleLayout['lawn-beds'];
-  const styleExtra={styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max};
   // "5 řešení" revamp, staged pipeline: when the customer drew a bed/path/remove sketch in step 5,
   // each stroke type gets its own precise geometric mask (buildStagedPlan above) instead of leaving
   // placement to the AI's reading of a hint line. brief.text is always built the same way either
   // way – it's the general/"remainder" instructions, and its .plants/.rejected drive the result
   // summary further down regardless of which path actually ran.
   const hasAreaTypes=!!(areaInstances||paintRemoveMask);
-  const brief=Brief.buildInstructions(d,curatedPlants,lastPlan,Object.assign({},styleExtra,{skipHintLine:hasAreaTypes}));
-  const stagedPlan=hasAreaTypes?buildStagedPlan(S,original.width,original.height,editMask,{areaInstances,instanceDetail:instanceDetailText,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max,paintRemoveMask}):null;
+  let brief,stagedPlan=null,conceptBriefs=null;
+  if(hasAreaTypes){
+   // "3 koncepty" only applies to the plain path below (one shared mask, one style) - a customer
+   // who drew explicit bed/path/remove areas already gets a far more deterministic, geometrically
+   // precise result than style text alone could ever describe, so that path is left exactly as it
+   // always was rather than further complicated by 3 parallel style variants of it.
+   const styleExtra={styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max};
+   brief=Brief.buildInstructions(d,curatedPlants,lastPlan,Object.assign({},styleExtra,{skipHintLine:true}));
+   stagedPlan=buildStagedPlan(S,original.width,original.height,editMask,{areaInstances,instanceDetail:instanceDetailText,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max,paintRemoveMask});
+  }else{
+   // One full, self-contained brief per concept style (own plant list/maxPlants, own STYL/ROZVRŽENÍ
+   // text) - `brief` starts as the first concept's and is swapped for whichever one the customer
+   // actually picks once runConceptsPicker() resolves, below, so "Rostliny v návrhu"/the excluded-
+   // species note always describe the DESIGN THAT WAS ACTUALLY GENERATED, not just a guess.
+   conceptBriefs=conceptStyles.map(cs=>Brief.buildInstructions(d,curatedPlants,lastPlan,{styleLabel:cs.name,styleAi:cs.ai,layout:cs.layout,maxPlants:cs.maxPlants,skipHintLine:false}));
+   brief=conceptBriefs[0];
+  }
   // Staged pipeline sends the photo untouched – each area-type mask gets its own precise, fully
   // self-contained AI call, so there's nothing left to usefully burn onto the photo as a hint.
   // `original` itself is deliberately left untouched either way: S.finish() further below still
@@ -2157,6 +2267,12 @@ async function runAiGeneration(trigger,extraFields,confirmText){
       // several stages with genuinely different masks, each would need its own occlusion buffer
       // computed the same way rather than reusing this one.
       startFields.stages=JSON.stringify(stagedPlan.map(s=>({mask:apiMask,instructions:s.instructions})));
+    }else if(conceptBriefs){
+      // "3 koncepty": one shared buffer-grown mask (same apiMask as every other path), 3 full
+      // instruction texts - server redeems the code once, runs all 3 at low quality against the
+      // untouched original, then waits for the customer's pick (mvgreen_ai_concepts_finalize) to
+      // produce the one real, full-quality final image.
+      startFields.mask=apiMask;startFields.concepts=JSON.stringify(conceptBriefs.map(b=>b.text));
     }else{
       startFields.mask=apiMask;startFields.instructions=brief.text;
     }
@@ -2164,6 +2280,11 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const totalStages=start.totalStages||1;
     progress.update(0,totalStages);
     let step,stepFails=0;
+    if(start.phase==='concepts'){
+      const picked=await runConceptsPicker(start.jobId,totalStages,progress,result);
+      step=picked.step;
+      brief=conceptBriefs[picked.pickedIndex];
+    }else{
     // A mobile connection (network handoff, or the screen-off/app-switch case above when the wake
     // lock isn't supported or the customer locks the phone manually anyway) can drop one of what
     // are now several sequential requests without anything actually having gone wrong server-side –
@@ -2187,6 +2308,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
       }
       if(step.done)break;
       progress.update(step.completedStages||0,step.totalStages||totalStages);
+    }
     }
     if(!step.image)throw new Error(step.message||'AI návrh se nepodařilo vytvořit.');
     const aiPhoto=new Image();await new Promise((resolve,reject)=>{aiPhoto.onload=resolve;aiPhoto.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));aiPhoto.src=step.image});

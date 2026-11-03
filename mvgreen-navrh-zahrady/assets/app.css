@@ -167,6 +167,22 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-pkg-choice label{display:flex;align-items:flex-start;gap:9px;font-size:13px;line-height:1.45;border:1px solid #e0ece2;border-radius:10px;padding:10px 12px;cursor:pointer}
 .mvgreen-designer .mg-pkg-choice label:has(input:checked){border-color:#2fae4a;background:#f4faf5}
 .mvgreen-designer .mg-pkg-choice input{margin-top:2px}
+.mvgreen-designer .mg-concepts{padding:4px 0}
+.mvgreen-designer .mg-concepts-title{margin:0 0 12px;font-size:15px;font-weight:700;color:#14301f}
+.mvgreen-designer .mg-concepts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.mvgreen-designer .mg-concept-card{cursor:pointer;border:2px solid #e0ece2;border-radius:12px;overflow:hidden;background:#fff;transition:border-color .15s var(--mg-ease,ease),box-shadow .15s var(--mg-ease,ease),transform .15s var(--mg-ease,ease)}
+.mvgreen-designer .mg-concept-card:hover{border-color:#a8cfb2;transform:translateY(-1px)}
+.mvgreen-designer .mg-concept-card:focus-visible{outline:2px solid #156333;outline-offset:2px}
+.mvgreen-designer .mg-concept-card img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#edf2ee}
+.mvgreen-designer .mg-concept-label{padding:9px 10px;font-size:13px;font-weight:650;color:#1d3a27;text-align:center}
+.mvgreen-designer .mg-concept-card.mg-concept-selected{border-color:#156333;box-shadow:0 0 0 3px #15633326}
+.mvgreen-designer .mg-concept-card.mg-concept-selected .mg-concept-label{background:#eaf6ed;color:#0f3d27}
+.mvgreen-designer .mg-concepts-refine{margin:14px 0 4px}
+.mvgreen-designer .mg-concepts-refine label{font-size:13px;margin-bottom:6px}
+.mvgreen-designer .mg-concepts-refine-input{resize:vertical;min-height:52px}
+.mvgreen-designer .mg-concepts-error{margin:8px 0;font-size:13px;color:#a32d2d}
+.mvgreen-designer .mg-concepts-continue{margin-top:6px}
+@media(max-width:480px){.mvgreen-designer .mg-concepts-grid{grid-template-columns:repeat(2,1fr)}}
 .mvgreen-designer .mg-pkg-save{color:#1f8a44;font-weight:700}
 .mvgreen-designer .mg-eyebrow{display:inline-block;font-size:13px;letter-spacing:.03em;font-weight:750;color:#29704b}
 .mvgreen-designer .mg-start{padding:17px 28px!important;font-size:18px!important;min-height:57px;border-radius:13px!important;box-shadow:0 8px 20px #15633325}

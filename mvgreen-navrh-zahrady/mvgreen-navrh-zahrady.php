@@ -286,6 +286,14 @@ $mvgreen_ai_preview_start_handle = function () {
     $image = isset($_POST['image']) ? wp_unslash($_POST['image']) : '';
     $instructions = isset($_POST['instructions']) ? sanitize_textarea_field(wp_unslash($_POST['instructions'])) : '';
     $stages_raw = isset($_POST['stages']) ? wp_unslash($_POST['stages']) : '';
+    // "3 koncepty" (2026-11-03, Martin: iterativní návrh místo jednoho výstřelu): the client sends
+    // `concepts` instead of `stages`/`instructions` - a JSON array of 2-4 instruction strings, one
+    // per style direction, all sharing the SAME top-level `mask` (the customer only marks the area
+    // once, same as always). Each becomes its own stage in $stage_defs below so the rest of this
+    // handler (validation, the existing "AI may never repaint the whole photo" share check, the
+    // existing job/transient machinery) needs no further changes - only mvgreen_ai_preview_step
+    // (below) treats a 'concepts' job differently, by checking $job_meta['phase'].
+    $concepts_raw = isset($_POST['concepts']) ? wp_unslash($_POST['concepts']) : '';
     // coreMask (2026-10-27, occlusion-buffer feature): the actual mask the customer confirmed on
     // step 4, BEFORE ai-safety.js's occlusionMask() grows it into the larger mask that's really sent
     // as `mask`/`stages[].mask` to the AI. Used ONLY for the "AI may never repaint the whole photo"
@@ -301,7 +309,7 @@ $mvgreen_ai_preview_start_handle = function () {
     // for a paying customer. The client now truncates notes to 500 chars; 6000 leaves generous
     // headroom above the realistic worst case while still bounding the request. The staged payload
     // can legitimately hold several masks at once, so it gets its own, larger cap.
-    if (strlen($image)>12000000 || strlen($instructions)>6000 || strlen($stages_raw)>48000000) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
+    if (strlen($image)>12000000 || strlen($instructions)>6000 || strlen($stages_raw)>48000000 || strlen($concepts_raw)>96000) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
     // The photo may be JPEG (small, no alpha needed) or PNG; every mask must stay PNG (needs the alpha channel).
     $image_mime = 'image/png';
     $decode_photo = function($data) use (&$image_mime) {
@@ -335,7 +343,30 @@ $mvgreen_ai_preview_start_handle = function () {
     // flow: `stages` decodes to an ordered array, each entry already a full-size mask + its own
     // self-contained prompt (see garden-brief.js's buildRemoveStageInstructions and neighbours).
     $stage_defs = [];
-    if ($stages_raw !== '') {
+    $is_concepts = false;
+    if ($concepts_raw !== '') {
+        $is_concepts = true;
+        $decoded_concepts = json_decode($concepts_raw, true);
+        if (!is_array($decoded_concepts) || count($decoded_concepts) < 2 || count($decoded_concepts) > 4) {
+            wp_send_json_error(['message'=>'Neplatné zadání konceptů návrhu.'], 400);
+        }
+        $mask = isset($_POST['mask']) ? wp_unslash($_POST['mask']) : '';
+        if (strlen($mask)>12000000) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
+        $mask_bytes = $decode_png($mask);
+        if (!$mask_bytes) wp_send_json_error(['message'=>'Neplatná maska.'], 400);
+        $mask_info = @getimagesizefromstring($mask_bytes);
+        if (!$mask_info || $mask_info[0] !== $image_info[0] || $mask_info[1] !== $image_info[1] || $mask_info[2] !== IMAGETYPE_PNG) {
+            wp_send_json_error(['message'=>'Maska musí mít stejnou velikost jako fotografie.'], 400);
+        }
+        foreach ($decoded_concepts as $concept_instructions) {
+            if (!is_string($concept_instructions)) wp_send_json_error(['message'=>'Neplatné zadání konceptů návrhu.'], 400);
+            $concept_instructions = sanitize_textarea_field($concept_instructions);
+            if (strlen($concept_instructions) > 24000) wp_send_json_error(['message'=>'Neplatné zadání konceptů návrhu.'], 400);
+            // Every concept shares the exact same mask - the customer marks the area once; only the
+            // style instructions differ between concepts.
+            $stage_defs[] = ['mask' => $mask_bytes, 'instructions' => $concept_instructions];
+        }
+    } elseif ($stages_raw !== '') {
         // v0.6.134 architecture rewrite (app.js's buildStagedPlan): every category-instance used to
         // get its OWN separate masked stage (up to 10: 1 remove + 2 islands × 4 categories + 1
         // remainder), each with a short, self-contained prompt well under the old 6000-char cap
@@ -478,9 +509,10 @@ $mvgreen_ai_preview_start_handle = function () {
         'instructions' => array_map(function ($sd) { return $sd['instructions']; }, $stage_defs),
         'is_admin' => $is_admin,
         'result_post_id' => $result_post_id,
+        'phase' => $is_concepts ? 'concepts' : 'normal',
     ];
     set_transient('mvgreen_ai_preview_job_' . $job_id, $job_meta, 1800);
-    wp_send_json_success(['jobId' => $job_id, 'totalStages' => count($stage_defs)]);
+    wp_send_json_success(['jobId' => $job_id, 'totalStages' => count($stage_defs), 'phase' => $job_meta['phase']]);
 };
 add_action('wp_ajax_mvgreen_ai_preview_start', $mvgreen_ai_preview_start_handle);
 add_action('wp_ajax_nopriv_mvgreen_ai_preview_start', $mvgreen_ai_preview_start_handle);
@@ -503,6 +535,52 @@ $mvgreen_ai_preview_step_handle = function () {
     $dir = $meta['dir'];
     $stage_count = (int) $meta['stage_count'];
     $i = (int) $meta['next_index'];
+    // "3 koncepty" (2026-11-03): a concepts job runs each stage INDEPENDENTLY from the true
+    // original photo (never chained through current.bin like the normal staged pipeline below,
+    // since these are 3 alternative styles of the SAME unedited photo, not sequential edits of one
+    // another), always at cheap 'low' quality regardless of is_admin, and stores each result as its
+    // own concept-N.png instead of overwriting current.bin. Once every concept has been attempted,
+    // the job is NOT finalized/saved/e-mailed and its directory is NOT deleted - it just flips to
+    // phase 'concepts_done' and sits there (lock released) until the customer picks one, which
+    // mvgreen_ai_concepts_finalize (below) then runs as the one real, full-quality stage against
+    // the SAME still-redeemed code - exactly one code, one redemption, for the whole flow.
+    if (($meta['phase'] ?? 'normal') === 'concepts') {
+        if ($i >= $stage_count) {
+            // Already finished earlier (e.g. a retried/duplicate poll) - just repeat the same signal.
+            delete_transient('mvgreen_ai_preview_lock');
+            wp_send_json_success(['done' => true, 'phase' => 'concepts', 'completedStages' => $stage_count, 'totalStages' => $stage_count]);
+        }
+        set_transient('mvgreen_ai_preview_lock', 1, 1800);
+        @set_time_limit(0);
+        $original_bytes = @file_get_contents($dir . '/original.bin');
+        $mask_bytes = @file_get_contents($dir . '/stage-' . $i . '.png');
+        if ($original_bytes === false || $mask_bytes === false) {
+            mvgreen_delete_ai_job_dir($dir);
+            delete_transient('mvgreen_ai_preview_job_' . $job_id);
+            delete_transient('mvgreen_ai_preview_lock');
+            wp_send_json_error(['message'=>'Úloha návrhu je poškozená nebo již skončila. Zkuste to prosím znovu.'], 500);
+        }
+        $r = mvgreen_run_ai_image_stage($original_bytes, $meta['current_mime'], $mask_bytes, $meta['instructions'][$i], $meta['size'], 'low');
+        $concept_ok = !isset($r['error']);
+        $concept_image = null;
+        if ($concept_ok) {
+            $locked = mvgreen_lock_stage_to_mask($original_bytes, $r['bytes'], $mask_bytes);
+            @file_put_contents($dir . '/concept-' . $i . '.png', $locked);
+            $concept_image = 'data:image/png;base64,' . base64_encode($locked);
+        }
+        // One concept failing (a transient OpenAI error) doesn't abort the whole flow - the customer
+        // just won't see that one card and can still pick from whichever concepts did succeed;
+        // mvgreen_ai_concepts_finalize below refuses a chosenIndex with no concept-N.png on disk.
+        $meta['next_index'] = $i + 1;
+        $done = $meta['next_index'] >= $stage_count;
+        if ($done) {
+            $meta['phase'] = 'concepts_done';
+            delete_transient('mvgreen_ai_preview_lock'); // customer may take a while to choose
+        }
+        set_transient('mvgreen_ai_preview_job_' . $job_id, $meta, 1800);
+        wp_send_json_success(['done' => $done, 'phase' => 'concepts', 'completedStages' => $meta['next_index'], 'totalStages' => $stage_count,
+            'conceptIndex' => $i, 'conceptOk' => $concept_ok, 'conceptImage' => $concept_image]);
+    }
     // Keep the single global generation lock alive for as long as polling continues – a multi-stage
     // chain can legitimately take several minutes end to end even though each individual request here
     // now only runs one OpenAI call. (The job transient itself is rewritten below with its updated
@@ -565,6 +643,67 @@ $mvgreen_ai_preview_step_handle = function () {
 };
 add_action('wp_ajax_mvgreen_ai_preview_step', $mvgreen_ai_preview_step_handle);
 add_action('wp_ajax_nopriv_mvgreen_ai_preview_step', $mvgreen_ai_preview_step_handle);
+
+/**
+ * "3 koncepty" (2026-11-03): runs once the customer has picked one of the low-quality concept
+ * previews mvgreen_ai_preview_step produced (job phase 'concepts_done'). Re-runs that ONE concept's
+ * own instructions (plus an optional short customer refinement note) against the TRUE original
+ * photo at full quality (same 'xhigh'/'low'-for-admin-test rule as the normal flow), locks it to the
+ * same mask, and finalizes exactly like the normal flow's last stage does (debug log, durable save +
+ * e-mail, response payload). No second code redemption happens anywhere in this function - the one
+ * code was already spent back in mvgreen_ai_preview_start, same as every other generation.
+ */
+$mvgreen_ai_concepts_finalize_handle = function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    $job_id = isset($_POST['jobId']) ? sanitize_text_field(wp_unslash($_POST['jobId'])) : '';
+    if (!preg_match('/^[a-f0-9]{32}$/', $job_id)) wp_send_json_error(['message'=>'Neplatné ID úlohy.'], 400);
+    $meta = get_transient('mvgreen_ai_preview_job_' . $job_id);
+    if (!is_array($meta) || !isset($meta['dir'], $meta['stage_count'], $meta['instructions'], $meta['size'], $meta['current_mime']) || ($meta['phase'] ?? '') !== 'concepts_done') {
+        wp_send_json_error(['message'=>'Nejprve si prosím vyberte jeden z návrhů, nebo úloha vypršela - zkuste to znovu od začátku.'], 404);
+    }
+    $dir = $meta['dir'];
+    $stage_count = (int) $meta['stage_count'];
+    $chosen = isset($_POST['chosenIndex']) ? (int) $_POST['chosenIndex'] : -1;
+    if ($chosen < 0 || $chosen >= $stage_count) wp_send_json_error(['message'=>'Neplatný výběr návrhu.'], 400);
+    $concept_bytes = @file_get_contents($dir . '/concept-' . $chosen . '.png');
+    $original_bytes = @file_get_contents($dir . '/original.bin');
+    $mask_bytes = @file_get_contents($dir . '/stage-' . $chosen . '.png');
+    if ($concept_bytes === false) wp_send_json_error(['message'=>'Tento návrh se bohužel nepodařilo vytvořit. Vyberte prosím jiný.'], 400);
+    if ($original_bytes === false || $mask_bytes === false) {
+        mvgreen_delete_ai_job_dir($dir);
+        delete_transient('mvgreen_ai_preview_job_' . $job_id);
+        wp_send_json_error(['message'=>'Úloha vypršela. Zkuste to prosím znovu od začátku.'], 404);
+    }
+    if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message'=>'Jiný návrh se právě vytváří. Zkuste to prosím za chvíli.'], 429);
+    set_transient('mvgreen_ai_preview_lock', 1, 1800);
+    @set_time_limit(0);
+    // Krátká doplňující poznámka zákazníka k vybranému konceptu ("doladění") - nepovinná, přidá se
+    // za instrukce toho jednoho stylu, zbytek pravidel (POŘÁDEK, hranice masky atd.) je beze změny.
+    $refine = isset($_POST['refine']) ? sanitize_textarea_field(wp_unslash($_POST['refine'])) : '';
+    $refine = function_exists('mb_substr') ? mb_substr($refine, 0, 600) : substr($refine, 0, 600);
+    $instructions = $meta['instructions'][$chosen] . ($refine !== '' ? "\n\nDOPLŇUJÍCÍ PŘÁNÍ ZÁKAZNÍKA K TOMUTO KONKRÉTNÍMU NÁVRHU (zapracuj, ale dodržuj všechna předchozí pravidla beze zbytku): " . $refine : '');
+    $quality = $meta['is_admin'] ? 'low' : 'xhigh';
+    // Finalize always starts fresh from the TRUE original photo, never from the cheap low-quality
+    // concept image itself - so the paid result is never built on top of low-quality artifacts.
+    $r = mvgreen_run_ai_image_stage($original_bytes, $meta['current_mime'], $mask_bytes, $instructions, $meta['size'], $quality);
+    if (isset($r['error'])) {
+        delete_transient('mvgreen_ai_preview_lock');
+        // Job dir is deliberately kept (not deleted) on failure - the already-redeemed code stays
+        // usable: the customer can retry the same concept, or pick a different one, from the client's
+        // already-cached concept images without having to pay or start over.
+        wp_send_json_error(['message'=>$r['error']], 200);
+    }
+    $final_bytes = mvgreen_lock_stage_to_mask($original_bytes, $r['bytes'], $mask_bytes);
+    delete_transient('mvgreen_ai_preview_lock');
+    $payload = mvgreen_finalize_ai_job($original_bytes, $mask_bytes, $final_bytes, $meta['is_admin'], $meta['result_post_id'], '');
+    delete_transient('mvgreen_ai_preview_job_' . $job_id);
+    mvgreen_delete_ai_job_dir($dir);
+    $payload['done'] = true;
+    wp_send_json_success($payload);
+};
+add_action('wp_ajax_mvgreen_ai_concepts_finalize', $mvgreen_ai_concepts_finalize_handle);
+add_action('wp_ajax_nopriv_mvgreen_ai_concepts_finalize', $mvgreen_ai_concepts_finalize_handle);
+
 // Admin-adjustable daily cap for paid AI tests (Settings REST API, admins only). Default 1.
 add_action('init', function () {
     register_setting('options', 'mvgreen_ai_daily_limit', [
