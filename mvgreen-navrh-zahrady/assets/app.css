@@ -173,7 +173,15 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-concept-card{cursor:pointer;border:2px solid #e0ece2;border-radius:12px;overflow:hidden;background:#fff;transition:border-color .15s var(--mg-ease,ease),box-shadow .15s var(--mg-ease,ease),transform .15s var(--mg-ease,ease)}
 .mvgreen-designer .mg-concept-card:hover{border-color:#a8cfb2;transform:translateY(-1px)}
 .mvgreen-designer .mg-concept-card:focus-visible{outline:2px solid #156333;outline-offset:2px}
-.mvgreen-designer .mg-concept-card img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#edf2ee}
+.mvgreen-designer .mg-concept-frame{position:relative;isolation:isolate;aspect-ratio:4/3;overflow:hidden;background:#123b29}
+.mvgreen-designer .mg-concept-frame img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;object-position:center;background:#edf2ee}
+.mvgreen-designer .mg-concept-card:hover .mg-concept-frame img,.mvgreen-designer .mg-concept-card:focus-within .mg-concept-frame img,.mvgreen-designer .mg-concept-frame.mg-concept-zoomed img{object-fit:contain}
+.mvgreen-designer .mg-concept-zoom-bar{position:absolute;left:10px;bottom:10px;right:auto;z-index:2;font-size:12.5px;font-weight:800;color:#fff;background:#063c28a6;padding:7px 11px;border-radius:8px;text-shadow:0 1px 2px #001a0c;opacity:0;pointer-events:none;transition:opacity .15s ease}
+.mvgreen-designer .mg-concept-card:hover .mg-concept-zoom-bar,.mvgreen-designer .mg-concept-card:focus-within .mg-concept-zoom-bar,.mvgreen-designer .mg-concept-frame.mg-concept-zoomed .mg-concept-zoom-bar{opacity:1}
+.mvgreen-designer .mg-concept-zoom-btn{position:absolute;top:8px;right:8px;z-index:3;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #ffffffa8;background:#063c28a6;color:#fff;cursor:pointer;box-shadow:0 2px 8px #0003}
+.mvgreen-designer .mg-concept-zoom-btn svg{width:16px;height:16px;display:block}
+.mvgreen-designer .mg-concept-frame.mg-concept-zoomed{background:#123b29}
+@media(hover:none),(pointer:coarse){.mvgreen-designer .mg-concept-zoom-bar{opacity:.92}.mvgreen-designer .mg-concept-card:hover .mg-concept-zoom-bar{opacity:.92}}
 .mvgreen-designer .mg-concept-label{padding:9px 10px;font-size:13px;font-weight:650;color:#1d3a27;text-align:center}
 .mvgreen-designer .mg-concept-card.mg-concept-selected{border-color:#156333;box-shadow:0 0 0 3px #15633326}
 .mvgreen-designer .mg-concept-card.mg-concept-selected .mg-concept-label{background:#eaf6ed;color:#0f3d27}

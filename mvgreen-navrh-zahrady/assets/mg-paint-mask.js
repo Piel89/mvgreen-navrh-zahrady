@@ -43,6 +43,15 @@
 
   function mkCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
+  // Inline stroke-based icons for the toolbar (2026-11-04, replacing plain emoji glyphs so the
+  // buttons actually depict what they do and match the rest of the app's icon language). All use
+  // stroke="currentColor"/fill="none" so they inherit each button's own text color automatically -
+  // default, .active, and both light/dark themes - with no extra CSS needed.
+  function svgIcon(innerPaths) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' + innerPaths + '</svg>';
+  }
+
   // One Worker, reused across opens; segmentation itself is cached per cacheKey (app.js passes the
   // uploaded photo's own img.src) so reopening the brush on the same photo never re-runs the
   // ~0.3-2.5s computation. app.js also calls prepareSegmentation() as soon as the photo is ready
@@ -189,13 +198,15 @@
     + '.tool-cluster{display:flex;gap:2px;padding:3px;border-radius:13px;background:color-mix(in srgb,var(--panel) 72%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid color-mix(in srgb,var(--line) 80%,transparent);box-shadow:0 2px 10px -2px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.4);}'
     + '.tool-cluster button{background:transparent;border-radius:10px;padding:7px 11px;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:56px;}'
     + '.tool-cluster-paint button{min-width:64px;}'
-    + '.tool-cluster button .ic{font-size:17px;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}'
+    + '.tool-cluster button .ic{display:flex;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}'
+    + '.tool-cluster button .ic svg{width:18px;height:18px;display:block;}'
     + '.tool-cluster button.active .ic{transform:scale(1.18);}'
     + '.tool-cluster button .lbl{font-size:10.5px;font-weight:700;letter-spacing:.01em;}'
     + '.tool-cluster-utility{background:color-mix(in srgb,var(--bg) 60%,transparent);}'
     + '.tool-cluster-utility button{color:var(--muted);}'
     + '.tool-pill{display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:13px;border:1px solid color-mix(in srgb,var(--line) 80%,transparent);background:color-mix(in srgb,var(--panel) 72%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 2px 10px -2px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.4);min-width:64px;}'
-    + '.tool-pill .ic{font-size:17px;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}'
+    + '.tool-pill .ic{display:flex;line-height:1;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}'
+    + '.tool-pill .ic svg{width:18px;height:18px;display:block;}'
     + '.tool-pill .lbl{font-size:10.5px;font-weight:700;}'
     + '.tool-pill.active{background:#a6670a;border-color:#a6670a;box-shadow:0 3px 14px -2px rgba(166,103,10,.5);}'
     + '.tool-pill.active .ic{transform:scale(1.18);}'
@@ -213,6 +224,11 @@
     + '.stage{position:relative;width:100%;margin:0 auto;}'
     + 'canvas{display:block;width:100%;height:auto;touch-action:none;}'
     + '#minimap{position:absolute;right:10px;bottom:10px;width:104px;height:auto;border:2px solid rgba(255,255,255,0.85);border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,0.4);touch-action:none;cursor:pointer;}'
+    // 2026-11-04 (owner: "ikona zvetsit at neni pres puvodni obrazovku... staci dam malou ikonu do
+    // rohu") - fullscreen toggle moved out of the labeled zoomrow pill and into a small icon-only
+    // button overlaid on the image corner, same positioning pattern as #minimap.
+    + '#fullscreen-btn{position:absolute;right:10px;top:10px;width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid color-mix(in srgb,var(--line) 80%,transparent);background:color-mix(in srgb,var(--panel) 72%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 2px 10px -2px rgba(0,0,0,.25);color:var(--accent);z-index:2;}'
+    + '#fullscreen-btn svg{width:18px;height:18px;display:block;}'
     + '.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding-bottom:6px;}'
     + '.legend span{display:inline-flex;align-items:center;gap:5px;}'
     + '.sw{width:11px;height:11px;border-radius:3px;display:inline-block;}'
@@ -221,7 +237,7 @@
     + '#status .statstext{flex:1 1 auto;min-width:160px;}'
     + '#status .statstext.is-bad{color:var(--remove);font-weight:600;}'
     + '.confirmrow{flex:0 0 auto;display:flex;justify-content:flex-end;gap:10px;padding:4px 0 2px;}'
-    + '@media (orientation: landscape) and (max-height: 600px){.headerbar,.info-panel{display:none;}button{padding:6px 9px;font-size:11px;border-radius:7px;}.toolbar,.zoomrow{padding:4px 0;gap:4px;}.tool-cluster,.tool-pill{padding:2px;border-radius:9px;}.tool-cluster button,.tool-pill{min-width:0;flex-direction:row;gap:4px;padding:5px 8px;}.tool-cluster button .ic,.tool-pill .ic{font-size:13px;}.tool-cluster button .lbl,.tool-pill .lbl{font-size:10px;}}'
+    + '@media (orientation: landscape) and (max-height: 600px){.headerbar,.info-panel{display:none;}button{padding:6px 9px;font-size:11px;border-radius:7px;}.toolbar,.zoomrow{padding:4px 0;gap:4px;}.tool-cluster,.tool-pill{padding:2px;border-radius:9px;}.tool-cluster button,.tool-pill{min-width:0;flex-direction:row;gap:4px;padding:5px 8px;}.tool-cluster button .ic svg,.tool-pill .ic svg{width:14px;height:14px;}.tool-cluster button .lbl,.tool-pill .lbl{font-size:10px;}}'
     + '#app.fs-mode .stage-wrap{position:fixed;inset:0;margin:0;}'
     + '#app.fs-mode .stage-viewport{border:0;border-radius:0;}'
     // 2026-10-27: chrome-top/status-bottom float as fixed overlays on top of the full-screen photo
@@ -255,15 +271,15 @@
     + '<p class="hintbox" id="hintbox" hidden></p>'
     + '<div class="toolbar">'
     + '<div class="tool-cluster tool-cluster-paint">'
-    + '<button id="tool-protect" class="active" disabled><span class="ic">🟩</span><span class="lbl">Zůstane</span></button>'
-    + '<button id="tool-remove" disabled><span class="ic">🟥</span><span class="lbl">Odstranit</span></button>'
-    + '<button id="tool-erase" disabled><span class="ic">⬜</span><span class="lbl">Smazat</span></button>'
+    + '<button id="tool-protect" class="active" disabled><span class="ic">' + svgIcon('<path d="M5 13l4 4L19 7"/>') + '</span><span class="lbl">Zůstane</span></button>'
+    + '<button id="tool-remove" disabled><span class="ic">' + svgIcon('<path d="M6 6l12 12M18 6L6 18"/>') + '</span><span class="lbl">Odstranit</span></button>'
+    + '<button id="tool-erase" disabled><span class="ic">' + svgIcon('<path d="M3.5 16.5l7-7 5 5-3 3H7z"/><path d="M10.5 9.5L15 5a2 2 0 0 1 3 0l1 1a2 2 0 0 1 0 3l-4.5 4.5"/>') + '</span><span class="lbl">Smazat</span></button>'
     + '</div>'
-    + '<button id="tool-precision" class="tool-pill" disabled title="Zapne hranice jednotlivých dílků a malování po jednom – pro přesné trefení plotu, hrany záhonu nebo kytky."><span class="ic">🔲</span><span class="lbl">Přesně</span></button>'
+    + '<button id="tool-precision" class="tool-pill" disabled title="Zapne hranice jednotlivých dílků a malování po jednom – pro přesné trefení plotu, hrany záhonu nebo kytky."><span class="ic">' + svgIcon('<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>') + '</span><span class="lbl">Přesně</span></button>'
     + '<div class="tool-cluster tool-cluster-utility">'
-    + '<button id="auto-sky" disabled><span class="ic">☁️</span><span class="lbl">Obloha auto</span></button>'
-    + '<button id="undo-btn" disabled><span class="ic">↶</span><span class="lbl">Zpět</span></button>'
-    + '<button id="clear-all" disabled><span class="lbl">Vymazat vše</span></button>'
+    + '<button id="auto-sky" disabled><span class="ic">' + svgIcon('<path d="M7.5 18a4 4 0 0 1-.5-7.97A5 5 0 0 1 16.5 9 4.5 4.5 0 0 1 17 18h-9.5z"/>') + '</span><span class="lbl">Obloha auto</span></button>'
+    + '<button id="undo-btn" disabled><span class="ic">' + svgIcon('<path d="M4 12h12a5 5 0 1 1 0 10h-1"/><path d="M9 7l-5 5 5 5"/>') + '</span><span class="lbl">Zpět</span></button>'
+    + '<button id="clear-all" disabled><span class="ic">' + svgIcon('<path d="M4 7h16"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M10 11v6M14 11v6"/>') + '</span><span class="lbl">Vymazat vše</span></button>'
     + '</div>'
     + '</div>'
     + '<div class="zoomrow">'
@@ -272,11 +288,11 @@
     + '<button id="zoom-reset">100 %</button>'
     + '<button id="zoom-in" aria-label="Přiblížit">＋</button>'
     + '</div>'
-    + '<button id="fullscreen-btn" class="tool-pill"><span class="ic">⛶</span><span class="lbl">Celá obrazovka</span></button>'
     + '</div>'
     + '</div>'
     + '<div class="stage-wrap">'
     + '<div class="stage-viewport" id="viewport"><div class="stage" id="stage"><canvas id="view"></canvas></div></div>'
+    + '<button id="fullscreen-btn" aria-label="Celá obrazovka" title="Celá obrazovka">' + svgIcon('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>') + '</button>'
     + '<canvas id="minimap" hidden></canvas>'
     + '</div>'
     + '<button id="fs-prompt" hidden>⛶ Zapnout celou obrazovku</button>'
@@ -529,7 +545,10 @@
             var fs = isFullscreen();
             app.classList.toggle('fs-mode', fs);
             if (!fs) app.classList.remove('controls-hidden');
-            fsBtn.textContent = fs ? '⤡ Zavřít celou obrazovku' : '⛶ Celá obrazovka';
+            var fsLabel = fs ? 'Zavřít celou obrazovku' : 'Celá obrazovka';
+            fsBtn.innerHTML = svgIcon(fs ? '<path d="M9 4H4v5M20 9V4h-5M15 20h5v-5M4 15v5h5"/>' : '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>');
+            fsBtn.title = fsLabel;
+            fsBtn.setAttribute('aria-label', fsLabel);
             updateFsPrompt();
             setTimeout(function () { applyZoom(); centerView(); }, 50);
           }

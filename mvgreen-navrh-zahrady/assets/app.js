@@ -329,11 +329,11 @@ const styleChoices={
 // Per-style layout for the AI brief: how much lawn stays, how much is planted.
 const styleLayout={
  'english':{max:4,layout:'Zachovej asi 85–90 % označené plochy jako souvislý trávník. Přidej nejvýš 1–2 úzké jednoduché záhony podél domu nebo plotu (šířka do 1 m). Žádné stromy ani velké keře.'},
- 'lawn-beds':{max:6,layout:'Trávník zůstane asi na 60–70 % označené plochy. Po okrajích a podél domu vytvoř souvislé záhony s trvalkami, travinami a 1–3 nízkými keři.',hint:'Chcete osázet i pruh u domu nebo terasy? Přidejte ho štětcem „＋ Přidat plochu“.'},
- 'modern':{max:6,layout:'Trávník asi na 50–60 % plochy s čistými rovnými hranami. Geometrické záhony s okrasnými travinami, kamenivem nebo mulčem a 1–2 solitérními keři.',hint:'Pro moderní zahradu přidejte štětcem „＋ Přidat plochu“ i pruh u domu nebo terasy – tam se záhony hodí nejvíc.'},
+ 'lawn-beds':{max:6,layout:'Trávník zůstane asi na 60–70 % označené plochy. Po okrajích a podél domu vytvoř souvislé záhony s trvalkami, travinami a 1–3 nízkými keři.',hint:'Chcete osázet i pruh u domu nebo terasy? Namalujte ho štětcem „Odstranit“ – a pro přesné trefení hrany terasy nebo chodníku použijte „Přesně“.'},
+ 'modern':{max:6,layout:'Trávník asi na 50–60 % plochy s čistými rovnými hranami. Geometrické záhony s okrasnými travinami, kamenivem nebo mulčem a 1–2 solitérními keři.',hint:'Pro moderní zahradu označte štětcem „Odstranit“ i pruh u domu nebo terasy – tam se záhony hodí nejvíc. Rovnou hranu záhonu nejlépe trefíte přes „Přesně“.'},
  'meadow':{max:9,layout:'Většinu nebo celou označenou plochu přeměň na pestrou květnatou louku: hustý přirozený mix lučních trvalek a letniček (vlčí máky, chrpy, kopretiny, řimbaba, jetel apod.) prorostlý vyššími okrasnými trávami, v nepravidelných přírodních skupinách – žádné řady ani geometrické záhony. Tráva se nestříhá naakorát, nejvýš jedna neformální sečená pěšina nebo malé posezení, pokud je na ploše místo.',hint:'Pro luční zahradu označte štětcem i větší plochu trávníku, který se má přeměnit v louku.'},
- 'low-care':{max:5,layout:'Menší trávník (asi 40–50 % plochy), zbytek odolné keře a půdopokryvné rostliny v mulči nebo kamenivu. Jednoduché tvary, nic náročného na péči.',hint:'Místa, kde nechcete sekat (u domu, u plotu), přidejte štětcem „＋ Přidat plochu“.'},
- 'sport-kids':{max:3,layout:'Většinu nebo celou označenou plochu nech jako odolný, rovný trávník vhodný na hru a sport. Po okrajích nejvýš pár nízkých, bytelných a bezpečných (nejedovatých, netrnitých) keřů nebo trvalek, mimo hrací prostor. Žádné křehké záhony ani ostré nebo jedovaté rostliny v dosahu hry.',hint:'Hrací prostor nechte volný – rostliny přidávejte štětcem jen u plotu nebo u domu.'}
+ 'low-care':{max:5,layout:'Menší trávník (asi 40–50 % plochy), zbytek odolné keře a půdopokryvné rostliny v mulči nebo kamenivu. Jednoduché tvary, nic náročného na péči.',hint:'Místa, kde nechcete sekat (u domu, u plotu), označte štětcem „Odstranit“. Pro detailnější a přesnější označení hrany u domu nebo plotu klikněte na „Přesně“.'},
+ 'sport-kids':{max:3,layout:'Většinu nebo celou označenou plochu nech jako odolný, rovný trávník vhodný na hru a sport. Po okrajích nejvýš pár nízkých, bytelných a bezpečných (nejedovatých, netrnitých) keřů nebo trvalek, mimo hrací prostor. Žádné křehké záhony ani ostré nebo jedovaté rostliny v dosahu hry.',hint:'Pro detailnější a přesnější označení hranice u plotu nebo u domu klikněte na „Přesně“ – malujete pak po jednotlivých menších dílcích, ne po velkých plochách.'}
 };
 // "3 koncepty" (2026-11-03, Martin: chce iterativní návrh - nejdřív 3 levné náhledy na výběr,
 // místo jednoho rovnou finálního obrázku). Tři pevné styly pro všechny zákazníky (ne volný text –
@@ -2328,9 +2328,19 @@ async function runConceptsPicker(jobId,totalStages,progress,result){
     const cards=available.map(({index,image})=>{
       const label=(conceptStyles[index]&&conceptStyles[index].name)||('Koncept '+(index+1));
       const card=document.createElement('div');card.className='mg-concept-card';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label',label);
+      // 2026-11-04 (owner: "ve vyberu nejsou videt cele navrhy ale jen vyrezy... kazdej navrh mel
+      // tu listu kdyz sni prejedu ukaze se mi muj navrh") - the thumbnail box crops the generated
+      // design to a 4:3 box (object-fit:cover), same as before, but hovering/tapping it now shows
+      // the whole, uncropped design (object-fit:contain) with a small label bar, mirroring the
+      // PŘED↔PO hover bar already used on the welcome hero image (.mg-hero-image-label).
+      const frame=document.createElement('div');frame.className='mg-concept-frame';
       const img=document.createElement('img');img.src=image;img.alt=label;
+      const zoomBar=document.createElement('span');zoomBar.className='mg-concept-zoom-bar';zoomBar.textContent='👁 Váš návrh';
+      const zoomBtn=document.createElement('button');zoomBtn.type='button';zoomBtn.className='mg-concept-zoom-btn';zoomBtn.setAttribute('aria-label','Zobrazit celý návrh');zoomBtn.setAttribute('aria-pressed','false');zoomBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg>';
+      zoomBtn.addEventListener('click',e=>{e.stopPropagation();const on=frame.classList.toggle('mg-concept-zoomed');zoomBtn.setAttribute('aria-pressed',on?'true':'false');zoomBtn.setAttribute('aria-label',on?'Zobrazit zmenšený náhled':'Zobrazit celý návrh');});
+      frame.append(img,zoomBar,zoomBtn);
       const name=document.createElement('div');name.className='mg-concept-label';name.textContent=label;
-      card.append(img,name);
+      card.append(frame,name);
       const pick=()=>{
         cards.forEach(c2=>c2.classList.remove('mg-concept-selected'));
         card.classList.add('mg-concept-selected');
