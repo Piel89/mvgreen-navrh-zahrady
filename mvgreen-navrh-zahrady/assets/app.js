@@ -426,7 +426,6 @@ function mgTipIcon(kind){
  list:'<path d="M4 6h3m3 0h10M4 12h3m3 0h10M4 18h3m3 0h10"/>',
  settings:'<circle cx="12" cy="12" r="3"/><path d="m10 2-.5 2-2 1-2-.5-2 3 1.5 1.5v3l-1.5 1.5 2 3 2-.5 2 1 .5 2h4l.5-2 2-1 2 .5 2-3L19 12V9l1.5-1.5-2-3-2 .5-2-1-.5-2z"/>',
  leaf:'<path d="M20 4C11 4 5 8 5 15a5 5 0 0 0 5 5c7 0 11-6 10-16Z"/><path d="M4 21c3-6 6-9 12-12"/>',
- sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>',
  check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
  sprout:'<path d="M12 21v-9M12 14C5 14 3 10 4 5c6 0 8 3 8 9Zm0-2c0-6 3-8 8-8 1 5-1 8-8 8Z"/>',
  bed:'<circle cx="12" cy="11" r="2"/><path d="M12 9V4m3.5 6-1.5-3.5M14 13l3 2m-5 0v5m-2-7-3 2m2.5-5L8 6.5"/><circle cx="12" cy="11" r="6.5"/>',
@@ -434,9 +433,12 @@ function mgTipIcon(kind){
  mulch:'<path d="M4 16c0-3 3-5 5-3l3 4-2 3H5zm9-3c2-4 6-4 8 0l-1 5h-6z"/>',
  terrace:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m6-16v16M3 12h18"/>',
  // Slider end-icons for the combined "Slunce a voda" picker (2026-11-04).
- cloud:'<path d="M6.5 18.5a4.3 4.3 0 0 1-.4-8.58A5.8 5.8 0 0 1 17.3 8.1 3.8 3.8 0 0 1 17 18.5H6.5Z"/>',
- dropEmpty:'<path d="M12 3c-1.3 3.2-6 7.4-6 12.3a6 6 0 0 0 12 0C18 10.4 13.3 6.2 12 3Z"/>',
- dropFull:'<path d="M12 3c-1.3 3.2-6 7.4-6 12.3a6 6 0 0 0 12 0C18 10.4 13.3 6.2 12 3Z" fill="currentColor"/>'
+ // Owner feedback: wanted these in their natural colors, not the flat
+ // single-tone outline used elsewhere - sun=yellow, cloud=grey, drops=blue.
+ sun:'<circle cx="12" cy="12" r="4" fill="#fbb93f" stroke="#e8991f"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" stroke="#e8991f"/>',
+ cloud:'<path d="M6.5 18.5a4.3 4.3 0 0 1-.4-8.58A5.8 5.8 0 0 1 17.3 8.1 3.8 3.8 0 0 1 17 18.5H6.5Z" fill="#d7dee3" stroke="#97a4ad"/>',
+ dropEmpty:'<path d="M12 3c-1.3 3.2-6 7.4-6 12.3a6 6 0 0 0 12 0C18 10.4 13.3 6.2 12 3Z" fill="none" stroke="#6babe0"/>',
+ dropFull:'<path d="M12 3c-1.3 3.2-6 7.4-6 12.3a6 6 0 0 0 12 0C18 10.4 13.3 6.2 12 3Z" fill="#3d8fd1" stroke="#2f73ab"/>'
  };
  return '<svg class="mg-professional-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(strokes[kind]||strokes.leaf)+'</svg>';
 }
