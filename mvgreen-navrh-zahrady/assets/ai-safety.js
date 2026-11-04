@@ -393,9 +393,23 @@
       var px = Math.round(OCCLUSION_REACH_M / metersPerPixel);
       return Math.max(24, Math.min(px, Math.round(w * 0.28)));
     }
-    // No calibration done (it's an optional step) – a resolution-relative estimate, capped more
-    // conservatively since there's no real-world distance to check it against.
-    return Math.max(28, Math.min(Math.round(w * 0.12), 260));
+    // No calibration done (it's an optional step, and the common case – most customers skip it).
+    // Owner-reported bug (2026-11-04, screenshot): a fence/grass strip and two small tank lids, all
+    // explicitly painted "Zůstane" in step 4, still visibly changed in the result even after the
+    // growMask/protectMask hard-lock fix shipped the same day. Root cause: THIS cap. Without
+    // calibration there is no real-world distance to size the occlusion ring against, so it used to
+    // default to up to 260px / 12% of the photo's width – on a typical photo, easily wide enough to
+    // reach clean across a fence strip or swallow most of a small object standing near the edit
+    // boundary, none of which is then hard-locked back (that's the whole point of this ring – see
+    // occlusionMask() above). The owner's own words today: "chci, abych si mohl označit přesně věci,
+    // co nechceš, aby AI změnila" (wants to mark EXACTLY what must not change). A same-day, same-
+    // session, uncalibrated-default-sized ring working directly against that is a bug, not a
+    // trade-off – cut to roughly a quarter of its previous size: still enough for a modest shrub to
+    // realistically cover part of a fence POST right at the boundary, far less likely to reach a
+    // whole fence run or a small protected object sitting any real distance inside the edit area.
+    // The CALIBRATED branch above is untouched – there the ring is sized from an actual measured
+    // distance the customer deliberately provided, which is a different, better-grounded case.
+    return Math.max(16, Math.min(Math.round(w * 0.035), 70));
   }
   /**
    * The mask actually handed to the AI (and to finish()'s own lenient ring, above): editMask grown
