@@ -36,6 +36,14 @@
 
   function mkCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
+  // Inline stroke-based icons for the toolbar (2026-11-04, matching the icons added to
+  // mg-paint-mask.js's toolbar the same day) - stroke="currentColor"/fill="none" so they inherit
+  // each button's own text color automatically, in both light/dark themes.
+  function svgIcon(innerPaths) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' + innerPaths + '</svg>';
+  }
+
   // The 7 types the customer can paint, in toolbar order. Keys match garden-brief.js's
   // buildXStageInstructions functions one-to-one (buildAreaTypeInstructions below picks the right
   // one by this id) so adding an 8th type later is one entry here + one function there, no other
@@ -255,6 +263,8 @@
     + 'p.note{font-size:13px;color:var(--muted);margin:0 0 8px;}'
     + '.toolbar{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:6px;padding:6px 0;}'
     + 'button{border:0;border-radius:9px;padding:9px 12px;font:inherit;font-size:13px;font-weight:600;background:var(--accent-soft);color:var(--accent);cursor:pointer;}'
+    + 'button .ic{display:inline-flex;vertical-align:-3px;margin-right:4px;}'
+    + 'button .ic svg{width:15px;height:15px;display:block;}'
     + 'button:disabled{opacity:.5;cursor:not-allowed;}'
     + 'button.primary{background:var(--accent);color:#fff;}'
     + 'button.toggle-active{outline:2px solid var(--accent);outline-offset:-2px;}'
@@ -264,6 +274,8 @@
     + '.stage{position:relative;width:100%;margin:0 auto;}'
     + 'canvas{display:block;width:100%;height:auto;touch-action:none;}'
     + '#minimap{position:absolute;right:10px;bottom:10px;width:104px;height:auto;border:2px solid rgba(255,255,255,0.85);border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,0.4);touch-action:none;cursor:pointer;}'
+    + '#fullscreen-btn{position:absolute;right:10px;top:10px;width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:9px;border:1px solid var(--line);background:var(--panel);box-shadow:0 2px 10px -2px rgba(0,0,0,.25);color:var(--accent);z-index:2;}'
+    + '#fullscreen-btn svg{width:18px;height:18px;display:block;}'
     + '.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding-bottom:6px;}'
     + '.legend span{display:inline-flex;align-items:center;gap:5px;}'
     + '.sw{width:11px;height:11px;border-radius:3px;display:inline-block;}'
@@ -286,7 +298,6 @@
     + '#app.fs-mode #chrome-top button,#app.fs-mode #status-bottom button{pointer-events:auto;}'
     + '#app.fs-mode.controls-hidden #chrome-top,#app.fs-mode.controls-hidden #status-bottom{opacity:0;pointer-events:none;}'
     + '#app.fs-mode.controls-hidden #chrome-top button,#app.fs-mode.controls-hidden #status-bottom button{pointer-events:none;}'
-    + '#fs-prompt{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;padding:16px 26px;font-size:16px;border-radius:999px;color:#fff;background:rgba(8,16,11,0.85);box-shadow:0 6px 24px rgba(0,0,0,0.45);border:0;}'
     + '</style>'
     + '<div id="app">'
     + '<div id="chrome-top">'
@@ -297,23 +308,25 @@
     + '<p class="hintbox" id="hintbox" hidden></p>'
     + '<div class="toolbar" id="toolbar-cats"></div>'
     + '<div class="toolbar">'
-    + '<button id="tool-erase" disabled>⬜ Smazat (maluj)</button>'
-    + '<button id="tool-precision" disabled title="Maluje jen jedno políčko pod kurzorem místo celého štětce – pro přesné hranice.">🔲 Přesně (políčko)</button>'
-    + '<button id="undo-btn" disabled>↶ Zpět</button>'
-    + '<button id="clear-all" disabled>Vymazat vše</button>'
+    + '<button id="tool-erase" disabled><span class="ic">' + svgIcon('<path d="M3.5 16.5l7-7 5 5-3 3H7z"/><path d="M10.5 9.5L15 5a2 2 0 0 1 3 0l1 1a2 2 0 0 1 0 3l-4.5 4.5"/>') + '</span> Smazat (maluj)</button>'
+    + '<button id="tool-precision" disabled title="Maluje jen jedno políčko pod kurzorem místo celého štětce – pro přesné hranice."><span class="ic">' + svgIcon('<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>') + '</span> Přesně (políčko)</button>'
+    + '<button id="undo-btn" disabled><span class="ic">' + svgIcon('<path d="M4 12h12a5 5 0 1 1 0 10h-1"/><path d="M9 7l-5 5 5 5"/>') + '</span> Zpět</button>'
+    + '<button id="clear-all" disabled><span class="ic">' + svgIcon('<path d="M4 7h16"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/><path d="M10 11v6M14 11v6"/>') + '</span> Vymazat vše</button>'
     + '</div>'
     + '<div class="zoomrow">'
     + '<button id="zoom-out">－</button>'
     + '<button id="zoom-reset">100 %</button>'
     + '<button id="zoom-in">＋</button>'
-    + '<button id="fullscreen-btn">⛶ Celá obrazovka</button>'
     + '</div>'
     + '</div>'
     + '<div class="stage-wrap">'
     + '<div class="stage-viewport" id="viewport"><div class="stage" id="stage"><canvas id="view"></canvas></div></div>'
+    // 2026-11-04 (owner: same fullscreen-icon fix as mg-paint-mask.js - no big control over the
+    // photo, just a small corner icon) - moved out of the labeled zoomrow pill into a small
+    // icon-only button overlaid on the photo's corner, same positioning pattern as #minimap.
+    + '<button id="fullscreen-btn" aria-label="Celá obrazovka" title="Celá obrazovka">' + svgIcon('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>') + '</button>'
     + '<canvas id="minimap" hidden></canvas>'
     + '</div>'
-    + '<button id="fs-prompt" hidden>⛶ Zapnout celou obrazovku</button>'
     + '<div id="status-bottom">'
     + '<div id="status"><span class="statstext" id="statstext">Načítám…</span></div>'
     + '<div class="confirmrow"><button id="act-cancel">Zpět</button><button id="act-ok" class="primary">Potvrdit</button></div>'
@@ -561,7 +574,11 @@
         viewport.scrollTop = Math.max(0, Math.min(after.height - viewport.clientHeight, viewport.scrollTop + (curY - e.clientY)));
       }, { passive: false });
 
-      var fsBtn = root.getElementById('fullscreen-btn'), fsPrompt = root.getElementById('fs-prompt');
+      // 2026-11-04 (owner: "stale je to tu" after the matching fix in mg-paint-mask.js) - this used
+      // to also show a big "⛶ Zapnout celou obrazovku" pill dead-center over the photo in landscape
+      // orientation (#fs-prompt), same control as the one already removed from the step-4 tool.
+      // The small always-visible corner icon (fsBtn) is the only fullscreen control left here too.
+      var fsBtn = root.getElementById('fullscreen-btn');
       var canFullscreen = !!((hostEl.requestFullscreen || hostEl.webkitRequestFullscreen) && (document.fullscreenEnabled !== false && document.webkitFullscreenEnabled !== false));
       function enterFullscreen() {
         return Promise.resolve().then(function () {
@@ -572,13 +589,8 @@
           if (screen.orientation && screen.orientation.lock) return screen.orientation.lock('landscape').catch(function () {});
         }).catch(function () {});
       }
-      function updateFsPrompt() {
-        if (!canFullscreen) { fsPrompt.hidden = true; return; }
-        fsPrompt.hidden = !(isLandscape() && !isFullscreen());
-      }
-      if (canFullscreen) fsPrompt.addEventListener('click', enterFullscreen);
       window.addEventListener('resize', onResize);
-      function onResize() { applyZoom(); if (zoom <= 1.001) centerView(); updateFsPrompt(); }
+      function onResize() { applyZoom(); if (zoom <= 1.001) centerView(); }
       if (!canFullscreen) {
         fsBtn.hidden = true;
       } else {
@@ -586,8 +598,10 @@
           var fs = isFullscreen();
           app.classList.toggle('fs-mode', fs);
           if (!fs) app.classList.remove('controls-hidden');
-          fsBtn.textContent = fs ? '⤡ Zavřít celou obrazovku' : '⛶ Celá obrazovka';
-          updateFsPrompt();
+          var fsLabel = fs ? 'Zavřít celou obrazovku' : 'Celá obrazovka';
+          fsBtn.innerHTML = svgIcon(fs ? '<path d="M9 4H4v5M20 9V4h-5M15 20h5v-5M4 15v5h5"/>' : '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>');
+          fsBtn.title = fsLabel;
+          fsBtn.setAttribute('aria-label', fsLabel);
           setTimeout(function () { applyZoom(); centerView(); }, 50);
         }
         fsBtn.addEventListener('click', function () {
@@ -600,7 +614,6 @@
         document.addEventListener('webkitfullscreenchange', onFullscreenChange);
         onFullscreenChange();
       }
-      updateFsPrompt();
 
       var pointers = new Map(); var pinch = null;
       function pinchPoints() { var pts = Array.from(pointers.values()); return pts.length >= 2 ? [pts[0], pts[1]] : null; }

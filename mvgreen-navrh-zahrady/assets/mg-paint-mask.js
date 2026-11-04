@@ -256,7 +256,6 @@
     + '#app.fs-mode #chrome-top button,#app.fs-mode #status-bottom button{pointer-events:auto;}'
     + '#app.fs-mode.controls-hidden #chrome-top,#app.fs-mode.controls-hidden #status-bottom{opacity:0;pointer-events:none;}'
     + '#app.fs-mode.controls-hidden #chrome-top button,#app.fs-mode.controls-hidden #status-bottom button{pointer-events:none;}'
-    + '#fs-prompt{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;padding:16px 26px;font-size:16px;border-radius:999px;color:#fff;background:rgba(8,16,11,0.85);box-shadow:0 6px 24px rgba(0,0,0,0.45);border:0;}'
     + '</style>'
     + '<div id="app">'
     + '<div id="chrome-top">'
@@ -295,7 +294,6 @@
     + '<button id="fullscreen-btn" aria-label="Celá obrazovka" title="Celá obrazovka">' + svgIcon('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>') + '</button>'
     + '<canvas id="minimap" hidden></canvas>'
     + '</div>'
-    + '<button id="fs-prompt" hidden>⛶ Zapnout celou obrazovku</button>'
     + '<div id="status-bottom">'
     + '<div id="status"><span class="statstext" id="statstext">Načítám…</span></div>'
     + '<div class="confirmrow"><button id="act-cancel">Zpět</button><button id="act-ok" class="primary" disabled>Potvrdit plochu</button></div>'
@@ -517,7 +515,12 @@
           viewport.scrollTop = Math.max(0, Math.min(after.height - viewport.clientHeight, viewport.scrollTop + (curY - e.clientY)));
         }, { passive: false });
 
-        var fsBtn = root.getElementById('fullscreen-btn'), fsPrompt = root.getElementById('fs-prompt');
+        // 2026-11-04 (owner, after re-checking step 4 live: "stale je to tu") - this used to also
+        // show a big "⛶ Zapnout celou obrazovku" pill dead-center over the photo in landscape
+        // orientation (#fs-prompt). That's exactly the kind of overlap-the-photo control the owner
+        // asked to get rid of for the corner fullscreen button itself, so it's gone too now - the
+        // small always-visible corner icon (fsBtn) is the only fullscreen control left.
+        var fsBtn = root.getElementById('fullscreen-btn');
         var canFullscreen = !!((hostEl.requestFullscreen || hostEl.webkitRequestFullscreen) && (document.fullscreenEnabled !== false && document.webkitFullscreenEnabled !== false));
         function enterFullscreen() {
           return Promise.resolve().then(function () {
@@ -530,13 +533,8 @@
             statusEl.textContent = 'Celá obrazovka se nepovedla spustit: ' + (e && e.message ? e.message : e) + '.';
           });
         }
-        function updateFsPrompt() {
-          if (!canFullscreen) { fsPrompt.hidden = true; return; }
-          fsPrompt.hidden = !(isLandscape() && !isFullscreen());
-        }
-        if (canFullscreen) fsPrompt.addEventListener('click', enterFullscreen);
         window.addEventListener('resize', onResize);
-        function onResize() { applyZoom(); if (zoom <= 1.001) centerView(); updateFsPrompt(); }
+        function onResize() { applyZoom(); if (zoom <= 1.001) centerView(); }
 
         if (!canFullscreen) {
           fsBtn.hidden = true;
@@ -549,7 +547,6 @@
             fsBtn.innerHTML = svgIcon(fs ? '<path d="M9 4H4v5M20 9V4h-5M15 20h5v-5M4 15v5h5"/>' : '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>');
             fsBtn.title = fsLabel;
             fsBtn.setAttribute('aria-label', fsLabel);
-            updateFsPrompt();
             setTimeout(function () { applyZoom(); centerView(); }, 50);
           }
           fsBtn.addEventListener('click', function () {
@@ -567,7 +564,6 @@
           document.addEventListener('webkitfullscreenchange', onFullscreenChange);
           onFullscreenChange();
         }
-        updateFsPrompt();
 
         var pointers = new Map(); var pinch = null;
         function pinchPoints() { var pts = Array.from(pointers.values()); return pts.length >= 2 ? [pts[0], pts[1]] : null; }
