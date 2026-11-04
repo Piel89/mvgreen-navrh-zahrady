@@ -2536,7 +2536,10 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     progress.stop(done.ok);
     if(!done.ok){
       result.replaceChildren();
-      const msg=document.createElement('p');msg.textContent=done.emptyInside?'AI nevrátila žádnou úpravu zahrady. Výsledek nebyl použit.':'AI změnila i části, které měly zůstat beze změny (odchylka '+Math.round(done.drift)+'). Výsledek nebyl použit.';result.append(msg);
+      // 2026-11-04 (Martinovo hlášení "plot co ma zustat prekryt kerem je OK, ale cely zmenit/vymazat
+      // neni OK"): rozlišit zprávu pro "AI překryla/vymazala většinu plotu/zdi u hranice úpravy"
+      // (ringOverrun) od obecné zprávy o odchylce mimo hranici – ať admin i zákazník vidí, o co šlo.
+      const msg=document.createElement('p');msg.textContent=done.emptyInside?'AI nevrátila žádnou úpravu zahrady. Výsledek nebyl použit.':(done.ringOverrun?'AI u hranice úpravy přemalovala/smazala příliš velkou část toho, co mělo zůstat (např. plot nebo zeď) – to není obyčejné zakrytí keřem. Výsledek nebyl použit.':'AI změnila i části, které měly zůstat beze změny (odchylka '+Math.round(done.drift)+'). Výsledek nebyl použit.');result.append(msg);
       if(aiConfig.enabled){
         // Admin-only diagnostics: show what the AI actually returned (never shown as a result).
         const det=document.createElement('details');det.innerHTML='<summary>Diagnostika pro správce – co AI vrátila</summary>';

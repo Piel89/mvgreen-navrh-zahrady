@@ -22,6 +22,14 @@
   var MAX_EDITABLE = 0.7;
   var MIN_EDITABLE = 0.02;
   var MAX_DRIFT = 22;       // průměrná odchylka (0–255) v zamčených částech, nad níž je výsledek nepoužitelný
+  // 2026-11-04 owner-reported: fence marked "Zůstane" got wholly redrawn/deleted near the edit
+  // boundary – a bush is allowed to visually cover PART of it there (occlusion), but not all of
+  // it. RING_PIXEL_CHANGED = how different (0–255) a single ring pixel must be from the original
+  // to count as "actually changed" (not just resampling/antialiasing noise). RING_MAX_CHANGED_SHARE
+  // = how much of the ring (around locked content) may show that much change before it's treated
+  // as erasure of the protected object rather than a plant partly growing in front of it.
+  var RING_PIXEL_CHANGED = 40;
+  var RING_MAX_CHANGED_SHARE = 0.5;
 
   function pickSize(w, h) {
     var r = w / h;
@@ -134,10 +142,30 @@
     gc.filter = 'blur(' + Math.max(4, Math.round(w / 300)) + 'px)'; gc.drawImage(bufferMask, 0, 0); gc.filter = 'none';
     var gd = gc.getImageData(0, 0, w, h).data;
     var sum = 0, cnt = 0, insideOpaque = 0, insideCnt = 0;
+    // 2026-11-04 owner-reported: a fence/wall marked "Zůstane" sitting right along the edit
+    // boundary was wholly redrawn or deleted by the AI, not just partly covered by a new bush –
+    // that's a different thing from legitimate occlusion and the buffer ring used to tolerate
+    // BOTH uniformly. A real bush only ever hides a modest patch of what's behind it in a 2D
+    // photo; if most of the ring along a protected object changed, that's erasure, not occlusion.
+    // So the ring gets its own separate, much more lenient drift check (ringSum/ringCnt below),
+    // tracked independently from the strict outside-ring one, instead of being skipped entirely.
+    var ringSum = 0, ringCnt = 0, ringChanged = 0;
     for (var i = 0; i < ad.length; i += 4) {
       if ((i >> 2) % 7 !== 0) continue;
       if (md[i + 3] > 127) { insideCnt++; if (rd[i + 3] > 127) insideOpaque++; continue; }
-      if (bud[i + 3] > 127) continue; // inside the occlusion buffer ring: allowed to differ, by design
+      if (bud[i + 3] > 127) {
+        // Inside the occlusion buffer ring: occlusion by new foliage is allowed here, but track
+        // how much of the ring actually changed so wholesale erasure of what's behind it still
+        // gets caught below, instead of being silently accepted just because it's "in the ring".
+        if (rd[i + 3] >= 128) {
+          var rdiff = (Math.abs(rd[i] - o[i]) + Math.abs(rd[i + 1] - o[i + 1]) + Math.abs(rd[i + 2] - o[i + 2])) / 3;
+          ringSum += rdiff; ringCnt++;
+          if (rdiff > RING_PIXEL_CHANGED) ringChanged++;
+        } else {
+          ringCnt++; // AI left it alone – still counts toward the ring's total for the share calc
+        }
+        continue;
+      }
       if (gd[i + 3] > 8) continue;
       if (rd[i + 3] < 128) continue; // transparent = AI left it alone
       sum += (Math.abs(rd[i] - o[i]) + Math.abs(rd[i + 1] - o[i + 1]) + Math.abs(rd[i + 2] - o[i + 2])) / 3;
@@ -146,6 +174,11 @@
     var drift = cnt ? sum / cnt : 0;
     // AI returned nothing usable inside the garden area.
     var emptyInside = insideCnt > 0 && insideOpaque / insideCnt < 0.5;
+    // Most of the ring around a protected object changed substantially → that's the object being
+    // redrawn/removed, not a bush partially covering it. Lenient on purpose (a real bush can cover
+    // a good chunk of the ring right where it's planted) but catches near-total replacement.
+    var ringChangedShare = ringCnt ? ringChanged / ringCnt : 0;
+    var ringOverrun = ringChangedShare > RING_MAX_CHANGED_SHARE;
 
     // Soft feather on the BUFFER's edge (editMask's own edge when no buffer was requested – same
     // math as before in that case), then original pixels everywhere outside it. Pixels inside the
@@ -163,7 +196,10 @@
       ad[j + 3] = 255;
     }
     bc.putImageData(a, 0, 0);
-    return { canvas: back, raw: raw, drift: drift, emptyInside: emptyInside, ok: drift <= MAX_DRIFT && !emptyInside };
+    return {
+      canvas: back, raw: raw, drift: drift, emptyInside: emptyInside, ringOverrun: ringOverrun,
+      ok: drift <= MAX_DRIFT && !emptyInside && !ringOverrun
+    };
   }
 
   /**
