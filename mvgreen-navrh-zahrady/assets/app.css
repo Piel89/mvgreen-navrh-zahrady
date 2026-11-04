@@ -571,6 +571,13 @@ body.mg-designer-modal-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 17px;margin:15px 0}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-details>.mg-field{margin:0!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-reference-details>.mg-dimensions-row{grid-column:1/-1;margin:0!important}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-advanced{grid-column:1/-1;border-top:1px solid #dce8dd;padding-top:10px;margin-top:2px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-advanced summary{cursor:pointer;font-weight:700;color:#156333;font-size:12.5px;list-style:none}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-advanced summary::-webkit-details-marker{display:none}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-advanced summary::before{content:'▸ ';display:inline-block}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-advanced[open] summary::before{content:'▾ '}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-advanced[open] summary{margin-bottom:10px}
+.mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-ref-advanced .mg-field{margin:0 0 12px!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-dimension-hint{font-size:11px!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-budget-in-details{margin:15px 0!important}
 .mvgreen-designer .mg-redesign-frame.mg-is-modal .mg-generation-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(220px,1fr);gap:17px;align-items:stretch;margin:20px 0}

@@ -675,10 +675,17 @@ if(detailStep&&styleStep){
  const detailFields=document.createElement('div');
  detailFields.className='mg-reference-details';
  detailStep.insertBefore(detailFields,detailStep.querySelector('.mg-plan'));
- ['mg-sun','mg-width','mg-length','mg-build','mg-maint','mg-locality','mg-soil','mg-water','mg-slope','mg-orientation','mg-bed-area','mg-altitude'].forEach(id=>{
+ // 2026-11-04 (Martin, as a customer testing step 2: "strašně moc text"/clutter): mg-sun and
+ // mg-water used to get BOTH a plain <select> shown here AND the big "Podmínky stanoviště"/
+ // "Vlhkost půdy" tap-button UI built below (`conditions`) - two different-looking controls
+ // editing the very same two values, visible at once. Keep the <select> elements in the DOM
+ // (other code still reads q('mg-sun').value / q('mg-water').value) but don't show them a
+ // second time - the button UI is the one visible control for sun/moisture now.
+ ['mg-width','mg-length','mg-build','mg-maint','mg-locality'].forEach(id=>{
   const el=q(id)?.closest('.mg-field');
   if(el)detailFields.appendChild(el);
  });
+ ['mg-sun','mg-water'].forEach(id=>{const el=q(id)?.closest('.mg-field');if(!el)return;el.hidden=true;el.style.display='none';detailFields.appendChild(el)});
  const originalDimensions=detailStep.querySelector('.mg-dimensions-row');
  if(originalDimensions){['mg-width','mg-length'].forEach(id=>{const field=q(id)?.closest('.mg-field');if(field)originalDimensions.appendChild(field)});detailFields.prepend(originalDimensions);}
  const conditions=document.createElement('div');conditions.className='mg-ref-conditions';
@@ -686,6 +693,19 @@ if(detailStep&&styleStep){
  detailFields.appendChild(conditions);
  conditions.querySelectorAll('[data-mg-sun]').forEach(b=>b.addEventListener('click',()=>{q('mg-sun').value=b.dataset.mgSun;conditions.querySelectorAll('[data-mg-sun]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));autoSave()}));
  conditions.querySelectorAll('[data-mg-moisture]').forEach(b=>b.addEventListener('click',()=>{q('mg-water').value=b.dataset.mgMoisture;conditions.querySelectorAll('[data-mg-moisture]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));autoSave()}));
+ // 2026-11-04 (same feedback): soil/slope/orientation/altitude/bed-area are technical fields
+ // "Zjistit podmínky" (the address lookup above) already fills in automatically - a customer
+ // without that data on hand had to stare at 5 more open dropdowns/inputs they don't know the
+ // answer to, just to reach the "Další krok" button. Tuck them behind one closed <details> so
+ // the step reads as 5 things to answer (rozměry, způsob realizace, údržba, slunce, vlhkost),
+ // not 11 - still one click away and still auto-filled when the address lookup runs.
+ const advanced=document.createElement('details');advanced.className='mg-ref-advanced';
+ advanced.innerHTML='<summary>Upřesnit podmínky pozemku (nepovinné – vyplní se i automaticky podle adresy)</summary>';
+ ['mg-altitude','mg-soil','mg-slope','mg-orientation','mg-bed-area'].forEach(id=>{
+  const el=q(id)?.closest('.mg-field');
+  if(el)advanced.appendChild(el);
+ });
+ detailFields.appendChild(advanced);
  const budgetPanel=document.createElement('div');budgetPanel.className='mg-ref-budget-choices';
  // The former "Další informace" bullet list here (nízká údržba, děti/mazlíčci, jedlé rostliny,
  // automatická závlaha, přírodní vzhled) was plain <li> text with no click handler anywhere - purely
@@ -710,8 +730,14 @@ function makeReferenceStep(number,title,description){
 }
 const resultStep=root.querySelector('[data-mg-step="7"]');
 const generationStep=makeReferenceStep(6,'Co přesně chcete','Popište, co si na zahradě přejete, a poté vytvořte AI návrh – kódem z e-mailu nebo platbou.');
-generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img id="mg-generation-preview-img" src="" alt="Vaše nahraná fotografie zahrady"><span>Vaše fotografie</span></div><div class="mg-generation-status"><h4>Co se právě děje?</h4><div class="mg-generation-progress" id="mg-generation-progress" hidden><div class="mg-progress-track"><div class="mg-generation-progress-fill" id="mg-generation-progress-fill" style="width:4%"></div></div><p class="mg-generation-progress-label" id="mg-generation-progress-label">Připraveno ke generování</p></div><p>✓ Analyzujeme vaši fotografii</p><p>✓ Rozpoznáváme plochy</p><p>✓ Vybíráme vhodné rostliny</p><p>✓ Připravujeme vizualizace</p><p>✓ Tvoříme doporučení</p>'
-  +'<div class="mg-buy-panel" id="mvg-koupit"><h4>Získejte svůj projekt zahrady</h4><p class="mg-note">Máte kód z e-mailu? Zadejte ho a vygenerujeme váš návrh, nebo si jen zobrazte roční plán péče.</p><div class="mg-buy-row"><input type="text" id="mg-kod-input" placeholder="Kód z e-mailu (např. AB12C-3DE45)" maxlength="11" autocomplete="off"><input type="email" id="mg-kod-email" placeholder="váš e-mail" autocomplete="email" required><button type="button" id="mg-kod-use" class="mg-primary">Vytvořit AI návrh</button></div><div class="mg-buy-row"><button type="button" id="mg-care-show" class="mg-secondary">📅 Zobrazit roční plán péče</button></div><p class="mg-note">Hotový návrh se uloží k vašemu kódu a nepřijdete o něj, i kdyby stránka spadla nebo se zavřel prohlížeč. Odkaz na něj pošleme i e-mailem – na adresu, kterou jste zadali při nákupu kódu. Návrh se navíc rovnou zobrazí přímo tady v kroku Výsledky návrhu.</p><p class="mg-note" id="mg-kod-status"></p><div id="mg-care-standalone" class="mg-hidden"></div>'
+// 2026-11-04 (Martin, customer-eyes review of step 6: "strašně moc text"): the "Co se právě
+// děje?" block used to list 5 lines, each pre-marked with a ✓ ("done"), BEFORE the customer had
+// clicked anything - nothing here ever updated them (only #mg-generation-progress/-fill/-label
+// below are wired to the real, live progress), so it read as "we already did this" on a page
+// where nothing had started yet. Pure static decoration with no functional purpose - removed;
+// the real progress bar+label (shown once generation actually starts) already covers this.
+generationStep.innerHTML+='<div class="mg-generation-grid"><div class="mg-generation-image"><img id="mg-generation-preview-img" src="" alt="Vaše nahraná fotografie zahrady"><span>Vaše fotografie</span></div><div class="mg-generation-status"><div class="mg-generation-progress" id="mg-generation-progress" hidden><div class="mg-progress-track"><div class="mg-generation-progress-fill" id="mg-generation-progress-fill" style="width:4%"></div></div><p class="mg-generation-progress-label" id="mg-generation-progress-label">Připraveno ke generování</p></div>'
+  +'<div class="mg-buy-panel" id="mvg-koupit"><h4>Získejte svůj projekt zahrady</h4><p class="mg-note">Máte kód z e-mailu? Zadejte ho a vygenerujeme váš návrh, nebo si jen zobrazte roční plán péče.</p><div class="mg-buy-row"><input type="text" id="mg-kod-input" placeholder="Kód z e-mailu (např. AB12C-3DE45)" maxlength="11" autocomplete="off"><input type="email" id="mg-kod-email" placeholder="váš e-mail" autocomplete="email" required><button type="button" id="mg-kod-use" class="mg-primary">Vytvořit AI návrh</button></div><div class="mg-buy-row"><button type="button" id="mg-care-show" class="mg-secondary">📅 Zobrazit roční plán péče</button></div><p class="mg-note">Návrh se uloží k vašemu kódu a pošleme i e-mailem, takže o něj nepřijdete, ani kdyby se stránka zavřela.</p><p class="mg-note" id="mg-kod-status"></p><div id="mg-care-standalone" class="mg-hidden"></div>'
   +'<details class="mg-buy-new"><summary>Nemáte kód? Koupit projekt zahrady</summary><div class="mg-pkg-choice" role="radiogroup" aria-label="Výběr balíčku"><label><input type="radio" name="mg-pkg" value="design" checked> <span><strong>AI návrh zahrady – 89 Kč</strong><br>Vizualizace, rozmístění výsadby, seznam rostlin a cena, půdorys.</span></label><label><input type="radio" name="mg-pkg" value="bundle"> <span><strong>AI návrh + roční plán péče – 119 Kč</strong> <span class="mg-pkg-save">(ušetříte 19 Kč)</span><br>Vše z AI návrhu a navíc plán hnojení a péče o trávník na 12 měsíců.</span></label><label><input type="radio" name="mg-pkg" value="care"> <span><strong>Jen roční plán péče – 49 Kč</strong><br>Bez AI návrhu – jen plán hnojení a péče na 12 měsíců podle vaší zahrady.</span></label></div><div class="mg-buy-row"><input type="email" id="mg-buy-email" placeholder="váš e-mail" autocomplete="email"><button type="button" id="mg-buy-submit" class="mg-primary">Zaplatit 89 Kč</button></div><label class="mg-buy-consent"><input type="checkbox" id="mg-buy-consent"> Souhlasím, aby plnění (vygenerování návrhu) začalo ihned po zaplacení, a beru na vědomí, že tím u vyčerpaných použití ztrácím právo na odstoupení od smlouvy do 14 dnů. <a href="/obchodni-podminky/" target="_blank" rel="noopener">Obchodní podmínky</a></label><p class="mg-note" id="mg-buy-status"></p></details>'
   +'<button type="button" id="mg-kod-simulate" class="mg-secondary mg-hidden">🧪 Správce: vytvořit testovací kód</button></div></div></div>';
 resultStep.insertAdjacentElement('beforebegin',generationStep);
