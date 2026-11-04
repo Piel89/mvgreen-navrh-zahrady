@@ -438,7 +438,11 @@ function mgTipIcon(kind){
  sun:'<circle cx="12" cy="12" r="4" fill="#fbb93f" stroke="#e8991f"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" stroke="#e8991f"/>',
  cloud:'<path d="M6.5 18.5a4.3 4.3 0 0 1-.4-8.58A5.8 5.8 0 0 1 17.3 8.1 3.8 3.8 0 0 1 17 18.5H6.5Z" fill="#d7dee3" stroke="#97a4ad"/>',
  dropEmpty:'<path d="M12 3c-1.3 3.2-6 7.4-6 12.3a6 6 0 0 0 12 0C18 10.4 13.3 6.2 12 3Z" fill="none" stroke="#6babe0"/>',
- dropFull:'<path d="M12 3c-1.3 3.2-6 7.4-6 12.3a6 6 0 0 0 12 0C18 10.4 13.3 6.2 12 3Z" fill="#3d8fd1" stroke="#2f73ab"/>'
+ dropFull:'<path d="M12 3c-1.3 3.2-6 7.4-6 12.3a6 6 0 0 0 12 0C18 10.4 13.3 6.2 12 3Z" fill="#3d8fd1" stroke="#2f73ab"/>',
+ // Icons for the step-3 "Shrnutí vaší zahrady" summary grid (2026-11-04).
+ coin:'<circle cx="12" cy="12" r="8.5" fill="#fbe3a8" stroke="#d99a2b"/><path d="M12 7.5v9M9.3 9.3h3.9a1.9 1.9 0 0 1 0 3.8h-2.4a1.9 1.9 0 0 0 0 3.8h4" stroke="#b9791c" stroke-width="1.5"/>',
+ pin:'<path d="M12 21s7-7.6 7-12.3A7 7 0 0 0 5 8.7C5 13.4 12 21 12 21Z" fill="#e2715c" stroke="#b8503c"/><circle cx="12" cy="8.7" r="2.5" fill="#fff" stroke="#b8503c"/>',
+ palette:'<path d="M12 3a9 9 0 1 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-.9.7-1.4 1.5-1.4H16a5 5 0 0 0 5-5c0-4.3-4-7-9-7Z" fill="#f2ead9" stroke="#b6a789"/><circle cx="7.6" cy="10.6" r="1.2" fill="#df5a5a"/><circle cx="10.6" cy="7.2" r="1.2" fill="#4a8fd9"/><circle cx="15.1" cy="7.6" r="1.2" fill="#dfb23e"/><circle cx="16.6" cy="11.8" r="1.2" fill="#4caf6b"/>'
  };
  return '<svg class="mg-professional-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(strokes[kind]||strokes.leaf)+'</svg>';
 }
@@ -656,27 +660,31 @@ if(photoSection){
  // into the dormant measure-step section below (that code walks nextElementSibling from
  // .mg-calibration onward).
  const summaryBox=document.createElement('div');summaryBox.className='mg-ref-step3-summary';
- summaryBox.innerHTML='<h4>Shrnutí vaší zahrady</h4><ul class="mg-ref-summary-list"></ul>';
+ summaryBox.innerHTML='<h4>Shrnutí vaší zahrady</h4><div class="mg-summary-grid"></div>';
  const calibrationAnchor=photoSection.querySelector('.mg-calibration');
  photoSection.insertBefore(summaryBox,calibrationAnchor||null);
  const waterCatLabels={dry:'Sucho, bez závlahy',normal:'Běžná vlhkost',wet:'Dostatek vody, mám závlahu'};
+ // 2026-11-04 (owner: "sumar udelej nejak pekneji a vyrazneji s ikonama" / "at je to
+ // rovnomerne na strance"): rebuilt from a plain bullet list into an even icon-card grid -
+ // each fact gets its own colourful icon (reusing the sun/cloud/drop icons from the step-2
+ // sliders plus three new ones below) instead of a flat text line.
  function buildStep3Summary(){
-  const list=summaryBox.querySelector('.mg-ref-summary-list');
+  const grid=summaryBox.querySelector('.mg-summary-grid');
   const items=[];
   const variantName=root.querySelector('[data-mg-variant][aria-pressed="true"] strong')?.textContent;
-  if(variantName)items.push('Styl zahrady: <strong>'+variantName+'</strong>');
-  const maint=q('mg-maint')?.value;if(maint)items.push('Požadovaná údržba: '+maint);
-  const sun=q('mg-sun')?.value;if(sun)items.push('Osvit stanoviště: '+(sun==='Slunce'?'Plné slunce':sun));
-  const waterCat=q('mg-water')?.value;if(waterCat&&waterCatLabels[waterCat])items.push('Vláha na pozemku: '+waterCatLabels[waterCat]);
+  if(variantName)items.push(['leaf','Styl zahrady',variantName]);
+  const maint=q('mg-maint')?.value;if(maint)items.push(['sprout','Požadovaná údržba',maint]);
+  const sun=q('mg-sun')?.value;if(sun)items.push(['sun','Osvit stanoviště',sun==='Slunce'?'Plné slunce':sun]);
+  const waterCat=q('mg-water')?.value;if(waterCat&&waterCatLabels[waterCat])items.push(['dropFull','Vláha na pozemku',waterCatLabels[waterCat]]);
   const minB=Number(q('mg-min')?.value)||0,maxB=Number(q('mg-max')?.value)||0;
-  if(maxB>0)items.push('Rozpočet: '+(minB>0?money(minB)+' – ':'do ')+money(maxB));
+  if(maxB>0)items.push(['coin','Rozpočet',(minB>0?money(minB)+' – ':'do ')+money(maxB)]);
   const locality=q('mg-locality')?.value?.trim();
-  if(locality){const altitude=Number(q('mg-altitude')?.value);items.push('Lokalita: '+locality+(altitude>0?' ('+altitude+' m n. m.)':''));}
+  if(locality){const altitude=Number(q('mg-altitude')?.value);items.push(['pin','Lokalita',locality+(altitude>0?' ('+altitude+' m n. m.)':'')]);}
   const colors=[].map.call(root.querySelectorAll('[data-fav-color][aria-pressed="true"]'),b=>b.textContent.trim()).filter(Boolean);
-  if(colors.length)items.push('Oblíbené barvy: '+colors.join(', '));
+  if(colors.length)items.push(['palette','Oblíbené barvy',colors.join(', ')]);
   const waterChip=root.querySelector('[data-fav-water][aria-pressed="true"]');
-  if(waterChip)items.push('Zalévání: '+waterChip.textContent.trim());
-  list.innerHTML=items.length?items.map(t=>'<li>'+t+'</li>').join(''):'<li>Zatím nic nevyplněno - vraťte se prosím o krok zpět.</li>';
+  if(waterChip)items.push(['dropEmpty','Zalévání',waterChip.textContent.trim()]);
+  grid.innerHTML=items.length?items.map(it=>'<div class="mg-summary-item"><span class="mg-summary-icon">'+mgTipIcon(it[0])+'</span><div class="mg-summary-text"><strong>'+it[1]+'</strong><span>'+it[2]+'</span></div></div>').join(''):'<div class="mg-summary-item"><div class="mg-summary-text"><span>Zatím nic nevyplněno - vraťte se prosím o krok zpět.</span></div></div>';
  }
  window.MVGreenSyncStep3Summary=function(){syncPhotoFieldVisibility();buildStep3Summary();};
 
@@ -1698,8 +1706,12 @@ if(Brief){
   restoreFav(q('mg-fav-colors').value,'',q('mg-irrigation').value);
  }
  const photoField=q('mg-photo')?.closest('.mg-field');
- if(photoField&&!root.querySelector('.mg-shoot-guide')){
-  const g=document.createElement('div');g.innerHTML=Brief.guideHtml();photoField.before(g.firstElementChild);
+ // 2026-11-04 (owner, after seeing step 3 live: "nechci tam ten navod"): dropped the static
+ // "Jak vyfotit zahradu" how-to-shoot guide with its 4 example cards - step 3 now already
+ // leads with the one real photo plus the "Shrnutí vaší zahrady" recap, and the guide just
+ // duplicated what the quality check below (#mg-photo-check, kept) already tells them about
+ // their actual photo.
+ if(photoField&&!q('mg-photo-check')){
   const chk=document.createElement('div');chk.id='mg-photo-check';chk.hidden=true;chk.setAttribute('role','status');photoField.after(chk);
  }
 }
