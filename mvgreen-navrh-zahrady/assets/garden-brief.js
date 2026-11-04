@@ -106,6 +106,17 @@
         return '<button type="button" class="mg-chip mg-chip--water" data-fav-water="' + i + '" aria-pressed="' + (i === 1) + '"><span class="mg-chip__icon">' + t[1] + '</span>' + t[0] + '</button>';
       }).join('') + '</div>' +
       '<input type="hidden" id="mg-fav-colors"><input type="hidden" id="mg-irrigation" value="1">' +
+      // 2026-11-04 (owner: "sem dolu pridej nahrat fotku z kroku 3 at se rovnou objevi ve
+      // sloupci na prave strane"): a second, earlier entry point for the same step-3 photo
+      // upload, right here at the end of the style/colour/watering screen. It feeds the exact
+      // same #mg-photo input (see bindFavorites below), so uploading here is identical to
+      // uploading in step 3 - just available sooner, with an immediate preview.
+      '<div class="mg-fav__group mg-fav__photo-group" role="group" aria-label="Fotografie zahrady">' +
+      '<span class="mg-fav__label">Fotografie zahrady:</span>' +
+      '<label class="mg-fav-photo-btn" for="mg-fav-photo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h4l2-2h4l2 2h4v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span id="mg-fav-photo-label">Nahrát fotku</span></label>' +
+      '<input type="file" id="mg-fav-photo" accept="image/jpeg,image/png,image/webp" hidden>' +
+      '<img id="mg-fav-photo-thumb" class="mg-fav-photo-thumb" alt="Náhled nahrané fotografie" hidden>' +
+      '</div>' +
       '</section>';
   }
 
@@ -129,6 +140,28 @@
         sync();
       });
     });
+    // Feed the same real #mg-photo input step 3 uses, so this earlier upload spot is a second
+    // doorway to the exact same upload pipeline (preview, IndexedDB save, paint-mask warm-up,
+    // step-2/sidebar sync), not a parallel one.
+    var favPhoto = document.getElementById('mg-fav-photo');
+    var favThumb = document.getElementById('mg-fav-photo-thumb');
+    var favLabel = document.getElementById('mg-fav-photo-label');
+    if (favPhoto) {
+      favPhoto.addEventListener('change', function () {
+        var file = favPhoto.files && favPhoto.files[0];
+        if (!file) return;
+        var target = document.getElementById('mg-photo');
+        if (!target) return;
+        try {
+          var transfer = new DataTransfer();
+          transfer.items.add(file);
+          target.files = transfer.files;
+          target.dispatchEvent(new Event('change', { bubbles: true }));
+          if (favThumb) { favThumb.src = URL.createObjectURL(file); favThumb.hidden = false; favThumb.onload = function () { URL.revokeObjectURL(favThumb.src); }; }
+          if (favLabel) favLabel.textContent = '✓ Fotka nahrána';
+        } catch (e) {}
+      });
+    }
     return function restore(colors, plants, water) {
       (colors || '').split(',').filter(Boolean).forEach(function (c) { var b = root.querySelector('[data-fav-color="' + c + '"]'); if (b) b.setAttribute('aria-pressed', 'true'); });
       if (water !== undefined && water !== '') root.querySelectorAll('[data-fav-water]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.favWater === String(water))); });
