@@ -1982,7 +1982,7 @@ async function mgPlanAndAngles(host,summaryBox,finalImage,beforeImage,brief,d,ed
   // různé věci. Tvar/obrys zůstává AI odhad, proto je kapitola jasně označená jako orientační a
   // kapitola 2 (reálná fotka) zůstává hlavním, přesným zdrojem - viz poznámka v šabloně níže.
   const planChapter=document.createElement('div');planChapter.className='mg-plan-box mg-project-chapter';
-  planChapter.innerHTML=mgChapterHeader('6','Orientační půdorys zahrady','plan','sky')+'<p class="mg-note">Připravujeme půdorys…</p>';
+  planChapter.innerHTML=mgChapterHeader('6','Rostliny podle fotky','plan','sky')+'<p class="mg-note">Připravujeme popisky…</p>';
   host.append(bedsChapter,shopChapter,stepsChapter,careChapter,planChapter);
   let planText='';
   try{
@@ -2007,9 +2007,28 @@ async function mgPlanAndAngles(host,summaryBox,finalImage,beforeImage,brief,d,ed
     stepsChapter.innerHTML=mgChapterHeader('4','Postup realizace','steps','violet')+P.stepsHtml(res.plan);
     careChapter.innerHTML=mgChapterHeader('5','Péče po celý rok','care','pink')+P.careHtml(res.plan);
     const planR=P.build(res.plan,dims);
-    planChapter.innerHTML=mgChapterHeader('6','Orientační půdorys zahrady','plan','sky')+
-      '<div class="mg-plan-svg">'+planR.svg+'</div>'+P.legendHtml(planR)+
-      '<p class="mg-note">⚠️ Půdorys je dopočítaný odhad tvarů podle fotografie, ne přesné zaměření - přesnou polohu a rozměry záhonů najdete na očíslované fotce v kapitole 2 výše, čísla v obou kapitolách odpovídají stejným záhonům.</p>';
+    // 2026-11-04 (Martin's own request): drop the abstract top-down floor-plan drawing ("ten
+    // hnusnej pudorys") in favour of writing the plant names and bed size straight onto the real
+    // photo, next to the same numbered circles as chapter 2 - it's the actual photo, not a guessed
+    // shape, so it reads as more trustworthy and nicer to look at. `points` (detectBeds, above) and
+    // `planR.legend`'s bed rows share the same left-to-right numbering by construction (see
+    // prepare()'s own comment in garden-plan.js), so zipping them by index is safe.
+    const planItems=points.map(function(pt,i){
+      const bedNo=i+1, row=planR.legend.find(function(l){return l.no===bedNo});
+      let label='';
+      if(row){
+        if(row.plants.length){
+          const names=row.plants.slice(0,2).map(function(p){return p.name+' '+(+p.count||0)+' ks'}).join(', ');
+          label=names+(row.plants.length>2?' a další':'')+(row.area?' · '+row.area:'');
+        }else label=row.area||'';
+      }
+      return {x:pt.x,y:pt.y,no:bedNo,label:label};
+    });
+    const labeled=planItems.length?await P.annotatePlanPhoto(finalImage,planItems):numbered;
+    planChapter.innerHTML=mgChapterHeader('6','Rostliny podle fotky','plan','sky')+
+      '<img class="mg-plan-photo" alt="Fotka návrhu s popisky rostlin u jednotlivých záhonů" src="'+labeled+'">'+P.plantLegendHtml(planR)+
+      '<a class="mg-ai-download" href="'+labeled+'" download="mvgreen-navrh-popisky.jpg">⬇ Uložit fotku s popisky</a>'+
+      '<p class="mg-note">⚠️ Druhy a počty kusů jsou dopočítaný odhad podle fotografie, ne přesné zaměření - popisky se mohou v nabité fotce částečně překrývat, číslo kroužku vždy odpovídá stejnému záhonu jako v kapitole 2.</p>';
     // Chapter 1 (the summary at the very top) last, once the total price is known - taken straight
     // from shoppingTotals, the SAME calculation the shopping chapter's own table uses, so the two
     // chapters can never show two different prices for the same design.

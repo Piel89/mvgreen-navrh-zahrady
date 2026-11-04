@@ -388,6 +388,71 @@
     });
   }
 
+  /** Rounded-rectangle path helper for annotatePlanPhoto()'s label tags. */
+  function roundRectPath(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath(); ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  /**
+   * Same numbered markers as drawMarkers(), plus a small text tag next to each one naming the
+   * plant(s) and area for that bed, written straight onto the design photo. 2026-11-04 (Martin's
+   * own suggestion): the separate abstract top-down "půdorys" SVG never matches the real photo's
+   * geometry and he finds it ugly ("ten hnusnej pudorys") - writing the plant names directly on
+   * the actual photo, next to the same numbered circle used in chapter 2, is the more honest and
+   * more attractive way to show what goes where, since it's the real photo, not a guessed shape.
+   * items: [{x,y (0-100% of photo), no, label}], label may be '' (marker only, no tag drawn).
+   */
+  function annotatePlanPhoto(src, items) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        var x = c.getContext('2d'); x.drawImage(img, 0, 0);
+        var r = Math.max(16, Math.round(c.width / 55));
+        var fontPx = Math.max(15, Math.round(c.width / 65));
+        (items || []).forEach(function (it, i) {
+          var px = it.x / 100 * c.width, py = it.y / 100 * c.height;
+          x.beginPath(); x.arc(px, py, r * 1.25, 0, Math.PI * 2); x.fillStyle = 'rgba(255,255,255,.92)'; x.fill();
+          x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fillStyle = '#0f3d27'; x.fill();
+          x.fillStyle = '#fff'; x.font = '700 ' + Math.round(r * 1.15) + 'px Inter, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+          x.fillText(String(it.no), px, py + r * 0.06);
+          if (!it.label) return;
+          // Alternate which side the tag sits on so neighbouring beds' tags don't stack on top of
+          // each other as often; still just a heuristic - dense photos can still overlap a little.
+          var left = (i % 2 === 0);
+          var dx = (left ? 1 : -1) * r * 2.4, dy = -r * 2.1;
+          var words = String(it.label).split(' '), lines = [], cur = '';
+          words.forEach(function (w) {
+            var t = cur ? cur + ' ' + w : w;
+            if (t.length > 24 && cur) { lines.push(cur); cur = w; } else cur = t;
+          });
+          if (cur) lines.push(cur);
+          if (lines.length > 3) { lines = lines.slice(0, 3); lines[2] = lines[2].replace(/.{0,3}$/, '…'); }
+          x.font = '600 ' + fontPx + 'px Inter, Arial, sans-serif';
+          var padX = 9, padY = 7, lineH = fontPx * 1.28;
+          var boxW = Math.max.apply(null, lines.map(function (l) { return x.measureText(l).width; })) + padX * 2;
+          var boxH = lines.length * lineH + padY * 2;
+          var anchorX = px + dx, anchorY = py + dy;
+          var bx = left ? anchorX : anchorX - boxW, by = anchorY - boxH / 2;
+          bx = Math.min(c.width - boxW - 6, Math.max(6, bx));
+          by = Math.min(c.height - boxH - 6, Math.max(6, by));
+          x.strokeStyle = 'rgba(15,61,39,.85)'; x.lineWidth = Math.max(1.5, r * 0.11);
+          x.beginPath(); x.moveTo(px + (left ? r : -r), py); x.lineTo(left ? bx : bx + boxW, by + boxH / 2); x.stroke();
+          x.fillStyle = 'rgba(255,255,255,.95)'; roundRectPath(x, bx, by, boxW, boxH, 7); x.fill();
+          x.strokeStyle = '#0f3d27'; x.lineWidth = 1.5; roundRectPath(x, bx, by, boxW, boxH, 7); x.stroke();
+          x.fillStyle = '#17331f'; x.textAlign = 'left'; x.textBaseline = 'top';
+          lines.forEach(function (l, li) { x.fillText(l, bx + padX, by + padY + li * lineH); });
+        });
+        resolve(c.toDataURL('image/jpeg', 0.92));
+      };
+      img.onerror = function () { reject(new Error('Obrázek se nepodařilo načíst.')); };
+      img.src = src;
+    });
+  }
+
   /** Numbered markers drawn straight into the design photo (main deliverable for non-gardeners). */
   function annotatePhoto(src, plan) {
     prepare(plan);
@@ -573,5 +638,5 @@
     }).join('') + '</tbody></table>';
   }
 
-  window.MVGreenPlan = { build: build, legendHtml: legendHtml, plantLegendHtml: plantLegendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, bedsHtml: bedsHtml, prepare: prepare, detectBeds: detectBeds, drawMarkers: drawMarkers, shoppingHtml: shoppingHtml, shoppingTotals: shoppingTotals, careHtml: careHtml, stepsHtml: stepsHtml };
+  window.MVGreenPlan = { build: build, legendHtml: legendHtml, plantLegendHtml: plantLegendHtml, downloadPng: downloadPng, annotatePhoto: annotatePhoto, annotatePlanPhoto: annotatePlanPhoto, bedsHtml: bedsHtml, prepare: prepare, detectBeds: detectBeds, drawMarkers: drawMarkers, shoppingHtml: shoppingHtml, shoppingTotals: shoppingTotals, careHtml: careHtml, stepsHtml: stepsHtml };
 })();
