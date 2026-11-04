@@ -636,42 +636,49 @@ if(photoSection){
  const visual=document.createElement('div');visual.className='mg-ref-photo-showcase';
  visual.innerHTML='<img class="mg-ref-photo-showcase-img" src="https://mvgreen.cz/wp-content/uploads/2026/10/4a7473d4-21f1-43b8-abdb-583ae4a93e2f.jpg" alt="Ukázková fotografie zahrady">';
  photoSection.insertBefore(visual,photoSection.querySelector('.mg-field'));
- const thumbs=document.createElement('div');thumbs.className='mg-ref-photo-thumbs';
- thumbs.innerHTML='<div class="mg-ref-thumbs-images" aria-label="Nahrané fotografie"></div><button type="button" class="mg-add-more-photos">＋ Přidat další fotografii</button><input type="file" class="mg-extra-photos-input" accept="image/jpeg,image/png,image/webp" multiple hidden>';
- const field=q('mg-photo')?.closest('.mg-field');if(field)field.appendChild(thumbs);
- const gallery=thumbs.querySelector('.mg-ref-thumbs-images');
- const extraInput=thumbs.querySelector('.mg-extra-photos-input');
- const photos=[];
- function renderGallery(){
-  gallery.replaceChildren();
-  photos.forEach((file,index)=>{
-   const btn=document.createElement('button');btn.type='button';btn.className='mg-gallery-photo';btn.title='Zobrazit fotografii '+(index+1);
-   const thumb=document.createElement('img');thumb.alt='Fotografie '+(index+1);thumb.src=URL.createObjectURL(file);
-   thumb.onload=()=>URL.revokeObjectURL(thumb.src);
-   btn.appendChild(thumb);btn.addEventListener('click',()=>{
-    const transfer=new DataTransfer();transfer.items.add(file);
-    q('mg-photo').files=transfer.files;
-    q('mg-photo').dispatchEvent(new Event('change',{bubbles:true}));
-    gallery.querySelectorAll('button').forEach(el=>el.classList.remove('is-active'));btn.classList.add('is-active');
-   });
-   gallery.appendChild(btn);
-  });
+ // 2026-11-04 (owner: "V kroku 3 zachovej jen prvni fotku"): this step used to also offer a
+ // "+ Přidat další fotografii" gallery for uploading and switching between several photos.
+ // Dropped - only the one photo from step 1 is kept/shown here, nothing more to manage.
+ const field=q('mg-photo')?.closest('.mg-field');
+ function syncPhotoFieldVisibility(){
+  // The upload field stays as a fallback for the rare case nobody uploaded a photo earlier
+  // (e.g. skipped straight to step 3 via the side nav); once a photo exists it's redundant
+  // with the showcase image above, so hide it instead of inviting a second upload.
+  if(field)field.classList.toggle('mg-hidden',photoReady);
  }
- q('mg-photo').addEventListener('change',()=>{
-  const file=q('mg-photo').files?.[0];if(!file)return;
-  if(!photos.some(p=>p.name===file.name&&p.size===file.size&&p.lastModified===file.lastModified)){photos.push(file);renderGallery();}
-  const selected=photos.findIndex(p=>p.name===file.name&&p.size===file.size&&p.lastModified===file.lastModified);
-  gallery.querySelectorAll('button').forEach((el,i)=>el.classList.toggle('is-active',i===selected));
- });
- thumbs.querySelector('.mg-add-more-photos').addEventListener('click',()=>extraInput.click());
- extraInput.addEventListener('change',()=>{
-  const incoming=Array.from(extraInput.files||[]).filter(f=>['image/jpeg','image/png','image/webp'].includes(f.type)&&f.size<=10*1024*1024);
-  incoming.forEach(file=>{if(!photos.some(p=>p.name===file.name&&p.size===file.size&&p.lastModified===file.lastModified))photos.push(file)});
-  renderGallery();
-  if(incoming.length){const transfer=new DataTransfer();transfer.items.add(incoming[0]);q('mg-photo').files=transfer.files;q('mg-photo').dispatchEvent(new Event('change',{bubbles:true}));}
-  extraInput.value='';
- });
+ q('mg-photo').addEventListener('change',syncPhotoFieldVisibility);
  const originalPreview=q('mg-upload-preview-image');if(originalPreview)originalPreview.addEventListener('load',()=>{visual.querySelector('img').src=originalPreview.src;});
+ // 2026-11-04 (owner: "pridej sumar toho co jsme vybrali a jaky tam maji podminky aby meli
+ // ucelenou predstavu toho co zaskrtli nebo co automaticky zjistil nas nastroj"): a plain
+ // bullet-point recap of everything chosen/found in steps 1-2 (style incl. "děti a mazlíčci"
+ // use-case, maintenance, sun/water, budget, locality), so the customer has the full picture
+ // before marking the area to change. Inserted before .mg-calibration so it is never swept
+ // into the dormant measure-step section below (that code walks nextElementSibling from
+ // .mg-calibration onward).
+ const summaryBox=document.createElement('div');summaryBox.className='mg-ref-step3-summary';
+ summaryBox.innerHTML='<h4>Shrnutí vaší zahrady</h4><ul class="mg-ref-summary-list"></ul>';
+ const calibrationAnchor=photoSection.querySelector('.mg-calibration');
+ photoSection.insertBefore(summaryBox,calibrationAnchor||null);
+ const waterCatLabels={dry:'Sucho, bez závlahy',normal:'Běžná vlhkost',wet:'Dostatek vody, mám závlahu'};
+ function buildStep3Summary(){
+  const list=summaryBox.querySelector('.mg-ref-summary-list');
+  const items=[];
+  const variantName=root.querySelector('[data-mg-variant][aria-pressed="true"] strong')?.textContent;
+  if(variantName)items.push('Styl zahrady: <strong>'+variantName+'</strong>');
+  const maint=q('mg-maint')?.value;if(maint)items.push('Požadovaná údržba: '+maint);
+  const sun=q('mg-sun')?.value;if(sun)items.push('Osvit stanoviště: '+(sun==='Slunce'?'Plné slunce':sun));
+  const waterCat=q('mg-water')?.value;if(waterCat&&waterCatLabels[waterCat])items.push('Vláha na pozemku: '+waterCatLabels[waterCat]);
+  const minB=Number(q('mg-min')?.value)||0,maxB=Number(q('mg-max')?.value)||0;
+  if(maxB>0)items.push('Rozpočet: '+(minB>0?money(minB)+' – ':'do ')+money(maxB));
+  const locality=q('mg-locality')?.value?.trim();
+  if(locality){const altitude=Number(q('mg-altitude')?.value);items.push('Lokalita: '+locality+(altitude>0?' ('+altitude+' m n. m.)':''));}
+  const colors=[].map.call(root.querySelectorAll('[data-fav-color][aria-pressed="true"]'),b=>b.textContent.trim()).filter(Boolean);
+  if(colors.length)items.push('Oblíbené barvy: '+colors.join(', '));
+  const waterChip=root.querySelector('[data-fav-water][aria-pressed="true"]');
+  if(waterChip)items.push('Zalévání: '+waterChip.textContent.trim());
+  list.innerHTML=items.length?items.map(t=>'<li>'+t+'</li>').join(''):'<li>Zatím nic nevyplněno - vraťte se prosím o krok zpět.</li>';
+ }
+ window.MVGreenSyncStep3Summary=function(){syncPhotoFieldVisibility();buildStep3Summary();};
 
 }
 if(photoSection){
@@ -1400,6 +1407,7 @@ showWizardStep=function(n){
  const badge=q('mg-progress-badge');if(badge)badge.textContent=String(wizardStep);
  const summary=q('mg-budget-summary-info');
  if(summary)summary.textContent='Styl: '+(q('mg-variant-note')?.textContent||'neurčen')+' · Lokalita: '+(q('mg-locality')?.value||'nezadána');
+ if(wizardStep===3&&window.MVGreenSyncStep3Summary)window.MVGreenSyncStep3Summary();
  // Step 4 ("Označení plochy") needs a photo first, and opens the mask-confirmation overlay itself
  // every time it's entered (confirming it stores the mask in confirmedEditMask for runAiGeneration
  // to reuse; cancelling leaves any previously confirmed mask untouched).
