@@ -719,10 +719,24 @@
           // A SLIC segment the customer tapped can still fall just short of an irregular object's
           // real edge (a round mixer, a slanted fence line) – a phone finger can't retouch single
           // segments precisely. growMask gives a small, fixed allowance to close that gap before
-          // smoothing rounds the now-larger boundary; both stay hard-bounded by editMask/PROTECT
-          // downstream exactly as before, so this never reaches past what the customer approved.
+          // smoothing rounds the now-larger boundary.
+          // Owner-reported bug (2026-11-04): objects explicitly painted "Zůstane" (two tank lids,
+          // a fence) still changed in the AI result. Root cause: the comment this replaces claimed
+          // growMask/smoothMaskEdge "never reach past what the customer approved" – false. Both
+          // dilate editMask OUTWARD along its ENTIRE boundary, which eats directly into whatever
+          // sits right next to it and is marked PROTECT, by several px per step. For a large object
+          // (a fence, a house wall) that's invisible; for a small one (a manhole/tank lid) it can
+          // shrink or fully breach the protected margin – contradicting the "ani jeden pixel" hard
+          // lock promised in mvgreen_run_ai_image_stage()'s own prompt. Fix: keep the RAW, ungrown
+          // PROTECT paint and re-subtract it after every growth/smoothing step below, so this
+          // convenience allowance can only ever expand into genuinely unpainted/non-protect ground
+          // (closing real gaps, as intended) and never into anything the customer actually
+          // protected, however small.
+          var protectMask = categoryMask(seg, category, photoW, photoH, function (c) { return c === PROTECT; });
           if (S && S.growMask) { editMask = S.growMask(editMask); removeMask = S.growMask(removeMask); }
+          if (S && S.combineMasks) editMask = S.combineMasks('subtract', editMask, protectMask);
           if (S && S.smoothMaskEdge) { editMask = S.smoothMaskEdge(editMask); removeMask = S.smoothMaskEdge(removeMask); }
+          if (S && S.combineMasks) editMask = S.combineMasks('subtract', editMask, protectMask);
           var hasRemove = false;
           for (var s = 1; s <= numSegments; s++) if (category[s] === REMOVE) { hasRemove = true; break; }
           var previewDataUrl = buildPreviewDataUrl(seg, category, photo, photoW, photoH);
