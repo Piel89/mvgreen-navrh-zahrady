@@ -2622,3 +2622,11 @@ body.mg-bp-fs-open{overflow:hidden!important}
   .mvgreen-designer .mg-pkg-icon svg{width:21px;height:21px}
   .mvgreen-designer .mg-pkg-top{flex-direction:column;align-items:flex-start;gap:0}
 }
+
+/* Welcome screen v2 — the side panel (story/benefits/quote) and the empty
+   tips column are redundant with the new redesign; hide both and let the
+   main column take the full frame width, at every screen size. */
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal){grid-template-columns:minmax(0,1fr)!important}
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-redesign-side,
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-redesign-tips{display:none!important}
+.mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-redesign-main{max-width:980px;margin:0 auto;padding:22px 20px 24px!important}
