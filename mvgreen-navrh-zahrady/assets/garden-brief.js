@@ -306,7 +306,14 @@
       // creates many more, often irregular, locked edges scattered through the middle of the photo,
       // so this is now its own explicit, emphatic rule naming every kind of locked boundary, not a
       // clause tucked into NAVÁZÁNÍ.
-      'CELÉ ROSTLINY, NIKDY USEKNUTÉ: žádná nová rostlina (keř, květina, strom) nesmí být nikde vedle zamčeného/needitovatelného prvku (plot, zeď, dům, strom, altán) vykreslená jako uťatá nebo useknutá rovnou čarou podél jeho hranice – jako by pokračovala dál, ale ta část chybí. Pokud by rostlina v přirozené výšce nebo šířce měla zasahovat za hranici odemčené plochy, vykresli ji místo toho CELOU a kompletní (menší, nebo o kousek dál od hranice), tak aby byl vidět celý přirozený tvar rostliny od země až po vrchol, nikdy jen její část.',
+      // 2026-11-04, Martinovo doplnění ("ty kytky nerostou po zemi v 2D, rostou do výšky, je to 3D
+      // vizualizace... když je za záhonem barák, kytky tam prostě vidět musí být, ne useknuté, jako
+      // by nad tou půlkou byla zóna, kde se nesmí nic stát") – tahle věta dřív jako řešení nabízela
+      // JEN zmenšení/posunutí rostliny dál od hranice, což by u rostliny těsně před zamčeným prvkem
+      // (dům, plot, zeď) znamenalo ji zbytečně zmenšit nebo odsunout, i když přesně od toho tam je
+      // ten překryvný pruh o kousek dál (REALISTICKÉ PŘEKRYTÍ ZA HRANICÍ) – rostlina má v takovém
+      // případě růst v plné přirozené výšce/šířce A ZASAHOVAT do toho pruhu, ne se mu vyhýbat.
+      'CELÉ ROSTLINY, NIKDY USEKNUTÉ: žádná nová rostlina (keř, květina, strom) nesmí být nikde vedle zamčeného/needitovatelného prvku (plot, zeď, dům, strom, altán) vykreslená jako uťatá nebo useknutá rovnou čarou podél jeho hranice – jako by pokračovala dál, ale ta část chybí. Rostliny rostou do výšky, ne po zemi – je to 3D scéna, ne plochý půdorys. Pokud je kousek za hranicí zamčený prvek (dům, plot, zeď, altán), nech rostlinu v její PŘIROZENÉ, PLNÉ výšce a šířce a klidně ať zasahuje do toho úzkého pruhu za hranicí (viz REALISTICKÉ PŘEKRYTÍ ZA HRANICÍ níž) a vizuálně část toho prvku zakryje – přesně jak by to vypadalo doopravdy (keř nebo záhon s kytkami před barákem, dům za nimi pořád fyzicky stojí, jen je teď částečně schovaný). Rostlinu zmenšuj nebo posouvej dál od hranice jen tehdy, když za hranicí NENÍ žádný zamčený prvek k zakrytí (např. úplný okraj celé upravované plochy) – jinak ji nikdy nezmenšuj ani neodsunuj jen proto, aby se "vešla" před zónu, a nikdy ji neusekni rovnou čarou.',
       // 2026-10-27, Martin's explicit requirement + confirmed "ano": "zamčený, ale překryvatelný"
       // (locked, but occludable) as a universal default. The rule above (CELÉ ROSTLINY) stops a
       // plant being amputated at the boundary; this rule is the other half – it tells the AI that a
