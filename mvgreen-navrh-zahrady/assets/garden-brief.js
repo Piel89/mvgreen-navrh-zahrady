@@ -98,8 +98,12 @@
         return '<button type="button" class="mg-chip" data-fav-color="' + c[0] + '" aria-pressed="false"><span class="mg-chip__dot mg-chip__dot--' + c[0] + '"></span>' + c[1] + '</button>';
       }).join('') + '</div>' +
       '<div class="mg-fav__group" role="group" aria-label="Závlaha"><span class="mg-fav__label">Závlaha:</span>' +
-      ['Mám automatickou závlahu', 'Zalévám ručně', 'Nechci zalévat'].map(function (t, i) {
-        return '<button type="button" class="mg-chip" data-fav-water="' + i + '" aria-pressed="' + (i === 1) + '">' + t + '</button>';
+      [
+        ['Mám automatickou závlahu', '<svg viewBox="0 0 24 24"><path d="M12 2c-1 3-6 7-6 12a6 6 0 0012 0c0-5-5-9-6-12Z" fill="currentColor"/></svg>'],
+        ['Zalévám ručně', '<svg viewBox="0 0 24 24"><path d="M12 2c-1 3-6 7-6 12a6 6 0 0012 0c0-5-5-9-6-12Z" fill="currentColor" opacity=".25"/><path d="M12 2c-1 3-6 7-6 12a6 6 0 0012 0c0-5-5-9-6-12Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="16" r="2" fill="currentColor"/></svg>'],
+        ['Nechci zalévat', '<svg viewBox="0 0 24 24"><path d="M12 2c-1 3-6 7-6 12a6 6 0 0012 0c0-5-5-9-6-12Z" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".55"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>']
+      ].map(function (t, i) {
+        return '<button type="button" class="mg-chip mg-chip--water" data-fav-water="' + i + '" aria-pressed="' + (i === 1) + '"><span class="mg-chip__icon">' + t[1] + '</span>' + t[0] + '</button>';
       }).join('') + '</div>' +
       '<input type="hidden" id="mg-fav-colors"><input type="hidden" id="mg-irrigation" value="1">' +
       '</section>';

@@ -2630,3 +2630,24 @@ body.mg-bp-fs-open{overflow:hidden!important}
 .mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-redesign-side,
 .mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-redesign-tips{display:none!important}
 .mvgreen-designer .mg-redesign-frame:not(.mg-is-modal) .mg-redesign-main{max-width:980px;margin:0 auto;padding:22px 20px 24px!important}
+
+/* ===== Variant C icons — shaped animated badges, no emoji ===== */
+.mvgreen-designer .mg-variant{position:relative}
+.mvgreen-designer .mg-variant-icon{position:absolute;top:10px;left:10px;z-index:2;width:34px;height:34px;border-radius:11px;background:#fff;box-shadow:0 3px 10px #0004;display:flex;align-items:center;justify-content:center;animation:mg-badge-wiggle 3.4s ease-in-out infinite}
+.mvgreen-designer .mg-variant-icon svg{width:19px;height:19px;color:var(--mg-forest,#156333)}
+@keyframes mg-badge-wiggle{0%,100%{transform:rotate(0deg) scale(1)}25%{transform:rotate(-8deg) scale(1.05)}50%{transform:rotate(0deg) scale(1)}75%{transform:rotate(8deg) scale(1.05)}}
+@media(max-width:680px){.mvgreen-designer .mg-variant-icon{width:28px;height:28px;border-radius:9px;top:7px;left:7px}.mvgreen-designer .mg-variant-icon svg{width:16px;height:16px}}
+
+.mvgreen-designer .mg-chip__dot{position:relative}
+.mvgreen-designer .mg-chip[aria-pressed="true"] .mg-chip__dot:after{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid #156333;opacity:.65;animation:mg-pulse-ring 1.8s ease-out infinite}
+@keyframes mg-pulse-ring{0%{transform:scale(.6);opacity:.75}100%{transform:scale(1.9);opacity:0}}
+
+.mvgreen-designer .mg-chip--water{padding-left:8px}
+.mvgreen-designer .mg-chip__icon{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;background:#eef5f1;flex:none}
+.mvgreen-designer .mg-chip__icon svg{width:14px;height:14px;color:#5c8a6e}
+.mvgreen-designer .mg-chip--water[aria-pressed="true"] .mg-chip__icon{background:#fff}
+.mvgreen-designer .mg-chip--water[aria-pressed="true"] .mg-chip__icon svg{color:#156333;animation:mg-drip 1.4s ease-in-out infinite}
+@keyframes mg-drip{0%,100%{transform:translateY(0)}50%{transform:translateY(3px) scale(.92)}}
+@media(prefers-reduced-motion:reduce){
+  .mvgreen-designer .mg-variant-icon,.mvgreen-designer .mg-chip__dot:after,.mvgreen-designer .mg-chip--water[aria-pressed="true"] .mg-chip__icon svg{animation:none!important}
+}
