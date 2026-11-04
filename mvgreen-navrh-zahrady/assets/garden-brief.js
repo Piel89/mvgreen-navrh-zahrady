@@ -321,7 +321,11 @@
         // zmeni nebo vymaze, to neni OK") – samotné "zamčený, ale překryvatelný" pravidlo výše
         // nerozlišovalo mezi "keř zepředu zakrývá KUS plotu" (chtěné) a "plot byl jako celek
         // přemalovaný, zkrácený nebo smazaný" (nechtěné, i kdyby k tomu došlo "jen" v tomto pruhu).
-        ' Tenhle pruh je pro MALOU, lokální část zakrytého prvku poblíž rostliny – nikdy pro celý prvek najednou: plot, zeď nebo živý plot musí v tomto pruhu zůstat stejný materiál, stejná výška, stejná délka a stejné sloupky/díly jako na originále po celé své délce, jen místy méně viditelný za listy. Pokud by měl celý plot (nebo jeho velká většina) v tomto pruhu vypadat jinak, chybět, být kratší nebo nahrazený jiným typem oplocení – to už není "zakrytí keřem", to je smazání/přestavba zamčeného prvku, a to je ZAKÁZÁNO stejně jako mimo tento pruh.',
+        // 2026-11-04, Martinovo doplnění ("platí to i u domů, u plotů, u zdí, u všeho... ten strom
+        // může překrývat tu plochu, která je fixovaná... ale nesmí tu plochu smazat nebo úplně
+        // vymazat z toho plánu") – pravidlo níž tedy musí platit univerzálně pro JAKÝKOLIV zamčený
+        // prvek (plot, zeď, dům, altán, komposter, strom...), ne jen pro plot/zeď/živý plot.
+        ' Tohle platí úplně stejně pro JAKÝKOLIV zamčený/needitovatelný prvek – plot, zeď, dům, altán, komposter, strom, cokoliv – ne jen pro plot. Tenhle pruh je pro MALOU, lokální část toho prvku poblíž nové rostliny – nikdy pro celý prvek najednou: zamčený prvek musí v tomto pruhu zůstat stejný materiál, stejná výška, stejná šířka/délka a stejné detaily (sloupky, fasáda, tvar) jako na originále po celém svém rozsahu, jen místy méně viditelný za listy, korunou nebo kmenem nové výsadby – přesně jako tuje zasazená před dům: dům tam fyzicky zůstává úplně stejný, jen je teď částečně schovaný za tují. Pokud by měl celý prvek (nebo jeho velká většina) v tomto pruhu vypadat jinak, chybět, být zmenšený nebo nahrazený něčím jiným – to už není "zakrytí rostlinou", to je smazání/přestavba zamčeného prvku, a to je ZAKÁZÁNO stejně jako mimo tento pruh.',
       // Reported 2026-10-27 ("tady to neni dotazeny" + screenshot circling a visible diagonal line
       // cutting across open, otherwise-unmarked lawn) – the mask boundary itself is becoming
       // visible as a seam where it falls across featureless grass with nothing (path/bed/wall) to
