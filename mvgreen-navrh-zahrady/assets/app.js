@@ -2295,7 +2295,7 @@ document.addEventListener('visibilitychange',()=>{
 // {step,pickedIndex} where `step` is shaped exactly like the ordinary mvgreen_ai_preview_step
 // 'done' response ({image,message,done:true}) so every line of runAiGeneration after this call
 // (S.finish(), chapter-building, etc.) runs unchanged.
-async function runConceptsPicker(jobId,totalStages,progress,result){
+async function runConceptsPicker(jobId,totalStages,progress,result,original,editMask,box,bufferMask){
   const concepts=new Array(totalStages).fill(null);
   let step,stepFails=0;
   const maxStepRetries=8;
@@ -2315,7 +2315,28 @@ async function runConceptsPicker(jobId,totalStages,progress,result){
     progress.update(step.completedStages||0,step.totalStages||totalStages);
     if(step.done)break;
   }
-  const available=concepts.map((image,index)=>image?{index,image}:null).filter(Boolean);
+  // 2026-11-04 (owner, after downloading and looking at the actual concept files: "1000 chyb v
+  // navrhu"): every concept card was showing the RAW OpenAI /images/edits response straight from
+  // the server - still letterboxed onto whatever fixed API canvas (1536x1024 etc.) ai-safety.js's
+  // S.prepare() padded the photo into, grey padding bars and all ("Šedé okraje fotografie ponech
+  // šedé" in the prompt - the model is TOLD to leave that padding alone, on the assumption
+  // something downstream crops it back off). The final, single committed image already goes
+  // through S.finish() (below, after a concept is picked) to undo exactly that padding and hard-
+  // lock everything outside the mask - the concept PREVIEWS just never got the same treatment when
+  // this picker was added, so every preview (and anything saved/downloaded straight from it) kept
+  // the raw padded canvas. Running each concept through the same S.finish() crop here fixes that at
+  // the source rather than patching it in the thumbnail CSS.
+  const cropConcept=async(src)=>{
+    const S=window.MVGreenAISafety;
+    if(!S||!original||!editMask||!box)return src;
+    try{
+      const img=new Image();
+      await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error('AI obrázek se nepodařilo načíst.'));img.src=src;});
+      return S.finish(original,editMask,img,box,bufferMask).canvas.toDataURL('image/jpeg',0.92);
+    }catch(e){return src;}
+  };
+  const cropped=await Promise.all(concepts.map(image=>image?cropConcept(image):null));
+  const available=cropped.map((image,index)=>image?{index,image}:null).filter(Boolean);
   if(!available.length)throw new Error('AI návrhy se bohužel nepodařilo vytvořit. Zkuste to prosím znovu.');
   progress.stop(true);
   return await new Promise((resolve,reject)=>{
@@ -2476,7 +2497,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     progress.update(0,totalStages);
     let step,stepFails=0;
     if(start.phase==='concepts'){
-      const picked=await runConceptsPicker(start.jobId,totalStages,progress,result);
+      const picked=await runConceptsPicker(start.jobId,totalStages,progress,result,original,editMask,prepared.box,bufferMask);
       step=picked.step;
       brief=conceptBriefs[picked.pickedIndex];
     }else{
