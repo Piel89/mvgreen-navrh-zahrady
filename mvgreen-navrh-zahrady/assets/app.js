@@ -2374,6 +2374,14 @@ async function runAiGeneration(trigger,extraFields,confirmText){
     const note=document.createElement('p');note.textContent='Posuňte jezdec pro porovnání. Změnila se jen označená plocha zahrady, ostatní je původní fotografie (kontrola zachování: '+Math.round(done.drift)+').';visualChapter.append(note);
     if(brief.rejected.length){const why=document.createElement('p');why.className='mg-note';why.textContent='Do návrhu jsme nedali: '+brief.rejected.join(', ')+' – pro vaše podmínky (slunce, vlhkost, zálivka) se nehodí. Použili jsme vhodnější rostliny.';visualChapter.append(why);}
     const used=document.createElement('p');used.className='mg-note';used.textContent='Rostliny v návrhu: '+brief.plants.map(p=>p.name).join(', ')+'.';visualChapter.append(used);
+    // 2026-11-04 (Martinovo hlášení "nesedi pocet kytek v ai navrhu a pak ve vypisu, v pudorysu"):
+    // vizualizace vznikla JEDNÍM AI voláním, co kreslí obrázek podle druhů a obecného pravidla
+    // "sázej ve skupinách po 3-7 kusů" - bez pevně daného počtu kusů. Přesný počet pro nákup a
+    // kapitolu 2/3/6 dopočítává AŽ dodatečné, samostatné volání (mvgreen_ai_plan), které odhaduje
+    // počet podle plochy záhonu na hotové fotce. Jde tedy nutně o dva nezávislé odhady - obrázek
+    // nikdy nebude mít přesně tolik kvítků, kolik říká tabulka. Řekneme to zákazníkovi přímo, ať to
+    // nepůsobí jako chyba, až tabulky dole uvidí jiné číslo než co "napočítá" na obrázku.
+    const countNote=document.createElement('p');countNote.className='mg-note';countNote.textContent='Vizualizace je umělecké ztvárnění stylu a druhů rostlin, ne přesný plán - skutečný počet kusů pro nákup a výsadbu najdete v kapitolách 2 a 3 níže (a v číslované legendě u půdorysu), ne v obrázku.';visualChapter.append(countNote);
     const link=document.createElement('a');link.href=finalImage;link.download='mvgreen-ai-navrh.png';link.textContent='⬇ Uložit AI návrh';link.className='mg-ai-download';visualChapter.append(link);
     project.append(visualChapter);
     result.append(project);

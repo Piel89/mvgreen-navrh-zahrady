@@ -137,7 +137,25 @@
         shapes += '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="' + r.toFixed(1) + '" fill="' + canopyGrad + '" stroke="' + st.stroke + '" stroke-width="1.3" filter="url(#mgp-shadow)"/>' +
           '<circle cx="' + (+X(c[0]) - r * 0.28).toFixed(1) + '" cy="' + (+Y(c[1]) - r * 0.28).toFixed(1) + '" r="' + (r * 0.3).toFixed(1) + '" fill="#fff" opacity=".22"/>';
         legend.push({ no: '', type: st.name, label: e.label || st.name, area: '', plants: e.plants || [], isNew: true });
-        (e.plants || []).forEach(function (pl) { totals.plants += +pl.count || 0; });
+        // A tree/shrub's plants used to only add to totals.plants (the "rostlin celkem" headline in
+        // legendHtml) without ever being registered in plantNo/plantLegend - the SAME numbered-dot
+        // legend table that beds feed below. That made the headline total and the table under it,
+        // both in chapter 6, silently disagree for any design with a new tree or shrub (reported
+        // 2026-11-04: "pocet kytek... v pudorysu nesedi"). Register it the same way beds do, and
+        // label the canopy with its legend number so it's traceable like a bed's numbered dot.
+        var treeLabelNo = 0;
+        (e.plants || []).forEach(function (pl) {
+          var name = String(pl.name || '').trim(); if (!name) return;
+          var cat = categoryOf(name);
+          if (!plantNo[name]) { plantNo[name] = ++plantSeq; plantLegend.push({ no: plantNo[name], name: name, cat: cat, count: 0, shown: 0 }); }
+          // One canopy circle already stands for the whole tree/shrub planting (not one dot per
+          // specimen like beds), so nothing here is visually "capped" - shown tracks count 1:1.
+          var treeEntry = plantLegend[plantNo[name] - 1];
+          treeEntry.count += +pl.count || 0; treeEntry.shown += +pl.count || 0;
+          totals.plants += +pl.count || 0;
+          if (!treeLabelNo) treeLabelNo = plantNo[name];
+        });
+        if (treeLabelNo) labels += '<text x="' + X(c[0]) + '" y="' + (+Y(c[1]) + 3) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="#fff" paint-order="stroke" stroke="#00000055" stroke-width="2">' + treeLabelNo + '</text>';
         return;
       }
       if (p.length < 3) return; // malformed element from the AI plan – drop it rather than draw a meaningless shape
@@ -146,9 +164,17 @@
       if (e.type === 'lawn') totals.lawn += a;
       if (e.type === 'bed') {
         bedNo = e._no || bedNo + 1; totals.bed += a;
-        (e.plants || []).forEach(function (pl) { totals.plants += +pl.count || 0; });
+        var bedIsNew = e.is_new !== false;
+        // Only count/dot a bed's plants when the bed itself is NEW - matching shoppingHtml's and
+        // bedsHtml's own filter (they already skip !e.is_new entirely). Before this, an existing
+        // bed the AI described for context (is_new:false) could still inflate totals.plants and
+        // the floor-plan dot legend while the shopping list correctly left it out - the same class
+        // of chapter-vs-chapter mismatch reported 2026-11-04, just for a case the AI's current
+        // prompt (plan.php) doesn't normally produce for beds, but shouldn't silently break if it
+        // ever does.
+        if (bedIsNew) (e.plants || []).forEach(function (pl) { totals.plants += +pl.count || 0; });
         labels += '<g filter="url(#mgp-shadow)"><circle cx="' + X(cen[0]) + '" cy="' + Y(cen[1]) + '" r="13" fill="#0f3d27" stroke="#fff" stroke-width="2"/><text x="' + X(cen[0]) + '" y="' + (+Y(cen[1]) + 4.5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">' + bedNo + '</text></g>';
-        legend.push({ no: bedNo, type: st.name, label: e.label || ('Záhon ' + bedNo), area: fmtM2(a), plants: e.plants || [], isNew: e.is_new !== false });
+        legend.push({ no: bedNo, type: st.name, label: e.label || ('Záhon ' + bedNo), area: fmtM2(a), plants: e.plants || [], isNew: bedIsNew });
         // Scatter one small, individually-numbered dot per plant inside the bed outline (same
         // number reused for every specimen of a species, as on a real planting plan), plus a
         // side legend decoding each number to a plant name – a flat brown polygon alone doesn't
@@ -156,13 +182,14 @@
         // (e.g. 35 ks) doesn't turn into visual noise; the real count stays in the legend and
         // the shopping list.
         var rnd = seededRng(Math.round((e._no || bedNo) * 97 + cen[0] * 10 + cen[1]));
-        (e.plants || []).forEach(function (pl) {
+        if (bedIsNew) (e.plants || []).forEach(function (pl) {
           var name = String(pl.name || '').trim(); if (!name) return;
           var cat = categoryOf(name);
-          if (!plantNo[name]) { plantNo[name] = ++plantSeq; plantLegend.push({ no: plantNo[name], name: name, cat: cat, count: 0 }); }
+          if (!plantNo[name]) { plantNo[name] = ++plantSeq; plantLegend.push({ no: plantNo[name], name: name, cat: cat, count: 0, shown: 0 }); }
           var entry = plantLegend[plantNo[name] - 1]; entry.count += +pl.count || 0;
           var dotColor = PLANT_DOT_COLOR[cat] || PLANT_DOT_COLOR.flowers;
           var dots = Math.max(1, Math.min(8, Math.round(+pl.count || 1)));
+          entry.shown += dots;
           for (var di = 0; di < dots; di++) {
             var pt = scatterPoint(p, rnd);
             plantShapes += '<circle cx="' + X(pt[0]) + '" cy="' + Y(pt[1]) + '" r="6" fill="' + dotColor + '" stroke="#fff" stroke-width="1.2"/>' +
@@ -225,11 +252,19 @@
   function plantLegendHtml(r) {
     if (!r.plantLegend || !r.plantLegend.length) return '';
     var catName = { flowers: 'trvalka / květina', grasses: 'travina', shrubs: 'keř', trees: 'strom' };
+    var anyCapped = false;
     var rows = r.plantLegend.map(function (pl) {
-      return '<tr><td><span class="mg-plan-no" style="background:' + (PLANT_DOT_COLOR[pl.cat] || PLANT_DOT_COLOR.flowers) + '">' + pl.no + '</span></td><td><strong>' + esc(pl.name) + '</strong><br><small>' + (catName[pl.cat] || '') + '</small></td><td>' + pl.count + ' ks</td></tr>';
+      // pl.shown is how many dots actually got drawn for this species (capped at 8 per bed so a
+      // dense groundcover doesn't become visual noise - see build()); pl.count is the real total
+      // used for the shopping list. When they differ, say so right in the row - a customer counting
+      // dots in the picture against this number was the exact "nesedi pocet kytek v pudorysu"
+      // complaint (2026-11-04), and the cap alone, undocumented, looked like a data bug.
+      var capped = pl.shown < pl.count;
+      if (capped) anyCapped = true;
+      return '<tr><td><span class="mg-plan-no" style="background:' + (PLANT_DOT_COLOR[pl.cat] || PLANT_DOT_COLOR.flowers) + '">' + pl.no + '</span></td><td><strong>' + esc(pl.name) + '</strong><br><small>' + (catName[pl.cat] || '') + '</small></td><td>' + pl.count + ' ks' + (capped ? ' <small>(v obrázku zobrazeno ' + pl.shown + ')</small>' : '') + '</td></tr>';
     }).join('');
     return '<h5>🌼 Legenda rostlin v půdorysu</h5><table class="mg-plan-legend mg-plan-plants"><thead><tr><th></th><th>Rostlina</th><th>Počet</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      '<p class="mg-note">Číslo a barva tečky v půdorysu odpovídají řádku v této legendě. Přesné rozmístění v záhonu je orientační.</p>';
+      '<p class="mg-note">Číslo a barva tečky v půdorysu odpovídají řádku v této legendě. Přesné rozmístění v záhonu je orientační.' + (anyCapped ? ' U hustší výsadby se v obrázku kreslí nejvýš 8 teček na druh, aby šel půdorys přečíst – skutečný počet kusů pro nákup je vždy číslo v této tabulce a v nákupním seznamu.' : '') + '</p>';
   }
 
   /** Stáhne SVG jako PNG. */
