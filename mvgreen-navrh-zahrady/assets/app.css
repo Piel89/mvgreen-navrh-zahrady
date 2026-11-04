@@ -2579,3 +2579,46 @@ body.mg-bp-fs-open{overflow:hidden!important}
   .mvgreen-designer .mg-care-close,.mvgreen-designer .mg-care-print,.mvgreen-designer .mg-care-upsell{display:none!important}
 }
 @media(max-width:600px){.mvgreen-designer .mg-care-box{padding:20px 16px;border-radius:14px}.mvgreen-designer .mg-care-row{flex-direction:column;align-items:stretch}}
+
+/* ===== Welcome screen redesign v2 — packages as the dominant element ===== */
+.mvgreen-designer .mg-welcome{display:flex!important;flex-direction:column!important;grid-template-columns:none!important;grid-template-rows:none!important;gap:20px!important;padding:20px 2px 4px!important;min-height:0!important}
+.mvgreen-designer .mg-welcome::before{inset:-50px -6% auto -6%;height:320px}
+.mvgreen-designer .mg-welcome-copy{display:flex!important;flex-direction:column!important;gap:10px!important;padding:0 2px!important;max-width:720px!important;align-items:flex-start!important}
+.mvgreen-designer .mg-welcome-copy .mg-eyebrow{display:inline-block!important}
+.mvgreen-designer .mg-welcome-copy h2{font-size:clamp(28px,3vw,42px)!important;line-height:1.12!important;letter-spacing:-.03em!important;font-weight:850!important;color:#103d31!important;max-width:none!important}
+.mvgreen-designer .mg-welcome-copy p{font-size:16px!important;line-height:1.6!important;color:#45594c!important;max-width:640px!important}
+
+.mvgreen-designer .mg-welcome-split{display:grid!important;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr)!important;gap:22px!important;align-items:start!important}
+.mvgreen-designer .mg-welcome-split .mg-welcome-image{grid-column:auto!important;grid-row:auto!important;width:100%!important;aspect-ratio:4/3!important;min-height:0!important;max-height:none!important;height:auto!important;align-self:start!important}
+.mvgreen-designer .mg-welcome-offer{display:flex!important;flex-direction:column!important;gap:14px!important;min-width:0}
+
+.mvgreen-designer .mg-pkg-cards.mg-pkg-cards-row{display:flex!important;flex-direction:column!important;grid-template-columns:none!important;grid-column:auto!important;grid-row:auto!important;gap:10px!important;margin-top:0!important;flex:1}
+.mvgreen-designer .mg-pkg-cards-row .mg-pkg-card{flex-direction:row!important;align-items:center!important;text-align:left!important;gap:14px!important;padding:13px 16px!important}
+.mvgreen-designer .mg-pkg-cards-row .mg-pkg-card.mg-pkg-featured{padding:15px 16px!important}
+.mvgreen-designer .mg-pkg-icon{flex:none;width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:var(--mg-pkg-accent-soft,#eef5f1);color:var(--mg-pkg-accent,#0b7a44);transition:transform .22s cubic-bezier(.2,.7,.3,1)}
+.mvgreen-designer .mg-pkg-icon svg{width:24px;height:24px;transition:transform .22s cubic-bezier(.2,.7,.3,1)}
+.mvgreen-designer .mg-pkg-cards-row .mg-pkg-card:hover .mg-pkg-icon{transform:scale(1.1) rotate(-4deg)}
+.mvgreen-designer .mg-pkg-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.mvgreen-designer .mg-pkg-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.mvgreen-designer .mg-pkg-cards-row .mg-pkg-name{font-size:14.5px}
+.mvgreen-designer .mg-pkg-cards-row .mg-pkg-price{font-size:16px;white-space:nowrap}
+.mvgreen-designer .mg-pkg-cards-row .mg-pkg-desc{font-size:12px}
+.mvgreen-designer .mg-pkg-arrow{flex:none;width:18px;height:18px;color:var(--mg-pkg-accent,#0b7a44);opacity:.75}
+.mvgreen-designer .mg-pkg-arrow svg{width:100%;height:100%;transition:transform .18s ease}
+.mvgreen-designer .mg-pkg-cards-row .mg-pkg-card:hover .mg-pkg-arrow svg{transform:translateX(3px)}
+.mvgreen-designer .mg-pkg-cards-row .mg-pkg-cta,.mvgreen-designer .mg-pkg-cards-row .mg-pkg-gallery{display:none!important}
+.mvgreen-designer .mg-pkg-cards-row .mg-pkg-badge{top:-9px;right:12px}
+
+.mvgreen-designer .mg-welcome-offer .mg-start{width:100%;justify-content:center;display:flex;align-items:center;gap:8px;margin-top:2px}
+.mvgreen-designer .mg-welcome .mg-trust-note{margin-top:2px}
+
+@media(max-width:900px){
+  .mvgreen-designer .mg-welcome-split{grid-template-columns:1fr!important}
+  .mvgreen-designer .mg-welcome-split .mg-welcome-image{aspect-ratio:16/9!important;min-height:220px!important}
+}
+@media(max-width:600px){
+  .mvgreen-designer .mg-pkg-cards-row .mg-pkg-card{padding:11px 12px!important;gap:10px!important}
+  .mvgreen-designer .mg-pkg-icon{width:40px;height:40px}
+  .mvgreen-designer .mg-pkg-icon svg{width:21px;height:21px}
+  .mvgreen-designer .mg-pkg-top{flex-direction:column;align-items:flex-start;gap:0}
+}
