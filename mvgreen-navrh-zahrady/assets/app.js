@@ -501,6 +501,14 @@ if(shell){
  const main=document.createElement('div');main.className='mg-redesign-main';
  const tips=document.createElement('aside');tips.className='mg-redesign-tips';tips.setAttribute('aria-label','Tipy pro návrh');
  shell.parentNode.insertBefore(frame,shell);frame.append(side,main,tips);main.append(shell);
+ // 2026-11-04 (Martin, looking at the live welcome screen: "tohle je na uvodni strane
+ // zbytecny"): the 8-step list was meant to appear only once the designer is actually open
+ // (see switchDesignerNavigation's own comment below, "show all seven steps only inside the
+ // designer") but that function only ever updated its aria-label, never its visibility - so it
+ // rendered on the welcome screen too, before the customer had even clicked "Začít s
+ // projektem". Hide it at creation; switchDesignerNavigation (unchanged logic otherwise) now
+ // actually shows/hides it along with the aria-label.
+ side.querySelector('.mg-nine-step-nav').hidden=true;
  // Use the real logo configured on the MVGreen WordPress site, never a fabricated replacement.
  const siteLogo=window.MVGreenBrand?.logoUrl;
  if(typeof siteLogo==='string'&&/^https?:\/\//.test(siteLogo)){
@@ -518,9 +526,10 @@ if(shell){
 }
 // Keep the approved four-item welcome sidebar unchanged; show all seven steps only inside the designer.
 function switchDesignerNavigation(isOpen){
- // One persistent seven-step sidebar for both the welcome screen and the editor.
  const nav=root.querySelector('.mg-redesign-side .mg-nine-step-nav');
- if(nav)nav.setAttribute('aria-label',isOpen?'Navigace mezi sedmi kroky':'Přehled sedmi kroků návrhu');
+ if(!nav)return;
+ nav.hidden=!isOpen;
+ nav.setAttribute('aria-label',isOpen?'Navigace mezi sedmi kroky':'Přehled sedmi kroků návrhu');
 }
 const designerBackplate=document.createElement('div');
 designerBackplate.className='mg-designer-backplate';
