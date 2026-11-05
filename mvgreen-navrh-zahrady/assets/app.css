@@ -185,6 +185,12 @@ body.mg-editor-overlay-open{overflow:hidden!important}
 .mvgreen-designer .mg-concept-label{padding:9px 10px;font-size:13px;font-weight:650;color:#1d3a27;text-align:center}
 .mvgreen-designer .mg-concept-card.mg-concept-selected{border-color:#156333;box-shadow:0 0 0 3px #15633326}
 .mvgreen-designer .mg-concept-card.mg-concept-selected .mg-concept-label{background:#eaf6ed;color:#0f3d27}
+.mvgreen-designer .mg-concept-frame{cursor:zoom-in}
+.mvgreen-designer .mg-concept-lightbox{position:fixed;inset:0;z-index:2147483605;background:#06130dd9;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.mvgreen-designer .mg-concept-lightbox img{max-width:min(92vw,980px);max-height:70vh;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px #000a;background:#123b29}
+.mvgreen-designer .mg-concept-lightbox-close{position:absolute;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));width:40px;height:40px;border-radius:50%;border:1px solid #ffffff3a;background:#ffffff1a;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mvgreen-designer .mg-concept-lightbox-label{margin-top:14px;font-size:14px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000a}
+.mvgreen-designer .mg-concept-lightbox-pick{margin-top:12px}
 .mvgreen-designer .mg-concepts-refine{margin:14px 0 4px}
 .mvgreen-designer .mg-concepts-refine label{font-size:13px;margin-bottom:6px}
 .mvgreen-designer .mg-concepts-refine-input{resize:vertical;min-height:52px}

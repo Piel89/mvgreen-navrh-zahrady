@@ -1443,7 +1443,15 @@ showWizardStep=function(n){
  if(wizardStep===4){
   if(!photoReady){showWizardStep(3);return;}
   updateMaskStatus();
-  openMaskConfirmation();
+  // 2026-11-05 (owner, live test: "kdyz prekliknu z jakyho koliv cisla zpet na 4 oznaceni plochy a
+  // uz ji mam oznacenou musi se ukazat co uz mam oznaceny ne cisty obrazek na nove oznaceni") - this
+  // auto-reopen used to always call openMaskConfirmation() with no argument, which per its own
+  // editExisting param means initialCategory:null - a FRESH auto-segmentation guess, discarding
+  // whatever the customer had actually painted, every single time this step is re-entered (even just
+  // clicking back from a later step). Passing editExisting=true here whenever a mask already exists
+  // preloads the dialog with the customer's own last paintCategory array instead, so re-entering the
+  // step shows exactly what they already marked, ready to confirm or adjust - never a blank restart.
+  openMaskConfirmation(!!confirmedEditMask);
  }
  // The original Next button still handles validation. This right-column button forwards its click.
  const tips=root.querySelector('.mg-redesign-tips');
@@ -2367,9 +2375,30 @@ async function runConceptsPicker(jobId,totalStages,progress,result,original,edit
     wrap.append(title);
     const grid=document.createElement('div');grid.className='mg-concepts-grid';
     let chosen=-1;
+    // 2026-11-05 (owner, live test: "v kroku 7 kdyz kliknu na jeden ze 3 navrhu musi se zvetsit ted
+    // to nic nedela") - the little magnifier button only toggled object-fit cover<->contain INSIDE
+    // the same small 4:3 thumbnail box, which on most photos is barely visible and easy to miss -
+    // from the customer's side it looked like clicking the design simply did nothing. Replaced with
+    // a real full-screen lightbox: clicking anywhere on a design's photo now opens it large, with its
+    // own "Vybrat tento návrh" button so a design can be picked straight from the enlarged view too.
+    const lightbox=document.createElement('div');lightbox.className='mg-concept-lightbox';lightbox.hidden=true;
+    const lightboxImg=document.createElement('img');lightboxImg.alt='';
+    const lightboxClose=document.createElement('button');lightboxClose.type='button';lightboxClose.className='mg-concept-lightbox-close';lightboxClose.setAttribute('aria-label','Zavřít');lightboxClose.innerHTML='✕';
+    const lightboxLabel=document.createElement('div');lightboxLabel.className='mg-concept-lightbox-label';
+    const lightboxPick=document.createElement('button');lightboxPick.type='button';lightboxPick.className='mg-primary mg-concept-lightbox-pick';lightboxPick.textContent='Vybrat tento návrh';
+    lightbox.append(lightboxImg,lightboxClose,lightboxLabel,lightboxPick);
+    wrap.append(lightbox);
+    let lightboxIndex=-1;
+    const closeLightbox=()=>{lightbox.hidden=true;};
+    lightbox.addEventListener('click',e=>{if(e.target===lightbox)closeLightbox();});
+    lightboxClose.addEventListener('click',closeLightbox);
+    document.addEventListener('keydown',function escCloser(e){if(e.key==='Escape')closeLightbox();});
+    const openLightbox=(image,label,index)=>{lightboxImg.src=image;lightboxImg.alt=label;lightboxLabel.textContent=label;lightboxIndex=index;lightbox.hidden=false;};
+    const pickByIndex={};
+    lightboxPick.addEventListener('click',()=>{if(pickByIndex[lightboxIndex])pickByIndex[lightboxIndex]();});
     const cards=available.map(({index,image})=>{
       const label=(conceptVariants[index]&&conceptVariants[index].name)||('Koncept '+(index+1));
-      const card=document.createElement('div');card.className='mg-concept-card';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label',label);
+      const card=document.createElement('div');card.className='mg-concept-card';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label',label+' – klikněte pro zvětšení a výběr');
       // 2026-11-04 (owner: "ve vyberu nejsou videt cele navrhy ale jen vyrezy... kazdej navrh mel
       // tu listu kdyz sni prejedu ukaze se mi muj navrh") - the thumbnail box crops the generated
       // design to a 4:3 box (object-fit:cover), same as before, but hovering/tapping it now shows
@@ -2377,17 +2406,18 @@ async function runConceptsPicker(jobId,totalStages,progress,result,original,edit
       // PŘED↔PO hover bar already used on the welcome hero image (.mg-hero-image-label).
       const frame=document.createElement('div');frame.className='mg-concept-frame';
       const img=document.createElement('img');img.src=image;img.alt=label;
-      const zoomBar=document.createElement('span');zoomBar.className='mg-concept-zoom-bar';zoomBar.textContent='👁 Váš návrh';
-      const zoomBtn=document.createElement('button');zoomBtn.type='button';zoomBtn.className='mg-concept-zoom-btn';zoomBtn.setAttribute('aria-label','Zobrazit celý návrh');zoomBtn.setAttribute('aria-pressed','false');zoomBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg>';
-      zoomBtn.addEventListener('click',e=>{e.stopPropagation();const on=frame.classList.toggle('mg-concept-zoomed');zoomBtn.setAttribute('aria-pressed',on?'true':'false');zoomBtn.setAttribute('aria-label',on?'Zobrazit zmenšený náhled':'Zobrazit celý návrh');});
-      frame.append(img,zoomBar,zoomBtn);
+      const zoomBar=document.createElement('span');zoomBar.className='mg-concept-zoom-bar';zoomBar.textContent='🔍 Klikněte pro zvětšení';
+      frame.append(img,zoomBar);
+      frame.addEventListener('click',e=>{e.stopPropagation();openLightbox(image,label,index);});
       const name=document.createElement('div');name.className='mg-concept-label';name.textContent=label;
       card.append(frame,name);
       const pick=()=>{
         cards.forEach(c2=>c2.classList.remove('mg-concept-selected'));
         card.classList.add('mg-concept-selected');
         chosen=index;continueBtn.disabled=false;
+        closeLightbox();
       };
+      pickByIndex[index]=pick;
       card.addEventListener('click',pick);
       card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}});
       grid.append(card);
