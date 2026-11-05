@@ -352,10 +352,19 @@ const styleLayout={
 // (same styleLabel/styleAi/sl.layout the non-concepts path already uses), so all 3 concepts stay
 // faithfully in the style the customer picked, but differ enough in actual layout/composition to
 // look like 3 real alternatives, not 3 near-identical renders of the same plan.
+// 2026-11-05 follow-up (Martin: "musi ty 3 navrhy brat v potaz to co zakaznik napise nebo
+// zaklesli - kdyz nebude chtit travu ale kaminky nebo mulc, musime mu to doprat") – customerNote
+// (d['mg-notes']) already becomes its own PŘÁNÍ ZÁKAZNÍKA line with top priority inside
+// Brief.buildInstructions() regardless of which concept this is, since all 3 calls share the SAME
+// `d`. But each variant's own `extra` text below talks about lawn/bed PROPORTIONS in fairly
+// forceful language ("teď vsaď víc na výsadbu", "nech víc otevřeného trávníku") - strong enough
+// that, read on its own several lines later in a long prompt, it could plausibly be followed over
+// an earlier instruction. So every `extra` now explicitly defers to the customer's own note too,
+// not just relying on the general PŘÁNÍ ZÁKAZNÍKA priority line to be remembered that far down.
 const conceptVariants=[
  {key:'v-balanced',name:'Vyvážená varianta',extra:''},
- {key:'v-planting',name:'Bohatší výsadba',extra:' Oproti základnímu poměru popsanému výše teď vsaď víc na výsadbu: o něco menší travnatá plocha, širší nebo souvislejší záhony, víc různých skupin rostlin a barev (v mezích počtu druhů níž) – pořád stejný styl, jen sytější a plnější dojem.'},
- {key:'v-open',name:'Otevřenější varianta',extra:' Oproti základnímu poměru popsanému výše teď nech víc otevřeného trávníku a výsadbu soustřeď jen do jednoho nebo dvou výraznějších, užších pásů nebo jedné dominantní skupiny – pořád stejný styl, jen vzdušnější a přehlednější dojem.'}
+ {key:'v-planting',name:'Bohatší výsadba',extra:' Oproti základnímu poměru popsanému výše teď vsaď víc na výsadbu: o něco menší travnatá plocha, širší nebo souvislejší záhony, víc různých skupin rostlin a barev (v mezích počtu druhů níž) – pořád stejný styl, jen sytější a plnější dojem. Tohle plať jen tam, kde zákazník výše sám výslovně nenapsal něco jiného (jiný materiál místo trávníku/záhonu, jiný poměr ploch) – jeho vlastní napsané přání má vždy přednost před touhle variantou.'},
+ {key:'v-open',name:'Otevřenější varianta',extra:' Oproti základnímu poměru popsanému výše teď nech víc otevřeného trávníku a výsadbu soustřeď jen do jednoho nebo dvou výraznějších, užších pásů nebo jedné dominantní skupiny – pořád stejný styl, jen vzdušnější a přehlednější dojem. Tohle plať jen tam, kde zákazník výše sám výslovně nenapsal něco jiného (jiný materiál místo trávníku/záhonu, jiný poměr ploch) – jeho vlastní napsané přání má vždy přednost před touhle variantou.'}
 ];
 function chooseVariant(code,applySettings=true,styleChoice=null){
  const selected=variantOptions[code]?code:'B';
