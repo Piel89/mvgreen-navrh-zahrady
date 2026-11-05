@@ -340,10 +340,22 @@ const styleLayout={
 // jednodušší na pochopení i na odladění promptů). Každý má vlastní `ai` (celkový charakter) a
 // `layout` (rozvržení trávník/záhony) text, stejná role jako styleLayout[x].layout výše, jen psané
 // rovnou pro tenhle účel místo recyklace variantOptions A/B/C.
-const conceptStyles=[
- {key:'c-modern',name:'Moderní minimalistický',ai:'Moderní, minimalistická zahrada: čisté geometrické linie, decentní barevná paleta, menší počet druhů rostlin, zato ve výrazných souvislých skupinách. Upravený, architektonický dojem, žádná změť barev ani tvarů.',layout:'Trávník s rovnými čistými hranami na cca 50–60 % upravované plochy. Podél hran geometrické záhony s okrasnými travinami nebo nízkými stálezelenými keři, štěrk nebo mlat jako doplňkový materiál, 1–2 solitérní dřeviny jako výrazový prvek.',maxPlants:5},
- {key:'c-rustic',name:'Venkovský rustikální',ai:'Venkovská, neformální zahrada: měkké křivky záhonů, pestrá směs kvetoucích trvalek a nižších keřů, přírodní materiály (dřevo, přírodní kámen). Útulný, pečovaný dojem jako na staré venkovské zahradě, ne okrasná výstavní záhonová skladba.',layout:'Trávník zůstává hlavní otevřenou plochou, záhony ho měkce lemují podél domu, plotu nebo cesty – ne jako rovné geometrické pásy, ale s přirozeně zvlněným okrajem. Hustě vysazené trvalky v neformálních skupinách, případně nízký keř nebo dva. Kde to prostor dovolí, i malá skupinka bylinek blízko domu.',maxPlants:7},
- {key:'c-natural',name:'Přírodní naturalistický',ai:'Naturalistická zahrada, co nejblíž přirozené krajině: nepravidelné, volně plynoucí skupiny trvalek, okrasných trav a keřů bez rovných řad či symetrie, kombinace výšek a textur jako v přírodě. Výsledek má působit, jako by tam rostliny rostly samy roky, ne jako čerstvě založená okrasná výsadba.',layout:'Místo ostrých hranic mezi trávníkem a výsadbou nech přechody měkké a nepravidelné. Vyšší traviny a trvalky vzadu/uprostřed skupin, nižší druhy vpředu, volně rozmístěné, ne v řadách. Pokud je na ploše místo, nech část jako přírodě blízkou pestrou výsadbu bez jasně vymezeného tvaru záhonu.',maxPlants:8}
+// 2026-11-05 (Martin: "chci aby ty 3 navrhy byli uplne jine, ne zmeneno jen par kvetin, ale aby
+// zakaznik mel opravdu 3 kvalitni ale odlisne moznosti V TOM STYLU co si vybere") – replaces the
+// 2026-11-03 version of this array, which deliberately ignored whatever style the customer had
+// picked earlier in the wizard and forced 3 fixed, generic, UNRELATED styles (moderní/rustikální/
+// naturalistický) on every customer regardless of their own choice. That made the 3 concepts
+// distinct from each other, but not distinct from "a few flowers changed" in any way that matched
+// what the customer actually asked for – and ignored their own pick entirely. This array is now
+// just 3 COMPOSITION variants (not styles of their own): at generation time (startGeneration
+// below) each one's `extra` text is appended to the customer's OWN already-chosen style/layout
+// (same styleLabel/styleAi/sl.layout the non-concepts path already uses), so all 3 concepts stay
+// faithfully in the style the customer picked, but differ enough in actual layout/composition to
+// look like 3 real alternatives, not 3 near-identical renders of the same plan.
+const conceptVariants=[
+ {key:'v-balanced',name:'Vyvážená varianta',extra:''},
+ {key:'v-planting',name:'Bohatší výsadba',extra:' Oproti základnímu poměru popsanému výše teď vsaď víc na výsadbu: o něco menší travnatá plocha, širší nebo souvislejší záhony, víc různých skupin rostlin a barev (v mezích počtu druhů níž) – pořád stejný styl, jen sytější a plnější dojem.'},
+ {key:'v-open',name:'Otevřenější varianta',extra:' Oproti základnímu poměru popsanému výše teď nech víc otevřeného trávníku a výsadbu soustřeď jen do jednoho nebo dvou výraznějších, užších pásů nebo jedné dominantní skupiny – pořád stejný styl, jen vzdušnější a přehlednější dojem.'}
 ];
 function chooseVariant(code,applySettings=true,styleChoice=null){
  const selected=variantOptions[code]?code:'B';
@@ -2347,7 +2359,7 @@ async function runConceptsPicker(jobId,totalStages,progress,result,original,edit
     const grid=document.createElement('div');grid.className='mg-concepts-grid';
     let chosen=-1;
     const cards=available.map(({index,image})=>{
-      const label=(conceptStyles[index]&&conceptStyles[index].name)||('Koncept '+(index+1));
+      const label=(conceptVariants[index]&&conceptVariants[index].name)||('Koncept '+(index+1));
       const card=document.createElement('div');card.className='mg-concept-card';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label',label);
       // 2026-11-04 (owner: "ve vyberu nejsou videt cele navrhy ale jen vyrezy... kazdej navrh mel
       // tu listu kdyz sni prejedu ukaze se mi muj navrh") - the thumbnail box crops the generated
@@ -2419,20 +2431,26 @@ async function runAiGeneration(trigger,extraFields,confirmText){
   // summary further down regardless of which path actually ran.
   const hasAreaTypes=!!(areaInstances||paintRemoveMask);
   let brief,stagedPlan=null,conceptBriefs=null;
+  // The customer's own chosen style/layout - same source of truth used by both branches below, so
+  // the "3 koncepty" picker (the `else` branch) stays faithfully in THIS style instead of 3 fixed,
+  // generic styles unrelated to what the customer actually picked (see conceptVariants above).
+  const styleExtra={styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max};
   if(hasAreaTypes){
    // "3 koncepty" only applies to the plain path below (one shared mask, one style) - a customer
    // who drew explicit bed/path/remove areas already gets a far more deterministic, geometrically
    // precise result than style text alone could ever describe, so that path is left exactly as it
-   // always was rather than further complicated by 3 parallel style variants of it.
-   const styleExtra={styleLabel:(styleChoices[d['mg-style-card']]?.name||(variantOptions[d['mg-variant']]||variantOptions.B).label)+(tailoredChoice?' – '+tailoredChoice:''),styleAi:(variantOptions[d['mg-variant']]||variantOptions.B).ai,layout:sl.layout,maxPlants:sl.max};
+   // always was rather than further complicated by 3 parallel composition variants of it.
    brief=Brief.buildInstructions(d,curatedPlants,lastPlan,Object.assign({},styleExtra,{skipHintLine:true}));
    stagedPlan=buildStagedPlan(S,original.width,original.height,editMask,{areaInstances,instanceDetail:instanceDetailText,remainderInstructions:brief.text,d,curatedPlants,lastPlan,maxPlants:sl.max,paintRemoveMask});
   }else{
-   // One full, self-contained brief per concept style (own plant list/maxPlants, own STYL/ROZVRŽENÍ
-   // text) - `brief` starts as the first concept's and is swapped for whichever one the customer
-   // actually picks once runConceptsPicker() resolves, below, so "Rostliny v návrhu"/the excluded-
-   // species note always describe the DESIGN THAT WAS ACTUALLY GENERATED, not just a guess.
-   conceptBriefs=conceptStyles.map(cs=>Brief.buildInstructions(d,curatedPlants,lastPlan,{styleLabel:cs.name,styleAi:cs.ai,layout:cs.layout,maxPlants:cs.maxPlants,skipHintLine:false}));
+   // One full, self-contained brief per composition variant (own STYL/ROZVRŽENÍ text), all built on
+   // top of the SAME styleExtra (the customer's own chosen style) so every concept stays in that
+   // style - only the layout/composition emphasis (conceptVariants[].extra) differs between them,
+   // enough to look like 3 real alternatives rather than 3 near-identical renders. `brief` starts as
+   // the first concept's and is swapped for whichever one the customer actually picks once
+   // runConceptsPicker() resolves, below, so "Rostliny v návrhu"/the excluded-species note always
+   // describe the DESIGN THAT WAS ACTUALLY GENERATED, not just a guess.
+   conceptBriefs=conceptVariants.map(cv=>Brief.buildInstructions(d,curatedPlants,lastPlan,Object.assign({},styleExtra,{styleLabel:styleExtra.styleLabel+' – '+cv.name,layout:styleExtra.layout+cv.extra,skipHintLine:false})));
    brief=conceptBriefs[0];
   }
   // Staged pipeline sends the photo untouched – each area-type mask gets its own precise, fully

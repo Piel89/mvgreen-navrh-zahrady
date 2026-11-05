@@ -141,6 +141,29 @@
     var guard = canvas(w, h), gc = guard.getContext('2d');
     gc.filter = 'blur(' + Math.max(4, Math.round(w / 300)) + 'px)'; gc.drawImage(bufferMask, 0, 0); gc.filter = 'none';
     var gd = gc.getImageData(0, 0, w, h).data;
+    // 2026-11-05 owner-reported: a tank/septic lid marked "Zůstane", small and fully surrounded by
+    // editable mulch, ended up with nearly its whole surface inside the generic distance-based
+    // occlusion ring (everything around it is edit boundary) and got visibly redrawn (looked
+    // partly open) even though NO plant was placed anywhere near it in the result – the ring's
+    // leniency was being granted purely by distance from the boundary, with nothing checking that
+    // something was actually there to occlude it. Fix: build a mask of where the AI drew genuine
+    // new growth INSIDE the confirmed edit area (opaque, clearly different from the original),
+    // dilate it outward by the same rough reach as the ring, and only grant ring leniency to
+    // pixels within reach of that real growth. A ring pixel nothing actually grows into/past is
+    // treated exactly like the always-locked zone outside the ring – no more free pass just for
+    // being geometrically close to the boundary.
+    var growth = canvas(w, h), gwc = growth.getContext('2d');
+    var gimg = gwc.createImageData(w, h);
+    for (var gi = 0; gi < ad.length; gi += 4) {
+      if (md[gi + 3] <= 127) continue; // only growth drawn inside the confirmed edit area counts
+      if (rd[gi + 3] < 128) continue;  // AI left this pixel alone – not new growth
+      var gdiff = (Math.abs(rd[gi] - o[gi]) + Math.abs(rd[gi + 1] - o[gi + 1]) + Math.abs(rd[gi + 2] - o[gi + 2])) / 3;
+      if (gdiff > RING_PIXEL_CHANGED) gimg.data[gi + 3] = 255;
+    }
+    gwc.putImageData(gimg, 0, 0);
+    var growReach = growMask(growth, occlusionBufferPx(w, null));
+    var grd = growReach.getContext('2d').getImageData(0, 0, w, h).data;
+
     var sum = 0, cnt = 0, insideOpaque = 0, insideCnt = 0;
     // 2026-11-04 owner-reported: a fence/wall marked "Zůstane" sitting right along the edit
     // boundary was wholly redrawn or deleted by the AI, not just partly covered by a new bush –
@@ -154,18 +177,29 @@
       if ((i >> 2) % 7 !== 0) continue;
       if (md[i + 3] > 127) { insideCnt++; if (rd[i + 3] > 127) insideOpaque++; continue; }
       if (bud[i + 3] > 127) {
-        // Inside the occlusion buffer ring: occlusion by new foliage is allowed here, but track
-        // how much of the ring actually changed so wholesale erasure of what's behind it still
-        // gets caught below, instead of being silently accepted just because it's "in the ring".
-        if (rd[i + 3] >= 128) {
-          var rdiff = (Math.abs(rd[i] - o[i]) + Math.abs(rd[i + 1] - o[i + 1]) + Math.abs(rd[i + 2] - o[i + 2])) / 3;
-          ringSum += rdiff; ringCnt++;
-          if (rdiff > RING_PIXEL_CHANGED) ringChanged++;
-        } else {
-          ringCnt++; // AI left it alone – still counts toward the ring's total for the share calc
+        if (grd[i + 3] > 127) {
+          // Inside the occlusion buffer ring AND within reach of real new growth: occlusion by new
+          // foliage is allowed here, but track how much of the ring actually changed so wholesale
+          // erasure of what's behind it still gets caught below, instead of being silently
+          // accepted just because it's "in the ring".
+          if (rd[i + 3] >= 128) {
+            var rdiff = (Math.abs(rd[i] - o[i]) + Math.abs(rd[i + 1] - o[i + 1]) + Math.abs(rd[i + 2] - o[i + 2])) / 3;
+            ringSum += rdiff; ringCnt++;
+            if (rdiff > RING_PIXEL_CHANGED) ringChanged++;
+          } else {
+            ringCnt++; // AI left it alone – still counts toward the ring's total for the share calc
+          }
+        } else if (rd[i + 3] >= 128) {
+          // Inside the ring but nothing nearby actually occludes it (no real new growth reaches
+          // here) – strict, zero-tolerance treatment, same as outside the ring. No `gd` guard here:
+          // that blur-guard is only meaningful right at the buffer's OUTER edge; this pixel is
+          // deep inside the buffer itself, so the guard would wrongly skip it entirely.
+          sum += (Math.abs(rd[i] - o[i]) + Math.abs(rd[i + 1] - o[i + 1]) + Math.abs(rd[i + 2] - o[i + 2])) / 3;
+          cnt++;
         }
         continue;
       }
+      // Fully outside the ring – the original, always-strict zone.
       if (gd[i + 3] > 8) continue;
       if (rd[i + 3] < 128) continue; // transparent = AI left it alone
       sum += (Math.abs(rd[i] - o[i]) + Math.abs(rd[i + 1] - o[i + 1]) + Math.abs(rd[i + 2] - o[i + 2])) / 3;
