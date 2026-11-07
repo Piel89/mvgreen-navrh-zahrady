@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.223
+ * Version: 0.6.224
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.223');
+define('MVGREEN_VERSION', '0.6.224');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -248,6 +248,27 @@ function mvgreen_finalize_ai_job($original_bytes, $last_mask_bytes, $final_bytes
     $payload = ['image' => 'data:image/png;base64,' . $final_b64];
     if ($partial_message !== '') $payload['message'] = 'Část návrhu se nepodařilo dokončit (' . $partial_message . '), zobrazujeme nejlepší dosažený výsledek.';
     return $payload;
+}
+
+/**
+ * 2026-11-07 (Martin: zákazník nesmí zaplatit a nedostat nic): vrátí zákazníkovi použití kódu, když
+ * job skončil natvrdo dřív, než z něj vznikl jakýkoliv obrázek. Admin testy nemají kód
+ * (result_post_id 0), takže se pro ně nic neděje. Volající vždy hned potom smaže job transient, takže
+ * opakovaný/duplicitní poll stejného jobu už dostane 404 a podruhé nic nevrací.
+ */
+function mvgreen_refund_job_code($result_post_id, $is_admin) {
+    if ($is_admin || !$result_post_id || !function_exists('mvgreen_refund_code_use')) return false;
+    return mvgreen_refund_code_use($result_post_id);
+}
+
+/**
+ * Chyba, po které už nemá smysl poll opakovat (job je pryč). `final` říká app.js, ať přestane
+ * zkoušet znovu – jinak by klient ještě ~2 minuty opakoval poll a zákazník by nakonec místo
+ * skutečné příčiny viděl jen "Návrh vypršel nebo neexistuje".
+ */
+function mvgreen_ai_final_error($message, $refunded, $status = 200) {
+    if ($refunded) $message .= ' Zaplacený kód vám zůstal platný – můžete to zkusit znovu.';
+    wp_send_json_error(['message' => $message, 'final' => true, 'refunded' => (bool) $refunded], $status);
 }
 
 $mvgreen_ai_preview_start_handle = function () {
@@ -492,7 +513,7 @@ $mvgreen_ai_preview_start_handle = function () {
     $job_dir = $jobs_base . '/' . $job_id;
     if (!wp_mkdir_p($job_dir)) {
         delete_transient('mvgreen_ai_preview_lock');
-        wp_send_json_error(['message'=>'Server nemůže uložit rozpracovaný návrh.'], 500);
+        mvgreen_ai_final_error('Server nemůže uložit rozpracovaný návrh.', mvgreen_refund_job_code($result_post_id, $is_admin), 500);
     }
     mvgreen_harden_upload_dir($jobs_base);
     @file_put_contents($job_dir . '/original.bin', $original_bytes);
@@ -510,6 +531,7 @@ $mvgreen_ai_preview_start_handle = function () {
         'is_admin' => $is_admin,
         'result_post_id' => $result_post_id,
         'phase' => $is_concepts ? 'concepts' : 'normal',
+        'concepts_ok' => 0,
     ];
     set_transient('mvgreen_ai_preview_job_' . $job_id, $job_meta, 1800);
     wp_send_json_success(['jobId' => $job_id, 'totalStages' => count($stage_defs), 'phase' => $job_meta['phase']]);
@@ -530,11 +552,13 @@ $mvgreen_ai_preview_step_handle = function () {
     if (!preg_match('/^[a-f0-9]{32}$/', $job_id)) wp_send_json_error(['message'=>'Neplatné ID úlohy.'], 400);
     $meta = get_transient('mvgreen_ai_preview_job_' . $job_id);
     if (!is_array($meta) || !isset($meta['dir'], $meta['stage_count'], $meta['next_index'], $meta['instructions'], $meta['size'], $meta['current_mime'])) {
-        wp_send_json_error(['message'=>'Návrh vypršel nebo neexistuje. Zkuste to prosím znovu od začátku.'], 404);
+        mvgreen_ai_final_error('Návrh vypršel nebo neexistuje. Zkuste to prosím znovu od začátku.', false, 404);
     }
     $dir = $meta['dir'];
     $stage_count = (int) $meta['stage_count'];
     $i = (int) $meta['next_index'];
+    $is_admin_job = !empty($meta['is_admin']);
+    $result_post_id = (int) ($meta['result_post_id'] ?? 0);
     // "3 koncepty" (2026-11-03): a concepts job runs each stage INDEPENDENTLY from the true
     // original photo (never chained through current.bin like the normal staged pipeline below,
     // since these are 3 alternative styles of the SAME unedited photo, not sequential edits of one
@@ -558,7 +582,9 @@ $mvgreen_ai_preview_step_handle = function () {
             mvgreen_delete_ai_job_dir($dir);
             delete_transient('mvgreen_ai_preview_job_' . $job_id);
             delete_transient('mvgreen_ai_preview_lock');
-            wp_send_json_error(['message'=>'Úloha návrhu je poškozená nebo již skončila. Zkuste to prosím znovu.'], 500);
+            // Refund only if the customer hasn't received any concept image yet in this job.
+            $refunded = (int) ($meta['concepts_ok'] ?? 0) === 0 ? mvgreen_refund_job_code($result_post_id, $is_admin_job) : false;
+            mvgreen_ai_final_error('Úloha návrhu je poškozená nebo již skončila. Zkuste to prosím znovu.', $refunded, 500);
         }
         $r = mvgreen_run_ai_image_stage($original_bytes, $meta['current_mime'], $mask_bytes, $meta['instructions'][$i], $meta['size'], 'low');
         $concept_ok = !isset($r['error']);
@@ -567,12 +593,20 @@ $mvgreen_ai_preview_step_handle = function () {
             $locked = mvgreen_lock_stage_to_mask($original_bytes, $r['bytes'], $mask_bytes);
             @file_put_contents($dir . '/concept-' . $i . '.png', $locked);
             $concept_image = 'data:image/png;base64,' . base64_encode($locked);
+            $meta['concepts_ok'] = (int) ($meta['concepts_ok'] ?? 0) + 1;
         }
         // One concept failing (a transient OpenAI error) doesn't abort the whole flow - the customer
         // just won't see that one card and can still pick from whichever concepts did succeed;
         // mvgreen_ai_concepts_finalize below refuses a chosenIndex with no concept-N.png on disk.
         $meta['next_index'] = $i + 1;
         $done = $meta['next_index'] >= $stage_count;
+        if ($done && (int) $meta['concepts_ok'] === 0) {
+            // Every concept failed - the customer got nothing for the redeemed code, so give it back.
+            mvgreen_delete_ai_job_dir($dir);
+            delete_transient('mvgreen_ai_preview_job_' . $job_id);
+            delete_transient('mvgreen_ai_preview_lock');
+            mvgreen_ai_final_error('AI návrhy se bohužel nepodařilo vytvořit (' . $r['error'] . ').', mvgreen_refund_job_code($result_post_id, $is_admin_job));
+        }
         if ($done) {
             $meta['phase'] = 'concepts_done';
             delete_transient('mvgreen_ai_preview_lock'); // customer may take a while to choose
@@ -593,7 +627,8 @@ $mvgreen_ai_preview_step_handle = function () {
         mvgreen_delete_ai_job_dir($dir);
         delete_transient('mvgreen_ai_preview_job_' . $job_id);
         delete_transient('mvgreen_ai_preview_lock');
-        wp_send_json_error(['message'=>'Úloha návrhu je poškozená nebo již skončila. Zkuste to prosím znovu.'], 500);
+        // Refund only when no stage has completed yet (i === 0) - nothing was ever delivered.
+        mvgreen_ai_final_error('Úloha návrhu je poškozená nebo již skončila. Zkuste to prosím znovu.', $i === 0 ? mvgreen_refund_job_code($result_post_id, $is_admin_job) : false, 500);
     }
     // Admin's own test runs (never a paying customer's design - $meta['is_admin'] is only ever true
     // for the admin-only "Vytvořit testovací AI návrh" button, gated by manage_options in
@@ -610,7 +645,8 @@ $mvgreen_ai_preview_step_handle = function () {
             mvgreen_delete_ai_job_dir($dir);
             delete_transient('mvgreen_ai_preview_job_' . $job_id);
             delete_transient('mvgreen_ai_preview_lock');
-            wp_send_json_error(['message'=>$r['error']], 200);
+            // 2026-11-07: the code was redeemed in _start but no image exists - give it back.
+            mvgreen_ai_final_error($r['error'], mvgreen_refund_job_code($result_post_id, $is_admin_job));
         }
         // A later stage failed after the customer's one code was already redeemed in _start. Rather
         // than return nothing for a spent credit, keep whatever the chain produced up to here and

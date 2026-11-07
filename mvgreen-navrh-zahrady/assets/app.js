@@ -2151,7 +2151,7 @@ q('mg-locality').addEventListener('input',()=>{const place=q('mg-locality').valu
 
 // Půdorys a pohled z jiného úhlu – navazuje na hotový AI návrh (jen pro správce v testu).
 function mgScaled(src,maxW,type,quality){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,maxW/i.naturalWidth);const c=document.createElement('canvas');c.width=Math.round(i.naturalWidth*k);c.height=Math.round(i.naturalHeight*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL(type||'image/jpeg',quality||0.85))};i.onerror=()=>rej(new Error('Obrázek se nepodařilo načíst.'));i.src=src})}
-async function mgAjax(action,fields){const ai=window.MVGreenAI||{};const data=new URLSearchParams();data.set('action',action);data.set('nonce',ai.nonce);Object.entries(fields).forEach(([k,v])=>data.set(k,v==null?'':String(v)));const r=await fetch(ai.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});const j=await r.json().catch(()=>({}));if(!j.success)throw new Error(j.data?.message||'Požadavek se nezdařil.');return j.data}
+async function mgAjax(action,fields){const ai=window.MVGreenAI||{};const data=new URLSearchParams();data.set('action',action);data.set('nonce',ai.nonce);Object.entries(fields).forEach(([k,v])=>data.set(k,v==null?'':String(v)));const r=await fetch(ai.ajaxUrl,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()});const j=await r.json().catch(()=>({}));if(!j.success)throw Object.assign(new Error(j.data?.message||'Požadavek se nezdařil.'),{data:j.data||{}});return j.data}
 async function mgPlanAndAngles(host,summaryBox,finalImage,beforeImage,brief,d,editMask,extraFields){
   extraFields=extraFields||{};
   const P=window.MVGreenPlan;
@@ -2333,7 +2333,7 @@ async function runConceptsPicker(jobId,totalStages,progress,result,original,edit
       step=await mgAjax('mvgreen_ai_preview_step',{jobId});
       stepFails=0;
     }catch(stepErr){
-      if(++stepFails>maxStepRetries)throw stepErr;
+      if(stepErr.data?.final||++stepFails>maxStepRetries)throw stepErr;
       progress.retrying(stepFails,maxStepRetries);
       await new Promise(r=>setTimeout(r,Math.min(2000*stepFails,15000)));
       continue;
@@ -2574,7 +2574,7 @@ async function runAiGeneration(trigger,extraFields,confirmText){
         step=await mgAjax('mvgreen_ai_preview_step',{jobId:start.jobId});
         stepFails=0;
       }catch(stepErr){
-        if(++stepFails>maxStepRetries)throw stepErr;
+        if(stepErr.data?.final||++stepFails>maxStepRetries)throw stepErr;
         progress.retrying(stepFails,maxStepRetries);
         await new Promise(r=>setTimeout(r,Math.min(2000*stepFails,15000)));
         continue;

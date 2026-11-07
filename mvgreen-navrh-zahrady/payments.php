@@ -123,6 +123,27 @@ function mvgreen_redeem_code_use($code) {
     return (int) $post->ID;
 }
 
+/**
+ * Vrátí jedno použití kódu zpět (2026-11-07, Martin: zákazník nesmí přijít o zaplacený kód, když AI
+ * selže dřív, než dostal jakýkoliv návrh). Protějšek mvgreen_redeem_code_use – stejně atomicky, jeden
+ * UPDATE, a nikdy nad původní počet zakoupených použití (_mvg_uses_total), takže ani opakované volání
+ * nemůže kódu přidat víc, než kolik bylo zaplaceno. Volá se jen z míst, kde je jisté, že zákazník
+ * z tohoto použití nedostal žádný obrázek (viz mvgreen_refund_job_code v hlavním souboru pluginu).
+ */
+function mvgreen_refund_code_use($post_id) {
+    global $wpdb;
+    $post_id = (int) $post_id;
+    if ($post_id <= 0 || get_post_type($post_id) !== 'mvgreen_kod') return false;
+    $total = (int) get_post_meta($post_id, '_mvg_uses_total', true);
+    if ($total <= 0) return false;
+    $updated = $wpdb->query($wpdb->prepare(
+        "UPDATE {$wpdb->postmeta} SET meta_value = meta_value + 1 WHERE post_id = %d AND meta_key = %s AND meta_value < %d",
+        $post_id, '_mvg_uses_left', $total
+    ));
+    wp_cache_delete($post_id, 'post_meta');
+    return (bool) $updated;
+}
+
 /** Omezení počtu pokusů na IP – proti zkoušení kódů naslepo. */
 function mvgreen_code_rate_limited() {
     $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'x';

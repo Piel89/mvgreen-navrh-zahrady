@@ -164,6 +164,7 @@ function mvgreen_ai_angle_handle() {
     // Pořadí ve výrazu níže: aerial = ptačí perspektiva, raised = mírně zvednutý pohled (výchozí).
     $plan = isset($_POST['plan']) ? sanitize_textarea_field(wp_unslash($_POST['plan'])) : '';
     set_transient('mvgreen_ai_preview_lock', 1, 240);
+    $redeemed_post_id = 0;
     if ($is_admin) {
         update_option($daily_key, $used_today + 1, false);
     } else {
@@ -172,6 +173,7 @@ function mvgreen_ai_angle_handle() {
             delete_transient('mvgreen_ai_preview_lock');
             wp_send_json_error(['message' => $redeem->get_error_message()], 400);
         }
+        $redeemed_post_id = (int) $redeem;
     }
     $angle = $view === 'aerial'
         ? 'z ptačí perspektivy – kamera asi 8 m vysoko a šikmo shora (cca 45°) z rohu zahrady, aby bylo vidět rozmístění trávníku a záhonů'
@@ -191,11 +193,12 @@ function mvgreen_ai_angle_handle() {
         'body' => $body, 'timeout' => 240,
     ]);
     delete_transient('mvgreen_ai_preview_lock');
-    if (is_wp_error($response)) wp_send_json_error(['message' => 'Spojení s AI selhalo: ' . $response->get_error_message()], 200);
+    // 2026-11-07: no image came back after the code was redeemed - give the use back.
+    if (is_wp_error($response)) mvgreen_ai_final_error('Spojení s AI selhalo: ' . $response->get_error_message(), mvgreen_refund_job_code($redeemed_post_id, $is_admin));
     $json = json_decode(wp_remote_retrieve_body($response), true);
     $http_status = wp_remote_retrieve_response_code($response);
     if ($http_status < 200 || $http_status >= 300 || empty($json['data'][0]['b64_json'])) {
-        wp_send_json_error(['message' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI nevrátila obrázek.'], 200);
+        mvgreen_ai_final_error(isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI nevrátila obrázek.', mvgreen_refund_job_code($redeemed_post_id, $is_admin));
     }
     $up = wp_upload_dir();
     $dir = trailingslashit($up['basedir']) . 'mvgreen-ai-log';
