@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.224
+ * Version: 0.6.225
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.224');
+define('MVGREEN_VERSION', '0.6.225');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -271,6 +271,48 @@ function mvgreen_ai_final_error($message, $refunded, $status = 200) {
     wp_send_json_error(['message' => $message, 'final' => true, 'refunded' => (bool) $refunded], $status);
 }
 
+/**
+ * Souběžná generování (2026-11-07, Martin "ano"): dřív jeden globální zámek mvgreen_ai_preview_lock
+ * pro celý web – generovat mohl jen jeden zákazník najednou, a když někdo zavřel stránku uprostřed,
+ * ostatní až 30 minut viděli "Jiný návrh se právě vytváří". Teď má každý job vlastní "místo" (slot)
+ * s vlastní expirací; najednou jich může běžet nejvýš MVGREEN_AI_MAX_PARALLEL (filtr
+ * mvgreen_ai_max_parallel), aby se útrata za AI nemohla nečekaně rozjet. Každé místo má i vlastníka
+ * (admin:<id> / code:<kód>) – jeden vlastník smí mít jen jedno běžící místo, takže dvojklik nikdy
+ * nespustí dvě placená generování souběžně (to byl původní účel globálního zámku).
+ * Uloženo v jedné wp_options položce (autoload off); expirovaná místa se při každém čtení zahodí.
+ */
+if (!defined('MVGREEN_AI_MAX_PARALLEL')) define('MVGREEN_AI_MAX_PARALLEL', 3);
+function mvgreen_ai_slots() {
+    $slots = get_option('mvgreen_ai_slots', []);
+    if (!is_array($slots)) $slots = [];
+    $now = time();
+    foreach ($slots as $id => $s) { if (!is_array($s) || (int) ($s['exp'] ?? 0) < $now) unset($slots[$id]); }
+    return $slots;
+}
+/** '' když job smí začít, jinak hláška pro zákazníka. */
+function mvgreen_ai_slot_busy($id, $owner) {
+    $slots = mvgreen_ai_slots();
+    if (isset($slots[$id])) return '';
+    foreach ($slots as $s) { if (($s['owner'] ?? '') === $owner) return 'Váš návrh se právě vytváří. Počkejte prosím, až doběhne.'; }
+    $max = max(1, (int) apply_filters('mvgreen_ai_max_parallel', MVGREEN_AI_MAX_PARALLEL));
+    if (count($slots) >= $max) return 'Právě se vytváří několik jiných návrhů. Zkuste to prosím za pár minut.';
+    return '';
+}
+/** Obsadí nebo prodlouží místo jobu (běžící job prodlužuje vždy – je už zaplacený). */
+function mvgreen_ai_slot_take($id, $owner, $ttl) {
+    $slots = mvgreen_ai_slots();
+    $slots[$id] = ['owner' => (string) $owner, 'exp' => time() + (int) $ttl];
+    update_option('mvgreen_ai_slots', $slots, false);
+}
+function mvgreen_ai_slot_free($id) {
+    $slots = mvgreen_ai_slots();
+    unset($slots[$id]);
+    update_option('mvgreen_ai_slots', $slots, false);
+}
+function mvgreen_ai_slot_owner($is_admin, $code) {
+    return $is_admin ? 'admin:' . get_current_user_id() : 'code:' . strtoupper(trim((string) $code));
+}
+
 $mvgreen_ai_preview_start_handle = function () {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
     if (!defined('MVGREEN_OPENAI_API_KEY') || !is_string(MVGREEN_OPENAI_API_KEY) || !MVGREEN_OPENAI_API_KEY) {
@@ -295,7 +337,9 @@ $mvgreen_ai_preview_start_handle = function () {
             wp_send_json_error(['message'=>'Tento kód neobsahuje AI návrh zahrady - jen roční plán péče. Zobrazte si ho tlačítkem "Zobrazit roční plán péče" níže.'], 400);
         }
     }
-    if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message'=>'Jiný návrh se právě vytváří. Zkuste to později.'], 429);
+    $job_id = bin2hex(random_bytes(16));
+    $slot_owner = mvgreen_ai_slot_owner($is_admin, $code);
+    if ($busy = mvgreen_ai_slot_busy($job_id, $slot_owner)) wp_send_json_error(['message'=>$busy], 429);
     // The photo is a PNG/JPEG data URL. The plain single-call flow sends its own `mask`+
     // `instructions` fields, same as always. The staged pipeline ("5 řešení" revamp, step 2 –
     // app.js's buildStagedPlan) instead sends `stages`: a JSON array of {mask, instructions} pairs,
@@ -471,13 +515,13 @@ $mvgreen_ai_preview_start_handle = function () {
         if ($share > 0.72) wp_send_json_error(['message'=>'Upravovaná plocha je příliš velká. Dům, plot, stromy a obloha musí zůstat mimo úpravu.'], 400);
         if ($share < 0.015) wp_send_json_error(['message'=>'Označte prosím plochu zahrady, kterou chcete upravit.'], 400);
     }
-    if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message'=>'Jiný návrh se právě vytváří.'], 429);
-    // Lock is acquired before counting the attempt; duplicate clicks cannot start parallel paid calls.
+    if ($busy = mvgreen_ai_slot_busy($job_id, $slot_owner)) wp_send_json_error(['message'=>$busy], 429);
+    // Slot is taken before counting the attempt; duplicate clicks cannot start parallel paid calls.
     // A multi-stage chain is now split across several short requests (mvgreen_ai_preview_step, below
-    // runs exactly one stage per call) rather than one long one, so this lock has to stay held for the
+    // runs exactly one stage per call) rather than one long one, so this slot has to stay held for the
     // whole polled sequence - set with a generous TTL here, refreshed on every _step call, and released
     // the moment the job finishes, fails outright, or is abandoned long enough for the TTL to lapse.
-    set_transient('mvgreen_ai_preview_lock', 1, 1800);
+    mvgreen_ai_slot_take($job_id, $slot_owner, 1800);
     // Non-admin success is tied to a specific mvgreen_kod post (the code just redeemed) so the
     // finished result can be saved durably against it and e-mailed – see mvgreen_save_result_and_notify
     // below. Admin tests have no code/post and are never persisted or e-mailed.
@@ -487,7 +531,7 @@ $mvgreen_ai_preview_start_handle = function () {
     } else {
         $redeem = mvgreen_redeem_code_use($code);
         if (is_wp_error($redeem)) {
-            delete_transient('mvgreen_ai_preview_lock');
+            mvgreen_ai_slot_free($job_id);
             wp_send_json_error(['message'=>$redeem->get_error_message()], 400);
         }
         $result_post_id = (int) $redeem;
@@ -509,10 +553,9 @@ $mvgreen_ai_preview_start_handle = function () {
     $up = wp_upload_dir();
     $jobs_base = trailingslashit($up['basedir']) . 'mvgreen-ai-jobs';
     mvgreen_cleanup_stale_ai_jobs($jobs_base);
-    $job_id = bin2hex(random_bytes(16));
     $job_dir = $jobs_base . '/' . $job_id;
     if (!wp_mkdir_p($job_dir)) {
-        delete_transient('mvgreen_ai_preview_lock');
+        mvgreen_ai_slot_free($job_id);
         mvgreen_ai_final_error('Server nemůže uložit rozpracovaný návrh.', mvgreen_refund_job_code($result_post_id, $is_admin), 500);
     }
     mvgreen_harden_upload_dir($jobs_base);
@@ -532,6 +575,7 @@ $mvgreen_ai_preview_start_handle = function () {
         'result_post_id' => $result_post_id,
         'phase' => $is_concepts ? 'concepts' : 'normal',
         'concepts_ok' => 0,
+        'slot_owner' => $slot_owner,
     ];
     set_transient('mvgreen_ai_preview_job_' . $job_id, $job_meta, 1800);
     wp_send_json_success(['jobId' => $job_id, 'totalStages' => count($stage_defs), 'phase' => $job_meta['phase']]);
@@ -559,6 +603,7 @@ $mvgreen_ai_preview_step_handle = function () {
     $i = (int) $meta['next_index'];
     $is_admin_job = !empty($meta['is_admin']);
     $result_post_id = (int) ($meta['result_post_id'] ?? 0);
+    $slot_owner = (string) ($meta['slot_owner'] ?? '');
     // "3 koncepty" (2026-11-03): a concepts job runs each stage INDEPENDENTLY from the true
     // original photo (never chained through current.bin like the normal staged pipeline below,
     // since these are 3 alternative styles of the SAME unedited photo, not sequential edits of one
@@ -571,17 +616,17 @@ $mvgreen_ai_preview_step_handle = function () {
     if (($meta['phase'] ?? 'normal') === 'concepts') {
         if ($i >= $stage_count) {
             // Already finished earlier (e.g. a retried/duplicate poll) - just repeat the same signal.
-            delete_transient('mvgreen_ai_preview_lock');
+            mvgreen_ai_slot_free($job_id);
             wp_send_json_success(['done' => true, 'phase' => 'concepts', 'completedStages' => $stage_count, 'totalStages' => $stage_count]);
         }
-        set_transient('mvgreen_ai_preview_lock', 1, 1800);
+        mvgreen_ai_slot_take($job_id, $slot_owner, 1800);
         @set_time_limit(0);
         $original_bytes = @file_get_contents($dir . '/original.bin');
         $mask_bytes = @file_get_contents($dir . '/stage-' . $i . '.png');
         if ($original_bytes === false || $mask_bytes === false) {
             mvgreen_delete_ai_job_dir($dir);
             delete_transient('mvgreen_ai_preview_job_' . $job_id);
-            delete_transient('mvgreen_ai_preview_lock');
+            mvgreen_ai_slot_free($job_id);
             // Refund only if the customer hasn't received any concept image yet in this job.
             $refunded = (int) ($meta['concepts_ok'] ?? 0) === 0 ? mvgreen_refund_job_code($result_post_id, $is_admin_job) : false;
             mvgreen_ai_final_error('Úloha návrhu je poškozená nebo již skončila. Zkuste to prosím znovu.', $refunded, 500);
@@ -604,12 +649,12 @@ $mvgreen_ai_preview_step_handle = function () {
             // Every concept failed - the customer got nothing for the redeemed code, so give it back.
             mvgreen_delete_ai_job_dir($dir);
             delete_transient('mvgreen_ai_preview_job_' . $job_id);
-            delete_transient('mvgreen_ai_preview_lock');
+            mvgreen_ai_slot_free($job_id);
             mvgreen_ai_final_error('AI návrhy se bohužel nepodařilo vytvořit (' . $r['error'] . ').', mvgreen_refund_job_code($result_post_id, $is_admin_job));
         }
         if ($done) {
             $meta['phase'] = 'concepts_done';
-            delete_transient('mvgreen_ai_preview_lock'); // customer may take a while to choose
+            mvgreen_ai_slot_free($job_id); // customer may take a while to choose
         }
         set_transient('mvgreen_ai_preview_job_' . $job_id, $meta, 1800);
         wp_send_json_success(['done' => $done, 'phase' => 'concepts', 'completedStages' => $meta['next_index'], 'totalStages' => $stage_count,
@@ -619,14 +664,14 @@ $mvgreen_ai_preview_step_handle = function () {
     // chain can legitimately take several minutes end to end even though each individual request here
     // now only runs one OpenAI call. (The job transient itself is rewritten below with its updated
     // next_index once this stage's outcome is known, which refreshes its TTL too.)
-    set_transient('mvgreen_ai_preview_lock', 1, 1800);
+    mvgreen_ai_slot_take($job_id, $slot_owner, 1800);
     @set_time_limit(0);
     $current_bytes = $i < $stage_count ? @file_get_contents($dir . '/current.bin') : false;
     $mask_bytes = $i < $stage_count ? @file_get_contents($dir . '/stage-' . $i . '.png') : false;
     if ($current_bytes === false || $mask_bytes === false) {
         mvgreen_delete_ai_job_dir($dir);
         delete_transient('mvgreen_ai_preview_job_' . $job_id);
-        delete_transient('mvgreen_ai_preview_lock');
+        mvgreen_ai_slot_free($job_id);
         // Refund only when no stage has completed yet (i === 0) - nothing was ever delivered.
         mvgreen_ai_final_error('Úloha návrhu je poškozená nebo již skončila. Zkuste to prosím znovu.', $i === 0 ? mvgreen_refund_job_code($result_post_id, $is_admin_job) : false, 500);
     }
@@ -644,7 +689,7 @@ $mvgreen_ai_preview_step_handle = function () {
             // stage – so this is a hard failure exactly like before.
             mvgreen_delete_ai_job_dir($dir);
             delete_transient('mvgreen_ai_preview_job_' . $job_id);
-            delete_transient('mvgreen_ai_preview_lock');
+            mvgreen_ai_slot_free($job_id);
             // 2026-11-07: the code was redeemed in _start but no image exists - give it back.
             mvgreen_ai_final_error($r['error'], mvgreen_refund_job_code($result_post_id, $is_admin_job));
         }
@@ -667,7 +712,7 @@ $mvgreen_ai_preview_step_handle = function () {
     }
     // Last stage just finished, or a later stage failed – finalize exactly as the old single-request
     // flow did, then release the lock and clean up this job's temp directory.
-    delete_transient('mvgreen_ai_preview_lock');
+    mvgreen_ai_slot_free($job_id);
     $final_bytes = @file_get_contents($dir . '/current.bin');
     $original_bytes = @file_get_contents($dir . '/original.bin');
     $last_mask_bytes = @file_get_contents($dir . '/stage-' . ($stage_count - 1) . '.png');
@@ -710,8 +755,9 @@ $mvgreen_ai_concepts_finalize_handle = function () {
         delete_transient('mvgreen_ai_preview_job_' . $job_id);
         wp_send_json_error(['message'=>'Úloha vypršela. Zkuste to prosím znovu od začátku.'], 404);
     }
-    if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message'=>'Jiný návrh se právě vytváří. Zkuste to prosím za chvíli.'], 429);
-    set_transient('mvgreen_ai_preview_lock', 1, 1800);
+    $slot_owner = (string) ($meta['slot_owner'] ?? '');
+    if ($busy = mvgreen_ai_slot_busy($job_id, $slot_owner)) wp_send_json_error(['message'=>$busy], 429);
+    mvgreen_ai_slot_take($job_id, $slot_owner, 1800);
     @set_time_limit(0);
     // Krátká doplňující poznámka zákazníka k vybranému konceptu ("doladění") - nepovinná, přidá se
     // za instrukce toho jednoho stylu, zbytek pravidel (POŘÁDEK, hranice masky atd.) je beze změny.
@@ -723,14 +769,14 @@ $mvgreen_ai_concepts_finalize_handle = function () {
     // concept image itself - so the paid result is never built on top of low-quality artifacts.
     $r = mvgreen_run_ai_image_stage($original_bytes, $meta['current_mime'], $mask_bytes, $instructions, $meta['size'], $quality);
     if (isset($r['error'])) {
-        delete_transient('mvgreen_ai_preview_lock');
+        mvgreen_ai_slot_free($job_id);
         // Job dir is deliberately kept (not deleted) on failure - the already-redeemed code stays
         // usable: the customer can retry the same concept, or pick a different one, from the client's
         // already-cached concept images without having to pay or start over.
         wp_send_json_error(['message'=>$r['error']], 200);
     }
     $final_bytes = mvgreen_lock_stage_to_mask($original_bytes, $r['bytes'], $mask_bytes);
-    delete_transient('mvgreen_ai_preview_lock');
+    mvgreen_ai_slot_free($job_id);
     $payload = mvgreen_finalize_ai_job($original_bytes, $mask_bytes, $final_bytes, $meta['is_admin'], $meta['result_post_id'], '');
     delete_transient('mvgreen_ai_preview_job_' . $job_id);
     mvgreen_delete_ai_job_dir($dir);

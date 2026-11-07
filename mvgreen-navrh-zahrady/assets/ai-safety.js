@@ -189,14 +189,12 @@
           } else {
             ringCnt++; // AI left it alone – still counts toward the ring's total for the share calc
           }
-        } else if (rd[i + 3] >= 128) {
-          // Inside the ring but nothing nearby actually occludes it (no real new growth reaches
-          // here) – strict, zero-tolerance treatment, same as outside the ring. No `gd` guard here:
-          // that blur-guard is only meaningful right at the buffer's OUTER edge; this pixel is
-          // deep inside the buffer itself, so the guard would wrongly skip it entirely.
-          sum += (Math.abs(rd[i] - o[i]) + Math.abs(rd[i + 1] - o[i + 1]) + Math.abs(rd[i + 2] - o[i + 2])) / 3;
-          cnt++;
         }
+        // Inside the ring but nothing nearby actually occludes it (no real new growth reaches
+        // here): 2026-11-07 this pixel is now always REVERTED to the original below (see keepMask),
+        // so whatever the AI drew here never reaches the customer – it no longer counts toward
+        // drift, because rejecting the whole design over pixels that are thrown away anyway only
+        // cost the customer a paid design for nothing.
         continue;
       }
       // Fully outside the ring – the original, always-strict zone.
@@ -214,12 +212,27 @@
     var ringChangedShare = ringCnt ? ringChanged / ringCnt : 0;
     var ringOverrun = ringChangedShare > RING_MAX_CHANGED_SHARE;
 
-    // Soft feather on the BUFFER's edge (editMask's own edge when no buffer was requested – same
-    // math as before in that case), then original pixels everywhere outside it. Pixels inside the
-    // buffer ring get the AI's own content kept (occlusion allowed); only right at the buffer's
-    // outer edge does this fade back into the untouched original, so there's no hard seam there.
+    // 2026-11-07 (Martin: "musíme to vymyslet tak, aby se to nestávalo" – no design goes live until 5
+    // in a row pass): REPAIR instead of REJECT. keepMask = where the AI's pixels are actually kept:
+    // the confirmed edit area itself, plus only those ring pixels that real new growth reaches. Every
+    // other ring pixel goes back to the original photo – this also fixes the 2026-11-05 tank-lid case
+    // for good (before, those pixels only counted toward drift, but the AI's redrawn version was still
+    // SHOWN whenever the average stayed under MAX_DRIFT). If most of the ring changed (ringOverrun –
+    // the AI redrew/erased a fence or wall rather than partly covering it), the whole ring is reverted
+    // and the design falls back to the strict editMask boundary: the protected object stays exactly
+    // as photographed, the new plants just end (feathered) at the marked edge. Before this, both
+    // cases threw away the whole paid design with "Výsledek nebyl použit".
+    var keep = canvas(w, h), kc = keep.getContext('2d');
+    var kimg = kc.createImageData(w, h), kd = kimg.data;
+    for (var q = 0; q < kd.length; q += 4) {
+      if (md[q + 3] > 127 || (!ringOverrun && bud[q + 3] > 127 && grd[q + 3] > 127)) kd[q + 3] = 255;
+    }
+    kc.putImageData(kimg, 0, 0);
+
+    // Soft inward feather on keepMask's edge, then original pixels everywhere outside it – no hard
+    // seam where AI content meets the untouched photo.
     var feather = canvas(w, h), fc = feather.getContext('2d');
-    fc.filter = 'blur(' + Math.max(4, Math.round(w / 150)) + 'px)'; fc.drawImage(bufferMask, 0, 0); fc.filter = 'none';
+    fc.filter = 'blur(' + Math.max(4, Math.round(w / 150)) + 'px)'; fc.drawImage(keep, 0, 0); fc.filter = 'none';
     var fd = fc.getImageData(0, 0, w, h).data;
     for (var j = 0; j < ad.length; j += 4) {
       // Inward feather: 0 exactly at the mask edge (no AI pixels leak out), 1 inside → soft seam.
@@ -232,7 +245,9 @@
     bc.putImageData(a, 0, 0);
     return {
       canvas: back, raw: raw, drift: drift, emptyInside: emptyInside, ringOverrun: ringOverrun,
-      ok: drift <= MAX_DRIFT && !emptyInside && !ringOverrun
+      // ringOverrun is repaired above (ring reverted), so it no longer rejects the design.
+      repaired: ringOverrun,
+      ok: drift <= MAX_DRIFT && !emptyInside
     };
   }
 

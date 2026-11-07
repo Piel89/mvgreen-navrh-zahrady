@@ -155,7 +155,9 @@ function mvgreen_ai_angle_handle() {
         $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
         if ($code === '') wp_send_json_error(['message' => 'Zadejte prosím kód z e-mailu.'], 400);
     }
-    if (get_transient('mvgreen_ai_preview_lock')) wp_send_json_error(['message' => 'Jiný návrh se právě vytváří.'], 429);
+    $job_id = 'angle-' . bin2hex(random_bytes(8));
+    $slot_owner = mvgreen_ai_slot_owner($is_admin, $code);
+    if ($busy = mvgreen_ai_slot_busy($job_id, $slot_owner)) wp_send_json_error(['message' => $busy], 429);
     $image = isset($_POST['image']) ? wp_unslash($_POST['image']) : '';
     if (!preg_match('~^data:image/png;base64,([A-Za-z0-9+/=]+)$~D', $image, $m)) wp_send_json_error(['message' => 'Neplatný obrázek.'], 400);
     $bytes = base64_decode($m[1], true);
@@ -163,14 +165,14 @@ function mvgreen_ai_angle_handle() {
     $view = (isset($_POST['view']) && $_POST['view'] === 'aerial') ? 'aerial' : 'raised';
     // Pořadí ve výrazu níže: aerial = ptačí perspektiva, raised = mírně zvednutý pohled (výchozí).
     $plan = isset($_POST['plan']) ? sanitize_textarea_field(wp_unslash($_POST['plan'])) : '';
-    set_transient('mvgreen_ai_preview_lock', 1, 240);
+    mvgreen_ai_slot_take($job_id, $slot_owner, 300);
     $redeemed_post_id = 0;
     if ($is_admin) {
         update_option($daily_key, $used_today + 1, false);
     } else {
         $redeem = mvgreen_redeem_code_use($code);
         if (is_wp_error($redeem)) {
-            delete_transient('mvgreen_ai_preview_lock');
+            mvgreen_ai_slot_free($job_id);
             wp_send_json_error(['message' => $redeem->get_error_message()], 400);
         }
         $redeemed_post_id = (int) $redeem;
@@ -184,7 +186,10 @@ function mvgreen_ai_angle_handle() {
         . ($plan ? "Rozmístění podle půdorysu: {$plan}" : '');
     $boundary = 'mvgreen_' . wp_generate_password(24, false, false);
     $body = '';
-    foreach (['model' => 'gpt-image-1.5', 'prompt' => $prompt, 'quality' => 'high', 'size' => '1536x1024', 'input_fidelity' => 'high'] as $k => $v) {
+    // 2026-11-07: gpt-image-1.5 is shut down by OpenAI on 2026-12-01 - same switch as the main
+    // pipeline (mvgreen_run_ai_image_stage): gpt-image-2.5-sunburst, and no `input_fidelity`,
+    // which the gpt-image-2 family does not accept.
+    foreach (['model' => 'gpt-image-2.5-sunburst', 'prompt' => $prompt, 'quality' => 'high', 'size' => '1536x1024'] as $k => $v) {
         $body .= '--' . $boundary . "\r\nContent-Disposition: form-data; name=\"{$k}\"\r\n\r\n{$v}\r\n";
     }
     $body .= '--' . $boundary . "\r\nContent-Disposition: form-data; name=\"image[]\"; filename=\"navrh.png\"\r\nContent-Type: image/png\r\n\r\n" . $bytes . "\r\n--" . $boundary . "--\r\n";
@@ -192,7 +197,7 @@ function mvgreen_ai_angle_handle() {
         'headers' => ['Authorization' => 'Bearer ' . MVGREEN_OPENAI_API_KEY, 'Content-Type' => 'multipart/form-data; boundary=' . $boundary],
         'body' => $body, 'timeout' => 240,
     ]);
-    delete_transient('mvgreen_ai_preview_lock');
+    mvgreen_ai_slot_free($job_id);
     // 2026-11-07: no image came back after the code was redeemed - give the use back.
     if (is_wp_error($response)) mvgreen_ai_final_error('Spojení s AI selhalo: ' . $response->get_error_message(), mvgreen_refund_job_code($redeemed_post_id, $is_admin));
     $json = json_decode(wp_remote_retrieve_body($response), true);
