@@ -1,106 +1,103 @@
 /*
- * MVGreen AI architekt v2 – náčrt zákazníka (2026-11-08).
- * Martin po 3. testu: „potřebovali bychom jednoduchý, ale přesný nástroj, aby zákazník mohl
- * načrtnout, kde chce zeď, kde v té zdi schody, kde záhon, kde kačírek, kde strom – ale aby to
- * bylo jednoduché dělat na mobilu. AI nemůže vědět, co my chceme.“
+ * MVGreen AI architekt v2 – náčrt zákazníka ťukáním (2026-11-08).
+ * Martin: „potřebovali bychom jednoduchý, ale přesný nástroj, aby zákazník mohl načrtnout, kde chce
+ * zeď, kde v té zdi schody, kde záhon, kde kačírek, kde strom – na mobilu“ a pak: „klient klikne na
+ * obrazovku, udělá se bod, a napíše, že odsud sem chce opěrnou zeď; zase klikne a vybere, tady chci
+ * schody, dalším kliknutím se zjistí, jak široké; klikne na fotku, kde to bude povolené, tady chci
+ * zámkovku…“ (kreslení prstem bylo na mobilu nepřesné).
  *
- * Zákazník kreslí prstem přímo do své fotky: plochy (záhon, trávník, kačírek, dlažba) štětcem,
- * čáry (zeď, schody, cesta) tahem, stromy a keře ťuknutím. Výstup:
- *  - guide(photo): fotka s barevnými značkami ve stejném rozměru → jde AI jako druhý obrázek,
- *  - describe(): přesný text s polohou každého prvku v % fotky → do zadání obrázku i půdorysu,
- *  - preview: malý náhled do průvodce a do PDF.
- * Místa, která mají zůstat beze změny (krok 1), jsou ztmavená – kreslí se jen do upravované plochy.
- * API: MVGreenSketch.open(photoCanvas, editMask, strokes) → Promise<{strokes, preview} | null>
- *      MVGreenSketch.guide(photoCanvas, strokes) → canvas;  MVGreenSketch.describe(strokes) → text
+ * Ovládání: vybrat prvek → ťukat body do fotky.
+ *  - čára (zeď, chodník, cesta): odkud → kam (lomové body volitelně), Dokončit;
+ *  - schody: jeden kraj → druhý kraj (= šířka), dokončí se samo;
+ *  - plocha (záhon, dlažba, kačírek, trávník): rohy plochy, uzavřít ťuknutím na první bod / Dokončit;
+ *  - bod (strom, keř): jedno ťuknutí.
+ * Body jdou prstem přetáhnout. Ťuknout jde jen do upravované plochy z kroku 1 (chráněná místa jsou
+ * ztmavená a ťuknutí na ně upozorní). Ke každému prvku jde napsat upřesnění.
+ * Výstup stejný jako dřív: guide(photo, items) pro AI (2. obrázek), describe(items) text, preview.
+ * Prvek: { tool, pts:[[x,y] 0–1], closed?, note? }
  */
 (function () {
   'use strict';
   var TOOLS = [
-    { id: 'bed', name: 'Záhon', type: 'area', color: '#E0349A', hint: 'Přejeďte prstem plochu, kde chcete záhon.' },
-    { id: 'lawn', name: 'Trávník', type: 'area', color: '#35B84A', hint: 'Přejeďte prstem plochu nového trávníku.' },
-    { id: 'gravel', name: 'Kačírek', type: 'area', color: '#F2C230', hint: 'Přejeďte prstem plochu kačírku (okrasného štěrku).' },
-    { id: 'paving', name: 'Dlažba', type: 'area', color: '#2F7DE1', hint: 'Přejeďte prstem plochu zámkové dlažby (stání, terasa, chodník).' },
-    { id: 'wall', name: 'Zeď', type: 'line', color: '#E53935', hint: 'Táhněte prstem po linii, kudy má vést zeď (opěrná zídka).' },
-    { id: 'steps', name: 'Schody', type: 'line', color: '#00C2D1', hint: 'Táhněte prstem podél zdi přes místo, kde mají být schody – délka tahu = šířka schodů.' },
-    { id: 'path', name: 'Cesta', type: 'line', color: '#FF8A00', hint: 'Táhněte prstem, kudy má vést cestička nebo šlapáky.' },
-    { id: 'tree', name: 'Strom', type: 'point', color: '#0B6E2E', mark: 'S', hint: 'Ťukněte, kam chcete strom.' },
-    { id: 'shrub', name: 'Keř', type: 'point', color: '#8E44AD', mark: 'K', hint: 'Ťukněte, kam chcete keř.' }
+    { id: 'wall', name: 'Opěrná zeď', type: 'line', color: '#E53935' },
+    { id: 'steps', name: 'Schody', type: 'steps', color: '#00A8B8' },
+    { id: 'path', name: 'Chodník / cesta', type: 'line', color: '#FF8A00' },
+    { id: 'paving', name: 'Zámková dlažba', type: 'area', color: '#2F7DE1' },
+    { id: 'bed', name: 'Záhon', type: 'area', color: '#E0349A' },
+    { id: 'gravel', name: 'Kačírek', type: 'area', color: '#F2C230' },
+    { id: 'lawn', name: 'Trávník', type: 'area', color: '#35B84A' },
+    { id: 'tree', name: 'Strom', type: 'point', color: '#0B6E2E', mark: 'S' },
+    { id: 'shrub', name: 'Keř', type: 'point', color: '#8E44AD', mark: 'K' }
   ];
   var BY = {}; TOOLS.forEach(function (t) { BY[t.id] = t; });
-  var SIZES = { s: 0.025, m: 0.05, l: 0.09 };
-  var LINE = 0.014, DOT = 0.022;
+  var COLOR_NAME = { wall: 'červená čára', steps: 'tyrkysový pruh se stupni', path: 'oranžová čára', paving: 'modrá plocha', bed: 'purpurová plocha', gravel: 'žlutá plocha', lawn: 'zelená plocha', tree: 'tmavě zelené kolečko „S“', shrub: 'fialové kolečko „K“' };
 
-  /* ---------- kreslení ---------- */
-  function draw(ctx, W, H, strokes, opts) {
+  /* ---------- kreslení (W×H = rozměr plátna, k = násobek tloušťky čar) ---------- */
+  function draw(ctx, W, H, items, opts) {
     opts = opts || {};
-    var layer = document.createElement('canvas'); layer.width = W; layer.height = H;
-    var lc = layer.getContext('2d');
-    // plochy: každá barva na vlastní vrstvu, aby se překryvy nezvýrazňovaly
-    TOOLS.filter(function (t) { return t.type === 'area'; }).forEach(function (t) {
-      var ss = strokes.filter(function (s) { return s.tool === t.id; });
-      if (!ss.length) return;
-      lc.clearRect(0, 0, W, H);
-      lc.strokeStyle = lc.fillStyle = t.color; lc.lineCap = lc.lineJoin = 'round';
-      ss.forEach(function (s) {
-        lc.lineWidth = s.size * W;
-        if (s.pts.length === 1) { lc.beginPath(); lc.arc(s.pts[0][0] * W, s.pts[0][1] * H, s.size * W / 2, 0, 7); lc.fill(); return; }
-        lc.beginPath(); s.pts.forEach(function (p, i) { lc[i ? 'lineTo' : 'moveTo'](p[0] * W, p[1] * H); }); lc.stroke();
-      });
-      ctx.globalAlpha = opts.areaAlpha || 0.55; ctx.drawImage(layer, 0, 0); ctx.globalAlpha = 1;
-    });
-    strokes.forEach(function (s) {
-      var t = BY[s.tool]; if (!t || t.type === 'area') return;
-      if (t.type === 'line' && s.pts.length > 1) {
-        ctx.lineCap = ctx.lineJoin = 'round';
-        var path = function () { ctx.beginPath(); s.pts.forEach(function (p, i) { ctx[i ? 'lineTo' : 'moveTo'](p[0] * W, p[1] * H); }); };
-        path(); ctx.strokeStyle = '#fff'; ctx.lineWidth = LINE * W * 1.7; ctx.stroke();
-        path(); ctx.strokeStyle = t.color; ctx.lineWidth = LINE * W; ctx.stroke();
-        if (s.tool === 'steps') { // příčky schodů
-          var a = s.pts[0], b = s.pts[s.pts.length - 1], dx = (b[0] - a[0]) * W, dy = (b[1] - a[1]) * H, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-          ctx.strokeStyle = '#063b40'; ctx.lineWidth = Math.max(1, LINE * W * 0.25);
-          for (var k = 1; k < 4; k++) { var cx = a[0] * W + dx * k / 4, cy = a[1] * H + dy * k / 4; ctx.beginPath(); ctx.moveTo(cx - nx * LINE * W * 0.5, cy - ny * LINE * W * 0.5); ctx.lineTo(cx + nx * LINE * W * 0.5, cy + ny * LINE * W * 0.5); ctx.stroke(); }
-        }
+    var k = opts.k || Math.max(1, W / 900), U = Math.max(W, H);
+    var P = function (p) { return [p[0] * W, p[1] * H]; };
+    var poly = function (pts, close) { ctx.beginPath(); pts.forEach(function (p, i) { var q = P(p); ctx[i ? 'lineTo' : 'moveTo'](q[0], q[1]); }); if (close) ctx.closePath(); };
+    items.forEach(function (it) {
+      var t = BY[it.tool]; if (!t || !it.pts.length) return;
+      ctx.lineCap = ctx.lineJoin = 'round';
+      if (t.type === 'area') {
+        poly(it.pts, it.closed);
+        if (it.closed && it.pts.length >= 3) { ctx.globalAlpha = 0.5; ctx.fillStyle = t.color; ctx.fill(); ctx.globalAlpha = 1; }
+        ctx.setLineDash(it.closed ? [] : [8 * k, 6 * k]); ctx.strokeStyle = t.color; ctx.lineWidth = 3.5 * k; ctx.stroke(); ctx.setLineDash([]);
+      } else if (t.type === 'line' && it.pts.length > 1) {
+        poly(it.pts); ctx.strokeStyle = '#fff'; ctx.lineWidth = 11 * k; ctx.stroke();
+        poly(it.pts); ctx.strokeStyle = t.color; ctx.lineWidth = 7 * k; ctx.stroke();
+      } else if (t.type === 'steps' && it.pts.length > 1) {
+        var a = P(it.pts[0]), b = P(it.pts[1]), dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, d = Math.max(12 * k, L * 0.35);
+        ctx.beginPath(); ctx.moveTo(a[0] - nx * d / 2, a[1] - ny * d / 2); ctx.lineTo(b[0] - nx * d / 2, b[1] - ny * d / 2); ctx.lineTo(b[0] + nx * d / 2, b[1] + ny * d / 2); ctx.lineTo(a[0] + nx * d / 2, a[1] + ny * d / 2); ctx.closePath();
+        ctx.fillStyle = t.color; ctx.globalAlpha = 0.75; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5 * k; ctx.stroke();
+        ctx.strokeStyle = '#063b40'; ctx.lineWidth = 2 * k;
+        for (var s = 1; s < 3; s++) { var o = -d / 2 + d * s / 3; ctx.beginPath(); ctx.moveTo(a[0] + nx * o, a[1] + ny * o); ctx.lineTo(b[0] + nx * o, b[1] + ny * o); ctx.stroke(); }
       } else if (t.type === 'point') {
-        var p = s.pts[0], r = DOT * W;
-        ctx.beginPath(); ctx.arc(p[0] * W, p[1] * H, r, 0, 7); ctx.fillStyle = t.color; ctx.fill();
-        ctx.lineWidth = r * 0.25; ctx.strokeStyle = '#fff'; ctx.stroke();
-        ctx.fillStyle = '#fff'; ctx.font = '800 ' + Math.round(r * 1.1) + 'px Montserrat, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(t.mark, p[0] * W, p[1] * H + r * 0.05);
+        var q = P(it.pts[0]), r = 15 * k;
+        ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, 7); ctx.fillStyle = t.color; ctx.fill(); ctx.lineWidth = 3 * k; ctx.strokeStyle = '#fff'; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = '800 ' + Math.round(r * 1.1) + 'px Montserrat, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t.mark, q[0], q[1] + r * 0.05);
+      }
+      if (opts.handles) {
+        it.pts.forEach(function (p, i) {
+          var q = P(p); ctx.beginPath(); ctx.arc(q[0], q[1], (i === 0 && t.type === 'area' && !it.closed ? 9 : 6.5) * k, 0, 7);
+          ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 2.5 * k; ctx.strokeStyle = t.color; ctx.stroke();
+        });
       }
     });
+    void U;
   }
 
-  function guide(photo, strokes) {
+  function guide(photo, items) {
     var c = document.createElement('canvas'); c.width = photo.width; c.height = photo.height;
     var x = c.getContext('2d'); x.drawImage(photo, 0, 0);
-    draw(x, c.width, c.height, strokes, { areaAlpha: 0.6 });
+    draw(x, c.width, c.height, items.filter(done), { k: Math.max(1, photo.width / 700) });
     return c;
   }
+  function done(it) { var t = BY[it.tool]; return t && (t.type === 'point' ? it.pts.length === 1 : t.type === 'area' ? it.closed && it.pts.length >= 3 : it.pts.length >= 2); }
 
   /* ---------- popis pro AI ---------- */
   function pc(v) { return Math.round(Math.max(0, Math.min(1, v)) * 100); }
-  function where(x, y) { return (x < 0.34 ? 'vlevo' : x > 0.66 ? 'vpravo' : 'uprostřed') + (y > 0.66 ? ' v popředí' : y < 0.4 ? ' vzadu' : ''); }
-  function describe(strokes) {
-    if (!strokes || !strokes.length) return '';
-    var out = [], legend = TOOLS.filter(function (t) { return strokes.some(function (s) { return s.tool === t.id; }); });
-    out.push('Barvy v náčrtu: ' + legend.map(function (t) { return { E0349A: 'purpurová', '35B84A': 'zelená', F2C230: 'žlutá', '2F7DE1': 'modrá', E53935: 'červená čára', '00C2D1': 'tyrkysová čára s příčkami', FF8A00: 'oranžová čára', '0B6E2E': 'tmavě zelené kolečko „S“', '8E44AD': 'fialové kolečko „K“' }[t.color.slice(1)] + ' = ' + t.name.toLowerCase(); }).join(', ') + '.');
-    out.push('Polohy jsou v % fotky (x zleva doprava, y shora dolů):');
-    TOOLS.forEach(function (t) {
-      var ss = strokes.filter(function (s) { return s.tool === t.id; }); if (!ss.length) return;
-      if (t.type === 'area') {
-        var all = []; ss.forEach(function (s) { all = all.concat(s.pts); });
-        var xs = all.map(function (p) { return p[0]; }), ys = all.map(function (p) { return p[1]; }), pad = Math.max.apply(null, ss.map(function (s) { return s.size; })) / 2;
-        var x0 = Math.min.apply(null, xs) - pad, x1 = Math.max.apply(null, xs) + pad, y0 = Math.min.apply(null, ys) - pad, y1 = Math.max.apply(null, ys) + pad;
-        out.push('- ' + t.name + ': ' + where((x0 + x1) / 2, (y0 + y1) / 2) + ', oblast x ' + pc(x0) + '–' + pc(x1) + ' %, y ' + pc(y0) + '–' + pc(y1) + ' % (přesný tvar podle ' + ({ bed: 'purpurové', lawn: 'zelené', gravel: 'žluté', paving: 'modré' }[t.id]) + ' plochy v náčrtu).');
-      } else if (t.type === 'line') {
-        ss.forEach(function (s, i) {
-          var n = s.pts.length, pick = [0, Math.floor(n / 3), Math.floor(2 * n / 3), n - 1].filter(function (v, k, a) { return a.indexOf(v) === k; });
-          var txt = pick.map(function (k) { return '(' + pc(s.pts[k][0]) + ' %, ' + pc(s.pts[k][1]) + ' %)'; }).join(' → ');
-          out.push('- ' + t.name + (ss.length > 1 ? ' ' + (i + 1) : '') + ': ' + (s.tool === 'steps' ? 'schody v úseku ' + txt + ' – šířka schodů = délka tohoto úseku, stupně vedou kolmo na něj (přes zeď nahoru)' : 'vede po čáře ' + txt) + '.');
-        });
-      } else {
-        out.push('- ' + t.name + ' (' + ss.length + ' ks): ' + ss.map(function (s) { return '(' + pc(s.pts[0][0]) + ' %, ' + pc(s.pts[0][1]) + ' %)'; }).join(', ') + '.');
-      }
+  function P2(p) { return '(' + pc(p[0]) + ' %, ' + pc(p[1]) + ' %)'; }
+  function where(pts) {
+    var x = pts.reduce(function (s, p) { return s + p[0]; }, 0) / pts.length, y = pts.reduce(function (s, p) { return s + p[1]; }, 0) / pts.length;
+    return (x < 0.34 ? 'vlevo' : x > 0.66 ? 'vpravo' : 'uprostřed') + (y > 0.66 ? ' v popředí' : y < 0.4 ? ' vzadu' : '');
+  }
+  function describe(items) {
+    items = (items || []).filter(done);
+    if (!items.length) return '';
+    var used = TOOLS.filter(function (t) { return items.some(function (it) { return it.tool === t.id; }); });
+    var out = ['Značky v náčrtu: ' + used.map(function (t) { return COLOR_NAME[t.id] + ' = ' + t.name.toLowerCase(); }).join(', ') + '.', 'Polohy jsou v % fotky (x zleva doprava, y shora dolů):'];
+    var n = {};
+    items.forEach(function (it) {
+      var t = BY[it.tool]; n[t.id] = (n[t.id] || 0) + 1;
+      var name = t.name + (items.filter(function (x) { return x.tool === t.id; }).length > 1 ? ' ' + n[t.id] : ''), s;
+      if (t.type === 'area') s = name + ': plocha ' + where(it.pts) + ' s rohy ' + it.pts.map(P2).join(', ');
+      else if (t.type === 'line') s = name + ': vede ' + it.pts.map(P2).join(' → ');
+      else if (t.type === 'steps') s = name + ': ' + where(it.pts) + ', jeden kraj ' + P2(it.pts[0]) + ', druhý kraj ' + P2(it.pts[1]) + ' – šířka schodů = vzdálenost krajů, stupně vedou kolmo na tuto spojnici';
+      else s = name + ': ' + P2(it.pts[0]);
+      out.push('- ' + s + (it.note ? ' – upřesnění zákazníka: „' + it.note + '“' : '') + '.');
     });
     return out.join('\n');
   }
@@ -108,74 +105,134 @@
   /* ---------- obrazovka náčrtu ---------- */
   function open(photo, editMask, initial) {
     return new Promise(function (resolve) {
-      var strokes = (initial || []).map(function (s) { return { tool: s.tool, size: s.size, pts: s.pts.slice() }; });
-      var tool = 'bed', size = 'm';
+      var items = (initial || []).filter(function (it) { return it && it.pts && !it.size; }).map(function (it) { return { tool: it.tool, pts: it.pts.map(function (p) { return p.slice(); }), closed: it.closed, note: it.note || '' }; });
+      var tool = 'wall', draft = null, last = null;
       var W = photo.width, H = photo.height, sc = Math.min(1, 1600 / Math.max(W, H));
       var cw = Math.round(W * sc), ch = Math.round(H * sc);
       var el = document.createElement('div'); el.className = 'mvg2-sk';
       el.innerHTML = '<div class="mvg2-sk__top"><strong>Náčrt: kam co chcete</strong><span data-hint></span></div>'
-        + '<div class="mvg2-sk__stage" data-stage><canvas data-c></canvas></div>'
+        + '<div class="mvg2-sk__stage" data-stage><canvas data-c></canvas><div class="mvg2-sk__toast" data-toast></div></div>'
         + '<div class="mvg2-sk__tools" data-tools></div>'
-        + '<div class="mvg2-sk__bar"><div class="mvg2-sk__sizes" data-sizes></div><button type="button" data-undo>↶ Zpět</button><button type="button" data-clear>Smazat vše</button><button type="button" class="is-main" data-ok>Hotovo</button></div>'
+        + '<div class="mvg2-sk__note" data-notebox></div>'
+        + '<div class="mvg2-sk__bar" data-bar></div>'
         + '<button type="button" class="mvg2-sk__close" data-cancel aria-label="Zavřít">×</button>';
       document.body.appendChild(el); document.documentElement.classList.add('mvg2-sk-open');
       var cv = el.querySelector('[data-c]'), cx = cv.getContext('2d'); cv.width = cw; cv.height = ch;
-      // podklad: fotka + ztmavená chráněná místa (kde editMask není)
+      // podklad: fotka + ztmavená chráněná místa; mapa povolených míst pro ťuknutí
       var base = document.createElement('canvas'); base.width = cw; base.height = ch;
-      var bx = base.getContext('2d'); bx.drawImage(photo, 0, 0, cw, ch);
+      var bx = base.getContext('2d'), allowed = null; bx.drawImage(photo, 0, 0, cw, ch);
       if (editMask) {
         var dim = document.createElement('canvas'); dim.width = cw; dim.height = ch; var dx = dim.getContext('2d');
         dx.fillStyle = 'rgba(10,20,15,0.55)'; dx.fillRect(0, 0, cw, ch); dx.globalCompositeOperation = 'destination-out'; dx.drawImage(editMask, 0, 0, cw, ch);
         bx.drawImage(dim, 0, 0);
+        var am = document.createElement('canvas'); am.width = 300; am.height = Math.max(1, Math.round(300 * ch / cw));
+        am.getContext('2d').drawImage(editMask, 0, 0, am.width, am.height);
+        var ad = am.getContext('2d').getImageData(0, 0, am.width, am.height).data;
+        allowed = function (p) { // s malou tolerancí: zeď nebo chodník smí vést těsně u domu
+          var ax = Math.round(p[0] * (am.width - 1)), ay = Math.round(p[1] * (am.height - 1));
+          for (var yy = -3; yy <= 3; yy++) for (var xx = -3; xx <= 3; xx++) { var X = ax + xx, Y = ay + yy; if (X >= 0 && Y >= 0 && X < am.width && Y < am.height && ad[(Y * am.width + X) * 4 + 3] > 100) return true; }
+          return false;
+        };
       }
-      function paint() { cx.clearRect(0, 0, cw, ch); cx.drawImage(base, 0, 0); draw(cx, cw, ch, strokes); }
+      var scale = 1;
+      function paint() {
+        cx.clearRect(0, 0, cw, ch); cx.drawImage(base, 0, 0);
+        draw(cx, cw, ch, items.concat(draft ? [draft] : []), { handles: true, k: 1 / scale });
+      }
       function fit() {
-        var st = el.querySelector('[data-stage]'), r = st.getBoundingClientRect(), s = Math.min(r.width / cw, r.height / ch);
-        cv.style.width = Math.floor(cw * s) + 'px'; cv.style.height = Math.floor(ch * s) + 'px';
+        var st = el.querySelector('[data-stage]'), r = st.getBoundingClientRect();
+        scale = Math.min(r.width / cw, r.height / ch);
+        cv.style.width = Math.floor(cw * scale) + 'px'; cv.style.height = Math.floor(ch * scale) + 'px'; paint();
+      }
+      function hint() {
+        var t = BY[tool], n = draft ? draft.pts.length : 0;
+        if (t.type === 'point') return 'Ťukněte do fotky, kam chcete ' + t.name.toLowerCase() + '.';
+        if (t.type === 'steps') return n === 0 ? 'Ťukněte na JEDEN kraj schodů.' : 'Ťukněte na DRUHÝ kraj schodů – tím určíte jejich šířku.';
+        if (t.type === 'line') return n === 0 ? 'Ťukněte, ODKUD má ' + (tool === 'wall' ? 'zeď' : 'cesta') + ' vést.' : n === 1 ? 'Ťukněte, KAM má vést.' : 'Můžete přidat další lomový bod, nebo stiskněte Dokončit.';
+        return n === 0 ? 'Ťukejte postupně do ROHŮ plochy (' + t.name.toLowerCase() + ').' : n < 3 ? 'Další roh plochy…' : 'Další roh, nebo plochu uzavřete ťuknutím na první bod / Dokončit.';
+      }
+      function ok(it) { return done(it); }
+      function finish() {
+        if (!draft) return;
+        if (BY[draft.tool].type === 'area' && draft.pts.length >= 3) draft.closed = true;
+        if (ok(draft)) { items.push(draft); last = draft; }
+        draft = null; ui();
       }
       function ui() {
-        var t = BY[tool];
-        el.querySelector('[data-tools]').innerHTML = TOOLS.map(function (x) { return '<button type="button" data-tool="' + x.id + '" class="' + (x.id === tool ? 'is-on' : '') + '"><i style="background:' + x.color + '"' + (x.type === 'line' ? ' class="is-line"' : x.type === 'point' ? ' class="is-dot"' : '') + '></i>' + x.name + '</button>'; }).join('');
-        el.querySelector('[data-sizes]').innerHTML = t.type === 'area' ? Object.keys(SIZES).map(function (k) { return '<button type="button" data-size="' + k + '" class="' + (k === size ? 'is-on' : '') + '" aria-label="Štětec ' + k + '"><i style="width:' + { s: 8, m: 14, l: 22 }[k] + 'px;height:' + { s: 8, m: 14, l: 22 }[k] + 'px"></i></button>'; }).join('') : '';
-        el.querySelector('[data-hint]').textContent = t.hint + (window.innerHeight > window.innerWidth && W > H ? ' Tip: otočte telefon na šířku.' : '');
-        el.querySelectorAll('[data-tool]').forEach(function (b) { b.onclick = function () { tool = b.dataset.tool; ui(); }; });
-        el.querySelectorAll('[data-size]').forEach(function (b) { b.onclick = function () { size = b.dataset.size; ui(); }; });
+        el.querySelector('[data-hint]').textContent = hint() + (window.innerHeight > window.innerWidth && W > H ? ' Tip: otočte telefon na šířku.' : '');
+        el.querySelector('[data-tools]').innerHTML = TOOLS.map(function (x) { return '<button type="button" data-tool="' + x.id + '" class="' + (x.id === tool ? 'is-on' : '') + '"><i style="background:' + x.color + '" class="is-' + x.type + '"></i>' + x.name + '</button>'; }).join('');
+        el.querySelectorAll('[data-tool]').forEach(function (b) { b.onclick = function () { if (draft) finish(); tool = b.dataset.tool; ui(); }; });
+        var nb = el.querySelector('[data-notebox]');
+        nb.innerHTML = !draft && last ? '<label>Upřesnění k prvku „' + BY[last.tool].name + '“ (nepovinné)<input type="text" maxlength="80" placeholder="např. gabiony, výška 60 cm" value="' + String(last.note || '').replace(/"/g, '&quot;') + '"></label>' : '';
+        var inp = nb.querySelector('input'); if (inp) inp.oninput = function () { last.note = inp.value.slice(0, 80); };
+        var bar = el.querySelector('[data-bar]');
+        if (draft) {
+          var canDone = BY[draft.tool].type === 'area' ? draft.pts.length >= 3 : draft.pts.length >= 2;
+          bar.innerHTML = '<button type="button" data-a="pop">↶ Zpět bod</button><button type="button" data-a="drop">Zrušit</button><button type="button" class="is-main" data-a="fin"' + (canDone ? '' : ' disabled') + '>Dokončit</button>';
+        } else {
+          bar.innerHTML = '<span class="mvg2-sk__count">' + items.length + ' ' + (items.length === 1 ? 'prvek' : items.length > 1 && items.length < 5 ? 'prvky' : 'prvků') + '</span><button type="button" data-a="undo"' + (items.length ? '' : ' disabled') + '>↶ Zpět prvek</button><button type="button" class="is-main" data-a="ok">Hotovo</button>';
+        }
+        bar.querySelectorAll('[data-a]').forEach(function (b) {
+          b.onclick = function () {
+            var a = b.dataset.a;
+            if (a === 'pop') { draft.pts.pop(); if (!draft.pts.length) draft = null; }
+            else if (a === 'drop') draft = null;
+            else if (a === 'fin') finish();
+            else if (a === 'undo') { items.pop(); last = null; }
+            else if (a === 'ok') return close(true);
+            ui(); paint();
+          };
+        });
+        paint();
       }
-      var cur = null;
+      var toastT;
+      function toast(msg) { var t = el.querySelector('[data-toast]'); t.textContent = msg; t.classList.add('is-on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('is-on'); }, 2200); }
       var pt = function (e) { var r = cv.getBoundingClientRect(); return [Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (e.clientY - r.top) / r.height))]; };
+      // ťuknutí vs. přetažení existujícího bodu
+      var drag = null, downAt = null;
+      function hit(p) {
+        var r = 22 / scale, all = (draft ? [draft] : []).concat(items.slice().reverse());
+        for (var i = 0; i < all.length; i++) for (var j = 0; j < all[i].pts.length; j++) {
+          var q = all[i].pts[j]; if (Math.hypot((q[0] - p[0]) * cw, (q[1] - p[1]) * ch) < r) return { it: all[i], j: j };
+        }
+        return null;
+      }
       cv.addEventListener('pointerdown', function (e) {
         e.preventDefault(); cv.setPointerCapture(e.pointerId);
-        var t = BY[tool];
-        cur = { tool: tool, size: t.type === 'area' ? SIZES[size] : LINE, pts: [pt(e)] };
-        strokes.push(cur); paint();
-        if (t.type === 'point') cur = null;
+        var p = pt(e); downAt = { p: p, x: e.clientX, y: e.clientY }; drag = hit(p);
       });
       cv.addEventListener('pointermove', function (e) {
-        if (!cur) return; e.preventDefault();
-        var p = pt(e), l = cur.pts[cur.pts.length - 1];
-        if (Math.hypot(p[0] - l[0], p[1] - l[1]) < 0.004) return;
-        if (BY[cur.tool].type === 'line' && cur.tool === 'steps') cur.pts = [cur.pts[0], p]; else cur.pts.push(p);
-        paint();
+        if (!drag || !downAt) return; e.preventDefault();
+        if (Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) < 6 && !drag.moved) return;
+        drag.moved = true; drag.it.pts[drag.j] = pt(e); paint();
       });
-      var end = function () {
-        if (cur && BY[cur.tool].type === 'line' && cur.pts.length < 2) strokes.pop(); // ťuknutí čárou nic neznamená
-        cur = null; paint();
-      };
-      cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
-      var close = function (val) { window.removeEventListener('resize', onR); el.remove(); document.documentElement.classList.remove('mvg2-sk-open'); resolve(val); };
-      var onR = function () { fit(); ui(); };
-      el.querySelector('[data-undo]').onclick = function () { strokes.pop(); paint(); };
-      el.querySelector('[data-clear]').onclick = function () { if (strokes.length && window.confirm('Smazat celý náčrt?')) { strokes = []; paint(); } };
-      el.querySelector('[data-cancel]').onclick = function () { close(null); };
-      el.querySelector('[data-ok]').onclick = function () {
+      cv.addEventListener('pointerup', function (e) {
+        if (!downAt) return;
+        var p = pt(e), moved = drag && drag.moved, h = drag; drag = null; downAt = null;
+        if (moved) return;
+        // ťuknutí na první bod rozpracované plochy ji uzavře
+        if (draft && h && h.it === draft && h.j === 0 && BY[draft.tool].type === 'area' && draft.pts.length >= 3) { finish(); return; }
+        if (allowed && !allowed(p)) { toast('Tady je místo, které má zůstat beze změny (krok 1). Ťukněte do upravované plochy.'); return; }
+        var t = BY[tool];
+        if (t.type === 'point') { var it = { tool: tool, pts: [p], note: '' }; items.push(it); last = it; ui(); return; }
+        if (!draft) draft = { tool: tool, pts: [], note: '' };
+        draft.pts.push(p);
+        if (t.type === 'steps' && draft.pts.length === 2) { finish(); return; }
+        ui();
+      });
+      cv.addEventListener('pointercancel', function () { drag = null; downAt = null; });
+      var close = function (save) {
+        window.removeEventListener('resize', fit); el.remove(); document.documentElement.classList.remove('mvg2-sk-open');
+        if (!save) return resolve(null);
         var pv = document.createElement('canvas'), s2 = Math.min(1, 900 / Math.max(W, H)); pv.width = Math.round(W * s2); pv.height = Math.round(H * s2);
-        var px = pv.getContext('2d'); px.drawImage(photo, 0, 0, pv.width, pv.height); draw(px, pv.width, pv.height, strokes);
-        close({ strokes: strokes, preview: pv.toDataURL('image/jpeg', 0.85) });
+        var px = pv.getContext('2d'); px.drawImage(photo, 0, 0, pv.width, pv.height); draw(px, pv.width, pv.height, items, { k: pv.width / 900 });
+        resolve({ strokes: items, preview: pv.toDataURL('image/jpeg', 0.85) });
       };
-      window.addEventListener('resize', onR);
-      ui(); paint(); requestAnimationFrame(fit);
+      el.querySelector('[data-cancel]').onclick = function () { close(false); };
+      window.addEventListener('resize', fit);
+      ui(); requestAnimationFrame(fit);
     });
   }
 
-  window.MVGreenSketch = { open: open, guide: guide, describe: describe, tools: TOOLS };
+  window.MVGreenSketch = { open: open, guide: guide, describe: describe, done: done, tools: TOOLS };
 })();
