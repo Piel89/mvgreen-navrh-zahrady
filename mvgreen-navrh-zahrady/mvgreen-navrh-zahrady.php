@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.225
+ * Version: 0.6.226
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.225');
+define('MVGREEN_VERSION', '0.6.226');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -40,7 +40,12 @@ function mvgreen_enqueue_designer_assets() {
     // loaded Roboto Condensed under a mistaken assumption that it matched the real site – it
     // never did, and a later patch (see assets/app.css) had already silently papered over most
     // of the visible effect by forcing Inter back on via !important; this corrects it at the source.
-    wp_enqueue_style('mvgreen-reference-font', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap', [], null);
+    //
+    // 2026-11-08 (GDPR, Martin): fonts are no longer loaded from fonts.googleapis.com – that sent
+    // every visitor's IP address to Google before any cookie consent (LG München 3 O 17493/20).
+    // The same Inter + Montserrat files are self-hosted in assets/fonts (assets/fonts.css, already
+    // used site-wide by web.php), so the designer just reuses that stylesheet.
+    wp_enqueue_style('mvgreen-reference-font', plugin_dir_url(__FILE__) . 'assets/fonts.css', [], MVGREEN_VERSION);
     wp_enqueue_style('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.css', ['mvgreen-reference-font'], MVGREEN_VERSION);
     wp_enqueue_script('mvgreen-plants-805', plugin_dir_url(__FILE__) . 'assets/catalog-805.js', [], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-ai-safety', plugin_dir_url(__FILE__) . 'assets/ai-safety.js', [], MVGREEN_VERSION, true);
@@ -54,7 +59,7 @@ function mvgreen_enqueue_designer_assets() {
     wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-care', plugin_dir_url(__FILE__) . 'assets/garden-care.js', [], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-area-types', 'mvgreen-brief', 'mvgreen-plan', 'mvgreen-care'], MVGREEN_VERSION, true);
-    wp_add_inline_script('mvgreen-designer', 'window.MVGreenAI = '.wp_json_encode(['ajaxUrl'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('mvgreen_ai_test'),'enabled'=>current_user_can('manage_options'),'workerUrl'=>plugins_url('assets/mg-segment-worker.js', __FILE__)]).';', 'before');
+    wp_add_inline_script('mvgreen-designer', 'window.MVGreenAI = '.wp_json_encode(['ajaxUrl'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('mvgreen_ai_test'),'enabled'=>current_user_can('manage_options'),'workerUrl'=>plugins_url('assets/mg-segment-worker.js', __FILE__),'imgUrl'=>plugins_url('assets/img/', __FILE__)]).';', 'before');
     // Use the exact WordPress site logo; supports classic and block themes.
     $mvgreen_logo_id = (int) get_theme_mod('custom_logo', 0);
     if (!$mvgreen_logo_id) $mvgreen_logo_id = (int) get_option('site_logo', 0);

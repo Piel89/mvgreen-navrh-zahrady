@@ -18,6 +18,8 @@ Pexels License: https://www.pexels.com/license/
 
 Fotografie Pexels lze zdarma používat na komerčních webech, upravovat a zobrazovat bez povinné atribuce. Autorská práva tím nezanikají; fotografie nejsou automaticky public domain / CC0. Neimplikovat podporu produktu od fotografů nebo zachycených značek. Pro použití na MVGreen jako ilustrační karty zahradních stylů je licence obecně vhodná.
 
+Od verze 0.6.226 (2026-11-08) jsou všechny fotografie uložené lokálně v `assets/img/pexels-<id>.jpg` – web už nenačítá nic z images.pexels.com (předávání IP adres návštěvníků třetí straně bez souhlasu).
+
 Vizuály z předlohy jsou ilustrativní. Není zaručena pixelová totožnost náhradních fotografií ani přesná míra vizuální podobnosti. Originální fotografie již vlastněné MVGreen v kroku výsledků PŘED/PO zůstávají nezměněné. Externí Pexels obrázky je před produkčním vydáním vhodné lokálně uložit a otestovat jejich načítání.
 
 ## Implementace

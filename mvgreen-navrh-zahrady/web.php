@@ -96,7 +96,7 @@ add_shortcode('mvgreen_paticka', function () {
         . '<div><strong>Stránky</strong><ul><li><a href="' . esc_url(home_url('/cenik/')) . '">Služby a ceny</a></li><li><a href="' . esc_url(home_url('/naseprace/')) . '">Naše práce</a></li><li><a href="' . esc_url(home_url('/kontakty/')) . '">Kontakt</a></li></ul></div>'
         . '<div><strong>Sledujte nás</strong><ul><li><a href="https://www.facebook.com/profile.php?id=61588551020349">Facebook</a></li><li><a href="https://www.instagram.com/mvgreen.cz/">Instagram</a></li><li><a href="https://www.youtube.com/watch?v=-uCsuuhrGrI">YouTube</a></li></ul></div>'
         . '</div><div class="mvg-footer__bottom"><span>© ' . $y . ' MV GREEN · Martin Vondrovic · IČO 21119121</span>'
-        . '<span><a href="' . esc_url(home_url('/obchodni-podminky/')) . '">Obchodní podmínky</a> · <a href="' . esc_url(home_url('/ochrana-osobnich-udaju/')) . '">Ochrana osobních údajů</a> · <a href="' . esc_url(home_url('/zasady-cookies-eu/')) . '">Zásady cookies</a> · <a href="#" class="cmplz-show-banner">Nastavení cookies</a></span></div></footer>'
+        . '<span><a href="' . esc_url(home_url('/obchodni-podminky/')) . '">Obchodní podmínky</a> · <a href="' . esc_url(home_url('/ochrana-osobnich-udaju/')) . '">Ochrana osobních údajů</a> · <a href="' . esc_url(home_url('/zasady-cookies-eu/')) . '">Zásady cookies</a> · <a href="#" class="cmplz-show-banner">Nastavení cookies</a> · <a href="' . esc_url(home_url('/obchodni-podminky/#nahlaseni')) . '">Nahlásit nezákonný obsah</a></span></div></footer>'
         . '<nav class="mvg-callbar" aria-label="Rychlý kontakt">'
         . '<a class="mvg-call" href="tel:' . MVGREEN_PHONE_INTL . '">' . mvgreen_web_icon('phone', 20) . 'Zavolat</a>'
         . '<a href="https://wa.me/420723339650">' . mvgreen_web_icon('chat', 20) . 'WhatsApp</a>'
@@ -160,6 +160,12 @@ add_shortcode('mvgreen_srovnani', function ($a) {
  * i patička webu). Datum účinnosti v textu se bere z data poslední úpravy této stránky ve WP.
  */
 add_shortcode('mvgreen_obchodni_podminky', function () {
+    // Při změně textu podmínek zvyš revizi – datum účinnosti se pak posune na den prvního zobrazení.
+    $vop_rev = '2026-11-08';
+    if (get_option('mvgreen_vop_rev') !== $vop_rev) {
+        delete_option('mvgreen_vop_ucinnost');
+        update_option('mvgreen_vop_rev', $vop_rev, false);
+    }
     $ucinnost = get_option('mvgreen_vop_ucinnost');
     if (!$ucinnost) {
         $ucinnost = date_i18n('j. n. Y');
@@ -186,7 +192,7 @@ add_shortcode('mvgreen_obchodni_podminky', function () {
         . '<li><strong>Balíček AI návrh + roční plán péče (119 Kč)</strong> – obojí výše zvýhodněně.</li>'
         . '</ul><p>Nejde o odbornou zahradnickou ani zahradně-architektonickou konzultaci na místě, ani o závazné projektové či stavební řešení. Výstupy jsou orientační a vycházejí z údajů zadaných kupujícím a obecných agronomických doporučení – před realizací je vhodné je ověřit na místě.</p>');
 
-    $out .= $sec('3. Objednávka a uzavření smlouvy', '<p>Kupující zadá e-mail, potvrdí souhlas podle čl. 5 a zaplatí cenu předem přes platební bránu. Kupní smlouva je uzavřena okamžikem připsání platby a aktivace přístupového kódu.</p>');
+    $out .= $sec('3. Objednávka a uzavření smlouvy', '<p>Kupující zadá e-mail, potvrdí souhlas podle čl. 5 a objednávku odešle tlačítkem <strong>„Objednat s povinností platby“</strong>, čímž se zavazuje cenu zaplatit; platí ji předem přes platební bránu. Kupní smlouva je uzavřena okamžikem připsání platby a aktivace přístupového kódu.</p>');
 
     $out .= $sec('4. Cena a platba', '<p>Ceny jednotlivých balíčků jsou uvedeny na webu a jsou konečné (prodávající není plátcem DPH). Platbu lze provést výhradně online přes platební bránu <strong><a href="https://www.gopay.com" target="_blank" rel="noopener">GoPay</a></strong>, platební kartou nebo dalším způsobem podle aktuální nabídky brány. Údaje o platební kartě prodávající nikdy nevidí ani neukládá – zpracovává je výhradně GoPay, podle vlastních obchodních podmínek dostupných na gopay.com.</p>');
 
@@ -194,11 +200,26 @@ add_shortcode('mvgreen_obchodni_podminky', function () {
 
     $out .= $sec('6. Reklamace', '<p>Právo na odstoupení se podle čl. 5 na tento obsah nevztahuje, odpovědnost prodávajícího za vady (např. nedoručený kód, nefunkční odkaz, chybně vypočtený plán) tím ale není dotčena. Reklamaci uplatněte na <a href="mailto:' . MVGREEN_EMAIL . '">' . MVGREEN_EMAIL . '</a>; prodávající ji vyřídí nejpozději do 30 dnů. Je-li reklamace oprávněná, má kupující právo na nápravu (opravné vygenerování či zaslání obsahu) nebo na vrácení zaplacené částky.</p>');
 
-    $out .= $sec('7. Mimosoudní řešení sporů', '<p>Spotřebitel má právo na mimosoudní řešení sporu u <a href="https://www.coi.cz" target="_blank" rel="noopener">České obchodní inspekce</a> (www.coi.cz) nebo prostřednictvím platformy <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ODR Evropské komise</a>.</p>');
+    // 2026-11-08: odkaz na platformu ODR Evropské komise odstraněn – platforma byla k 20. 7. 2025
+    // zrušena (nařízení (EU) 2024/3228); mimosoudní řešení sporů u ČOI zůstává.
+    $out .= $sec('7. Mimosoudní řešení sporů', '<p>Spotřebitel má právo na mimosoudní řešení sporu u <a href="https://www.coi.cz" target="_blank" rel="noopener">České obchodní inspekce</a> (www.coi.cz).</p>');
 
     $out .= $sec('8. Ochrana osobních údajů', '<p>Zpracování osobních údajů (e-mail, fotografie zahrady apod.) upravuje samostatná stránka <a href="' . esc_url(home_url('/ochrana-osobnich-udaju/')) . '">Ochrana osobních údajů</a>.</p>');
 
-    $out .= $sec('9. Závěrečná ustanovení', '<p>Tyto podmínky se řídí právním řádem České republiky, zejména občanským zákoníkem (č. 89/2012 Sb.) a zákonem o ochraně spotřebitele (č. 634/1992 Sb.). Prodávající může podmínky v přiměřeném rozsahu měnit; pro konkrétní objednávku platí znění účinné v okamžiku jejího učinění.</p>');
+    // 2026-11-08 (Martin): věk kupujících a nahlášení nezákonného obsahu (DSA, nařízení (EU)
+    // 2022/2065, čl. 11, 12 a 16 – zákazníci nahrávají fotografie, které se ukládají).
+    $out .= $sec('9. Kdo může nakupovat', '<p>Služba je určena osobám starším 18 let. Nezletilý může objednávku učinit jen se souhlasem svého zákonného zástupce.</p>');
+
+    $out .= '<section class="mvg-legal__sec" id="nahlaseni"><h2>10. Nahrávaný obsah a nahlášení nezákonného obsahu</h2>'
+        . '<p>Kupující nahrává jen fotografie, ke kterým má práva, a které nezachycují rozpoznatelné cizí osoby ani jiný nezákonný obsah. Fotografie slouží pouze k vytvoření návrhu.</p>'
+        . '<p>Pokud narazíte na obsah, který považujete za nezákonný, nahlaste ho e-mailem na <a href="mailto:' . MVGREEN_EMAIL . '?subject=' . rawurlencode('Nahlášení nezákonného obsahu') . '">' . MVGREEN_EMAIL . '</a> s předmětem „Nahlášení nezákonného obsahu“. Uveďte prosím:</p><ul>'
+        . '<li>proč obsah považujete za nezákonný,</li>'
+        . '<li>kde se nachází (odkaz nebo kód návrhu),</li>'
+        . '<li>své jméno a e-mail,</li>'
+        . '<li>prohlášení, že oznámení podáváte v dobré víře a údaje jsou podle vašeho nejlepšího vědomí správné a úplné.</li>'
+        . '</ul><p>Přijetí oznámení potvrdíme, posoudíme ho bez zbytečného odkladu a o výsledku vás informujeme. Tento e-mail je zároveň kontaktním místem pro orgány veřejné moci i uživatele; komunikovat lze v češtině.</p></section>';
+
+    $out .= $sec('11. Závěrečná ustanovení', '<p>Tyto podmínky se řídí právním řádem České republiky, zejména občanským zákoníkem (č. 89/2012 Sb.) a zákonem o ochraně spotřebitele (č. 634/1992 Sb.). Prodávající může podmínky v přiměřeném rozsahu měnit; pro konkrétní objednávku platí znění účinné v okamžiku jejího učinění.</p>');
 
     return $out . '</div>';
 });
