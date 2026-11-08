@@ -176,6 +176,25 @@ live site on the old version with no error visible here.
   (e.g. to wp-admin to check/trigger an update) you'll need to repaint
   the mask from scratch afterward.
 
+## AI architekt v2 (rebuild in progress, started 2026-11-08)
+
+The owner rejected the 8-step wizard ("looks cheap") and approved a new design (claude.ai
+artifact "MVGreen AI architekt – návrh": 5-step mobile wizard, painted planting plan, 11-page
+A4 PDF). It is being built **next to** the old designer, not replacing it:
+
+- `architekt.php` – shortcode `[mvgreen_ai_architekt pred="URL" po="URL"]` for a hidden,
+  password-protected test page. Photos come from the WP media library – the repo is **public**,
+  never commit customer photos.
+- `assets/v2/plan-render.js` – `MVGreenPlan.renderSheet(project)` draws the painted plan from a
+  project in **metres** (areas, beds with `back` edges + `blocked` spots, paths with stones,
+  walls, structures, fences, existing plants, labels). Plants are auto-placed by `spon`, so
+  legend/budget counts always match the drawing – never hand-count.
+- `assets/v2/architekt.js` – currently renders the demo project (the "studna" garden).
+- Launch gate: old designer stays until 5 v2 designs in a row pass without error.
+
+Known data gap: `catalog-805.js` has no bloom months and no prices for any plant (all
+`"bloom":"neuvedeno"`, `"price":null`) – needed before the PDF budget/bloom calendar can be real.
+
 ## Conventions
 
 - All commit messages and user-facing strings in this codebase are

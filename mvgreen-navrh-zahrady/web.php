@@ -23,6 +23,19 @@ add_action('wp_enqueue_scripts', function () {
     wp_enqueue_script('mvgreen-web', plugin_dir_url(__FILE__) . 'assets/web.js', [], $ver, true);
 });
 
+// 2026-11-08 (GDPR, Martin): WordPress by jinak pro každé emoji v textu stahoval obrázek ze s.w.org
+// (IP návštěvníka třetí straně bez souhlasu). Emoji pak vykreslí přímo zařízení návštěvníka.
+add_action('init', function () {
+    remove_action('wp_head', 'print_emoji_detection_script', 7);
+    remove_action('admin_print_scripts', 'print_emoji_detection_script');
+    remove_action('wp_print_styles', 'print_emoji_styles');
+    remove_action('admin_print_styles', 'print_emoji_styles');
+    remove_filter('the_content_feed', 'wp_staticize_emoji');
+    remove_filter('comment_text_rss', 'wp_staticize_emoji');
+    remove_filter('wp_mail', 'wp_staticize_emoji_for_email');
+    add_filter('emoji_svg_url', '__return_false');
+});
+
 function mvgreen_web_icon($name, $size = 18) {
     $paths = [
         'phone' => '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/>',

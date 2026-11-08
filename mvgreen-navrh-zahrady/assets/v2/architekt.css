@@ -1,0 +1,54 @@
+/* MVGreen AI architekt v2 – společné styly (2026-11-08). Písma: assets/fonts.css (lokálně, bez Googlu). */
+/* Architects Daughter (Kimberly Geswein, SIL OFL 1.1) – ručně psané popisky výkresu, uloženo lokálně. */
+@font-face{font-family:'Architects Daughter';font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/architects-daughter-latin-ext-400.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Architects Daughter';font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/architects-daughter-latin-400.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+.mvg2{--g:#2E5E2C;--g-dark:#234A21;--ink:#142019;--muted:#4A554F;--line:#DAD6CC;--paper:#FBFAF4;font-family:Inter,system-ui,sans-serif;color:var(--ink);line-height:1.45}
+.mvg2 *{box-sizing:border-box}
+.mvg2-cap{display:block;font-size:12px;font-weight:700;letter-spacing:.1em}
+
+/* list výkresu – 1700 × 1100, zmenšuje se na šířku stránky */
+.mvg2-sheet-wrap{width:100%;overflow-x:auto}
+.mvg2-sheet{width:1700px;height:1100px;display:flex;background:var(--paper);border:2px solid #2F3A33;transform-origin:0 0}
+.mvg2-sheet__plan{width:1300px;height:1096px;border-right:2px solid #2F3A33;overflow:hidden}
+.mvg2-plan__svg{display:block;width:1300px;height:1096px}
+.mvg2-sheet__side{width:396px;display:flex;flex-direction:column}
+.mvg2-sheet__brand{padding:20px 24px;border-bottom:2px solid #2F3A33;display:flex;gap:14px;align-items:center}
+.mvg2-sheet__brand img{width:64px;height:62px;object-fit:contain}
+.mvg2-sheet__brand div{display:flex;flex-direction:column;line-height:1.25;font-size:13px;color:var(--muted)}
+.mvg2-sheet__brand strong{font-family:Montserrat,sans-serif;font-weight:800;font-size:19px;letter-spacing:.04em;color:var(--g)}
+.mvg2-sheet__title{padding:16px 24px;border-bottom:2px solid #2F3A33;display:flex;flex-direction:column;gap:4px}
+.mvg2-sheet__title span{font-size:12px;font-weight:600;letter-spacing:.1em;color:var(--g)}
+.mvg2-sheet__title strong{font-family:Montserrat,sans-serif;font-weight:800;font-size:21px;line-height:1.2}
+.mvg2-sheet__title em{font-style:normal;font-size:13.5px;color:var(--muted)}
+.mvg2-sheet__photos{padding:14px 24px;border-bottom:2px solid #2F3A33;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mvg2-sheet__photos figure{margin:0;display:flex;flex-direction:column;gap:4px}
+.mvg2-sheet__photos img{width:100%;height:112px;object-fit:cover;border-radius:6px;border:1px solid #B5AD9D;display:block}
+.mvg2-sheet__photos figcaption{font-size:11.5px;color:var(--muted)}
+.mvg2-sheet__photos strong{color:var(--ink)}
+.mvg2-sheet__legend{padding:12px 24px 8px;flex:1;overflow:hidden}
+.mvg2-sheet__legend table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:6px}
+.mvg2-sheet__legend td{padding:3px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+.mvg2-sheet__legend td strong{display:block;font-weight:600}
+.mvg2-sheet__legend td em{display:block;color:var(--muted);font-size:11.5px}
+.mvg2-legend__icon{width:32px;height:32px;display:block}
+.mvg2-legend__count{font-weight:700;width:30px;text-align:right}
+.mvg2-num{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--g);color:#fff;font-size:11.5px;font-weight:800;align-items:center;justify-content:center}
+.mvg2-sheet__stamp{border-top:2px solid #2F3A33;display:grid;grid-template-columns:1fr 1fr;font-size:12px}
+.mvg2-sheet__stamp div{padding:8px 14px;border-bottom:1px solid #2F3A33;border-right:1px solid #2F3A33;display:flex;flex-direction:column}
+.mvg2-sheet__stamp span{color:#5B6660;font-size:10.5px;letter-spacing:.06em}
+.mvg2-sheet__stamp strong{font-weight:600}
+
+/* zkušební stránka */
+.mvg2-dev{max-width:1740px;margin:0 auto;padding:20px 16px}
+.mvg2-dev__bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.mvg2-dev__bar h1{margin:0;font-family:Montserrat,sans-serif;font-size:22px}
+.mvg2-btn{height:44px;padding:0 18px;border-radius:12px;border:0;background:var(--g);color:#fff;font:600 14px Inter,sans-serif;cursor:pointer}
+
+@media print{
+  @page{size:A4 landscape;margin:0}
+  body *{visibility:hidden}
+  .mvg2-print,.mvg2-print *{visibility:visible}
+  .mvg2-print{position:absolute;left:0;top:0}
+  .mvg2-print .mvg2-sheet{transform:scale(.66);border:0}
+  .mvg2-dev__bar{display:none}
+}

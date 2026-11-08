@@ -1,0 +1,8 @@
+Architects Daughter
+Copyright (c) 2010 Kimberly Geswein (kimberlygeswein.com)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+Full license text: https://openfontlicense.org/open-font-license-official-text/
+
+Subsets latin and latin-ext (woff2) are bundled unmodified so the site does not load
+fonts from Google's servers.
