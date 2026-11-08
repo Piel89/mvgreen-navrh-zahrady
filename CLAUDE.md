@@ -189,8 +189,24 @@ A4 PDF). It is being built **next to** the old designer, not replacing it:
   project in **metres** (areas, beds with `back` edges + `blocked` spots, paths with stones,
   walls, structures, fences, existing plants, labels). Plants are auto-placed by `spon`, so
   legend/budget counts always match the drawing – never hand-count.
-- `assets/v2/architekt.js` – currently renders the demo project (the "studna" garden).
-- Launch gate: old designer stays until 5 v2 designs in a row pass without error.
+- `assets/v2/architekt.js` – the 5-step wizard (photo+mask → place/orientation/house/fence → mode
+  AI vs. customer sketch, style, wishes → summary → result + 11-page PDF). Global for plan render is
+  `MVGreenPlanV2` (not `MVGreenPlan` – collides with garden-plan.js). Test hook:
+  `window.MVGreenArchitektTest` (state, build(ctx), pickPlants) – used by node tests.
+- `assets/v2/plants-curated.js` – 162 vetted species (role back/mid/front, sun, water, thorny);
+  replaces catalog-805 for v2.
+- `assets/v2/sketch.js` – customer sketch by TAPPING (owner rejected finger-drawing as imprecise):
+  wall/path = points, steps = two edges (width), areas = corners, tree/shrub = tap; optional note
+  per element. Sent to gpt-image as a 2nd `image[]` (`guide`, same letterbox as the photo) plus a
+  text description; the prompt says the sketch is APPROXIMATE and AI must make the whole coherent.
+- Server: `mvgreen_ai_plan_v2` (gpt-4.1 → plan in metres from photographer's view, y = depth),
+  `mvgreen_plant_photo` (Wikimedia CC0/BY/BY-SA, cached in uploads/mvgreen-plants, misses only 6 h).
+- Page 8 work estimate is computed from project areas (workPlan() in architekt-pdf.js) – owner:
+  a fixed "2–3 víkendy" was unrealistic.
+- Launch gate: old designer stays until 5 v2 designs in a row pass without error. Status
+  2026-11-08: 4 full tests, none clean yet; test 4 (sketch) was the first close match. Owner will
+  evaluate the tapping sketch himself next and was not yet convinced.
+- Admin daily AI test limit option `mvgreen_ai_daily_limit` was raised to 5 (owner approved).
 
 Known data gap: `catalog-805.js` has no bloom months and no prices for any plant (all
 `"bloom":"neuvedeno"`, `"price":null`) – needed before the PDF budget/bloom calendar can be real.
