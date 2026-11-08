@@ -124,6 +124,70 @@ function mvgreen_ai_plan_handle() {
     wp_send_json_success(['plan' => $plan, 'model' => $model]);
 }
 
+/**
+ * AI architekt v2 (2026-11-08): údaje o vybraných rostlinách + text konceptu pro 11stránkové PDF.
+ * Katalog 805 rostlin nemá u žádného druhu dobu kvetení ani cenu, proto je doplní levný textový
+ * model. Výstup se v PDF vždy označuje jako orientační („AI odhad, ověřte“). Zatím jen pro správce
+ * (zkušební stránka); pro zákazníky se napojí na zaplacený kód stejně jako mvgreen_ai_plan.
+ */
+function mvgreen_plant_facts_schema() {
+    $str = ['type' => 'string'];
+    $int = ['type' => 'integer'];
+    return [
+        'type' => 'object', 'additionalProperties' => false,
+        'required' => ['title', 'concept', 'ideas', 'plants'],
+        'properties' => [
+            'title' => $str,
+            'concept' => $str,
+            'ideas' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['title', 'text'], 'properties' => ['title' => $str, 'text' => $str]]],
+            'plants' => ['type' => 'array', 'items' => [
+                'type' => 'object', 'additionalProperties' => false,
+                'required' => ['latin', 'bloom_from', 'bloom_to', 'height_cm', 'width_cm', 'spacing_cm', 'sun', 'water', 'pruning', 'pet_toxic', 'price_czk', 'container', 'alternative', 'alternative_reason'],
+                'properties' => [
+                    'latin' => $str, 'bloom_from' => $int, 'bloom_to' => $int, 'height_cm' => $int, 'width_cm' => $int, 'spacing_cm' => $int,
+                    'sun' => $str, 'water' => $str, 'pruning' => $str,
+                    'pet_toxic' => ['type' => 'string', 'enum' => ['ano', 'ne', 'nevim']],
+                    'price_czk' => $int, 'container' => $str, 'alternative' => $str, 'alternative_reason' => $str,
+                ],
+            ]],
+        ],
+    ];
+}
+add_action('wp_ajax_mvgreen_ai_plant_facts', function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
+    if (!defined('MVGREEN_OPENAI_API_KEY') || !MVGREEN_OPENAI_API_KEY) wp_send_json_error(['message' => 'Chybí MVGREEN_OPENAI_API_KEY.'], 400);
+    $plants = isset($_POST['plants']) ? sanitize_textarea_field(wp_unslash($_POST['plants'])) : '';
+    $brief = isset($_POST['brief']) ? sanitize_textarea_field(wp_unslash($_POST['brief'])) : '';
+    if ($plants === '' || strlen($plants) > 4000 || strlen($brief) > 4000) wp_send_json_error(['message' => 'Neplatné zadání.'], 400);
+    $prompt = "Jsi zkušený český zahradní architekt. Pro zahradu podle zadání níže napiš krátký název projektu (max 6 slov), "
+        . "koncept (2–3 věty, česky, konkrétně k této zahradě) a 3 hlavní myšlenky návrhu (nadpis do 4 slov + jedna věta). "
+        . "Pak pro KAŽDOU rostlinu ze seznamu uveď údaje pro české podmínky: měsíce kvetení (1–12; u rostlin pěstovaných pro list uveď měsíce, kdy jsou nejozdobnější), "
+        . "výšku a šířku v dospělosti v cm, doporučený spon v cm, nároky na slunce a vodu (krátce česky), řez (kdy a jak, jedna věta), "
+        . "zda je jedovatá pro psy nebo kočky podle databáze ASPCA (ano/ne; pokud si nejsi jistý, 'nevim'), "
+        . "běžnou maloobchodní cenu jednoho kusu v Kč v českém zahradnictví a obvyklou velikost květináče, "
+        . "a jednu náhradní rostlinu, kterou lze použít na stejné místo, s důvodem (krátce). "
+        . "Latinský název vrať přesně tak, jak je v seznamu. Nic si nevymýšlej – když údaj nevíš, odhadni realisticky a konzervativně.\n\n"
+        . "ZADÁNÍ: {$brief}\n\nROSTLINY: {$plants}";
+    $model = defined('MVGREEN_OPENAI_PLAN_MODEL') ? MVGREEN_OPENAI_PLAN_MODEL : 'gpt-4.1-mini';
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'headers' => ['Authorization' => 'Bearer ' . MVGREEN_OPENAI_API_KEY, 'Content-Type' => 'application/json'],
+        'body' => wp_json_encode([
+            'model' => $model,
+            'messages' => [['role' => 'user', 'content' => $prompt]],
+            'response_format' => ['type' => 'json_schema', 'json_schema' => ['name' => 'plant_facts', 'strict' => true, 'schema' => mvgreen_plant_facts_schema()]],
+        ]),
+        'timeout' => 120,
+    ]);
+    if (is_wp_error($response)) wp_send_json_error(['message' => 'Spojení s AI selhalo: ' . $response->get_error_message()], 200);
+    $json = json_decode(wp_remote_retrieve_body($response), true);
+    $status = wp_remote_retrieve_response_code($response);
+    if ($status < 200 || $status >= 300) wp_send_json_error(['message' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.'], 200);
+    $facts = json_decode($json['choices'][0]['message']['content'] ?? '', true);
+    if (!is_array($facts) || empty($facts['plants'])) wp_send_json_error(['message' => 'AI nevrátila údaje o rostlinách.'], 200);
+    wp_send_json_success(['facts' => $facts, 'model' => $model]);
+});
+
 // Poslední uložený AI výstup (pro správce – nový půdorys bez dalšího placeného obrázku).
 // Zůstává přísně admin-only: ukládá se do jediné, webu společné volby, takže by
 // veřejnému zákazníkovi mohla ukázat fotografii z návrhu někoho jiného.

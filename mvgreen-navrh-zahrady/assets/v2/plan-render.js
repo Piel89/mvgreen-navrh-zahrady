@@ -290,5 +290,5 @@
     return { html: html, legend: r.legend };
   }
 
-  window.MVGreenPlan = { renderPlan: renderPlan, renderSheet: renderSheet, layoutBed: layoutBed, polyArea: polyArea };
+  window.MVGreenPlanV2 = { renderPlan: renderPlan, renderSheet: renderSheet, layoutBed: layoutBed, polyArea: polyArea };
 })();
