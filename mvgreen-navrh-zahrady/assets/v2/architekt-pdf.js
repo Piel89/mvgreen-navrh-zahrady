@@ -54,6 +54,11 @@
       + '<text x="100" y="176" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#4A554F">směr focení ↑</text></svg>';
   }
 
+  // Záhon 1, 2… a zvlášť Kačírek 1, 2… (kačírek je v projektu „záhon“ s povrchem gravel).
+  function bedName(beds, i) {
+    var g = beds[i].surface === 'gravel', n = beds.slice(0, i + 1).filter(function (b) { return (b.surface === 'gravel') === g; }).length;
+    return (g ? 'Kačírek ' : 'Záhon ') + n;
+  }
   /* ---------- rozměrový výkres s kótami (strana 5) ---------- */
   function dimsDrawing(p) {
     var W = 682, H = 360, M = 34, w = p.site.w, h = p.site.h, sc = Math.min((W - 2 * M) / w, (H - 2 * M) / h);
@@ -73,7 +78,7 @@
       var cx = xs.reduce(function (s, v) { return s + v; }, 0) / xs.length, cy = ys.reduce(function (s, v) { return s + v; }, 0) / ys.length;
       // Popisek úzkého záhonu u kraje by překryl kótu – posune se dovnitř zahrady.
       var lxPos = X(cx) < X(0) + 90 ? X(Math.max.apply(null, xs)) + 80 : X(cx) > X(w) - 90 ? X(Math.min.apply(null, xs)) - 80 : X(cx);
-      labels.push({ x: lxPos, y: Y(cy) + i * 22, t: 'Záhon ' + (i + 1) + ': ' + fmt(bw) + ' × ' + fmt(bh) + ' m', cls: 'bed' });
+      labels.push({ x: lxPos, y: Y(cy) + i * 22, t: bedName(p.beds, i) + ': ' + fmt(bw) + ' × ' + fmt(bh) + ' m', cls: 'bed' });
     });
     (p.walls || []).forEach(function (wl) { svg += '<path d="' + path(wl.line, false) + '" fill="none" stroke="#7E7566" stroke-width="5"/>'; });
     (p.fences || []).forEach(function (f) { svg += '<path d="' + path(f.line, false) + '" fill="none" stroke="#5C3B2C" stroke-width="4"/>'; });
@@ -106,7 +111,9 @@
     var c = ctx.climate || {};
     var cards = [[c.elevation ? c.elevation + ' m n. m.' : '—', 'nadmořská výška'], [c.precip ? c.precip + ' mm' : '—', 'srážky za rok'], [c.zone || '—', 'mrazuvzdornost (orientačně)'], [ctx.sizeLabel, 'upravovaná plocha'], [ctx.sun || '—', 'slunce (vaše zadání)'], [ctx.soilLabel, 'půda']];
     out.push('<section class="mvg2-page">' + head(ctx, 2) + title('ROZBOR STANOVIŠTĚ', 'Z čeho návrh vychází')
-      + (ctx.marked || ctx.before ? '<figure class="mvg2-fig"><img class="mvg2-page__photo mvg2-page__photo--short" src="' + esc(ctx.marked || ctx.before) + '" alt="Původní stav s vyznačením"><figcaption>' + (ctx.marked ? '<strong>Zeleně</strong> je vyznačeno, co zůstává beze změny (vaše označení). Zbytek smí návrh upravit.' : 'Původní stav – vaše fotka.') + '</figcaption></figure>' : '')
+      + (ctx.sketch ? '<div class="mvg2-fig2"><figure class="mvg2-fig"><img class="mvg2-page__photo mvg2-page__photo--short" src="' + esc(ctx.marked || ctx.before) + '" alt="Co zůstává"><figcaption><strong>Zeleně</strong> co zůstává beze změny.</figcaption></figure>'
+        + '<figure class="mvg2-fig"><img class="mvg2-page__photo mvg2-page__photo--short" src="' + esc(ctx.sketch) + '" alt="Váš náčrt"><figcaption><strong>Váš náčrt</strong> – podle něj je rozmístěn návrh.</figcaption></figure></div>'
+      : ctx.marked || ctx.before ? '<figure class="mvg2-fig"><img class="mvg2-page__photo mvg2-page__photo--short" src="' + esc(ctx.marked || ctx.before) + '" alt="Původní stav s vyznačením"><figcaption>' + (ctx.marked ? '<strong>Zeleně</strong> je vyznačeno, co zůstává beze změny (vaše označení). Zbytek smí návrh upravit.' : 'Původní stav – vaše fotka.') + '</figcaption></figure>' : '')
       + '<div class="mvg2-cards3">' + cards.map(function (x) { return '<div><strong>' + esc(x[0]) + '</strong><span>' + esc(x[1]) + '</span></div>'; }).join('') + '</div>'
       + '<div class="mvg2-orient">' + compassSvg(ctx.orient) + '<div class="mvg2-notes">'
       + '<div><strong>Slunce a stín</strong><span>' + sunNotes(ctx).map(esc).join(' ') + '</span></div>'
@@ -129,7 +136,7 @@
     out.push('<section class="mvg2-page">' + head(ctx, 5) + title('ROZMĚRY A SPON', 'Podle čeho vytyčit a sázet')
       + (ctx.project ? dimsDrawing(ctx.project) : '')
       + '<table class="mvg2-table"><thead><tr><th>Plocha</th><th>Výměra</th></tr></thead><tbody>'
-      + (ctx.project ? ctx.project.beds.map(function (b, i) { return '<tr><td>Záhon ' + (i + 1) + '</td><td>' + area(b.poly).toFixed(1).replace('.', ',') + ' m²</td></tr>'; }).join('') : '')
+      + (ctx.project ? ctx.project.beds.map(function (b, i) { return '<tr><td>' + bedName(ctx.project.beds, i) + '</td><td>' + area(b.poly).toFixed(1).replace('.', ',') + ' m²</td></tr>'; }).join('') : '')
       + '<tr><td>Trávník</td><td>' + Math.round(ctx.lawnArea || 0) + ' m²</td></tr></tbody></table>'
       + '<table class="mvg2-table"><thead><tr><th>Rostlina</th><th>Spon</th><th>Velikost v dospělosti</th></tr></thead><tbody>'
       + plants.map(function (p) { return '<tr><td><strong>' + esc(p.name) + '</strong></td><td>' + (p.spacing ? p.spacing + ' cm' : '—') + '</td><td>' + (p.height_cm ? p.height_cm + ' × ' + p.width_cm + ' cm' : '—') + '</td></tr>'; }).join('') + '</tbody></table>'

@@ -35,7 +35,7 @@ function mvgreen_plan_v2_schema() {
                 'type' => 'object', 'additionalProperties' => false,
                 'required' => ['type', 'label', 'is_new', 'points', 'width_m', 'plants'],
                 'properties' => [
-                    'type' => ['type' => 'string', 'enum' => ['house', 'terrace', 'paving', 'lawn', 'bed', 'path', 'stepping', 'fence', 'wall', 'hedge', 'tree', 'shrub', 'structure']],
+                    'type' => ['type' => 'string', 'enum' => ['house', 'terrace', 'paving', 'gravel', 'lawn', 'bed', 'path', 'stepping', 'steps', 'fence', 'wall', 'hedge', 'tree', 'shrub', 'structure']],
                     'label' => ['type' => 'string'],
                     'is_new' => ['type' => 'boolean'],
                     'points' => ['type' => 'array', 'items' => ['type' => 'array', 'items' => $num]],
@@ -54,17 +54,18 @@ add_action('wp_ajax_mvgreen_ai_plan_v2', function () {
         $v = isset($_POST[$k]) ? wp_unslash($_POST[$k]) : '';
         return (preg_match('~^data:image/(jpeg|png);base64,[A-Za-z0-9+/=]+$~D', $v) && strlen($v) < 6000000) ? $v : '';
     };
-    $after = $img('after'); $before = $img('before'); $marked = $img('marked');
+    $after = $img('after'); $before = $img('before'); $marked = $img('marked'); $sketch = $img('sketch');
     if (!$after) wp_send_json_error(['message' => 'Chybí fotka návrhu.'], 400);
     $hints = isset($_POST['hints']) ? sanitize_textarea_field(wp_unslash($_POST['hints'])) : '';
     $plants = isset($_POST['plants']) ? sanitize_textarea_field(wp_unslash($_POST['plants'])) : '';
     $prompt = "Jsi zahradní architekt a z fotografií vytváříš přesný PŮDORYS (pohled shora) skutečné zahrady.\n"
         . "Obrázky: 1) fotka PO – navržená zahrada (z ní kresli nové záhony, cesty a trávník); "
         . ($before ? "2) fotka PŘED – původní stav; " : '') . ($marked ? "3) fotka PŘED se zeleně vyznačeným tím, co zůstává beze změny (dům, plot, dlažba…); " : '')
+        . ($sketch ? "4) NÁČRT ZÁKAZNÍKA – fotka PŘED s barevnými značkami, kde chce jednotlivé prvky (význam barev a polohy jsou v údajích od zákazníka níže); polohu nových prvků ber PŘEDEVŠÍM z náčrtu; " : '')
         . "všechny jsou ze STEJNÉHO místa.\n"
         . "SOUŘADNICE V METRECH z pohledu fotografa: x = 0 je levý okraj viditelné zahrady, x roste doprava; y = 0 je místo fotografa (přední okraj), y roste dozadu od fotografa. "
         . "Perspektiva: vzdálené věci jsou na fotce menší a výš – přepočítej je na skutečné metry. Měřítko odvoď ze známých věcí (dveře ~0,9 m, panel plotu ~2 m, dlaždice ~0,2 m) a z údajů zákazníka.\n"
-        . "Pro každý prvek dej points: plochy (house, terrace, paving, lawn, bed, structure) jako mnohoúhelník 4–12 bodů po obvodu; čáry (fence, wall, hedge, path, stepping) jako lomená čára 2–8 bodů se šířkou width_m; strom/keř jako 1 bod. "
+        . "Pro každý prvek dej points: plochy (house, terrace, paving, gravel = kačírek/štěrk, lawn, bed, structure, steps = schody) jako mnohoúhelník 4–12 bodů po obvodu; čáry (fence, wall, hedge, path, stepping) jako lomená čára 2–8 bodů se šířkou width_m; strom/keř jako 1 bod. "
         . "Nové prvky z návrhu mají is_new true, stávající false. Záhon zakresli PŘESNĚ tam a v takovém tvaru, kde je na fotce PO (např. úzký pás podél plotu = úzký pás podél čáry plotu). Trávník zakresli jako celou zbývající travnatou plochu. "
         . "U každého nového záhonu vyjmenuj rostliny z fotky PO, jen z tohoto seznamu: {$plants}. "
         . "Popisky česky a krátce. Do notes 1–2 věty, co je odhad.\n"
@@ -72,6 +73,7 @@ add_action('wp_ajax_mvgreen_ai_plan_v2', function () {
     $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $after, 'detail' => 'high']]];
     if ($before) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => 'low']];
     if ($marked) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $marked, 'detail' => 'low']];
+    if ($sketch) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $sketch, 'detail' => 'high']];
     $model = defined('MVGREEN_OPENAI_PLAN_V2_MODEL') ? MVGREEN_OPENAI_PLAN_V2_MODEL : 'gpt-4.1';
     $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
         'headers' => ['Authorization' => 'Bearer ' . MVGREEN_OPENAI_API_KEY, 'Content-Type' => 'application/json'],
@@ -162,8 +164,9 @@ add_shortcode('mvgreen_ai_architekt', function ($atts) {
     wp_enqueue_script('mvgreen-paint-mask', $base . 'assets/mg-paint-mask.js', ['mvgreen-ai-safety'], $v, true);
     wp_enqueue_script('mvgreen-plan-render', $base . 'assets/v2/plan-render.js', [], $v, true);
     wp_enqueue_script('mvgreen-plants-v2', $base . 'assets/v2/plants-curated.js', [], $v, true);
+    wp_enqueue_script('mvgreen-sketch', $base . 'assets/v2/sketch.js', [], $v, true);
     wp_enqueue_script('mvgreen-architekt-pdf', $base . 'assets/v2/architekt-pdf.js', ['mvgreen-plan-render'], $v, true);
-    wp_enqueue_script('mvgreen-architekt', $base . 'assets/v2/architekt.js', ['mvgreen-plan-render', 'mvgreen-architekt-pdf', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-plants-v2'], $v, true);
+    wp_enqueue_script('mvgreen-architekt', $base . 'assets/v2/architekt.js', ['mvgreen-plan-render', 'mvgreen-architekt-pdf', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-plants-v2', 'mvgreen-sketch'], $v, true);
     $logo_id = (int) get_theme_mod('custom_logo', 0);
     if (!$logo_id) $logo_id = (int) get_option('site_logo', 0);
     $logo = $logo_id ? wp_get_attachment_image_url($logo_id, 'medium') : '';

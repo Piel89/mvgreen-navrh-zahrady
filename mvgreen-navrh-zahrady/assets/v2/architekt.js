@@ -23,6 +23,7 @@
     step: 1, original: null, editMask: null, maskPreview: '', photoName: '',
     place: '', geo: null, climate: null, sun: 'Slunce', soil: 'unknown', water: 'hose', width: '', depth: '',
     orient: 'unknown', house: 'none', fence: { left: false, right: false, back: false },
+    mode: 'ai', sketch: [], sketchPreview: '',
     style: 'prirodni', wish: '', users: { kids: false, dog: false, cat: false }, care: 'mid', name: '',
     result: null, busy: false, log: []
   };
@@ -86,16 +87,21 @@
         + '<h3>Voda na zahradě</h3>' + chips('water', WATERS, st.water)
         + nav(!!st.climate);
     } else if (st.step === 3) {
+      var nSk = st.sketch.length;
       h += '<h2>Jak chcete navrhovat?</h2>'
+        + chips('mode', { ai: 'Nechat na AI', sketch: 'Nakreslím, kam co chci' }, st.mode)
+        + (st.mode === 'sketch' ? '<p class="mvg2-sub">Prstem do fotky nakreslete, kde chcete zeď, schody, záhon, kačírek, dlažbu, cestu, strom nebo keř. Návrh se podle náčrtu řídí přesně – co nenakreslíte, doplní AI podle stylu.</p>'
+          + (st.sketchPreview ? '<img class="mvg2-preview" src="' + st.sketchPreview + '" alt="Váš náčrt">' : '')
+          + '<button type="button" class="mvg2-btn' + (nSk ? ' mvg2-btn--ghost' : '') + '" data-sketch>' + (nSk ? 'Upravit náčrt (' + nSk + ' ' + (nSk === 1 ? 'tah' : nSk < 5 ? 'tahy' : 'tahů') + ')' : 'Nakreslit náčrt') + '</button>' : '')
         + '<h3>Styl</h3>' + chips('style', STYLES, st.style)
         + '<h3>Co si přejete? (nepovinné)</h3><textarea rows="4" placeholder="Např. záhon podél plotu, cestičku k terase, trávník ať zůstane co největší." data-wish>' + esc(st.wish) + '</textarea>'
         + '<h3>Kdo bude zahradu užívat?</h3>' + multi('users', { kids: 'Děti', dog: 'Pes', cat: 'Kočka' }, st.users)
         + '<h3>Kolik času chcete údržbě věnovat?</h3>' + chips('care', CARES, st.care)
-        + nav(true);
+        + nav(st.mode !== 'sketch' || st.sketch.length > 0);
     } else if (st.step === 4) {
       var fences = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; }).join(', ') || '—';
       h += '<h2>Shrnutí</h2><table class="mvg2-table"><tbody>'
-        + [['Fotka', st.photoName], ['Místo', st.geo ? st.geo.name + ' · ' + st.climate.zone : '—'], ['Fotka focená', ORIENTS[st.orient]], ['Dům / plot', HOUSES[st.house] + ' · plot ' + fences], ['Rozměry', (st.width || '?') + ' × ' + (st.depth || '?') + ' m'], ['Slunce / půda', st.sun + ' · ' + SOILS[st.soil]], ['Styl', STYLES[st.style]], ['Přání', st.wish || '—'], ['Údržba', CARES[st.care]]].map(function (r) { return '<tr><td>' + r[0] + '</td><td><strong>' + esc(r[1]) + '</strong></td></tr>'; }).join('')
+        + [['Fotka', st.photoName], ['Místo', st.geo ? st.geo.name + ' · ' + st.climate.zone : '—'], ['Fotka focená', ORIENTS[st.orient]], ['Dům / plot', HOUSES[st.house] + ' · plot ' + fences], ['Rozměry', (st.width || '?') + ' × ' + (st.depth || '?') + ' m'], ['Slunce / půda', st.sun + ' · ' + SOILS[st.soil]], ['Styl', STYLES[st.style]], ['Rozmístění', st.mode === 'sketch' && st.sketch.length ? 'podle vašeho náčrtu (' + st.sketch.length + ' tahů)' : 'navrhne AI'], ['Přání', st.wish || '—'], ['Údržba', CARES[st.care]]].map(function (r) { return '<tr><td>' + r[0] + '</td><td><strong>' + esc(r[1]) + '</strong></td></tr>'; }).join('')
         + '</tbody></table><h3>Jméno na titulní stranu projektu</h3><input type="text" placeholder="Např. Rodina Nováková" value="' + esc(st.name) + '" data-name>'
         + '<p class="mvg2-warn">Zkušební běh: AI poběží v levné testovací kvalitě (obrázek bude hrubší) a počítá se do denního limitu správce. Placení se napojí po testech.</p>'
         + '<div class="mvg2-nav"><button type="button" class="mvg2-btn mvg2-btn--ghost" data-back>Zpět</button><button type="button" class="mvg2-btn" data-run' + (st.busy ? ' disabled' : '') + '>Vytvořit návrh zahrady</button></div>'
@@ -118,6 +124,10 @@
     var bk = $('[data-back]'); if (bk) bk.onclick = function () { save(); st.step--; render(); };
     var ph = $('[data-photo]'); if (ph) ph.onchange = function () { if (ph.files[0]) loadPhoto(ph.files[0]); };
     var mk = $('[data-mark]'); if (mk) mk.onclick = markArea;
+    var sk = $('[data-sketch]'); if (sk) sk.onclick = function () {
+      save();
+      window.MVGreenSketch.open(st.original, st.editMask, st.sketch).then(function (r) { if (r) { st.sketch = r.strokes; st.sketchPreview = r.strokes.length ? r.preview : ''; } render(); });
+    };
     var geo = $('[data-geo]'); if (geo) geo.onclick = function () { save(); lookupPlace(); };
     var run = $('[data-run]'); if (run) run.onclick = function () { save(); runAll(); };
     var pr = $('[data-print]'); if (pr) pr.onclick = function () { document.body.classList.add('mvg2-printing'); window.print(); setTimeout(function () { document.body.classList.remove('mvg2-printing'); }, 500); };
@@ -140,7 +150,7 @@
       var s = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.cacheKey = url;
+      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url;
       render();
     }).catch(function (e) { alert(e.message); });
   }
@@ -266,7 +276,10 @@
     return 'Navrhni zahradu ve stylu „' + STYLES[st.style] + '“ s ' + { low: 'minimální', mid: 'střední', high: 'vyšší' }[st.care] + ' údržbou. '
       + (st.wish ? 'PŘÁNÍ ZÁKAZNÍKA (má přednost před vším ostatním a musí být na fotce jasně vidět): ' + st.wish + '. ' : '')
       + (st.removeWhere ? 'Věci, které zákazník nechal odstranit, stály ' + st.removeWhere + '. Když přání mluví o místě, kde stojí/stály (např. „kde stojí auta“), myslí PŘESNĚ tuto oblast – nové zpevněné plochy a zídky dej jen tam a zbytek upravované plochy řeš podle stylu (trávník, záhony). ' : '')
-      + (fences.length ? 'Plot je ' + fences.join(' a ') + ' – záhon u plotu veď jako souvislý pás těsně podél plotu, široký 1–1,5 m, vysoké rostliny přímo u plotu. ' : '')
+      + (hasSketch() ? 'ROZMÍSTĚNÍ PODLE NÁČRTU ZÁKAZNÍKA (druhý obrázek) – ZÁVAZNÉ, má přednost před vlastním nápadem: '
+          + window.MVGreenSketch.describe(st.sketch).replace(/\n/g, ' ')
+          + ' Každý zakreslený prvek udělej přesně v místě, tvaru a rozsahu jeho značky (zeď po celé délce čáry, schody v místě tyrkysové čáry a stejně široké, záhon jen v purpurové ploše, kačírek jen ve žluté, dlažba jen v modré, strom/keř na místě kolečka). Kde v upravované ploše žádná značka není, dej upravený trávník. ' : '')
+      + (fences.length && !hasSketch() ? 'Plot je ' + fences.join(' a ') + ' – záhon u plotu veď jako souvislý pás těsně podél plotu, široký 1–1,5 m, vysoké rostliny přímo u plotu. ' : '')
       + 'Trávník zachovej jako hlavní plochu. Záhony mají plynule zaoblenou hranu s obrubou a jsou mulčované. '
       + 'Použij POUZE tyto rostliny: ' + plants.map(function (p) { return p.name + ' (' + p.latin + ', výška ' + Math.round(p.height * 100) + ' cm)'; }).join('; ') + '. '
       + 'Rostliny sázej ve skupinách po 3–7 kusech stejného druhu, vysoké dozadu, nízké dopředu. '
@@ -275,11 +288,20 @@
       + (users.length ? 'Zahradu užívají: ' + users.join(', ') + ' – žádné trnité keře u cest. ' : '')
       + 'Výsledek musí vypadat jako skutečná fotografie realizované zahrady v ČR (' + (st.climate ? st.climate.zone : '') + ').';
   }
+  function hasSketch() { return st.mode === 'sketch' && st.sketch.length > 0 && !!window.MVGreenSketch; }
+  // Náčrt ve stejném letterboxu jako fotka pro AI (ai-safety prepare → box), aby značky seděly na pixel.
+  function guideFor(box) {
+    var g = window.MVGreenSketch.guide(st.original, st.sketch), c = document.createElement('canvas');
+    c.width = box.W; c.height = box.H;
+    var x = c.getContext('2d'); x.fillStyle = '#7f8a80'; x.fillRect(0, 0, box.W, box.H); x.drawImage(g, box.x, box.y, box.w, box.h);
+    return c.toDataURL('image/jpeg', 0.9);
+  }
   function hintsText() {
     var fences = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     return 'Dům na fotce: ' + HOUSES[st.house].toLowerCase() + '. Plot/hranice pozemku: ' + (fences.join(', ') || 'neuvedeno') + '. '
       + (st.width ? 'Šířka zahrady zleva doprava ≈ ' + st.width + ' m. ' : '') + (st.depth ? 'Hloubka od fotografa dozadu ≈ ' + st.depth + ' m. ' : '')
       + (st.removeWhere ? 'Odstraněné věci (např. auta) stály ' + st.removeWhere + '. ' : '')
+      + (hasSketch() ? 'NÁČRT ZÁKAZNÍKA (obrázek 4, závazný pro polohu prvků): ' + window.MVGreenSketch.describe(st.sketch).replace(/\n/g, ' ') + ' ' : '')
       + 'Přání zákazníka: ' + (st.wish || 'žádné') + '.';
   }
 
@@ -296,7 +318,9 @@
     var plantList = plants.map(function (p) { return p.name + ' (' + p.latin + ')'; }).join('; ');
     log('Vybrané rostliny: ' + plants.map(function (p) { return p.name; }).join(', '));
     log('Posílám fotku AI (upravuje se ' + Math.round(prepared.coverage * 100) + ' % fotky)…');
-    ajax('mvgreen_ai_preview_start', { image: prepared.image, mask: S.maskToApi(bufferMask, prepared.box), coreMask: S.maskToApi(editMask, prepared.box), instructions: promptText(plants) })
+    var startFields = { image: prepared.image, mask: S.maskToApi(bufferMask, prepared.box), coreMask: S.maskToApi(editMask, prepared.box), instructions: promptText(plants) };
+    if (hasSketch()) { startFields.guide = guideFor(prepared.box); log('Přikládám váš náčrt (' + st.sketch.length + ' tahů) – AI se podle něj řídí.'); }
+    ajax('mvgreen_ai_preview_start', startFields)
       .then(function (start) { log('AI kreslí návrh…'); return poll(start.jobId, 0); })
       .then(function (step) { if (!step.image) throw new Error(step.message || 'AI nevrátila obrázek.'); return loadImg(step.image); })
       .then(function (img) {
@@ -305,7 +329,7 @@
         ctx.after = done.canvas.toDataURL('image/jpeg', 0.9);
         ctx.before = scaled(original, 1600);
         log('AI čte z fotek přesný půdorys v metrech…');
-        return ajax('mvgreen_ai_plan_v2', { after: scaled(done.canvas, 1600), before: scaled(original, 1024), marked: st.maskPreview || '', plants: plantList, hints: hintsText() });
+        return ajax('mvgreen_ai_plan_v2', { after: scaled(done.canvas, 1600), before: scaled(original, 1024), marked: st.maskPreview || '', sketch: hasSketch() ? st.sketchPreview : '', plants: plantList, hints: hintsText() });
       })
       .then(function (pl) {
         ctx.plan = pl.plan;
@@ -380,7 +404,8 @@
         if (t === 'lawn') project.areas.push({ type: 'lawn', poly: pts });
         else if (t === 'house') project.areas.push({ type: 'building', poly: pts });
         else if (t === 'terrace' || t === 'paving') project.areas.push({ type: 'paving', poly: pts });
-        else if (t === 'structure') project.structures.push({ poly: pts });
+        else if (t === 'structure' || t === 'steps') project.structures.push({ poly: pts });
+        else if (t === 'gravel') project.beds.push({ surface: 'gravel', poly: pts, plants: [] });
         else if (t === 'bed') {
           var specs = (el.plants || []).map(function (x) { return byName(x.name); }).filter(Boolean);
           specs = specs.filter(function (s2, k) { return specs.indexOf(s2) === k; });
@@ -465,7 +490,7 @@
     var usersL = [st.users.kids && 'děti', st.users.dog && 'pes', st.users.cat && 'kočka'].filter(Boolean);
     var fencesL = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     var pctx = { logo: cfg.logo, place: project.place || st.place, date: project.date, number: 'MVG-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-4), name: st.name,
-      styleLabel: STYLES[st.style] + ', údržba ' + CARES[st.care].toLowerCase(), before: ctx.before, after: ctx.after, marked: st.maskPreview, facts: ctx.facts, plants: plants, climate: st.climate,
+      styleLabel: STYLES[st.style] + ', údržba ' + CARES[st.care].toLowerCase(), before: ctx.before, after: ctx.after, marked: st.maskPreview, sketch: hasSketch() ? st.sketchPreview : '', facts: ctx.facts, plants: plants, climate: st.climate,
       sizeLabel: '≈ ' + w.toFixed(0) + ' × ' + d.toFixed(0) + ' m', sun: st.sun, orient: st.orient, house: st.house, fences: fencesL, soil: st.soil, soilLabel: SOILS[st.soil],
       usersLabel: usersL.length ? usersL.join(', ') : 'bez dětí a zvířat', water: st.water, sheetHtml: sheet.html, project: project, lawnArea: Math.max(0, lawnArea), planNotes: plan.notes };
     st.result = { pdfHtml: window.MVGreenPdfV2.pages(pctx), before: ctx.before, after: ctx.after, plants: plants, facts: ctx.facts, plan: plan };

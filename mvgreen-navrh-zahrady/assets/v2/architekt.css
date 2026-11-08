@@ -182,3 +182,30 @@
   .mvg2-page{box-shadow:none;break-after:page;page-break-after:always}
   .mvg2-page--land{page:land}
 }
+
+/* Náčrt zákazníka (sketch.js, 2026-11-08) – celá obrazovka, ovládání palcem na mobilu. */
+html.mvg2-sk-open,html.mvg2-sk-open body{overflow:hidden}
+.mvg2-sk{position:fixed;inset:0;z-index:999999;background:#0F1A14;color:#fff;display:flex;flex-direction:column;font-family:Inter,system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none}
+.mvg2-sk *{box-sizing:border-box}
+.mvg2-sk__top{padding:10px 56px 8px 14px;display:flex;flex-direction:column;gap:2px;min-height:52px}
+.mvg2-sk__top strong{font-family:Montserrat,sans-serif;font-weight:800;font-size:16px}
+.mvg2-sk__top span{font-size:13px;color:#C9D8CE;line-height:1.3}
+.mvg2-sk__close{position:absolute;top:8px;right:10px;width:40px;height:40px;border-radius:50%;border:0;background:#24352B;color:#fff;font-size:24px;line-height:1;cursor:pointer}
+.mvg2-sk__stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px}
+.mvg2-sk__stage canvas{display:block;border-radius:6px;touch-action:none;cursor:crosshair}
+.mvg2-sk__tools{display:flex;gap:8px;overflow-x:auto;padding:8px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.mvg2-sk__tools::-webkit-scrollbar{display:none}
+.mvg2-sk__tools button{flex:0 0 auto;display:flex;align-items:center;gap:7px;min-height:44px;padding:0 14px;border-radius:22px;border:2px solid #34483C;background:#1B2A21;color:#fff;font:700 14px Inter,system-ui,sans-serif;cursor:pointer}
+.mvg2-sk__tools button.is-on{border-color:#fff;background:#2E5E2C}
+.mvg2-sk__tools i{display:block;width:16px;height:16px;border-radius:4px}
+.mvg2-sk__tools i.is-line{height:5px;width:20px;border-radius:3px}
+.mvg2-sk__tools i.is-dot{border-radius:50%;border:2px solid #fff}
+.mvg2-sk__bar{display:flex;align-items:center;gap:8px;padding:6px 10px calc(10px + env(safe-area-inset-bottom))}
+.mvg2-sk__bar>button{min-height:44px;padding:0 14px;border-radius:10px;border:0;background:#24352B;color:#fff;font:700 14px Inter,system-ui,sans-serif;cursor:pointer}
+.mvg2-sk__bar>button.is-main{margin-left:auto;background:#4CAF6A;color:#0F1A14;padding:0 22px}
+.mvg2-sk__sizes{display:flex;gap:6px}
+.mvg2-sk__sizes button{width:44px;height:44px;border-radius:10px;border:2px solid #34483C;background:#1B2A21;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mvg2-sk__sizes button.is-on{border-color:#fff}
+.mvg2-sk__sizes i{display:block;border-radius:50%;background:#fff}
+@media (max-width:420px){.mvg2-sk__bar>button{padding:0 10px;font-size:13px}.mvg2-sk__bar>button.is-main{padding:0 16px}}.mvg2-fig2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mvg2-fig2 .mvg2-page__photo--short{height:190px}

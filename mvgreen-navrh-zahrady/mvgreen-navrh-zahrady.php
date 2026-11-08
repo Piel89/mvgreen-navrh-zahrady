@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.232
+ * Version: 0.6.233
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.232');
+define('MVGREEN_VERSION', '0.6.233');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -106,8 +106,12 @@ add_shortcode('mvgreen_plan_pece', function () {
  * logic. Pure function: takes the current photo + this stage's mask + this stage's own instructions,
  * returns ['bytes'=>...] on success or ['error'=>...] on failure - no side effects, no job state.
  */
-function mvgreen_run_ai_image_stage($photo_bytes, $photo_mime, $mask_bytes, $stage_instructions, $size, $quality = 'xhigh') {
-    $prompt = "Toto je SKUTEČNÁ fotografie konkrétní zahrady. Proveď pouze lokální retuš uvnitř průhledné oblasti masky; mimo ni nesmí být změněn ani jeden pixel. Nevytvářej novou scénu, neměň dům, střechu, okna, fasádu, plot, terén, svah, stromy, oblohu ani úhel pohledu. Šedé okraje fotografie ponech šedé. Uprav přiloženou SKUTEČNOU fotografii zahrady jako realistickou fotografickou retuš, nikoliv jako nový obraz. ZACHOVEJ identický úhel kamery, kompozici, geometrii, stávající stromy, dům, plot, pozadí, oblohu, perspektivu a osvětlení. UPRAVUJ POUZE průhledné oblasti masky. Ostatní pixely ponech bez změny. Nové rostliny musí mít věrohodné měřítko, přirozenou strukturu a stíny odpovídající scéně. Žádný malovaný, ilustrativní, CGI, pohádkový ani přehnaně stylizovaný vzhled. Vhodné pro realistickou fotografii skutečně realizovatelné zahrady. Nezobrazuj žádné barevné značky ani text. Zadání: " . $stage_instructions;
+function mvgreen_run_ai_image_stage($photo_bytes, $photo_mime, $mask_bytes, $stage_instructions, $size, $quality = 'xhigh', $guide_bytes = '') {
+    // Náčrt zákazníka (AI architekt v2, 2026-11-08, Martin: „AI nemůže vědět, co my chceme“):
+    // volitelný DRUHÝ obrázek – stejná fotka se stejným ořezem, na které zákazník barevně nakreslil,
+    // kde chce zeď, schody, záhon, kačírek, dlažbu, strom… Maska se vztahuje jen k prvnímu obrázku.
+    $guide_text = $guide_bytes !== '' ? ' DRUHÝ PŘILOŽENÝ OBRÁZEK je NÁČRT ZÁKAZNÍKA: tatáž fotka se stejným výřezem, na které barevnými tahy a značkami zakreslil, KDE přesně chce jednotlivé prvky (význam barev je v zadání níže). Každý prvek umísti PŘESNĚ na místo jeho značky, ve stejném tvaru, rozsahu a směru – nic neposouvej, nic nevynechej a nic dalšího nepřidávej. Do výsledku značky, barvy ani čáry z náčrtu nekresli – výsledek je skutečná fotografie.' : '';
+    $prompt ="Toto je SKUTEČNÁ fotografie konkrétní zahrady. Proveď pouze lokální retuš uvnitř průhledné oblasti masky; mimo ni nesmí být změněn ani jeden pixel. Nevytvářej novou scénu, neměň dům, střechu, okna, fasádu, plot, terén, svah, stromy, oblohu ani úhel pohledu. Šedé okraje fotografie ponech šedé. Uprav přiloženou SKUTEČNOU fotografii zahrady jako realistickou fotografickou retuš, nikoliv jako nový obraz. ZACHOVEJ identický úhel kamery, kompozici, geometrii, stávající stromy, dům, plot, pozadí, oblohu, perspektivu a osvětlení. UPRAVUJ POUZE průhledné oblasti masky. Ostatní pixely ponech bez změny. Nové rostliny musí mít věrohodné měřítko, přirozenou strukturu a stíny odpovídající scéně. Žádný malovaný, ilustrativní, CGI, pohádkový ani přehnaně stylizovaný vzhled. Vhodné pro realistickou fotografii skutečně realizovatelné zahrady. Nezobrazuj žádné barevné značky ani text." . $guide_text . " Zadání: " . $stage_instructions;
     // WordPress HTTP API does not build multipart files automatically; compose a bounded body.
     $boundary = 'mvgreen_' . wp_generate_password(24, false, false);
     $parts = '';
@@ -130,6 +134,7 @@ function mvgreen_run_ai_image_stage($photo_bytes, $photo_mime, $mask_bytes, $sta
     $field('quality', $quality);
     $field('size', $size);
     $file('image[]', $photo_mime === 'image/jpeg' ? 'garden.jpg' : 'garden.png', $photo_bytes, $photo_mime);
+    if ($guide_bytes !== '') $file('image[]', 'nacrt-zakaznika.jpg', $guide_bytes, 'image/jpeg');
     $file('mask', 'edit-mask.png', $mask_bytes, 'image/png');
     $parts .= '--'.$boundary."--\r\n";
     $response = wp_remote_post('https://api.openai.com/v1/images/edits', [
@@ -479,6 +484,14 @@ $mvgreen_ai_preview_start_handle = function () {
     // coreMask decode (see its $_POST read above) - same PNG decode + dimension check as every
     // other mask here. Deliberately not fatal if missing/invalid: older cached client JS without
     // this field, or any other caller, still gets the previous (union-of-real-masks) behaviour.
+    // Volitelný náčrt zákazníka (JPEG, stejný rozměr jako fotka) – viz mvgreen_run_ai_image_stage.
+    $guide_bytes = '';
+    $guide_raw = isset($_POST['guide']) ? wp_unslash($_POST['guide']) : '';
+    if ($guide_raw !== '' && strlen($guide_raw) < 12000000 && preg_match('~^data:image/jpeg;base64,([A-Za-z0-9+/=]+)$~D', $guide_raw, $gm)) {
+        $gb = base64_decode($gm[1], true);
+        $gi = $gb ? @getimagesizefromstring($gb) : false;
+        if ($gi && $gi[2] === IMAGETYPE_JPEG && $gi[0] === $image_info[0] && $gi[1] === $image_info[1]) $guide_bytes = $gb;
+    }
     $core_mask_bytes = $core_mask_raw !== '' ? $decode_png($core_mask_raw) : false;
     if ($core_mask_bytes) {
         $cmi = @getimagesizefromstring($core_mask_bytes);
@@ -566,6 +579,7 @@ $mvgreen_ai_preview_start_handle = function () {
     mvgreen_harden_upload_dir($jobs_base);
     @file_put_contents($job_dir . '/original.bin', $original_bytes);
     @file_put_contents($job_dir . '/current.bin', $original_bytes);
+    if ($guide_bytes !== '') @file_put_contents($job_dir . '/guide.jpg', $guide_bytes);
     foreach ($stage_defs as $i => $sd) {
         @file_put_contents($job_dir . '/stage-' . $i . '.png', $sd['mask']);
     }
@@ -686,7 +700,9 @@ $mvgreen_ai_preview_step_handle = function () {
     // production 'xhigh', so repeated logic/positioning tests during development don't burn real
     // money at full quality. Every customer-paid design still gets the default 'xhigh' untouched.
     $admin_test_quality = $meta['is_admin'] ? 'low' : 'xhigh';
-    $r = mvgreen_run_ai_image_stage($current_bytes, $meta['current_mime'], $mask_bytes, $meta['instructions'][$i], $meta['size'], $admin_test_quality);
+    $guide_file = $meta['dir'] . '/guide.jpg';
+    $guide_bytes = is_readable($guide_file) ? (string) @file_get_contents($guide_file) : '';
+    $r = mvgreen_run_ai_image_stage($current_bytes, $meta['current_mime'], $mask_bytes, $meta['instructions'][$i], $meta['size'], $admin_test_quality, $guide_bytes);
     $partial_message = '';
     if (isset($r['error'])) {
         if ($i === 0) {
