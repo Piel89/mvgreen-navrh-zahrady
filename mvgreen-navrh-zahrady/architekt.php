@@ -16,6 +16,130 @@
  */
 if (!defined('ABSPATH')) exit;
 
+/**
+ * Půdorys v2 (2026-11-08, Martin po 1. testu: „záhon u plotu není u plotu, 4/11 má úplně špatné
+ * parametry“). Původní mvgreen_ai_plan četl jen výslednou fotku do mřížky 0–100 s domem vždy
+ * nahoře – u zahrady s domem vpravo a plotem vlevo pak plán neodpovídal skutečnosti. Tahle verze:
+ * dostane fotku PŘED s vyznačením toho, co zůstává, fotku PO, rozložení zahrady od zákazníka
+ * (kde je dům, plot, kam je fotka focená, známá délka) a vrací souřadnice rovnou v METRECH
+ * z pohledu fotografa (x zleva doprava, y od fotografa dozadu). Silnější model kvůli přesnosti.
+ */
+function mvgreen_plan_v2_schema() {
+    $num = ['type' => 'number'];
+    return [
+        'type' => 'object', 'additionalProperties' => false,
+        'required' => ['width_m', 'depth_m', 'elements', 'notes'],
+        'properties' => [
+            'width_m' => $num, 'depth_m' => $num, 'notes' => ['type' => 'string'],
+            'elements' => ['type' => 'array', 'items' => [
+                'type' => 'object', 'additionalProperties' => false,
+                'required' => ['type', 'label', 'is_new', 'points', 'width_m', 'plants'],
+                'properties' => [
+                    'type' => ['type' => 'string', 'enum' => ['house', 'terrace', 'paving', 'lawn', 'bed', 'path', 'stepping', 'fence', 'wall', 'hedge', 'tree', 'shrub', 'structure']],
+                    'label' => ['type' => 'string'],
+                    'is_new' => ['type' => 'boolean'],
+                    'points' => ['type' => 'array', 'items' => ['type' => 'array', 'items' => $num]],
+                    'width_m' => $num,
+                    'plants' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['name', 'count'], 'properties' => ['name' => ['type' => 'string'], 'count' => ['type' => 'integer']]]],
+                ],
+            ]],
+        ],
+    ];
+}
+add_action('wp_ajax_mvgreen_ai_plan_v2', function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
+    if (!defined('MVGREEN_OPENAI_API_KEY') || !MVGREEN_OPENAI_API_KEY) wp_send_json_error(['message' => 'Chybí MVGREEN_OPENAI_API_KEY.'], 400);
+    $img = function ($k) {
+        $v = isset($_POST[$k]) ? wp_unslash($_POST[$k]) : '';
+        return (preg_match('~^data:image/(jpeg|png);base64,[A-Za-z0-9+/=]+$~D', $v) && strlen($v) < 6000000) ? $v : '';
+    };
+    $after = $img('after'); $before = $img('before'); $marked = $img('marked');
+    if (!$after) wp_send_json_error(['message' => 'Chybí fotka návrhu.'], 400);
+    $hints = isset($_POST['hints']) ? sanitize_textarea_field(wp_unslash($_POST['hints'])) : '';
+    $plants = isset($_POST['plants']) ? sanitize_textarea_field(wp_unslash($_POST['plants'])) : '';
+    $prompt = "Jsi zahradní architekt a z fotografií vytváříš přesný PŮDORYS (pohled shora) skutečné zahrady.\n"
+        . "Obrázky: 1) fotka PO – navržená zahrada (z ní kresli nové záhony, cesty a trávník); "
+        . ($before ? "2) fotka PŘED – původní stav; " : '') . ($marked ? "3) fotka PŘED se zeleně vyznačeným tím, co zůstává beze změny (dům, plot, dlažba…); " : '')
+        . "všechny jsou ze STEJNÉHO místa.\n"
+        . "SOUŘADNICE V METRECH z pohledu fotografa: x = 0 je levý okraj viditelné zahrady, x roste doprava; y = 0 je místo fotografa (přední okraj), y roste dozadu od fotografa. "
+        . "Perspektiva: vzdálené věci jsou na fotce menší a výš – přepočítej je na skutečné metry. Měřítko odvoď ze známých věcí (dveře ~0,9 m, panel plotu ~2 m, dlaždice ~0,2 m) a z údajů zákazníka.\n"
+        . "Pro každý prvek dej points: plochy (house, terrace, paving, lawn, bed, structure) jako mnohoúhelník 4–12 bodů po obvodu; čáry (fence, wall, hedge, path, stepping) jako lomená čára 2–8 bodů se šířkou width_m; strom/keř jako 1 bod. "
+        . "Nové prvky z návrhu mají is_new true, stávající false. Záhon zakresli PŘESNĚ tam a v takovém tvaru, kde je na fotce PO (např. úzký pás podél plotu = úzký pás podél čáry plotu). Trávník zakresli jako celou zbývající travnatou plochu. "
+        . "U každého nového záhonu vyjmenuj rostliny z fotky PO, jen z tohoto seznamu: {$plants}. "
+        . "Popisky česky a krátce. Do notes 1–2 věty, co je odhad.\n"
+        . "ÚDAJE OD ZÁKAZNÍKA (mají přednost před odhadem): {$hints}";
+    $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $after, 'detail' => 'high']]];
+    if ($before) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => 'low']];
+    if ($marked) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $marked, 'detail' => 'low']];
+    $model = defined('MVGREEN_OPENAI_PLAN_V2_MODEL') ? MVGREEN_OPENAI_PLAN_V2_MODEL : 'gpt-4.1';
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'headers' => ['Authorization' => 'Bearer ' . MVGREEN_OPENAI_API_KEY, 'Content-Type' => 'application/json'],
+        'body' => wp_json_encode(['model' => $model, 'messages' => [['role' => 'user', 'content' => $content]],
+            'response_format' => ['type' => 'json_schema', 'json_schema' => ['name' => 'garden_plan_v2', 'strict' => true, 'schema' => mvgreen_plan_v2_schema()]]]),
+        'timeout' => 150,
+    ]);
+    if (is_wp_error($response)) wp_send_json_error(['message' => 'Spojení s AI selhalo: ' . $response->get_error_message()], 200);
+    $json = json_decode(wp_remote_retrieve_body($response), true);
+    $status = wp_remote_retrieve_response_code($response);
+    if ($status < 200 || $status >= 300) wp_send_json_error(['message' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.'], 200);
+    $plan = json_decode($json['choices'][0]['message']['content'] ?? '', true);
+    if (!is_array($plan) || empty($plan['elements'])) wp_send_json_error(['message' => 'AI nevrátila použitelný půdorys.'], 200);
+    wp_send_json_success(['plan' => $plan, 'model' => $model]);
+});
+
+/**
+ * Fotka rostliny pro karty v PDF (2026-11-08): hledá na Wikimedia Commons jen fotky s licencí pro
+ * komerční použití (CC0, CC BY, volné dílo), stáhne náhled k nám na server a vrací místní adresu
+ * + autora a licenci (uvádí se na straně 11). Prohlížeč zákazníka se tak na Wikimedii nikdy
+ * nepřipojuje (GDPR) a každá rostlina se hledá jen jednou (výsledek se pamatuje).
+ */
+add_action('wp_ajax_mvgreen_plant_photo', function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
+    $latin = isset($_POST['latin']) ? sanitize_text_field(wp_unslash($_POST['latin'])) : '';
+    if ($latin === '' || strlen($latin) > 120) wp_send_json_error(['message' => 'Chybí název.'], 400);
+    $key = 'mvgreen_plant_photo_' . md5(strtolower($latin));
+    $cached = get_option($key);
+    if (is_array($cached)) wp_send_json_success($cached);
+    $ua = 'MVGreenGardenDesigner/1.0 (plant reference photos; mvgreen.cz)';
+    $queries = [$latin, preg_replace('/\s*[‘\'"].*$/u', '', $latin)];
+    $found = null;
+    foreach (array_unique($queries) as $q) {
+        $url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=15&gsrsearch='
+            . rawurlencode($q . ' filetype:bitmap') . '&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=640';
+        $r = wp_remote_get($url, ['headers' => ['User-Agent' => $ua], 'timeout' => 20]);
+        if (is_wp_error($r) || wp_remote_retrieve_response_code($r) !== 200) continue;
+        $pages = json_decode(wp_remote_retrieve_body($r), true)['query']['pages'] ?? [];
+        uasort($pages, function ($a, $b) { return ($a['index'] ?? 0) <=> ($b['index'] ?? 0); });
+        foreach ($pages as $p) {
+            $ii = $p['imageinfo'][0] ?? null; if (!$ii) continue;
+            $lic = $ii['extmetadata']['LicenseShortName']['value'] ?? '';
+            if (!preg_match('/^(CC0|CC BY [0-9.]+|Public domain)$/i', $lic) || ($ii['width'] ?? 0) < 800) continue;
+            $found = ['thumb' => $ii['thumburl'], 'license' => $lic, 'author' => trim(wp_strip_all_tags($ii['extmetadata']['Artist']['value'] ?? 'neuveden')), 'page' => $ii['descriptionurl'] ?? ''];
+            break;
+        }
+        if ($found) break;
+    }
+    $result = ['url' => '', 'license' => '', 'author' => '', 'page' => ''];
+    if ($found) {
+        $up = wp_upload_dir();
+        $dir = trailingslashit($up['basedir']) . 'mvgreen-plants';
+        if (wp_mkdir_p($dir)) {
+            if (function_exists('mvgreen_harden_upload_dir')) mvgreen_harden_upload_dir($dir);
+            $img = wp_remote_get($found['thumb'], ['headers' => ['User-Agent' => $ua], 'timeout' => 30]);
+            $bytes = is_wp_error($img) ? '' : wp_remote_retrieve_body($img);
+            if ($bytes && substr($bytes, 0, 3) === "\xFF\xD8\xFF") {
+                $file = sanitize_title($latin) . '.jpg';
+                @file_put_contents($dir . '/' . $file, $bytes);
+                $result = ['url' => trailingslashit($up['baseurl']) . 'mvgreen-plants/' . $file, 'license' => $found['license'], 'author' => $found['author'], 'page' => $found['page']];
+            }
+        }
+    }
+    update_option($key, $result, false);
+    wp_send_json_success($result);
+});
+
 add_shortcode('mvgreen_ai_architekt', function ($atts) {
     if (post_password_required()) return get_the_password_form();
     $a = shortcode_atts(['pred' => '', 'po' => '', 'ukazka' => ''], $atts, 'mvgreen_ai_architekt');
@@ -23,13 +147,12 @@ add_shortcode('mvgreen_ai_architekt', function ($atts) {
     $v = MVGREEN_VERSION;
     wp_enqueue_style('mvgreen-reference-font', $base . 'assets/fonts.css', [], $v);
     wp_enqueue_style('mvgreen-architekt', $base . 'assets/v2/architekt.css', ['mvgreen-reference-font'], $v);
-    wp_enqueue_script('mvgreen-plants-805', $base . 'assets/catalog-805.js', [], $v, true);
     wp_enqueue_script('mvgreen-ai-safety', $base . 'assets/ai-safety.js', [], $v, true);
     wp_enqueue_script('mvgreen-paint-mask', $base . 'assets/mg-paint-mask.js', ['mvgreen-ai-safety'], $v, true);
-    wp_enqueue_script('mvgreen-brief', $base . 'assets/garden-brief.js', [], $v, true);
     wp_enqueue_script('mvgreen-plan-render', $base . 'assets/v2/plan-render.js', [], $v, true);
+    wp_enqueue_script('mvgreen-plants-v2', $base . 'assets/v2/plants-curated.js', [], $v, true);
     wp_enqueue_script('mvgreen-architekt-pdf', $base . 'assets/v2/architekt-pdf.js', ['mvgreen-plan-render'], $v, true);
-    wp_enqueue_script('mvgreen-architekt', $base . 'assets/v2/architekt.js', ['mvgreen-plan-render', 'mvgreen-architekt-pdf', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-plants-805', 'mvgreen-brief'], $v, true);
+    wp_enqueue_script('mvgreen-architekt', $base . 'assets/v2/architekt.js', ['mvgreen-plan-render', 'mvgreen-architekt-pdf', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-plants-v2'], $v, true);
     $logo_id = (int) get_theme_mod('custom_logo', 0);
     if (!$logo_id) $logo_id = (int) get_option('site_logo', 0);
     $logo = $logo_id ? wp_get_attachment_image_url($logo_id, 'medium') : '';

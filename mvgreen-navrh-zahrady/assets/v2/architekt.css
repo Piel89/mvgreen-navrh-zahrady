@@ -80,7 +80,10 @@
 .mvg2-compare+label input{width:100%}
 
 /* ---------- strany PDF (A4 = 794 × 1123 px při 96 dpi) ---------- */
-.mvg2-pdf{display:flex;flex-direction:column;align-items:center;gap:24px;background:#E9E7E0;padding:24px 0;border-radius:14px;overflow-x:auto}
+/* Náhled PDF: strany mají pevnou velikost A4 v px; obal je na obrazovce zmenší na šířku okna
+   (architekt.js fitSheets), takže strana 4 na šířku už není oříznutá (chyba z 1. testu). */
+.mvg2-pdf-wrap{overflow:hidden;background:#E9E7E0;border-radius:14px}
+.mvg2-pdf{width:1163px;display:flex;flex-direction:column;align-items:center;gap:24px;padding:20px;transform-origin:0 0}
 .mvg2-page{width:794px;height:1123px;flex:none;background:var(--paper);padding:0 56px 30px;display:flex;flex-direction:column;gap:14px;overflow:hidden;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
 .mvg2-page--land{width:1123px;height:794px;padding:0 20px 16px}
 .mvg2-page__head{display:flex;justify-content:space-between;align-items:center;padding:20px 0 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
@@ -91,6 +94,13 @@
 .mvg2-page__photo,.mvg2-fig img{width:100%;height:300px;object-fit:cover;border-radius:10px;display:block}
 .mvg2-fig{margin:0}.mvg2-fig figcaption{font-size:12px;color:var(--muted);margin-top:4px}
 .mvg2-page__src{font-size:10.5px;color:#5B6660;margin:auto 0 0}
+.mvg2-page__photo--short{height:250px}
+.mvg2-orient{display:grid;grid-template-columns:190px minmax(0,1fr);gap:16px;align-items:start}
+.mvg2-dims{position:relative;width:682px;height:360px;background:#fff;border:1px solid #E3E2D9;border-radius:10px}
+.mvg2-dims svg{display:block}
+.mvg2-dims span{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:11.5px;font-weight:800;padding:1px 6px;border-radius:5px;background:#fff}
+.mvg2-dims__dim{border:1.5px solid #B5371F;color:#B5371F}
+.mvg2-dims__bed{border:1px solid #8C6C4D;color:#5A4632}
 .mvg2-lead{font-size:14px;color:#3F4A44;margin:0}
 .mvg2-cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .mvg2-cards3>div{background:#fff;border:1px solid #E3E2D9;border-radius:10px;padding:9px 11px;display:flex;flex-direction:column}
@@ -167,7 +177,8 @@
   @page land{size:A4 landscape;margin:0}
   body.mvg2-printing *{visibility:hidden}
   body.mvg2-printing .mvg2-pdf,body.mvg2-printing .mvg2-pdf *{visibility:visible}
-  body.mvg2-printing .mvg2-pdf{position:absolute;left:0;top:0;padding:0;gap:0;background:none;display:block}
+  body.mvg2-printing .mvg2-pdf{position:absolute;left:0;top:0;padding:0;gap:0;background:none;display:block;transform:none!important;width:auto}
+  body.mvg2-printing .mvg2-pdf-wrap{height:auto!important;overflow:visible}
   .mvg2-page{box-shadow:none;break-after:page;page-break-after:always}
   .mvg2-page--land{page:land}
 }

@@ -60,9 +60,37 @@
       }
     }
     var placed = [];
+    // Podíly ploch se normalizují na 100 % (jinak by první druhy zabraly celý záhon). Každá role má
+    // svůj pruh: back = u plotu/zdi (nebo uprostřed u volného záhonu), front = u kraje k trávníku,
+    // mid = mezi nimi – po 1. testu v úzkém záhonu u plotu zabraly místo jen vysoké rostliny.
+    var shareSum = species.reduce(function (s, sp) { return s + (sp.share || 1); }, 0) || 1;
+    var depthOf = function (c) { return bed.back ? c.back : -c.edge; };
+    var depths = cand.map(depthOf).sort(function (a, b) { return a - b; });
+    var dMin = depths[0] || 0, dMax = depths[depths.length - 1] || 1, dSpan = (dMax - dMin) || 1;
+    var band = { back: 0, mid: 0.5, front: 1 };
+    // Počty po řadách (jako zahradník): délka záhonu / spon, rozdělená mezi druhy stejné role;
+    // u hlubokého záhonu víc řad. Plocha/spon² u dlouhého úzkého pásu dávala 1 hortenzii na 10 m.
+    var perim = 0, backLen = 0;
+    poly.forEach(function (q, i) { var n = poly[(i + 1) % poly.length], l = Math.hypot(n[0] - q[0], n[1] - q[1]); perim += l; if (bed.back && bed.back.indexOf(i) >= 0) backLen += l; });
+    var bedLen = bed.back && backLen > 0 ? backLen : perim / 2;
+    var bedDepth = Math.max(0.5, area / bedLen);
+    // Úzký záhon (typicky pás u plotu) nemá místo na tři řady: zahradník dá vysoké dozadu a nízké
+    // dopředu a prostřední řadu vynechá – jinak se nízké rostliny do popředí nevešly (2. test).
+    var maxSpon = function (role) { return Math.max.apply(null, [0].concat(species.filter(function (s) { return s.role === role; }).map(function (s) { return s.spon; }))); };
+    if (maxSpon('back') && maxSpon('front') && maxSpon('mid') && bedDepth < (maxSpon('back') + maxSpon('mid') + maxSpon('front')) * 0.85) {
+      species = species.filter(function (s) { return s.role !== 'mid'; });
+    }
+    var roleCount = {};
+    species.forEach(function (sp) { var r = sp.role || 'mid'; roleCount[r] = (roleCount[r] || 0) + 1; });
+    var roles = Object.keys(roleCount).length || 1;
     species.forEach(function (sp) {
-      var target = Math.max(1, Math.round(area * sp.share / (sp.spon * sp.spon)));
-      var order = cand.slice().sort(function (a, b) { return bed.back ? a.back - b.back : b.edge - a.edge; });
+      var rows = Math.max(1, Math.floor(bedDepth / roles / sp.spon));
+      var target = sp.role ? Math.max(1, Math.round(bedLen / sp.spon / roleCount[sp.role] * rows)) : Math.max(1, Math.round(area * (sp.share || 1) / shareSum / (sp.spon * sp.spon)));
+      var aim = band[sp.role] != null ? band[sp.role] : 0.5;
+      var nd = function (c) { return Math.abs((depthOf(c) - dMin) / dSpan - aim); };
+      // Druh s rolí smí jen do svého pruhu (třetina hloubky záhonu) – jinak střední rostliny
+      // zaplnily i lem a nízké do popředí se už nevešly (2. test).
+      var order = cand.filter(function (c) { return !sp.role || nd(c) <= 0.34; }).sort(function (a, b) { return nd(a) - nd(b); });
       var n = 0;
       for (var i = 0; i < order.length && n < target; i++) {
         var c = order[i];
@@ -225,7 +253,7 @@
     placedAll.sort(function (a, b) { return a.p[1] - b.p[1]; });
     out += '<g>';
     placedAll.forEach(function (pl) {
-      var sp = pl.sp, r = Math.max(6, (pl.existing ? sp.r : sp.spon * 0.55) * sc);
+      var sp = pl.sp, r = Math.max(6, (pl.existing ? sp.r : Math.min(sp.spon * 0.55, 0.6)) * sc);
       out += symbol(sp.kind, ox + pl.p[0] * sc, oy + pl.p[1] * sc, r, sp.leaf, sp.flower, rnd);
     });
     out += '</g>';

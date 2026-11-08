@@ -17,6 +17,75 @@
   function title(cap, h) { return '<div class="mvg2-page__title"><span>' + esc(cap) + '</span><h2>' + esc(h) + '</h2></div>'; }
   function inRange(m, a, b) { return a <= b ? m >= a && m <= b : m >= a || m <= b; }
 
+  /* ---------- světové strany a slunce (strana 2) ---------- */
+  var DIRS = ['S', 'V', 'J', 'Z'], DIR_NAME = { S: 'sever', V: 'východ', J: 'jih', Z: 'západ' };
+  function rot(d, k) { return DIRS[(DIRS.indexOf(d) + k + 4) % 4]; }
+  // Na které světové straně zahrady je plot vlevo/vpravo/vzadu, když fotograf hledí směrem `o`.
+  function sideDir(o, side) { return side === 'vzadu' ? o : side === 'vlevo' ? rot(o, -1) : side === 'vpravo' ? rot(o, 1) : rot(o, 2); }
+  function sunNotes(ctx) {
+    var o = ctx.orient;
+    if (!o || o === 'unknown') return ['Světové strany jste nezadali – slunce a stín odhadujeme jen podle volby „' + (ctx.sun || 'slunce') + '“. Pro přesnější výběr rostlin zadejte příště, kam je fotka focená.'];
+    var out = ['Fotka je focená směrem na ' + DIR_NAME[o] + '. Horní okraj výkresu na straně 4 je tedy ' + DIR_NAME[o] + '.'];
+    (ctx.fences || []).forEach(function (side) {
+      var d = sideDir(o, side);
+      var txt = { S: 'je na severní straně – pás podél něj je otočený k jihu a má plné slunce (nejlepší místo pro kvetoucí záhon)', J: 'je na jižní straně – pás těsně u něj je většinu dne ve stínu plotu, hodí se rostliny do polostínu', V: 'je na východní straně – pás u něj je dopoledne ve stínu, odpoledne na slunci', Z: 'je na západní straně – pás u něj je dopoledne na slunci, odpoledne ve stínu' }[d];
+      out.push('Plot ' + side + ' ' + txt + '.');
+    });
+    if (ctx.house && ctx.house !== 'none') {
+      var hd = sideDir(o, { left: 'vlevo', right: 'vpravo', back: 'vzadu', behind: 'za' }[ctx.house]);
+      out.push('Dům stojí na ' + { S: 'severní', V: 'východní', J: 'jižní', Z: 'západní' }[hd] + ' straně – ' + (hd === 'J' ? 'plochy u něj jsou většinu dne v jeho stínu.' : hd === 'S' ? 'plochy u něj jsou na slunci a v teple od zdi.' : hd === 'V' ? 'stín vrhá dopoledne.' : 'stín vrhá odpoledne.'));
+    }
+    return out;
+  }
+  function compassSvg(o) {
+    var known = o && o !== 'unknown', top = known ? o : '?';
+    var L = known ? { t: o, r: rot(o, 1), b: rot(o, 2), l: rot(o, -1) } : { t: '?', r: '?', b: '?', l: '?' };
+    var sunPos = { t: [100, 34], r: [166, 100], b: [100, 166], l: [34, 100] }, sunKey = known ? Object.keys(L).filter(function (k) { return L[k] === 'J'; })[0] : null;
+    return '<svg width="190" height="190" viewBox="0 0 200 200" role="img" aria-label="Orientace zahrady ke světovým stranám">'
+      + '<circle cx="100" cy="100" r="88" fill="#FFFFFF" stroke="#C9C4B6" stroke-width="1.5"/>'
+      + (sunKey ? '<circle cx="' + sunPos[sunKey][0] + '" cy="' + sunPos[sunKey][1] + '" r="12" fill="#F2B544"/>' : '')
+      + '<rect x="68" y="78" width="64" height="44" rx="4" fill="#B4D392" stroke="#2E5E2C" stroke-width="1.5"/>'
+      + '<path d="M100 160 L100 128 M94 136 L100 127 L106 136" fill="none" stroke="#142019" stroke-width="2"/>'
+      + '<text x="100" y="22" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="14" font-weight="800" fill="#142019">' + L.t + '</text>'
+      + '<text x="186" y="105" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="14" font-weight="800" fill="#142019">' + L.r + '</text>'
+      + '<text x="100" y="196" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="14" font-weight="800" fill="#142019">' + L.b + '</text>'
+      + '<text x="14" y="105" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="14" font-weight="800" fill="#142019">' + L.l + '</text>'
+      + '<text x="100" y="104" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#142019">zahrada</text>'
+      + '<text x="100" y="176" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#4A554F">směr focení ↑</text></svg>';
+  }
+
+  /* ---------- rozměrový výkres s kótami (strana 5) ---------- */
+  function dimsDrawing(p) {
+    var W = 682, H = 360, M = 34, w = p.site.w, h = p.site.h, sc = Math.min((W - 2 * M) / w, (H - 2 * M) / h);
+    var ox = M + ((W - 2 * M) - w * sc) / 2, oy = M / 2 + ((H - 2 * M) - h * sc) / 2;
+    var X = function (m) { return Math.round((ox + m * sc) * 10) / 10; }, Y = function (m) { return Math.round((oy + m * sc) * 10) / 10; };
+    var path = function (pts, close) { return pts.map(function (q, i) { return (i ? 'L' : 'M') + X(q[0]) + ' ' + Y(q[1]); }).join(' ') + (close === false ? '' : ' Z'); };
+    var fmt = function (v) { return v.toFixed(1).replace('.', ','); };
+    var svg = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">'
+      + '<rect x="' + X(0) + '" y="' + Y(0) + '" width="' + (w * sc) + '" height="' + (h * sc) + '" fill="#F1F5EA" stroke="#8E8676" stroke-width="1.5"/>';
+    var labels = [];
+    p.areas.filter(function (a) { return a.type === 'paving' || a.type === 'building'; }).forEach(function (a) { svg += '<path d="' + path(a.poly) + '" fill="' + (a.type === 'building' ? '#B9B4AA' : '#DDD7CA') + '" stroke="#8E8676"/>'; });
+    (p.paths || []).forEach(function (pa) { svg += '<path d="' + path(pa.line, false) + '" fill="none" stroke="#E2DED2" stroke-width="' + Math.max(4, pa.width * sc) + '" stroke-linecap="round"/>'; });
+    (p.beds || []).forEach(function (b, i) {
+      svg += '<path d="' + path(b.poly) + '" fill="#E9DFC8" stroke="#8C6C4D" stroke-width="1.5"/>';
+      var xs = b.poly.map(function (q) { return q[0]; }), ys = b.poly.map(function (q) { return q[1]; });
+      var bw = Math.max.apply(null, xs) - Math.min.apply(null, xs), bh = Math.max.apply(null, ys) - Math.min.apply(null, ys);
+      var cx = xs.reduce(function (s, v) { return s + v; }, 0) / xs.length, cy = ys.reduce(function (s, v) { return s + v; }, 0) / ys.length;
+      // Popisek úzkého záhonu u kraje by překryl kótu – posune se dovnitř zahrady.
+      var lxPos = X(cx) < X(0) + 90 ? X(Math.max.apply(null, xs)) + 80 : X(cx) > X(w) - 90 ? X(Math.min.apply(null, xs)) - 80 : X(cx);
+      labels.push({ x: lxPos, y: Y(cy) + i * 22, t: 'Záhon ' + (i + 1) + ': ' + fmt(bw) + ' × ' + fmt(bh) + ' m', cls: 'bed' });
+    });
+    (p.walls || []).forEach(function (wl) { svg += '<path d="' + path(wl.line, false) + '" fill="none" stroke="#7E7566" stroke-width="5"/>'; });
+    (p.fences || []).forEach(function (f) { svg += '<path d="' + path(f.line, false) + '" fill="none" stroke="#5C3B2C" stroke-width="4"/>'; });
+    // kóty celé zahrady
+    var by = Y(h) + 16, lx = X(0) - 16;
+    svg += '<path d="M' + X(0) + ' ' + by + ' L' + X(w) + ' ' + by + ' M' + X(0) + ' ' + (by - 6) + ' L' + X(0) + ' ' + (by + 6) + ' M' + X(w) + ' ' + (by - 6) + ' L' + X(w) + ' ' + (by + 6) + '" stroke="#B5371F" stroke-width="1.6"/>';
+    svg += '<path d="M' + lx + ' ' + Y(0) + ' L' + lx + ' ' + Y(h) + ' M' + (lx - 6) + ' ' + Y(0) + ' L' + (lx + 6) + ' ' + Y(0) + ' M' + (lx - 6) + ' ' + Y(h) + ' L' + (lx + 6) + ' ' + Y(h) + '" stroke="#B5371F" stroke-width="1.6"/></svg>';
+    labels.push({ x: (X(0) + X(w)) / 2, y: by, t: 'šířka ≈ ' + fmt(w) + ' m', cls: 'dim' });
+    labels.push({ x: lx, y: (Y(0) + Y(h)) / 2, t: fmt(h) + ' m', cls: 'dim' });
+    return '<div class="mvg2-dims">' + svg + labels.map(function (l) { return '<span class="mvg2-dims__' + l.cls + '" style="left:' + l.x + 'px;top:' + l.y + 'px">' + esc(l.t) + '</span>'; }).join('') + '</div>';
+  }
+
   function pages(ctx) {
     var f = ctx.facts || {}, plants = ctx.plants, out = [];
     var total = plants.reduce(function (s, p) { return s + p.count * (p.price || 0); }, 0);
@@ -35,15 +104,15 @@
 
     // 2 – rozbor stanoviště
     var c = ctx.climate || {};
-    var cards = [[c.elevation ? c.elevation + ' m n. m.' : '—', 'nadmořská výška'], [c.precip ? c.precip + ' mm' : '—', 'srážky za rok'], [c.zone || '—', 'mrazuvzdornost (orientačně)'], [ctx.sizeLabel, 'upravovaná plocha'], [ctx.sunLabel, 'slunce'], [ctx.soilLabel, 'půda']];
+    var cards = [[c.elevation ? c.elevation + ' m n. m.' : '—', 'nadmořská výška'], [c.precip ? c.precip + ' mm' : '—', 'srážky za rok'], [c.zone || '—', 'mrazuvzdornost (orientačně)'], [ctx.sizeLabel, 'upravovaná plocha'], [ctx.sun || '—', 'slunce (vaše zadání)'], [ctx.soilLabel, 'půda']];
     out.push('<section class="mvg2-page">' + head(ctx, 2) + title('ROZBOR STANOVIŠTĚ', 'Z čeho návrh vychází')
-      + (ctx.before ? '<img class="mvg2-page__photo" src="' + esc(ctx.before) + '" alt="Původní stav zahrady">' : '')
+      + (ctx.marked || ctx.before ? '<figure class="mvg2-fig"><img class="mvg2-page__photo mvg2-page__photo--short" src="' + esc(ctx.marked || ctx.before) + '" alt="Původní stav s vyznačením"><figcaption>' + (ctx.marked ? '<strong>Zeleně</strong> je vyznačeno, co zůstává beze změny (vaše označení). Zbytek smí návrh upravit.' : 'Původní stav – vaše fotka.') + '</figcaption></figure>' : '')
       + '<div class="mvg2-cards3">' + cards.map(function (x) { return '<div><strong>' + esc(x[0]) + '</strong><span>' + esc(x[1]) + '</span></div>'; }).join('') + '</div>'
-      + '<div class="mvg2-notes">'
-      + '<div><strong>Co zůstává</strong><span>Vše, co jste na fotce neoznačili k úpravě – dům, plot, dlažba a další stávající prvky zůstávají přesně tak, jak jsou.</span></div>'
+      + '<div class="mvg2-orient">' + compassSvg(ctx.orient) + '<div class="mvg2-notes">'
+      + '<div><strong>Slunce a stín</strong><span>' + sunNotes(ctx).map(esc).join(' ') + '</span></div>'
       + '<div><strong>Půda</strong><span>' + (ctx.soil === 'unknown' ? 'Zadali jste „nevím“ – počítáme s běžnou hlinitou půdou. Rychlý test: vlhká hrst zeminy se drolí = písčitá, dá se vyválet ve váleček = jílovitá.' : 'Podle vašeho zadání: ' + esc(ctx.soilLabel) + '.') + '</span></div>'
       + '<div><strong>Kdo bude zahradu užívat</strong><span>' + esc(ctx.usersLabel) + '</span></div>'
-      + '</div><p class="mvg2-page__src">Klima: Open-Meteo (nadmořská výška), NASA POWER (srážky). Rozměry odhadnuté z fotky – před výsadbou ověřte pásmem.</p></section>');
+      + '</div></div><p class="mvg2-page__src">Klima: Open-Meteo (nadmořská výška), NASA POWER (srážky, dlouhodobý průměr). Mrazová zóna odhadnutá podle nadmořské výšky. Rozměry odhadnuté z fotky – před výsadbou ověřte pásmem.</p></section>');
 
     // 3 – koncept, před a po
     out.push('<section class="mvg2-page">' + head(ctx, 3) + title('KONCEPT', f.title || 'Koncept zahrady')
@@ -56,9 +125,12 @@
     out.push('<section class="mvg2-page mvg2-page--land">' + head(ctx, 4) + '<div class="mvg2-land__sheet">' + ctx.sheetHtml + '</div></section>');
 
     // 5 – rozměry a spon
+    var area = window.MVGreenPlanV2 ? window.MVGreenPlanV2.polyArea : function () { return 0; };
     out.push('<section class="mvg2-page">' + head(ctx, 5) + title('ROZMĚRY A SPON', 'Podle čeho vytyčit a sázet')
-      + '<table class="mvg2-table"><thead><tr><th>Plocha</th><th>Rozměr (cca)</th><th>Výměra</th></tr></thead><tbody>'
-      + ctx.areas.map(function (a) { return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.dims) + '</td><td>' + esc(a.area) + '</td></tr>'; }).join('') + '</tbody></table>'
+      + (ctx.project ? dimsDrawing(ctx.project) : '')
+      + '<table class="mvg2-table"><thead><tr><th>Plocha</th><th>Výměra</th></tr></thead><tbody>'
+      + (ctx.project ? ctx.project.beds.map(function (b, i) { return '<tr><td>Záhon ' + (i + 1) + '</td><td>' + area(b.poly).toFixed(1).replace('.', ',') + ' m²</td></tr>'; }).join('') : '')
+      + '<tr><td>Trávník</td><td>' + Math.round(ctx.lawnArea || 0) + ' m²</td></tr></tbody></table>'
       + '<table class="mvg2-table"><thead><tr><th>Rostlina</th><th>Spon</th><th>Velikost v dospělosti</th></tr></thead><tbody>'
       + plants.map(function (p) { return '<tr><td><strong>' + esc(p.name) + '</strong></td><td>' + (p.spacing ? p.spacing + ' cm' : '—') + '</td><td>' + (p.height_cm ? p.height_cm + ' × ' + p.width_cm + ' cm' : '—') + '</td></tr>'; }).join('') + '</tbody></table>'
       + '<div class="mvg2-tip"><strong>Jak vytyčit:</strong> od hrany dlažby nebo domu naměřte rozměry pásmem, okraje záhonů a cest vyznačte provázkem mezi kolíky a obtáhněte pískem. Rozměry jsou odhadnuté z fotky – když se skutečnost liší, upravte šířky záhonů, spon rostlin zachovejte.</div></section>');
@@ -114,7 +186,8 @@
       + '<div><strong>Podzemní sítě</strong><span>Než budete kopat hlouběji než 30 cm, zjistěte, kudy vedou voda, plyn, elektřina a internet – přípojky najdete v dokumentaci domu, u sítí v ulici si vyžádejte vyjádření od správců (zpravidla online).</span></div>'
       + '<div><strong>Vzdálenost od hranice pozemku</strong><span>Podle § 1017 občanského zákoníku se stromy, které obvykle dorůstají nad 3 m, sázejí nejméně 3 m od společné hranice, ostatní stromy 1,5 m (měří se od kmene).</span></div>'
       + '<div><strong>Děti a zvířata</strong><span>' + (safeList.length ? 'Podle databáze ASPCA jsou pro psy a kočky jedovaté: ' + esc(safeList.join(', ')) + '. ' : '') + 'U ostatních rostlin údaj ověřte, než je vysadíte tam, kde si hrají děti nebo pes.</span></div>'
-      + '</div><div class="mvg2-sources"><span class="mvg2-cap">ZDROJE</span><span>Jedovatost: ASPCA Animal Poison Control (aspca.org). Hranice pozemku: zákon č. 89/2012 Sb., § 1017. Klima: NASA POWER, Open-Meteo. Údaje o rostlinách a ceny: orientační AI odhad. Vizualizace: AI úprava vaší fotky – rostliny na ní jsou ilustrační.</span></div>'
+      + '</div><div class="mvg2-sources"><span class="mvg2-cap">ZDROJE</span><span>Jedovatost: ASPCA Animal Poison Control (aspca.org). Hranice pozemku: zákon č. 89/2012 Sb., § 1017. Klima: NASA POWER, Open-Meteo. Údaje o rostlinách a ceny: orientační AI odhad. Vizualizace: AI úprava vaší fotky – rostliny na ní jsou ilustrační.</span>'
+      + plants.filter(function (p) { return p.credit; }).map(function (p) { return '<span>Foto ' + esc(p.name) + ': ' + esc(p.credit) + '.</span>'; }).join('') + '</div>'
       + '<p class="mvg2-page__src">Projekt je orientační studie vytvořená s pomocí AI na základě vaší fotky a zadání. Před realizací ověřte rozměry na místě.</p>'
       + '<div class="mvg2-cover__foot"><span>' + (ctx.logo ? '<img src="' + esc(ctx.logo) + '" alt="">' : '') + 'MV GREEN – Péče o zeleň bez starostí</span><span>mvgreen.cz · 723 339 650</span></div></section>');
     return out.join('');
