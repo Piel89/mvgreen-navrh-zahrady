@@ -61,7 +61,7 @@ add_action('wp_ajax_mvgreen_ai_plan_v2', function () {
     $prompt = "Jsi zahradní architekt a z fotografií vytváříš přesný PŮDORYS (pohled shora) skutečné zahrady.\n"
         . "Obrázky: 1) fotka PO – navržená zahrada (z ní kresli nové záhony, cesty a trávník); "
         . ($before ? "2) fotka PŘED – původní stav; " : '') . ($marked ? "3) fotka PŘED se zeleně vyznačeným tím, co zůstává beze změny (dům, plot, dlažba…); " : '')
-        . ($sketch ? "4) NÁČRT ZÁKAZNÍKA – fotka PŘED s barevnými značkami, kde chce jednotlivé prvky (význam barev a polohy jsou v údajích od zákazníka níže); polohu nových prvků ber PŘEDEVŠÍM z náčrtu; " : '')
+        . ($sketch ? "4) NÁČRT ZÁKAZNÍKA – fotka PŘED s barevnými značkami, kde chce jednotlivé prvky (význam barev a polohy jsou v údajích od zákazníka níže); náčrt je kreslený prstem a přibližný – urči z něj, co kde je, ale přesné polohy ber z fotky PO; " : '')
         . "všechny jsou ze STEJNÉHO místa.\n"
         . "SOUŘADNICE V METRECH z pohledu fotografa: x = 0 je levý okraj viditelné zahrady, x roste doprava; y = 0 je místo fotografa (přední okraj), y roste dozadu od fotografa. "
         . "Perspektiva: vzdálené věci jsou na fotce menší a výš – přepočítej je na skutečné metry. Měřítko odvoď ze známých věcí (dveře ~0,9 m, panel plotu ~2 m, dlaždice ~0,2 m) a z údajů zákazníka.\n"

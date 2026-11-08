@@ -90,7 +90,7 @@
       var nSk = st.sketch.length;
       h += '<h2>Jak chcete navrhovat?</h2>'
         + chips('mode', { ai: 'Nechat na AI', sketch: 'Nakreslím, kam co chci' }, st.mode)
-        + (st.mode === 'sketch' ? '<p class="mvg2-sub">Prstem do fotky nakreslete, kde chcete zeď, schody, záhon, kačírek, dlažbu, cestu, strom nebo keř. Návrh se podle náčrtu řídí přesně – co nenakreslíte, doplní AI podle stylu.</p>'
+        + (st.mode === 'sketch' ? '<p class="mvg2-sub">Prstem do fotky nakreslete, kde chcete zeď, schody, záhon, kačírek, dlažbu, cestu, strom nebo keř. Stačí přibližně – AI podle náčrtu pozná, co a kde chcete, a dotáhne to do hezkého celku. Kde nic nenakreslíte, bude trávník.</p>'
           + (st.sketchPreview ? '<img class="mvg2-preview" src="' + st.sketchPreview + '" alt="Váš náčrt">' : '')
           + '<button type="button" class="mvg2-btn' + (nSk ? ' mvg2-btn--ghost' : '') + '" data-sketch>' + (nSk ? 'Upravit náčrt (' + nSk + ' ' + (nSk === 1 ? 'tah' : nSk < 5 ? 'tahy' : 'tahů') + ')' : 'Nakreslit náčrt') + '</button>' : '')
         + '<h3>Styl</h3>' + chips('style', STYLES, st.style)
@@ -278,7 +278,7 @@
       + (st.removeWhere ? 'Věci, které zákazník nechal odstranit, stály ' + st.removeWhere + '. Když přání mluví o místě, kde stojí/stály (např. „kde stojí auta“), myslí PŘESNĚ tuto oblast – nové zpevněné plochy a zídky dej jen tam a zbytek upravované plochy řeš podle stylu (trávník, záhony). ' : '')
       + (hasSketch() ? 'ROZMÍSTĚNÍ PODLE NÁČRTU ZÁKAZNÍKA (druhý obrázek) – ZÁVAZNÉ, má přednost před vlastním nápadem: '
           + window.MVGreenSketch.describe(st.sketch).replace(/\n/g, ' ')
-          + ' Každý zakreslený prvek udělej přesně v místě, tvaru a rozsahu jeho značky (zeď po celé délce čáry, schody v místě tyrkysové čáry a stejně široké, záhon jen v purpurové ploše, kačírek jen ve žluté, dlažba jen v modré, strom/keř na místě kolečka). Kde v upravované ploše žádná značka není, dej upravený trávník. ' : '')
+          + ' Náčrt je kreslený prstem na mobilu, je jen PŘIBLIŽNÝ: určuje CO a ZHRUBA KDE, polohy v % jsou orientační. Prvky dolaď podle celé fotky, aby vše na sebe logicky navazovalo a vypadalo jako skutečná realizace (zeď rovná a navazující na terén, schody kolmo ve zdi, chodník souběžně s domem, dlažba až k zídce, plynulé hrany záhonů). Kde v upravované ploše žádná značka není, dej upravený trávník. ' : '')
       + (fences.length && !hasSketch() ? 'Plot je ' + fences.join(' a ') + ' – záhon u plotu veď jako souvislý pás těsně podél plotu, široký 1–1,5 m, vysoké rostliny přímo u plotu. ' : '')
       + 'Trávník zachovej jako hlavní plochu. Záhony mají plynule zaoblenou hranu s obrubou a jsou mulčované. '
       + 'Použij POUZE tyto rostliny: ' + plants.map(function (p) { return p.name + ' (' + p.latin + ', výška ' + Math.round(p.height * 100) + ' cm)'; }).join('; ') + '. '

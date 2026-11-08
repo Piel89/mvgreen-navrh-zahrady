@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.233
+ * Version: 0.6.234
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.233');
+define('MVGREEN_VERSION', '0.6.234');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -110,7 +110,9 @@ function mvgreen_run_ai_image_stage($photo_bytes, $photo_mime, $mask_bytes, $sta
     // Náčrt zákazníka (AI architekt v2, 2026-11-08, Martin: „AI nemůže vědět, co my chceme“):
     // volitelný DRUHÝ obrázek – stejná fotka se stejným ořezem, na které zákazník barevně nakreslil,
     // kde chce zeď, schody, záhon, kačírek, dlažbu, strom… Maska se vztahuje jen k prvnímu obrázku.
-    $guide_text = $guide_bytes !== '' ? ' DRUHÝ PŘILOŽENÝ OBRÁZEK je NÁČRT ZÁKAZNÍKA: tatáž fotka se stejným výřezem, na které barevnými tahy a značkami zakreslil, KDE přesně chce jednotlivé prvky (význam barev je v zadání níže). Každý prvek umísti PŘESNĚ na místo jeho značky, ve stejném tvaru, rozsahu a směru – nic neposouvej, nic nevynechej a nic dalšího nepřidávej. Do výsledku značky, barvy ani čáry z náčrtu nekresli – výsledek je skutečná fotografie.' : '';
+    // Martin: „kreslení prstem v mobilu bude naprosto nepřesné, bude to jen přibližně dané, kde
+    // zákazník danou věc chce – ať AI vezme v potaz celek obrázku“ → náčrt = co a zhruba kde.
+    $guide_text = $guide_bytes !== '' ? ' DRUHÝ PŘILOŽENÝ OBRÁZEK je NÁČRT ZÁKAZNÍKA: tatáž fotka se stejným výřezem, na které barevnými tahy zakreslil, CO chce a ZHRUBA KDE (význam barev je v zadání níže). Náčrt je kreslený prstem na mobilu, takže je jen PŘIBLIŽNÝ – ber ho jako určení prvku, jeho strany a části fotky a jeho návaznosti na ostatní prvky, ne jako přesný tvar. Přesnou polohu, délku a tvar každého prvku dolaď podle CELÉ fotky tak, aby výsledek vypadal jako skutečná, stavebně správná a hezká realizace: zdi rovné nebo plynule zakřivené a navazující na terén a okraj dlažby, schody kolmo ve zdi z nižší plochy na vyšší, chodník souběžně s fasádou domu, hrany záhonů plynulé, zpevněné plochy vyplněné až k okrajům (zdi, obrubníku). Nic, co je v náčrtu, nevynechej a nic dalšího nepřidávej. Do výsledku značky, barvy ani čáry z náčrtu nekresli – výsledek je skutečná fotografie.' : '';
     $prompt ="Toto je SKUTEČNÁ fotografie konkrétní zahrady. Proveď pouze lokální retuš uvnitř průhledné oblasti masky; mimo ni nesmí být změněn ani jeden pixel. Nevytvářej novou scénu, neměň dům, střechu, okna, fasádu, plot, terén, svah, stromy, oblohu ani úhel pohledu. Šedé okraje fotografie ponech šedé. Uprav přiloženou SKUTEČNOU fotografii zahrady jako realistickou fotografickou retuš, nikoliv jako nový obraz. ZACHOVEJ identický úhel kamery, kompozici, geometrii, stávající stromy, dům, plot, pozadí, oblohu, perspektivu a osvětlení. UPRAVUJ POUZE průhledné oblasti masky. Ostatní pixely ponech bez změny. Nové rostliny musí mít věrohodné měřítko, přirozenou strukturu a stíny odpovídající scéně. Žádný malovaný, ilustrativní, CGI, pohádkový ani přehnaně stylizovaný vzhled. Vhodné pro realistickou fotografii skutečně realizovatelné zahrady. Nezobrazuj žádné barevné značky ani text." . $guide_text . " Zadání: " . $stage_instructions;
     // WordPress HTTP API does not build multipart files automatically; compose a bounded body.
     $boundary = 'mvgreen_' . wp_generate_password(24, false, false);
