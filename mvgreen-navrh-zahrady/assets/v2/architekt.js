@@ -223,7 +223,8 @@
       + 'Trávník zachovej jako hlavní plochu. Záhony mají plynule zaoblenou hranu s obrubou a jsou mulčované. '
       + 'Použij POUZE tyto rostliny: ' + plants.map(function (p) { return p.name + ' (' + p.latin + ', výška ' + Math.round(p.height * 100) + ' cm)'; }).join('; ') + '. '
       + 'Rostliny sázej ve skupinách po 3–7 kusech stejného druhu, vysoké dozadu, nízké dopředu. '
-      + 'NEPŘIDÁVEJ nic, o co zákazník nežádal: žádné terasy, dřevěná pódia, nábytek, lavičky, pergoly, bazény, sochy ani osvětlení. '
+      // 2. test: AI přidala neobjednanou bránu s plotem a řadu tújí → zakázáno výslovně.
+      + 'NEPŘIDÁVEJ nic, o co zákazník nežádal: žádné terasy, dřevěná pódia, nábytek, lavičky, pergoly, bazény, sochy, osvětlení, NOVÉ PLOTY, BRÁNY, VRATA ani živé ploty a řady tújí. Co je na fotce mimo upravovanou plochu, nech přesně jak je. '
       + (users.length ? 'Zahradu užívají: ' + users.join(', ') + ' – žádné trnité keře u cest. ' : '')
       + 'Výsledek musí vypadat jako skutečná fotografie realizované zahrady v ČR (' + (st.climate ? st.climate.zone : '') + ').';
   }
@@ -268,7 +269,7 @@
         ctx.facts = fx.facts;
         log('Údaje o rostlinách hotové. Hledám fotky rostlin…');
         return plants.reduce(function (pr, p) {
-          return pr.then(function () { return ajax('mvgreen_plant_photo', { latin: p.latin }).then(function (ph) { p.photo = ph.url; p.credit = ph.url ? ph.author + ', Wikimedia Commons, ' + ph.license : ''; }, function () {}); });
+          return pr.then(function () { return ajax('mvgreen_plant_photo', { latin: p.latin }).then(function (ph) { p.photo = ph.url; p.credit = ph.url ? ph.author + ', Wikimedia Commons, ' + ph.license : ''; if (!ph.url) log('Fotka „' + p.name + '“ nenalezena (' + (ph.reason || '?') + ').'); }, function (e) { log('Fotka „' + p.name + '“: ' + e.message); }); });
         }, Promise.resolve());
       })
       .then(function () {
@@ -334,9 +335,14 @@
           project.beds.push({ surface: 'mulch', poly: pts, plants: specs.map(function (s2) { return Object.assign({}, s2, { share: s2.role === 'back' ? 0.3 : s2.role === 'mid' ? 0.35 : 0.35 }); }) });
         }
       }
-      if (el.label && (t === 'house' || t === 'terrace' || t === 'paving') && pts.length >= 3) {
+      // Popisek podle skutečnosti: nová dlažba nesmí mít „stávající“ (2. test: parkovací stání).
+      if (el.label && (t === 'house' || t === 'terrace' || t === 'paving' || t === 'structure') && pts.length >= 3) {
         var c = [0, 0]; pts.forEach(function (q) { c[0] += q[0] / pts.length; c[1] += q[1] / pts.length; });
-        project.labels.push({ text: el.label + ' – stávající', x: c[0], y: c[1], size: 20 });
+        project.labels.push({ text: el.label + (el.is_new ? ' – nové' : ' – stávající'), x: c[0], y: c[1], size: 20 });
+      }
+      if (t === 'wall' && el.is_new && pts.length >= 2) {
+        var m2 = pts[Math.floor((pts.length - 1) / 2)], m3 = pts[Math.ceil((pts.length - 1) / 2)];
+        project.labels.push({ text: (el.label || 'Zídka') + ' – nová', x: Math.max(1.5, Math.min(w - 1.5, (m2[0] + m3[0]) / 2)), y: Math.max(0.6, (m2[1] + m3[1]) / 2 - 0.7), size: 18 });
       }
     });
     // Hrany záhonu u plotu/zdi = „záda“ záhonu → vysoké rostliny k plotu (plan-render.js: bed.back).
@@ -346,8 +352,16 @@
       if (back.length) b.back = back;
       b.plants.forEach(function (p) { p.share = p.role === 'back' ? 0.25 : p.role === 'mid' ? 0.35 : 0.4; });
     });
+    // Pořadí kreslení: trávník pod dlažbou a dům navrchu – AI často vrátí trávník přes celou
+    // zahradu včetně domu a dům pak na výkresu zmizel pod trávou (2. test, 2026-11-08).
+    var ORDER = { outside: 0, lawn: 1, paving: 2, building: 3 };
+    project.areas.sort(function (a, b) { return ORDER[a.type] - ORDER[b.type]; });
+    var lawns = project.areas.filter(function (a, i) { return a.type === 'lawn' && i > 1; });
+    var mainLawn = lawns.sort(function (a, b) { return window.MVGreenPlanV2.polyArea(b.poly) - window.MVGreenPlanV2.polyArea(a.poly); })[0];
     project.fences.forEach(function (f) { var m = f.line[Math.floor(f.line.length / 2)]; project.labels.push({ text: 'Plot – stávající', x: Math.max(1.5, Math.min(w - 1.5, m[0])), y: Math.max(0.6, m[1] + 0.9), size: 18 }); });
-    project.labels.push({ text: 'TRÁVNÍK', x: w * 0.55, y: d * 0.6, size: 26, color: '#2E5B33', spacing: 3 });
+    var lc = [w * 0.55, d * 0.6];
+    if (mainLawn) { lc = [0, 0]; mainLawn.poly.forEach(function (q) { lc[0] += q[0] / mainLawn.poly.length; lc[1] += q[1] / mainLawn.poly.length; }); }
+    project.labels.push({ text: 'TRÁVNÍK', x: lc[0], y: lc[1], size: 26, color: '#2E5B33', spacing: 3 });
 
     var sheet = window.MVGreenPlanV2.renderSheet(project);
     var area = window.MVGreenPlanV2.polyArea;
@@ -363,7 +377,7 @@
       styleLabel: STYLES[st.style] + ', údržba ' + CARES[st.care].toLowerCase(), before: ctx.before, after: ctx.after, marked: st.maskPreview, facts: ctx.facts, plants: plants, climate: st.climate,
       sizeLabel: '≈ ' + w.toFixed(0) + ' × ' + d.toFixed(0) + ' m', sun: st.sun, orient: st.orient, house: st.house, fences: fencesL, soil: st.soil, soilLabel: SOILS[st.soil],
       usersLabel: usersL.length ? usersL.join(', ') : 'bez dětí a zvířat', water: st.water, sheetHtml: sheet.html, project: project, lawnArea: Math.max(0, lawnArea), planNotes: plan.notes };
-    st.result = { pdfHtml: window.MVGreenPdfV2.pages(pctx), before: ctx.before, after: ctx.after, plants: plants, facts: ctx.facts };
+    st.result = { pdfHtml: window.MVGreenPdfV2.pages(pctx), before: ctx.before, after: ctx.after, plants: plants, facts: ctx.facts, plan: plan };
   }
 
   function resultHtml() {

@@ -198,6 +198,8 @@
     });
     out += '</g>';
     areas.filter(function (a) { return a.type === 'paving'; }).forEach(function (a) { out += '<path d="' + path(a.poly) + '" fill="' + FILL.paving + '" stroke="#6E6A62" stroke-width="2"/>'; });
+    // Budovy ještě jednou navrch: trávník z AI půdorysu často zasahuje přes dům (2. test v2).
+    areas.filter(function (a) { return a.type === 'building'; }).forEach(function (a) { out += '<path d="' + path(a.poly) + '" fill="url(#mvgRoof)" stroke="#4E4A46" stroke-width="2"/>'; });
 
     // 2) šlapáky na cestách
     (project.paths || []).filter(function (p) { return p.stones; }).forEach(function (p) {

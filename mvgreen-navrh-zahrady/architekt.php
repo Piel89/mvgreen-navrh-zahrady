@@ -99,23 +99,31 @@ add_action('wp_ajax_mvgreen_plant_photo', function () {
     if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
     $latin = isset($_POST['latin']) ? sanitize_text_field(wp_unslash($_POST['latin'])) : '';
     if ($latin === '' || strlen($latin) > 120) wp_send_json_error(['message' => 'Chybí název.'], 400);
+    // Uložená fotka platí trvale; neúspěch se pamatuje jen 6 hodin. V 1. testu v2 (2026-11-08) se
+    // uložila prázdná odpověď natrvalo a všechny karty pak ukazovaly „fotka se doplní“.
     $key = 'mvgreen_plant_photo_' . md5(strtolower($latin));
     $cached = get_option($key);
-    if (is_array($cached)) wp_send_json_success($cached);
-    $ua = 'MVGreenGardenDesigner/1.0 (plant reference photos; mvgreen.cz)';
-    $queries = [$latin, preg_replace('/\s*[‘\'"].*$/u', '', $latin)];
-    $found = null;
-    foreach (array_unique($queries) as $q) {
-        $url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=15&gsrsearch='
+    if (is_array($cached) && !empty($cached['url'])) wp_send_json_success($cached);
+    if (get_transient($key . '_miss')) wp_send_json_success(['url' => '', 'license' => '', 'author' => '', 'page' => '', 'reason' => 'nedávno nenalezeno']);
+    $ua = 'MVGreenGardenDesigner/1.0 (https://mvgreen.cz; mvgreen@seznam.cz) WordPress';
+    // Hledá se botanický název bez odrůdy v uvozovkách – Commons hledá podle slov, celé jméno
+    // s ‘odrůdou’ obvykle nenajde nic. Pak jen rod + druh.
+    $base_name = trim(preg_replace('/\s*[‘’\'"].*$/u', '', $latin));
+    $queries = array_unique(array_filter([$base_name, implode(' ', array_slice(preg_split('/\s+/', str_replace('×', '', $base_name)), 0, 2))]));
+    $found = null; $reason = 'nic nenalezeno';
+    foreach ($queries as $q) {
+        $url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=20&gsrsearch='
             . rawurlencode($q . ' filetype:bitmap') . '&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=640';
         $r = wp_remote_get($url, ['headers' => ['User-Agent' => $ua], 'timeout' => 20]);
-        if (is_wp_error($r) || wp_remote_retrieve_response_code($r) !== 200) continue;
+        if (is_wp_error($r)) { $reason = 'spojení: ' . $r->get_error_message(); continue; }
+        if (wp_remote_retrieve_response_code($r) !== 200) { $reason = 'Wikimedia HTTP ' . wp_remote_retrieve_response_code($r); continue; }
         $pages = json_decode(wp_remote_retrieve_body($r), true)['query']['pages'] ?? [];
         uasort($pages, function ($a, $b) { return ($a['index'] ?? 0) <=> ($b['index'] ?? 0); });
         foreach ($pages as $p) {
-            $ii = $p['imageinfo'][0] ?? null; if (!$ii) continue;
-            $lic = $ii['extmetadata']['LicenseShortName']['value'] ?? '';
-            if (!preg_match('/^(CC0|CC BY [0-9.]+|Public domain)$/i', $lic) || ($ii['width'] ?? 0) < 800) continue;
+            $ii = $p['imageinfo'][0] ?? null; if (!$ii || empty($ii['thumburl'])) continue;
+            $lic = trim(wp_strip_all_tags($ii['extmetadata']['LicenseShortName']['value'] ?? ''));
+            // CC BY-SA je pro komerční použití v pořádku (fotka se nemění, uvádí se autor a licence).
+            if (!preg_match('/^(CC0( 1\.0)?|CC BY(-SA)? [0-9.]+|Public domain)$/i', $lic) || ($ii['width'] ?? 0) < 800) continue;
             $found = ['thumb' => $ii['thumburl'], 'license' => $lic, 'author' => trim(wp_strip_all_tags($ii['extmetadata']['Artist']['value'] ?? 'neuveden')), 'page' => $ii['descriptionurl'] ?? ''];
             break;
         }
@@ -131,13 +139,16 @@ add_action('wp_ajax_mvgreen_plant_photo', function () {
             $bytes = is_wp_error($img) ? '' : wp_remote_retrieve_body($img);
             if ($bytes && substr($bytes, 0, 3) === "\xFF\xD8\xFF") {
                 $file = sanitize_title($latin) . '.jpg';
-                @file_put_contents($dir . '/' . $file, $bytes);
-                $result = ['url' => trailingslashit($up['baseurl']) . 'mvgreen-plants/' . $file, 'license' => $found['license'], 'author' => $found['author'], 'page' => $found['page']];
-            }
-        }
+                if (@file_put_contents($dir . '/' . $file, $bytes)) {
+                    $result = ['url' => trailingslashit($up['baseurl']) . 'mvgreen-plants/' . $file, 'license' => $found['license'], 'author' => $found['author'], 'page' => $found['page']];
+                } else { $reason = 'nelze zapsat do uploads'; }
+            } else { $reason = is_wp_error($img) ? 'stažení: ' . $img->get_error_message() : 'náhled není JPEG (HTTP ' . wp_remote_retrieve_response_code($img) . ')'; }
+        } else { $reason = 'nelze vytvořit složku'; }
     }
-    update_option($key, $result, false);
-    wp_send_json_success($result);
+    if ($result['url']) { update_option($key, $result, false); wp_send_json_success($result); }
+    delete_option($key);
+    set_transient($key . '_miss', 1, 6 * HOUR_IN_SECONDS);
+    wp_send_json_success($result + ['reason' => $reason]);
 });
 
 add_shortcode('mvgreen_ai_architekt', function ($atts) {
