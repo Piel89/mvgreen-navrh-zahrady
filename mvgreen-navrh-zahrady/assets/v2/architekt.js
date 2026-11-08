@@ -177,20 +177,41 @@
   }
 
   /* ---------- výběr rostlin (ověřený seznam plants-curated.js) ---------- */
+  // Martin: „dělat návrhy z 33 druhů je strašně málo“ → ~150 druhů; výběr váží styl, půdu a údržbu,
+  // hlídá pestrost barev a druhů a u větší péče přidá víc druhů.
+  var STYLE_W = {
+    prirodni: { perennial: 3, grass: 3, lowgrass: 2, shrub: 1.5, conifer: 0.3 },
+    moderni: { perennial: 1, grass: 3, lowgrass: 3, shrub: 2, conifer: 2 },
+    nizka: { perennial: 1, grass: 2.5, lowgrass: 2.5, shrub: 3, conifer: 2.5 },
+    rodina: { perennial: 2.5, grass: 1.5, lowgrass: 1.5, shrub: 2.5, conifer: 1 }
+  };
   function pickPlants() {
     var all = window.MVGreenPlantsV2 || [], rnd = seeded(Date.now() % 100000);
-    var water = st.water === 'none' ? 'dry' : 'normal';
-    var fits = function (p) { return p.sun.indexOf(st.sun) >= 0 && (p.water.indexOf(water) >= 0 || (water === 'normal' && p.water.indexOf('dry') >= 0)) && !(p.thorny && (st.users.kids || st.users.dog)); };
-    var pool = shuffle(all.filter(fits), rnd);
-    var take = function (f, n) { return pool.filter(f).slice(0, n); };
-    var low = st.care === 'low';
-    var chosen = [].concat(
-      take(function (p) { return p.role === 'back' && p.kind === 'shrub'; }, 1),
-      take(function (p) { return p.role === 'back' && p.kind === 'grass'; }, 1),
-      take(function (p) { return p.role === 'mid' && (low ? p.kind !== 'perennial' : true); }, low ? 1 : 2),
-      take(function (p) { return p.role === 'front'; }, 2)
-    );
-    return chosen.filter(function (p, i) { return chosen.indexOf(p) === i; }).map(function (p) { return Object.assign({}, p); });
+    var water = st.water === 'none' || st.soil === 'sand' ? 'dry' : st.soil === 'clay' ? 'wet' : 'normal';
+    var okWater = function (p) { return p.water.indexOf(water) >= 0 || p.water.indexOf('normal') >= 0 && water !== 'dry' || (water === 'normal' && p.water.indexOf('dry') >= 0); };
+    var fits = function (p) { return p.sun.indexOf(st.sun) >= 0 && okWater(p) && !(p.thorny && (st.users.kids || st.users.dog)); };
+    var wts = STYLE_W[st.style] || STYLE_W.prirodni;
+    // vážené náhodné pořadí: lepší shoda se stylem = dřív na řadě, ale pokaždé jiný návrh
+    var pool = all.filter(fits).map(function (p) { return { p: p, k: Math.pow(rnd(), 1 / (wts[p.kind] || 1)) }; }).sort(function (a, b) { return b.k - a.k; }).map(function (x) { return x.p; });
+    var chosen = [], usedColors = [];
+    var hue = function (c) { return String(c || '').slice(1, 3); };
+    var take = function (role, n, pref) {
+      var list = pool.filter(function (p) { return p.role === role && chosen.indexOf(p) < 0; });
+      if (pref) list = list.filter(pref).concat(list.filter(function (p) { return !pref(p); }));
+      for (var i = 0; i < list.length && n > 0; i++) {
+        var p = list[i];
+        // pestrost: ne dvě rostliny stejného typu a podobné barvy květu v jedné roli
+        if (chosen.some(function (c) { return c.role === role && c.kind === p.kind && hue(c.color) === hue(p.color); })) continue;
+        if (p.flower && usedColors.indexOf(p.flower) >= 0) continue;
+        chosen.push(p); if (p.flower) usedColors.push(p.flower); n--;
+      }
+    };
+    var n = { low: [2, 1, 2], mid: [2, 2, 2], high: [2, 3, 3] }[st.care] || [2, 2, 2];
+    take('back', 1, function (p) { return p.kind === 'shrub' || p.kind === 'conifer'; });
+    take('back', n[0] - 1, function (p) { return p.kind === 'grass' || p.kind === 'perennial'; });
+    take('mid', n[1], st.care === 'low' ? function (p) { return p.kind !== 'perennial'; } : null);
+    take('front', n[2], null);
+    return chosen.map(function (p) { return Object.assign({}, p); });
   }
 
   function promptText(plants) {
