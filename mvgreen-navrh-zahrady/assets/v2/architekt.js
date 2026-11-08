@@ -334,7 +334,10 @@
       .then(function (pl) {
         ctx.plan = pl.plan;
         log('Půdorys načten: ' + pl.plan.elements.length + ' prvků, ' + pl.plan.width_m + ' × ' + pl.plan.depth_m + ' m. Doplňuji údaje o rostlinách…');
-        var brief = 'Styl: ' + STYLES[st.style] + '. Místo: ' + (st.geo ? st.geo.name : '') + ', ' + (st.climate ? st.climate.elevation + ' m n. m., ' + st.climate.zone : '') + '. Slunce: ' + st.sun + '. Přání: ' + (st.wish || 'žádné') + '. Popis AI: ' + (pl.plan.notes || '');
+        var brief = 'Styl: ' + STYLES[st.style] + '. Místo: ' + (st.geo ? st.geo.name : '') + ', ' + (st.climate ? st.climate.elevation + ' m n. m., ' + st.climate.zone : '') + '. Slunce: ' + st.sun + '. Přání: ' + (st.wish || 'žádné') + '. '
+          // Test 4: koncept tvrdil „místo aut trávník“, přitom tam je podle náčrtu dlažba → AI pro texty dostává i náčrt a prvky půdorysu.
+          + (hasSketch() ? 'Náčrt zákazníka: ' + window.MVGreenSketch.describe(st.sketch).replace(/\n/g, ' ') + ' ' : '')
+          + 'Prvky návrhu: ' + pl.plan.elements.filter(function (e) { return e.is_new; }).map(function (e) { return e.label; }).join(', ') + '. Popis AI: ' + (pl.plan.notes || '');
         return ajax('mvgreen_ai_plant_facts', { plants: plantList, brief: brief });
       })
       .then(function (fx) {
@@ -395,7 +398,7 @@
       var pts = T(el.points);
       if (!pts.length) return;
       var t = el.type;
-      if ((t === 'fence' || t === 'wall') && pts.length >= 2) { (t === 'fence' ? project.fences : project.walls).push(t === 'fence' ? { line: pts } : { line: pts, width: Math.max(0.2, el.width_m || 0.3) }); lines.push(pts); }
+      if ((t === 'fence' || t === 'wall') && pts.length >= 2) { (t === 'fence' ? project.fences : project.walls).push(t === 'fence' ? { line: pts } : { line: pts, width: Math.max(0.2, el.width_m || 0.3), isNew: !!el.is_new }); lines.push(pts); }
       else if (t === 'hedge' && pts.length >= 2) { lines.push(pts); for (var i = 1; i < pts.length; i++) { var a = pts[i - 1], b = pts[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]); for (var s = 0; s <= L; s += 0.8) project.existingPlants.push({ kind: 'shrub', leaf: '#3F6E45', r: 0.5, x: a[0] + (b[0] - a[0]) * s / L, y: a[1] + (b[1] - a[1]) * s / L }); } }
       else if ((t === 'path' || t === 'stepping') && pts.length >= 2) project.paths.push({ surface: 'gravel', width: Math.max(0.5, el.width_m || 1), stones: t === 'stepping' ? 0.65 : 0, line: pts });
       else if (t === 'tree') project.existingPlants.push({ kind: 'tree', leaf: '#5E8E46', r: 1.2, x: pts[0][0], y: pts[0][1] });
@@ -403,8 +406,8 @@
       else if (pts.length >= 3) {
         if (t === 'lawn') project.areas.push({ type: 'lawn', poly: pts });
         else if (t === 'house') project.areas.push({ type: 'building', poly: pts });
-        else if (t === 'terrace' || t === 'paving') project.areas.push({ type: 'paving', poly: pts });
-        else if (t === 'structure' || t === 'steps') project.structures.push({ poly: pts });
+        else if (t === 'terrace' || t === 'paving') project.areas.push({ type: 'paving', poly: pts, isNew: !!el.is_new });
+        else if (t === 'structure' || t === 'steps') project.structures.push({ poly: pts, isNew: !!el.is_new, steps: t === 'steps' || /schod/i.test(el.label || '') });
         else if (t === 'gravel') project.beds.push({ surface: 'gravel', poly: pts, plants: [] });
         else if (t === 'bed') {
           var specs = (el.plants || []).map(function (x) { return byName(x.name); }).filter(Boolean);

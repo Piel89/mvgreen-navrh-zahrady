@@ -54,6 +54,27 @@
       + '<text x="100" y="176" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#4A554F">směr focení ↑</text></svg>';
   }
 
+  // Orientační pracnost (osobohodiny šikovného laika včetně výkopu, odvozu a úklidu):
+  // záhon 1 h/m², kačírek 0,6 h/m², trávník 0,12 h/m², dlažba 3 h/m², chodník 2,5 h/m²,
+  // opěrná zeď 8 h/m délky, schody 16 h. Víkend = 2 lidé × 2 dny × 7 h = 28 h.
+  function workPlan(ctx) {
+    var p = ctx.project || {}, A = window.MVGreenPlanV2 ? window.MVGreenPlanV2.polyArea : function () { return 0; };
+    var len = function (l) { var s = 0; for (var i = 1; i < l.length; i++) s += Math.hypot(l[i][0] - l[i - 1][0], l[i][1] - l[i - 1][1]); return s; };
+    var sum = function (a, f) { return (a || []).reduce(function (s, x) { return s + f(x); }, 0); };
+    var bed = sum((p.beds || []).filter(function (b) { return b.surface !== 'gravel'; }), function (b) { return A(b.poly); });
+    var gravel = sum((p.beds || []).filter(function (b) { return b.surface === 'gravel'; }), function (b) { return A(b.poly); });
+    var paving = sum((p.areas || []).filter(function (a) { return a.type === 'paving' && a.isNew; }), function (a) { return A(a.poly); });
+    var path = sum(p.paths, function (x) { return len(x.line) * (x.width || 1); });
+    var wall = sum((p.walls || []).filter(function (w) { return w.isNew; }), function (w) { return len(w.line); });
+    var steps = (p.structures || []).filter(function (s) { return s.steps && s.isNew; }).length;
+    var lawn = ctx.lawnArea || 0, rows = [], f1 = function (v) { return v.toFixed(0); };
+    var add = function (name, q, unit, rate) { if (q > 0.3) rows.push([name, f1(q) + ' ' + unit, Math.max(1, Math.round(q * rate))]); };
+    add('Zámková dlažba vč. výkopu a podkladu', paving, 'm²', 3); add('Chodník', path, 'm²', 2.5); add('Opěrná zeď vč. základu', wall, 'm', 8);
+    if (steps) rows.push(['Schody', steps + ' ks', steps * 16]);
+    add('Záhony (příprava, výsadba, mulč)', bed, 'm²', 1); add('Kačírek', gravel, 'm²', 0.6); add('Trávník (příprava a výsev)', lawn, 'm²', 0.12);
+    var hours = rows.reduce(function (s, r) { return s + r[2]; }, 0), hardH = Math.round(paving * 3 + path * 2.5 + wall * 8 + steps * 16);
+    return { rows: rows, hours: hours, weekends: Math.max(1, Math.ceil(hours / 28)), gardenWeekends: Math.max(1, Math.ceil((hours - hardH) / 28)), hard: paving > 0.3 || wall > 0.3 || steps > 0, paving: paving > 0.3, wall: wall > 0.3, steps: steps };
+  }
   // Záhon 1, 2… a zvlášť Kačírek 1, 2… (kačírek je v projektu „záhon“ s povrchem gravel).
   function bedName(beds, i) {
     var g = beds[i].surface === 'gravel', n = beds.slice(0, i + 1).filter(function (b) { return (b.surface === 'gravel') === g; }).length;
@@ -162,9 +183,21 @@
       + '<table class="mvg2-table"><tbody>' + [['Den výsadby', 'Každou rostlinu vydatně zalít: trvalky 3–5 l, keře 10 l. I když prší.'], ['První 2 týdny', 'Každý druhý den stejné množství – kořeny jsou zatím jen v balu.'], ['Do konce prvního léta', '1× týdně vydatně, v horku nad 28 °C 2× týdně.'], ['Nový trávník', 'Do vzejití denně krátce, pak 2× týdně 10–15 l/m².']].map(function (r) { return '<tr><td><strong>' + r[0] + '</strong></td><td>' + r[1] + '</td></tr>'; }).join('') + '</tbody></table>'
       + '<div class="mvg2-tip"><strong>Tip:</strong> zalévejte ráno přímo ke kořenům. Prst zastrčený 5 cm do země je nejlepší vlhkoměr – když je suchý, zalijte. ' + (ctx.water === 'auto' ? 'Automatickou závlahu v prvním roce nastavte na delší a řidší zálivku.' : ctx.water === 'none' ? 'Bez zálivky vybíráme suchomilné rostliny – první léto je ale zalít musíte.' : '') + '</div></section>');
 
-    // 8 – návod pro kutily
-    var steps = [['Vytyčení', 'Podle strany 5 vyznačte záhony a cesty provázkem a pískem.'], ['Úklid a drn', 'Odstraňte drn a plevel i s kořeny z budoucích záhonů.'], ['Příprava půdy', 'Prorýčujte 20–25 cm hluboko a zapracujte 3–5 cm kompostu.'], ['Obruba', 'Zapusťte obrubu 1 cm nad trávník – sekačka pak jede přes ni.'], ['Geotextilie', 'Položte s přesahem 15 cm, v místě rostlin prořízněte kříž.'], ['Výsadba', 'Jamka 2× širší než bal, stejně hluboká. Bal namočte, po zasazení zalijte.'], ['Mulč nebo štěrk', 'Rozprostřete 5 cm vrstvu, kolem rostlin nechte 5 cm volno.'], ['Cesty a šlapáky', 'Kameny do lože z 5 cm štěrkodrti, krok zhruba 60 cm.'], ['Trávník', 'Urovnejte, uválcujte, vysejte 30–35 g/m² a udržujte vlhko.']];
-    out.push('<section class="mvg2-page">' + head(ctx, 8) + title('NÁVOD KROK ZA KROKEM', 'Zvládnete to sami za 2–3 víkendy')
+    // 8 – návod pro kutily. Martin (test 4): „za 2–3 víkendy to píšeš u všeho, to je nereálné“ →
+    // doba se počítá z výměr projektu (orientační normohodiny pro šikovného laika, 2 lidé) a stavební
+    // část (dlažba, zeď, schody) má vlastní kroky a doporučení.
+    var wp = workPlan(ctx), hard = wp.hard;
+    var steps = [['Vytyčení', 'Podle strany 5 vyznačte vše provázkem, kolíky a sprejem.']];
+    if (wp.paving) steps.push(['Výkop pro dlažbu', 'Vykopejte 30–35 cm, srovnejte dno do spádu 1–2 % od domu, položte geotextilii.'], ['Podklad dlažby', '20–25 cm štěrkodrti 0/32 po vrstvách 10 cm hutněte vibrační deskou, pak 3–4 cm drti 4/8 jako lože.']);
+    if (wp.wall) steps.push(['Opěrná zeď', 'Betonový základ do nezámrzné hloubky (~80 cm), tvárnice podle návodu výrobce, za zeď drenážní trubku a štěrk. Zeď nad 1 m jen podle statika.']);
+    if (wp.steps) steps.push(['Schody', 'Stupeň 15–17 cm vysoký a 30–35 cm hluboký, na betonovém základu spolu se zdí.']);
+    if (wp.paving) steps.push(['Obrubníky a dlažba', 'Obrubníky do betonového lože, dlažbu kladte ve vazbě, zapískujte a zavibrujte přes gumovou podložku.']);
+    steps.push(['Úklid a příprava půdy', 'Odstraňte drn a plevel s kořeny, prorýčujte 20–25 cm a zapracujte 3–5 cm kompostu.'], ['Obruba a výsadba', 'Obrubu 1 cm nad trávník. Jamka 2× širší než bal, bal namočte, po zasazení zalijte.'], ['Mulč nebo štěrk', '5 cm vrstva, kolem rostlin 5 cm volno.'], ['Trávník', 'Urovnejte, uválcujte, vysejte 30–35 g/m² a udržujte vlhko.']);
+    var subtitle = wp.weekends <= 1 ? 'Zvládnete to sami za víkend' : wp.weekends <= 4 && !hard ? 'Zvládnete to sami za ' + wp.weekends + ' víkendy' : 'Odhad práce: asi ' + wp.weekends + ' víkendů pro 2 lidi';
+    out.push('<section class="mvg2-page">' + head(ctx, 8) + title('NÁVOD KROK ZA KROKEM', subtitle)
+      + '<table class="mvg2-table mvg2-table--work"><thead><tr><th>Práce</th><th>Rozsah</th><th>Odhad</th></tr></thead><tbody>' + wp.rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + ' h</td></tr>'; }).join('')
+      + '<tr class="mvg2-total"><td>Celkem</td><td>2 lidé, víkend ≈ 28 h práce</td><td>' + wp.hours + ' h</td></tr></tbody></table>'
+      + (hard ? '<div class="mvg2-tip mvg2-tip--warn"><strong>Stavební část</strong> (' + [wp.paving && 'dlažba', wp.wall && 'opěrná zeď', wp.steps && 'schody'].filter(Boolean).join(', ') + ') je nejtěžší a zabere většinu času. Vyplatí se půjčit minibagr a vibrační desku, nebo ji svěřit stavební firmě – záhony a trávník pak zvládnete sami za ' + wp.gardenWeekends + ' ' + (wp.gardenWeekends === 1 ? 'víkend' : 'víkendy') + '.</div>' : '')
       + '<div class="mvg2-steps">' + steps.map(function (s, i) { return '<div><em>' + (i + 1) + '</em><span><strong>' + s[0] + '</strong>' + s[1] + '</span></div>'; }).join('') + '</div>'
       + '<div class="mvg2-layers"><span class="mvg2-cap">ŘEZ ZÁHONEM</span>' + [['1', 'Mulč nebo štěrk', '5 cm'], ['2', 'Geotextilie', ''], ['3', 'Zemina s kompostem', '25 cm'], ['4', 'Původní podloží', '']].map(function (l) { return '<div class="mvg2-layer mvg2-layer--' + l[0] + '"><em>' + l[0] + '</em><span>' + l[1] + '</span><b>' + l[2] + '</b></div>'; }).join('') + '</div>'
       + '<div class="mvg2-tip mvg2-tip--warn"><strong>Pozor:</strong> než začnete kopat, přečtěte si stranu 11 – podzemní sítě a vzdálenosti od hranice pozemku.</div></section>');

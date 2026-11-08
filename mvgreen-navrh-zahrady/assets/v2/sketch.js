@@ -172,6 +172,8 @@
         } else {
           bar.innerHTML = '<span class="mvg2-sk__count">' + items.length + ' ' + (items.length === 1 ? 'prvek' : items.length > 1 && items.length < 5 ? 'prvky' : 'prvků') + '</span><button type="button" data-a="undo"' + (items.length ? '' : ' disabled') + '>↶ Zpět prvek</button><button type="button" class="is-main" data-a="ok">Hotovo</button>';
         }
+        // Pole pro upřesnění mění výšku spodní lišty → fotku znovu vejít (test 4: přetékala přes tlačítka).
+        requestAnimationFrame(fit);
         bar.querySelectorAll('[data-a]').forEach(function (b) {
           b.onclick = function () {
             var a = b.dataset.a;
@@ -180,10 +182,9 @@
             else if (a === 'fin') finish();
             else if (a === 'undo') { items.pop(); last = null; }
             else if (a === 'ok') return close(true);
-            ui(); paint();
+            ui();
           };
         });
-        paint();
       }
       var toastT;
       function toast(msg) { var t = el.querySelector('[data-toast]'); t.textContent = msg; t.classList.add('is-on'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('is-on'); }, 2200); }
