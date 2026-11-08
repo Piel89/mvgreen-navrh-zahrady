@@ -140,7 +140,7 @@
       var s = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.cacheKey = url;
+      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.cacheKey = url;
       render();
     }).catch(function (e) { alert(e.message); });
   }
@@ -148,9 +148,55 @@
     P.confirmPaintMask(st.original, 'Označte „Zůstane“ všechno, co se nesmí změnit (dům, plot, dlažba, stromy), a „Odstranit“ to, co má zmizet. Zbytek smí AI navrhnout znovu.', { cacheKey: st.cacheKey, initialCategory: st.paintCategory || null })
       .then(function (r) {
         if (!r) return;
-        st.paintCategory = r.category; st.editMask = S.growMask(r.editMask); st.maskPreview = r.previewDataUrl || '';
+        st.paintCategory = r.category; st.maskPreview = r.previewDataUrl || '';
+        st.removeWhere = r.hasRemove ? maskWhere(r.removeMask) : '';
+        st.editMask = S.growMask(fillHoles(r.editMask, r.hasRemove ? r.removeMask : null));
         render();
       });
+  }
+  // 3. test (2026-11-08): štětec po superpixelech nechal mezi domem a soklem malé neoznačené
+  // ostrůvky; AI do nich na zeď nakreslila kytky a kontrola je pak vrátila jako barevné skvrny.
+  // Malá upravitelná místa úplně obklopená tím, co zůstává (a neoznačená „Odstranit“), se proto
+  // berou jako „Zůstane“.
+  function fillHoles(mask, removeMask) {
+    var W = mask.width, H = mask.height, sc = Math.min(1, 600 / Math.max(W, H));
+    var w = Math.max(1, Math.round(W * sc)), h = Math.max(1, Math.round(H * sc));
+    var small = function (m) { var c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(m, 0, 0, w, h); return c.getContext('2d').getImageData(0, 0, w, h).data; };
+    var a = small(mask), rm = removeMask ? small(removeMask) : null;
+    var lab = new Int32Array(w * h), holes = [], n = 0, limit = w * h * 0.015;
+    for (var i = 0; i < w * h; i++) {
+      if (lab[i] || a[i * 4 + 3] < 128) continue;
+      n++; var stack = [i], comp = [], border = false, removed = false; lab[i] = n;
+      while (stack.length) {
+        var p = stack.pop(), x = p % w, y = (p - x) / w; comp.push(p);
+        if (x === 0 || y === 0 || x === w - 1 || y === h - 1) border = true;
+        if (rm && rm[p * 4 + 3] >= 128) removed = true;
+        [p - 1, p + 1, p - w, p + w].forEach(function (q, k) {
+          if (q < 0 || q >= w * h || (k === 0 && x === 0) || (k === 1 && x === w - 1)) return;
+          if (!lab[q] && a[q * 4 + 3] >= 128) { lab[q] = n; stack.push(q); }
+        });
+      }
+      if (!border && !removed && comp.length < limit) holes.push(comp);
+    }
+    if (!holes.length) return mask;
+    var out = document.createElement('canvas'); out.width = W; out.height = H;
+    var o = out.getContext('2d'); o.drawImage(mask, 0, 0);
+    o.globalCompositeOperation = 'destination-out';
+    var cw = W / w, ch = H / h;
+    holes.forEach(function (comp) { comp.forEach(function (p) { var x = p % w, y = (p - x) / w; o.fillRect(Math.floor(x * cw) - 1, Math.floor(y * ch) - 1, Math.ceil(cw) + 2, Math.ceil(ch) + 2); }); });
+    return out;
+  }
+  // Kde na fotce byly věci označené „Odstranit“ – AI dostává fotku už bez nich, takže „místo, kde
+  // stojí auta“ jinak neumí najít (3. test: dlažbu se zídkou dala přes celé popředí).
+  function maskWhere(m) {
+    var w = 200, h = Math.max(1, Math.round(200 * m.height / m.width)), c = document.createElement('canvas');
+    c.width = w; c.height = h; c.getContext('2d').drawImage(m, 0, 0, w, h);
+    var d = c.getContext('2d').getImageData(0, 0, w, h).data, x0 = w, x1 = -1, y0 = h, y1 = -1;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] >= 128) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 < 0) return '';
+    var px = function (v, t) { return Math.round(v / t * 100); }, cx = (x0 + x1) / 2 / w, cy = (y0 + y1) / 2 / h;
+    var hor = cx < 0.36 ? 'v levé části' : cx > 0.64 ? 'v pravé části' : 'uprostřed', ver = cy > 0.62 ? 'v popředí' : cy < 0.4 ? 'vzadu' : 've středu hloubky';
+    return hor + ' fotky ' + ver + ' (vodorovně ' + px(x0, w) + '–' + px(x1 + 1, w) + ' %, svisle ' + px(y0, h) + '–' + px(y1 + 1, h) + ' % od levého horního rohu)';
   }
 
   /* ---------- krok 2: podnebí ---------- */
@@ -219,6 +265,7 @@
     var fences = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     return 'Navrhni zahradu ve stylu „' + STYLES[st.style] + '“ s ' + { low: 'minimální', mid: 'střední', high: 'vyšší' }[st.care] + ' údržbou. '
       + (st.wish ? 'PŘÁNÍ ZÁKAZNÍKA (má přednost před vším ostatním a musí být na fotce jasně vidět): ' + st.wish + '. ' : '')
+      + (st.removeWhere ? 'Věci, které zákazník nechal odstranit, stály ' + st.removeWhere + '. Když přání mluví o místě, kde stojí/stály (např. „kde stojí auta“), myslí PŘESNĚ tuto oblast – nové zpevněné plochy a zídky dej jen tam a zbytek upravované plochy řeš podle stylu (trávník, záhony). ' : '')
       + (fences.length ? 'Plot je ' + fences.join(' a ') + ' – záhon u plotu veď jako souvislý pás těsně podél plotu, široký 1–1,5 m, vysoké rostliny přímo u plotu. ' : '')
       + 'Trávník zachovej jako hlavní plochu. Záhony mají plynule zaoblenou hranu s obrubou a jsou mulčované. '
       + 'Použij POUZE tyto rostliny: ' + plants.map(function (p) { return p.name + ' (' + p.latin + ', výška ' + Math.round(p.height * 100) + ' cm)'; }).join('; ') + '. '
@@ -232,6 +279,7 @@
     var fences = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     return 'Dům na fotce: ' + HOUSES[st.house].toLowerCase() + '. Plot/hranice pozemku: ' + (fences.join(', ') || 'neuvedeno') + '. '
       + (st.width ? 'Šířka zahrady zleva doprava ≈ ' + st.width + ' m. ' : '') + (st.depth ? 'Hloubka od fotografa dozadu ≈ ' + st.depth + ' m. ' : '')
+      + (st.removeWhere ? 'Odstraněné věci (např. auta) stály ' + st.removeWhere + '. ' : '')
       + 'Přání zákazníka: ' + (st.wish || 'žádné') + '.';
   }
 
@@ -294,6 +342,13 @@
     var dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2)) : 0;
     return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
   }
+  function pip(p, poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      if ((poly[i][1] > p[1]) !== (poly[j][1] > p[1]) && p[0] < (poly[j][0] - poly[i][0]) * (p[1] - poly[i][1]) / (poly[j][1] - poly[i][1]) + poly[i][0]) inside = !inside;
+    }
+    return inside;
+  }
   function lineDist(p, line) { var d = Infinity; for (var i = 1; i < line.length; i++) d = Math.min(d, segDist(p, line[i - 1], line[i])); return d; }
 
   function buildResult(ctx) {
@@ -345,7 +400,24 @@
         project.labels.push({ text: (el.label || 'Zídka') + ' – nová', x: Math.max(1.5, Math.min(w - 1.5, (m2[0] + m3[0]) / 2)), y: Math.max(0.6, (m2[1] + m3[1]) / 2 - 0.7), size: 18 });
       }
     });
-    // Hrany záhonu u plotu/zdi = „záda“ záhonu → vysoké rostliny k plotu (plan-render.js: bed.back).
+    // 3. test: AI zakreslila záhony „u domu“ do půdorysu domu. Záhon, který leží z větší části
+    // v budově, se posune před ni (k fotografovi), dokud z ní nevyjede – záda pak má u zdi domu.
+    var buildings = project.areas.filter(function (a) { return a.type === 'building'; }).map(function (a) { return a.poly; });
+    var share = function (poly) {
+      var xs = poly.map(function (q) { return q[0]; }), ys = poly.map(function (q) { return q[1]; }), tot = 0, hit = 0;
+      for (var gx = Math.min.apply(null, xs); gx <= Math.max.apply(null, xs); gx += 0.25) for (var gy = Math.min.apply(null, ys); gy <= Math.max.apply(null, ys); gy += 0.25)
+        if (pip([gx, gy], poly)) { tot++; if (buildings.some(function (bp) { return pip([gx, gy], bp); })) hit++; }
+      return tot ? hit / tot : 0;
+    };
+    project.beds.forEach(function (b) {
+      if (!buildings.length || share(b.poly) < 0.25) return;
+      var cy = b.poly.reduce(function (s, q) { return s + q[1]; }, 0) / b.poly.length;
+      var by = buildings.map(function (bp) { return bp.reduce(function (s, q) { return s + q[1]; }, 0) / bp.length; })[0];
+      var dir = cy >= by ? 1 : -1;
+      for (var k = 0; k < 40 && share(b.poly) > 0.02; k++) b.poly = b.poly.map(function (q) { return [q[0], Math.max(0, Math.min(d, q[1] + dir * 0.2))]; });
+    });
+    buildings.forEach(function (bp) { lines.push(bp.concat([bp[0]])); });
+    // Hrany záhonu u plotu/zdi/domu = „záda“ záhonu → vysoké rostliny dozadu (plan-render.js: bed.back).
     project.beds.forEach(function (b) {
       var back = [];
       b.poly.forEach(function (q, i) { var n = b.poly[(i + 1) % b.poly.length], m = [(q[0] + n[0]) / 2, (q[1] + n[1]) / 2]; if (lines.some(function (l) { return lineDist(m, l) < 0.8; })) back.push(i); });
@@ -359,8 +431,27 @@
     var lawns = project.areas.filter(function (a, i) { return a.type === 'lawn' && i > 1; });
     var mainLawn = lawns.sort(function (a, b) { return window.MVGreenPlanV2.polyArea(b.poly) - window.MVGreenPlanV2.polyArea(a.poly); })[0];
     project.fences.forEach(function (f) { var m = f.line[Math.floor(f.line.length / 2)]; project.labels.push({ text: 'Plot – stávající', x: Math.max(1.5, Math.min(w - 1.5, m[0])), y: Math.max(0.6, m[1] + 0.9), size: 18 }); });
-    var lc = [w * 0.55, d * 0.6];
-    if (mainLawn) { lc = [0, 0]; mainLawn.poly.forEach(function (q) { lc[0] += q[0] / mainLawn.poly.length; lc[1] += q[1] / mainLawn.poly.length; }); }
+    // 3. test: AI zakreslila záhony „u domu“ částečně do domu → místa v budovách a na dlažbě se
+    // v záhonu blokují (plan-render.js: bed.blocked), rostliny se tam nesázejí.
+    var solid = project.areas.filter(function (a) { return a.type === 'building' || a.type === 'paving'; }).map(function (a) { return a.poly; }).concat(project.structures.map(function (s) { return s.poly; }));
+    var inSolid = function (p) { return solid.some(function (pl) { return pip(p, pl); }); };
+    project.beds.forEach(function (b) {
+      var xs = b.poly.map(function (q) { return q[0]; }), ys = b.poly.map(function (q) { return q[1]; });
+      b.blocked = b.blocked || [];
+      for (var gx = Math.min.apply(null, xs); gx <= Math.max.apply(null, xs); gx += 0.3)
+        for (var gy = Math.min.apply(null, ys); gy <= Math.max.apply(null, ys); gy += 0.3)
+          if (pip([gx, gy], b.poly) && inSolid([gx, gy])) b.blocked.push({ x: gx, y: gy, r: 0.3 });
+    });
+    // Nápis TRÁVNÍK do nejvolnějšího místa trávníku (ne na dům, dlažbu ani záhon).
+    var lc = [w * 0.55, d * 0.6], best = -1, lawnPoly = mainLawn ? mainLawn.poly : null;
+    var obst = solid.concat(project.beds.map(function (b) { return b.poly; }));
+    var edgeDist = function (p, pl) { var m = Infinity; for (var i = 0; i < pl.length; i++) m = Math.min(m, segDist(p, pl[i], pl[(i + 1) % pl.length])); return m; };
+    for (var lx = 1.5; lx <= w - 1.5; lx += 0.5) for (var ly = 1; ly <= d - 1; ly += 0.5) {
+      var p = [lx, ly];
+      if ((lawnPoly && !pip(p, lawnPoly)) || obst.some(function (pl) { return pip(p, pl); })) continue;
+      var dist = Math.min(lx, w - lx, ly * 2, (d - ly) * 2); obst.forEach(function (pl) { dist = Math.min(dist, edgeDist(p, pl)); });
+      if (dist > best) { best = dist; lc = p; }
+    }
     project.labels.push({ text: 'TRÁVNÍK', x: lc[0], y: lc[1], size: 26, color: '#2E5B33', spacing: 3 });
 
     var sheet = window.MVGreenPlanV2.renderSheet(project);
