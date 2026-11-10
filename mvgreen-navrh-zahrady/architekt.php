@@ -118,12 +118,19 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
     $kinds = mvgreen_detect_v2_kinds();
     $prompt = 'Give the segmentation masks for every separate object and surface in this garden photo from these categories: '
         . implode(', ', array_keys($kinds)) . '. Each car, tree, shed or house is a separate item; give fences, gates and walls even when they are thin. '
-        . 'Output a JSON list of segmentation masks where each entry contains the 2D bounding box in the key "box_2d", the segmentation mask in key "mask", and the text label in the key "label". '
+        . 'Output a JSON list of segmentation masks where each entry contains the 2D bounding box in the key "box_2d" as [ymin, xmin, ymax, xmax] normalized to 0-1000, the segmentation mask in key "mask" as a polygon of 12-60 [x, y] points normalized to 0-1000 that tightly follows the visible outline of the object, and the text label in the key "label". '
         . 'The label must be "<category>: <short Czech name with position>", e.g. "car: Bílé auto vpravo", "lawn: Tráva v popředí". At most 30 items.';
     // 1. test na Martinově fotce (2026-11-10): gemini-3-flash-preview vrátil jen obdélníky BEZ masek →
     // tráva u domu „patřila“ domu, pole za autem autu. Nejdřív model, který masky vrací (2.5 Flash);
     // když odpověď masky nemá, zkusí se další model a vezme se odpověď s nejvíc maskami.
-    $models = array_values(array_unique(array_filter([defined('MVGREEN_GEMINI_MODEL') ? MVGREEN_GEMINI_MODEL : '', 'gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3-flash-preview'])));
+    // 2. test: 2.5 Flash už nový účet nedostane, 3.8 Flash odmítl thinkingLevel „minimal“, 3 Flash Preview
+    // vrátil jen box_2d+label → povinné schéma s obrysem (mask = [x,y] 0–1000) a postupně nastavení přemýšlení.
+    $models = array_values(array_unique(array_filter([defined('MVGREEN_GEMINI_MODEL') ? MVGREEN_GEMINI_MODEL : '', 'gemini-3.8-flash', 'gemini-3-flash-preview'])));
+    $schema = ['type' => 'ARRAY', 'items' => ['type' => 'OBJECT', 'required' => ['box_2d', 'label', 'mask'], 'properties' => [
+        'box_2d' => ['type' => 'ARRAY', 'items' => ['type' => 'INTEGER']],
+        'label' => ['type' => 'STRING'],
+        'mask' => ['type' => 'ARRAY', 'items' => ['type' => 'ARRAY', 'items' => ['type' => 'INTEGER']]],
+    ]]];
     $parse = function ($items) use ($kinds) {
         $objects = [];
         foreach ((array) $items as $o) {
@@ -150,10 +157,15 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
         return $objects;
     };
     $last = 'AI neodpověděla.'; $best = null; $used = ''; $notes = [];
-    foreach ($models as $model) {
-        // „For better results, disable thinking“ (dokumentace Gemini, segmentace)
-        $gc = ['responseMimeType' => 'application/json', 'temperature' => 0.3];
-        $gc['thinkingConfig'] = strpos($model, 'gemini-2') === 0 ? ['thinkingBudget' => 0] : ['thinkingLevel' => 'minimal'];
+    $tries = [];
+    foreach ($models as $model) foreach (['minimal', 'low', ''] as $tl) $tries[] = [$model, $tl];
+    $skip = [];
+    foreach ($tries as $try) {
+        list($model, $tl) = $try;
+        if (!empty($skip[$model])) continue;
+        // „For better results, disable thinking“ (dokumentace Gemini) – ne každý model umí „minimal“
+        $gc = ['responseMimeType' => 'application/json', 'responseSchema' => $schema, 'temperature' => 0.3];
+        if ($tl) $gc['thinkingConfig'] = ['thinkingLevel' => $tl];
         $r = wp_remote_post('https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent', [
             'headers' => ['x-goog-api-key' => $gkey, 'Content-Type' => 'application/json'],
             'body' => wp_json_encode(['contents' => [['parts' => [['inline_data' => ['mime_type' => 'image/jpeg', 'data' => $m[1]]], ['text' => $prompt]]]], 'generationConfig' => $gc]),
@@ -161,7 +173,13 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
         ]);
         if (is_wp_error($r)) { $last = 'Spojení s Gemini selhalo: ' . $r->get_error_message(); $notes[] = $model . ': ' . $last; continue; }
         $code = wp_remote_retrieve_response_code($r); $json = json_decode(wp_remote_retrieve_body($r), true);
-        if ($code < 200 || $code >= 300) { $last = 'Gemini (' . $model . '): ' . sanitize_text_field($json['error']['message'] ?? ('HTTP ' . $code)); $notes[] = $last; continue; }
+        if ($code < 200 || $code >= 300) {
+            $emsg = (string) ($json['error']['message'] ?? ('HTTP ' . $code));
+            $last = 'Gemini (' . $model . ($tl ? ', ' . $tl : '') . '): ' . sanitize_text_field($emsg); $notes[] = $last;
+            if (stripos($emsg, 'thinking') === false) $skip[$model] = true;   // jiná chyba než nastavení přemýšlení → další model
+            continue;
+        }
+        $skip[$model] = true;
         $text = '';
         foreach ((array) ($json['candidates'][0]['content']['parts'] ?? []) as $p) if (isset($p['text'])) $text .= $p['text'];
         $text = trim(preg_replace('~^\s*```(?:json)?|```\s*$~', '', $text));

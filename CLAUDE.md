@@ -215,7 +215,7 @@ A4 PDF). It is being built **next to** the old designer, not replacing it:
   options 3 + 8 of 10: finger too thick at fence edges, fullscreen toolbars covered the photo).
   Server `mvgreen_ai_detect_v2` = Google Gemini segmentation (0.6.239; GPT-4.1 polygons were
   useless on a real photo – owner: "absolutně nedostačující"). Key: WP admin Nastavení → MVGreen AI (option `mvgreen_gemini_api_key`, 0.6.240) or `MVGREEN_GEMINI_API_KEY`
-  (optional `MVGREEN_GEMINI_MODEL`) in wp-config; tries gemini-2.5-flash → 3.8-flash →
+  (optional `MVGREEN_GEMINI_MODEL`) in wp-config; tries gemini-3.8-flash → 3-flash-preview (2.5-flash is closed to new users; 0.6.242 forces a responseSchema with mask polygons and retries thinkingLevel minimal→low→none) →
   3-flash-preview and keeps the answer with the most masks (0.6.241: 3-flash-preview returned boxes
   only on the owner's photo; response `notes` + the wizard log show model/mask counts). Client:
   segment → smallest object covering ≥50 % of it; green (vegetation) segments never go to house/
