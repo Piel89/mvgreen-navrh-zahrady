@@ -159,7 +159,7 @@
     // Nezelený (nevegetační) dílek se středem v obdélníku auta patří autu; zelená louka nad autem ne.
     var cars = order.filter(function (i) { return objects[i].kind === 'car' && objects[i].box; });
     if (cars.length) for (var s3 = 1; s3 <= N; s3++) {
-      if (owner[s3] >= 0 || isVeg(st.mean[s3])) continue;
+      if ((owner[s3] >= 0 && objects[owner[s3]].kind !== 'offsite') || isVeg(st.mean[s3])) continue;
       var c3 = st.cen[s3];
       for (var q3 = 0; q3 < cars.length; q3++) {
         var b3 = objects[cars[q3]].box;
