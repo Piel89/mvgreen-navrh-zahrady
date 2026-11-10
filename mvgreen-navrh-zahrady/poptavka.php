@@ -102,7 +102,7 @@ add_shortcode('mvgreen_poptavka', function () {
       <label class="mvg-pp-drop">
         <input type="file" name="mvg_photos[]" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple>
         <span class="mvg-pp-drop-title">Přidat fotky zahrady</span>
-        <span class="mvg-pp-drop-hint">Až <?php echo (int) MVGREEN_POPTAVKA_MAX_FILES; ?> fotek z mobilu nebo počítače. Z fotek vám cenu odhadneme, přesnou domluvíme předem na místě.</span>
+        <span class="mvg-pp-drop-hint">Až <?php echo (int) MVGREEN_POPTAVKA_MAX_FILES; ?> fotek z mobilu nebo počítače. Z fotek vám cenu zdarma odhadneme, přesnou domluvíme předem na místě.</span>
       </label>
       <ul class="mvg-pp-list" aria-live="polite"></ul>
     </div>
