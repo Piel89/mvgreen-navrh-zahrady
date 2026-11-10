@@ -155,6 +155,17 @@
     // připadla louce → nejdřív auta (nejmenší obdélník první), teprve potom plochy mimo pozemek.
     // Test 0.6.259: pravidlo „nejdřív auta“ obarvilo i louku nad autem (obdélník auta je větší než auto)
     // → zrušeno, okna řeší maska SAM výše; zůstávají jen plochy mimo pozemek.
+    // Test 0.6.260: boční okna bílého auta odrážejí oblohu → bez vlastníka, pak je vzala obloha.
+    // Nezelený (nevegetační) dílek se středem v obdélníku auta patří autu; zelená louka nad autem ne.
+    var cars = order.filter(function (i) { return objects[i].kind === 'car' && objects[i].box; });
+    if (cars.length) for (var s3 = 1; s3 <= N; s3++) {
+      if (owner[s3] >= 0 || isVeg(st.mean[s3])) continue;
+      var c3 = st.cen[s3];
+      for (var q3 = 0; q3 < cars.length; q3++) {
+        var b3 = objects[cars[q3]].box;
+        if (c3[0] * 1000 >= b3[1] && c3[0] * 1000 <= b3[3] && c3[1] * 1000 >= b3[0] && c3[1] * 1000 <= b3[2]) { owner[s3] = cars[q3]; break; }
+      }
+    }
     var off = order.filter(function (i) { return objects[i].kind === 'offsite' && objects[i].box; });
     if (off.length) for (var s2 = 1; s2 <= N; s2++) {
       if (owner[s2] >= 0) continue;
