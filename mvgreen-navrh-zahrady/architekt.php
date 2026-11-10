@@ -267,6 +267,65 @@ add_action('wp_ajax_mvgreen_plant_photo', function () {
     wp_send_json_success($result + ['reason' => $reason]);
 });
 
+/**
+ * Soubory modelu SAM pro přesné obrysy objektů (2026-11-10). Gemini dobře pozná, CO na fotce je
+ * a kde (obdélník), ale obrys nakreslit neumí (Martinova fotka: „ani se to k dobrým obrysům
+ * nepřibližuje“). SlimSAM-50 v prohlížeči obkreslí objekt v obdélníku přesně (test na stejné fotce:
+ * dům, obě auta, štěrk, kůlna). Soubory (~57 MB, pevné verze, kontrola SHA-256) si server stáhne
+ * jednou do uploads a pak je posílá sám – prohlížeč zákazníka se na Hugging Face ani jsDelivr
+ * nepřipojuje (GDPR) a fotka neopouští prohlížeč. Plugin ZIP tím nenabobtná o 57 MB.
+ */
+function mvgreen_sam_files() {
+    $tj = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1/dist/';
+    $hf = 'https://huggingface.co/Xenova/slimsam-50-uniform/resolve/3959c85fa93ab1c3dedd879c833aae1931961e19/';
+    $m = 'models/Xenova/slimsam-50-uniform/';
+    return [
+        'transformers.min.js' => [$tj . 'transformers.min.js', '79fad8c1c2fd165bf1e77ace20ce023fab4dc13b6621f0e586c9b8c59c4d09d8'],
+        'ort/ort-wasm-simd-threaded.jsep.mjs' => [$tj . 'ort-wasm-simd-threaded.jsep.mjs', '08fb86ec433c78bfb032c5d84a68b8e8e5a8d81268fa39e24314179a5767a5b9'],
+        'ort/ort-wasm-simd-threaded.jsep.wasm' => [$tj . 'ort-wasm-simd-threaded.jsep.wasm', 'c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39'],
+        $m . 'config.json' => [$hf . 'config.json', '122411ca7e10980ffcdc938b754e5895d9f29af1da8b7ea7f857b81de5f89b08'],
+        $m . 'preprocessor_config.json' => [$hf . 'preprocessor_config.json', '225545a743c654e3c495ec6f545a0eaba57c8ba3fbbd8483b3cb1c0fc58db517'],
+        $m . 'onnx/vision_encoder_quantized.onnx' => [$hf . 'onnx/vision_encoder_quantized.onnx', '84934ceb504b07a757c63f56440699c9c593933b41bea3e11c261eb27a35baab'],
+        $m . 'onnx/prompt_encoder_mask_decoder_quantized.onnx' => [$hf . 'onnx/prompt_encoder_mask_decoder_quantized.onnx', 'cb90b279f549d2cab7fd6e20c38522438c65d84bdcca3d2a764cff7d857fdce2'],
+    ];
+}
+
+add_action('wp_ajax_mvgreen_sam_file', function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
+    $files = mvgreen_sam_files();
+    $f = isset($_POST['f']) ? sanitize_text_field(wp_unslash($_POST['f'])) : '';
+    if (!isset($files[$f])) wp_send_json_error(['message' => 'Neznámý soubor.'], 400);
+    $up = wp_upload_dir();
+    $root = trailingslashit($up['basedir']) . 'mvgreen-sam';
+    $base = set_url_scheme(trailingslashit($up['baseurl']) . 'mvgreen-sam/');
+    $path = $root . '/' . $f;
+    $done = $path . '.ok';   // značka „staženo a ověřeno“ – hash 30 MB souboru se nepočítá při každém volání
+    if (file_exists($path) && file_exists($done)) wp_send_json_success(['base' => $base]);
+    if (!wp_mkdir_p(dirname($path))) wp_send_json_error(['message' => 'Nelze vytvořit složku v uploads.'], 500);
+    if (!file_exists($root . '/.htaccess')) {
+        // stejná ochrana jako mvgreen_harden_upload_dir + správný typ pro WebAssembly a JS moduly
+        @file_put_contents($root . '/.htaccess', "<FilesMatch \"\\.(php|phtml|php[0-9]?|pl|py|cgi|asp|aspx|sh)$\">\n"
+            . "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n"
+            . "<IfModule !mod_authz_core.c>\nOrder allow,deny\nDeny from all\n</IfModule>\n</FilesMatch>\n"
+            . "<IfModule mod_php.c>\nphp_flag engine off\n</IfModule>\n"
+            . "<IfModule mod_mime.c>\nAddType application/wasm .wasm\nAddType text/javascript .mjs\n</IfModule>\n"
+            . "<IfModule mod_expires.c>\nExpiresActive On\nExpiresDefault \"access plus 1 year\"\n</IfModule>\n");
+        @file_put_contents($root . '/index.php', '<?php // Silence is golden.');
+    }
+    @set_time_limit(300);
+    $tmp = $path . '.part';
+    $r = wp_remote_get($files[$f][0], ['timeout' => 240, 'stream' => true, 'filename' => $tmp, 'headers' => ['User-Agent' => 'MVGreenGardenDesigner/1.0 (https://mvgreen.cz) WordPress']]);
+    if (is_wp_error($r) || wp_remote_retrieve_response_code($r) !== 200) {
+        @unlink($tmp);
+        wp_send_json_error(['message' => 'Stažení ' . $f . ': ' . (is_wp_error($r) ? $r->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code($r))], 502);
+    }
+    if (!hash_equals($files[$f][1], (string) hash_file('sha256', $tmp))) { @unlink($tmp); wp_send_json_error(['message' => 'Soubor ' . $f . ' nesedí (kontrolní součet).'], 502); }
+    if (!@rename($tmp, $path)) { @unlink($tmp); wp_send_json_error(['message' => 'Nelze uložit ' . $f . '.'], 500); }
+    @file_put_contents($done, '1');
+    wp_send_json_success(['base' => $base]);
+});
+
 add_shortcode('mvgreen_ai_architekt', function ($atts) {
     if (post_password_required()) return get_the_password_form();
     $a = shortcode_atts(['pred' => '', 'po' => '', 'ukazka' => ''], $atts, 'mvgreen_ai_architekt');
@@ -279,9 +338,10 @@ add_shortcode('mvgreen_ai_architekt', function ($atts) {
     wp_enqueue_script('mvgreen-plan-render', $base . 'assets/v2/plan-render.js', [], $v, true);
     wp_enqueue_script('mvgreen-plants-v2', $base . 'assets/v2/plants-catalog.js', [], $v, true);
     wp_enqueue_script('mvgreen-mark-v2', $base . 'assets/v2/mark.js', ['mvgreen-paint-mask', 'mvgreen-ai-safety'], $v, true);
+    wp_enqueue_script('mvgreen-sam-v2', $base . 'assets/v2/sam.js', [], $v, true);
     wp_enqueue_script('mvgreen-sketch', $base . 'assets/v2/sketch.js', ['mvgreen-mark-v2'], $v, true);
     wp_enqueue_script('mvgreen-architekt-pdf', $base . 'assets/v2/architekt-pdf.js', ['mvgreen-plan-render'], $v, true);
-    wp_enqueue_script('mvgreen-architekt', $base . 'assets/v2/architekt.js', ['mvgreen-plan-render', 'mvgreen-architekt-pdf', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-plants-v2', 'mvgreen-sketch', 'mvgreen-mark-v2'], $v, true);
+    wp_enqueue_script('mvgreen-architekt', $base . 'assets/v2/architekt.js', ['mvgreen-plan-render', 'mvgreen-architekt-pdf', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-plants-v2', 'mvgreen-sketch', 'mvgreen-mark-v2', 'mvgreen-sam-v2'], $v, true);
     $logo_id = (int) get_theme_mod('custom_logo', 0);
     if (!$logo_id) $logo_id = (int) get_option('site_logo', 0);
     $logo = $logo_id ? wp_get_attachment_image_url($logo_id, 'medium') : '';
