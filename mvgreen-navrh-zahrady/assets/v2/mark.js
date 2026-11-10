@@ -222,7 +222,7 @@
         + '<button type="button" class="mvm-ctl mvm-zoom" data-zoom hidden>Oddálit</button>'
         + '<button type="button" class="mvm-ctl mvm-list" data-list aria-label="Seznam objektů"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.2" fill="currentColor"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/><circle cx="4" cy="18" r="1.2" fill="currentColor"/></svg></button>'
         + '<div class="mvm-toast" data-toast></div>'
-        + '<div class="mvm-load" data-load><div><div class="mvm-spin"></div><b>Hledám na fotce dům, plot, auta…</b><span>Trvá to asi 10–20 sekund.</span></div></div>'
+        + '<div class="mvm-load" data-load><div><div class="mvm-spin"></div><b>Hledám na fotce dům, plot, auta…</b><span>Trvá to asi minutu (poprvé déle).</span></div></div>'
         + '<div class="mvm-sheet" data-sheet><header><b>Co je na fotce</b><button type="button" data-sheetclose>Zpět na fotku</button></header>'
         + '<div class="mvm-legend"><span><i style="background:#2F8F4E"></i>Zůstane beze změny</span><span><i style="background:#D2452F"></i>Pryč</span><span><i style="background:#E9B949"></i>Navrhnout znovu (AI smí změnit)</span></div>'
         + '<div class="mvm-rows" data-rows></div>'
