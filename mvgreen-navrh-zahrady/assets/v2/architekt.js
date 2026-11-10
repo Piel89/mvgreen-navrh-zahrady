@@ -126,7 +126,7 @@
     var mk = $('[data-mark]'); if (mk) mk.onclick = markArea;
     var sk = $('[data-sketch]'); if (sk) sk.onclick = function () {
       save();
-      window.MVGreenSketch.open(st.original, st.editMask, st.sketch).then(function (r) { if (r) { st.sketch = r.strokes; st.sketchPreview = r.strokes.length ? r.preview : ''; } render(); });
+      window.MVGreenSketch.open(st.original, st.editMask, st.sketch, { cacheKey: st.cacheKey }).then(function (r) { if (r) { st.sketch = r.strokes; st.sketchPreview = r.strokes.length ? r.preview : ''; } render(); });
     };
     var geo = $('[data-geo]'); if (geo) geo.onclick = function () { save(); lookupPlace(); };
     var run = $('[data-run]'); if (run) run.onclick = function () { save(); runAll(); };
@@ -150,15 +150,33 @@
       var s = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url;
+      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url; st.markState = null; st.removeNames = []; st.paintCategory = null;
       render();
     }).catch(function (e) { alert(e.message); });
   }
+  // Martin 2026-11-10 (řešení 3 + 8): místo štětce AI předznačí objekty a zákazník jen ťuká opravy
+  // na čisté celé obrazovce (mark.js). Štětec zůstává jako „Doladit štětcem“ a jako záloha.
   function markArea() {
+    var M = window.MVGreenMarkV2;
+    if (!M) return markBrush();
+    var took = function (r) {
+      st.paintCategory = r.category; st.maskPreview = r.previewDataUrl || '';
+      st.markState = r.state || null; st.removeNames = r.removeNames || [];
+      st.removeWhere = r.hasRemove ? maskWhere(r.removeMask) : '';
+      st.editMask = S.growMask(fillHoles(r.editMask, r.hasRemove ? r.removeMask : null));
+      render();
+    };
+    M.open(st.original, {
+      cacheKey: st.cacheKey, initial: st.markState || null,
+      detect: function () { return ajax('mvgreen_ai_detect_v2', { photo: scaled(st.original, 1024, 'image/jpeg', 0.85) }).then(function (d) { log('AI předznačení: ' + (d.objects || []).length + ' objektů.'); return d.objects || []; }); },
+      onBrush: function (r) { st.markState = null; st.removeNames = []; took(r); }
+    }).then(function (r) { if (r) took(r); });
+  }
+  function markBrush() {
     P.confirmPaintMask(st.original, 'Označte „Zůstane“ všechno, co se nesmí změnit (dům, plot, dlažba, stromy), a „Odstranit“ to, co má zmizet. Zbytek smí AI navrhnout znovu.', { cacheKey: st.cacheKey, initialCategory: st.paintCategory || null })
       .then(function (r) {
         if (!r) return;
-        st.paintCategory = r.category; st.maskPreview = r.previewDataUrl || '';
+        st.paintCategory = r.category; st.maskPreview = r.previewDataUrl || ''; st.markState = null; st.removeNames = [];
         st.removeWhere = r.hasRemove ? maskWhere(r.removeMask) : '';
         st.editMask = S.growMask(fillHoles(r.editMask, r.hasRemove ? r.removeMask : null));
         render();
@@ -279,6 +297,7 @@
     var fences = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     return 'Navrhni zahradu ve stylu „' + STYLES[st.style] + '“ s ' + { low: 'minimální', mid: 'střední', high: 'vyšší' }[st.care] + ' údržbou. '
       + (st.wish ? 'PŘÁNÍ ZÁKAZNÍKA (má přednost před vším ostatním a musí být na fotce jasně vidět): ' + st.wish + '. ' : '')
+      + ((st.removeNames || []).length ? 'Zákazník chce odstranit: ' + st.removeNames.join(', ') + '. ' : '')
       + (st.removeWhere ? 'Věci, které zákazník nechal odstranit, stály ' + st.removeWhere + '. Když přání mluví o místě, kde stojí/stály (např. „kde stojí auta“), myslí PŘESNĚ tuto oblast – nové zpevněné plochy a zídky dej jen tam a zbytek upravované plochy řeš podle stylu (trávník, záhony). ' : '')
       + (hasSketch() ? 'ROZMÍSTĚNÍ PODLE NÁČRTU ZÁKAZNÍKA (druhý obrázek) – ZÁVAZNÉ, má přednost před vlastním nápadem: '
           + window.MVGreenSketch.describe(st.sketch).replace(/\n/g, ' ')

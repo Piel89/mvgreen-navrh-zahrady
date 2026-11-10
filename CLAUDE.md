@@ -211,6 +211,19 @@ A4 PDF). It is being built **next to** the old designer, not replacing it:
   "Kontrola fotek rostlin" (db collection `verdicts/<plant key>` = {s:'ok'|'bad'}); read it with
   ArtifactData, set those statuses in plant-photos.json, rerun plant-photos.js + build-plants.js.
   Review data: `node scripts/photo-review-data.js <dir>` (thumbnails stay out of the public repo).
+- `assets/v2/mark.js` (`MVGreenMarkV2`, 0.6.238) – step-1 marking WITHOUT the brush (owner picked
+  options 3 + 8 of 10: finger too thick at fence edges, fullscreen toolbars covered the photo).
+  Server `mvgreen_ai_detect_v2` (gpt-4.1 vision, ~1 Kč) returns objects {kind, name, suggestion,
+  polygon 0–1000}; client snaps polygons to SLIC segments (majority vote, smaller objects win),
+  adds sky from `seg.skyIds`. Tap = cycle Zůstane → Pryč → Navrhnout znovu; tap on unassigned =
+  grow a similar-colour region; long-press = split that part off. Clean fullscreen: only ×,
+  Hotovo, undo, list button; they hide while touching; pinch zoom. Output = same contract as
+  `confirmPaintMask` + `state` (reopen without a new AI call) + keep/removeNames (removeNames go
+  into the prompt). "Doladit štětcem" opens the old brush with the same category array.
+  Also exports `stats/grow/polygon` (region growing + outline ≤16 points) used by sketch.js.
+- `assets/v2/sketch.js` – tool „Ťuknout do plochy“ (option 10, default tool): tap → outline found
+  from segments inside the editable area → menu next to the finger (dlažba/záhon/kačírek/trávník,
+  větší/menší plocha) → stored as a normal area item.
 - `assets/v2/sketch.js` – customer sketch by TAPPING (owner rejected finger-drawing as imprecise):
   wall/path = points, steps = two edges (width), areas = corners, tree/shrub = tap; optional note
   per element. Sent to gpt-image as a 2nd `image[]` (`guide`, same letterbox as the photo) plus a

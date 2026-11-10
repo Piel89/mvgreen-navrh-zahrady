@@ -220,4 +220,5 @@ html.mvg2-sk-open,html.mvg2-sk-open body{overflow:hidden}
 .mvg2-sk__note label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:#C9D8CE}
 .mvg2-sk__note input{min-height:42px;border-radius:10px;border:2px solid #34483C;background:#1B2A21;color:#fff;font:500 15px Inter,system-ui,sans-serif;padding:0 12px}
 .mvg2-sk__bar>button[disabled]{opacity:.4}
-.mvg2-sk__count{font-size:13px;color:#C9D8CE}
+.mvg2-sk__count{font-size:13px;color:#C9D8CE}.mvg2-sk__tools i.is-region{background:transparent!important;border:2px dashed #1c2a20;border-radius:5px}
+.mvg2-sk__menu button{cursor:pointer}

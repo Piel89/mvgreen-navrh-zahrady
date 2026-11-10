@@ -18,7 +18,10 @@
  */
 (function () {
   'use strict';
+  // „Ťuknout do plochy“ (Martin 2026-11-10, řešení 10): ťuknutí najde obrys plochy podle dílků fotky
+  // a nabídne, co tam má být. Výsledek se uloží jako běžná plocha (záhon, dlažba…), sám se neukládá.
   var TOOLS = [
+    { id: 'region', name: 'Ťuknout do plochy', type: 'region', color: '#FFFFFF' },
     { id: 'wall', name: 'Opěrná zeď', type: 'line', color: '#E53935' },
     { id: 'steps', name: 'Schody', type: 'steps', color: '#00A8B8' },
     { id: 'path', name: 'Chodník / cesta', type: 'line', color: '#FF8A00' },
@@ -103,10 +106,12 @@
   }
 
   /* ---------- obrazovka náčrtu ---------- */
-  function open(photo, editMask, initial) {
+  function open(photo, editMask, initial, opts) {
+    opts = opts || {};
     return new Promise(function (resolve) {
-      var items = (initial || []).filter(function (it) { return it && it.pts && !it.size; }).map(function (it) { return { tool: it.tool, pts: it.pts.map(function (p) { return p.slice(); }), closed: it.closed, note: it.note || '' }; });
-      var tool = 'wall', draft = null, last = null;
+      var items = (initial || []).filter(function (it) { return it && it.pts && !it.size && BY[it.tool] && BY[it.tool].type !== 'region'; }).map(function (it) { return { tool: it.tool, pts: it.pts.map(function (p) { return p.slice(); }), closed: it.closed, note: it.note || '' }; });
+      var canRegion = !!(window.MVGreenMarkV2 && window.MVGreenPaintMask);
+      var tool = canRegion ? 'region' : 'wall', draft = null, last = null, region = null;
       var W = photo.width, H = photo.height, sc = Math.min(1, 1600 / Math.max(W, H));
       var cw = Math.round(W * sc), ch = Math.round(H * sc);
       var el = document.createElement('div'); el.className = 'mvg2-sk';
@@ -138,6 +143,10 @@
       function paint() {
         cx.clearRect(0, 0, cw, ch); cx.drawImage(base, 0, 0);
         draw(cx, cw, ch, items.concat(draft ? [draft] : []), { handles: true, k: 1 / scale });
+        if (region && region.pts.length >= 3) {
+          cx.beginPath(); region.pts.forEach(function (p, i) { cx[i ? 'lineTo' : 'moveTo'](p[0] * cw, p[1] * ch); }); cx.closePath();
+          cx.fillStyle = 'rgba(255,255,255,0.3)'; cx.fill(); cx.setLineDash([8 / scale, 6 / scale]); cx.lineWidth = 3 / scale; cx.strokeStyle = '#fff'; cx.stroke(); cx.setLineDash([]);
+        }
       }
       function fit() {
         var st = el.querySelector('[data-stage]'), r = st.getBoundingClientRect();
@@ -146,6 +155,7 @@
       }
       function hint() {
         var t = BY[tool], n = draft ? draft.pts.length : 0;
+        if (t.type === 'region') return region ? 'Vyberte, co má na označené ploše být.' : 'Ťukněte do plochy, kterou chcete změnit. Obrys se najde sám.';
         if (t.type === 'point') return 'Ťukněte do fotky, kam chcete ' + t.name.toLowerCase() + '.';
         if (t.type === 'steps') return n === 0 ? 'Ťukněte na JEDEN kraj schodů.' : 'Ťukněte na DRUHÝ kraj schodů – tím určíte jejich šířku.';
         if (t.type === 'line') return n === 0 ? 'Ťukněte, ODKUD má ' + (tool === 'wall' ? 'zeď' : 'cesta') + ' vést.' : n === 1 ? 'Ťukněte, KAM má vést.' : 'Můžete přidat další lomový bod, nebo stiskněte Dokončit.';
@@ -160,8 +170,8 @@
       }
       function ui() {
         el.querySelector('[data-hint]').textContent = hint() + (window.innerHeight > window.innerWidth && W > H ? ' Tip: otočte telefon na šířku.' : '');
-        el.querySelector('[data-tools]').innerHTML = TOOLS.map(function (x) { return '<button type="button" data-tool="' + x.id + '" class="' + (x.id === tool ? 'is-on' : '') + '"><i style="background:' + x.color + '" class="is-' + x.type + '"></i>' + x.name + '</button>'; }).join('');
-        el.querySelectorAll('[data-tool]').forEach(function (b) { b.onclick = function () { if (draft) finish(); tool = b.dataset.tool; ui(); }; });
+        el.querySelector('[data-tools]').innerHTML = TOOLS.filter(function (x) { return x.type !== 'region' || canRegion; }).map(function (x) { return '<button type="button" data-tool="' + x.id + '" class="' + (x.id === tool ? 'is-on' : '') + '"><i style="background:' + x.color + '" class="is-' + x.type + '"></i>' + x.name + '</button>'; }).join('');
+        el.querySelectorAll('[data-tool]').forEach(function (b) { b.onclick = function () { if (draft) finish(); dropRegion(); tool = b.dataset.tool; ui(); }; });
         var nb = el.querySelector('[data-notebox]');
         nb.innerHTML = !draft && last ? '<label>Upřesnění k prvku „' + BY[last.tool].name + '“ (nepovinné)<input type="text" maxlength="80" placeholder="např. gabiony, výška 60 cm" value="' + String(last.note || '').replace(/"/g, '&quot;') + '"></label>' : '';
         var inp = nb.querySelector('input'); if (inp) inp.oninput = function () { last.note = inp.value.slice(0, 80); };
@@ -215,6 +225,7 @@
         if (draft && h && h.it === draft && h.j === 0 && BY[draft.tool].type === 'area' && draft.pts.length >= 3) { finish(); return; }
         if (allowed && !allowed(p)) { toast('Tady je místo, které má zůstat beze změny (krok 1). Ťukněte do upravované plochy.'); return; }
         var t = BY[tool];
+        if (t.type === 'region') { regionTap(p, e); return; }
         if (t.type === 'point') { var it = { tool: tool, pts: [p], note: '' }; items.push(it); last = it; ui(); return; }
         if (!draft) draft = { tool: tool, pts: [], note: '' };
         draft.pts.push(p);
@@ -222,6 +233,40 @@
         ui();
       });
       cv.addEventListener('pointercancel', function () { drag = null; downAt = null; });
+
+      /* --- plocha ťuknutím: obrys z dílků fotky + nabídka typu plochy u prstu --- */
+      var segP = null;
+      function dropRegion() { region = null; var m = el.querySelector('.mvg2-sk__menu'); if (m) m.remove(); paint(); }
+      function regionTap(p, e) {
+        dropRegion();
+        if (!segP) { toast('Chvilku, připravuji fotku…'); segP = window.MVGreenPaintMask.prepareSegmentation(photo, opts.cacheKey); }
+        segP.then(function (seg) {
+          var M = window.MVGreenMarkV2, stt = M.stats(seg);
+          var x = Math.min(seg.W - 1, Math.floor(p[0] * seg.W)), y = Math.min(seg.H - 1, Math.floor(p[1] * seg.H)), seed = seg.labels[y * seg.W + x];
+          var okSeg = function (n) { return !allowed || allowed(stt.cen[n]); };
+          var build = function (loose) { var reg = M.grow(seg, seed, okSeg, loose); return { pts: M.polygon(seg, reg), loose: loose }; };
+          region = build(false);
+          if (region.pts.length < 3) { region = null; toast('Plochu se nepodařilo ohraničit. Zkuste ťuknout jinam nebo použijte rohy plochy.'); return; }
+          paint(); menu(e, build); ui();
+        }).catch(function () { toast('Fotku se nepodařilo připravit. Použijte rohy plochy (Záhon, Dlažba…).'); });
+      }
+      function menu(e, build) {
+        var st = el.querySelector('[data-stage]'), r = st.getBoundingClientRect(), m = document.createElement('div');
+        m.className = 'mvg2-sk__menu';
+        m.style.cssText = 'position:absolute;z-index:5;background:#fff;border-radius:12px;box-shadow:0 6px 22px rgba(0,0,0,.35);padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;width:236px;max-width:calc(100% - 16px)';
+        m.innerHTML = TOOLS.filter(function (x) { return x.type === 'area'; }).map(function (x) { return '<button type="button" data-pick="' + x.id + '" style="border:0;border-radius:9px;padding:10px 6px;font:700 14px system-ui,sans-serif;color:#fff;background:' + x.color + '">' + x.name + '</button>'; }).join('')
+          + '<button type="button" data-grow style="border:1px solid #ccd;border-radius:9px;padding:9px 6px;font:600 13px system-ui,sans-serif;background:#fff;color:#1c2a20">' + (region.loose ? 'Menší plocha' : 'Větší plocha') + '</button>'
+          + '<button type="button" data-no style="border:1px solid #ccd;border-radius:9px;padding:9px 6px;font:600 13px system-ui,sans-serif;background:#fff;color:#1c2a20">Zrušit</button>';
+        st.appendChild(m);
+        var mx = e.clientX - r.left, my = e.clientY - r.top, mw = m.offsetWidth, mh = m.offsetHeight;
+        var left = Math.max(8, Math.min(r.width - mw - 8, mx - mw / 2)), top = my + 24 + mh < r.height ? my + 24 : Math.max(8, my - mh - 24);
+        m.style.left = left + 'px'; m.style.top = top + 'px';
+        m.querySelectorAll('[data-pick]').forEach(function (b) {
+          b.onclick = function () { var it = { tool: b.dataset.pick, pts: region.pts, closed: true, note: '' }; items.push(it); last = it; dropRegion(); ui(); };
+        });
+        m.querySelector('[data-grow]').onclick = function () { var nr = build(!region.loose); m.remove(); if (nr.pts.length >= 3) region = nr; paint(); menu(e, build); };
+        m.querySelector('[data-no]').onclick = function () { dropRegion(); ui(); };
+      }
       var close = function (save) {
         window.removeEventListener('resize', fit); el.remove(); document.documentElement.classList.remove('mvg2-sk-open');
         if (!save) return resolve(null);
