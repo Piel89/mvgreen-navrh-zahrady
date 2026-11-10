@@ -161,20 +161,29 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
     };
     $last = 'AI neodpověděla.'; $best = null; $used = ''; $notes = [];
     $tries = [];
-    foreach ($models as $model) foreach (['minimal', 'low', ''] as $tl) $tries[] = [$model, $tl];
+    // Test 0.6.247 (2026-11-10): dotaz běžel přes 100 s (až 6 pokusů po 120 s) a WEDOS ho utnul
+    // chybou 503 – a v tu dobu hlásil 503 i celý web. Teď: naposledy fungující model a nastavení
+    // jako první, celkový limit 45 s, při vypršení času se model dál nezkouší.
+    $ok = get_option('mvgreen_gemini_ok');
+    if (is_array($ok) && in_array($ok[0] ?? '', $models, true)) $tries[] = [$ok[0], (string) ($ok[1] ?? '')];
+    foreach ($models as $model) foreach (['minimal', 'low', ''] as $tl) if (!in_array([$model, $tl], $tries, true)) $tries[] = [$model, $tl];
     $skip = [];
+    $deadline = microtime(true) + 45;
+    @set_time_limit(90);
     foreach ($tries as $try) {
         list($model, $tl) = $try;
         if (!empty($skip[$model])) continue;
+        $left = (int) floor($deadline - microtime(true));
+        if ($left < 8) { $notes[] = 'Časový limit 45 s vyčerpán.'; break; }
         // „For better results, disable thinking“ (dokumentace Gemini) – ne každý model umí „minimal“
         $gc = ['responseMimeType' => 'application/json', 'responseSchema' => $schema, 'temperature' => 0.3];
         if ($tl) $gc['thinkingConfig'] = ['thinkingLevel' => $tl];
         $r = wp_remote_post('https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent', [
             'headers' => ['x-goog-api-key' => $gkey, 'Content-Type' => 'application/json'],
             'body' => wp_json_encode(['contents' => [['parts' => [['inline_data' => ['mime_type' => 'image/jpeg', 'data' => $m[1]]], ['text' => $prompt]]]], 'generationConfig' => $gc]),
-            'timeout' => 120,
+            'timeout' => $left,
         ]);
-        if (is_wp_error($r)) { $last = 'Spojení s Gemini selhalo: ' . $r->get_error_message(); $notes[] = $model . ': ' . $last; continue; }
+        if (is_wp_error($r)) { $last = 'Spojení s Gemini selhalo: ' . $r->get_error_message(); $notes[] = $model . ': ' . $last; $skip[$model] = true; continue; }
         $code = wp_remote_retrieve_response_code($r); $json = json_decode(wp_remote_retrieve_body($r), true);
         if ($code < 200 || $code >= 300) {
             $emsg = (string) ($json['error']['message'] ?? ('HTTP ' . $code));
@@ -183,6 +192,7 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
             continue;
         }
         $skip[$model] = true;
+        update_option('mvgreen_gemini_ok', [$model, $tl], false);
         $text = '';
         foreach ((array) ($json['candidates'][0]['content']['parts'] ?? []) as $p) if (isset($p['text'])) $text .= $p['text'];
         $text = trim(preg_replace('~^\s*```(?:json)?|```\s*$~', '', $text));
