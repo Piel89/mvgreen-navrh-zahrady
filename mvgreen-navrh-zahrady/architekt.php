@@ -99,7 +99,7 @@ add_action('wp_ajax_mvgreen_ai_plan_v2', function () {
  * chce nejdřív bezplatnou úroveň; když nebude stačit, přejde se na Grounded SAM (Replicate).
  * POZOR: bezplatná úroveň Gemini smí data použít ke zlepšování modelů – jen na testy s vlastními
  * fotkami, pro zákazníky placená úroveň (GDPR).
- * wp-config.php: define('MVGREEN_GEMINI_API_KEY', '…'); volitelně MVGREEN_GEMINI_MODEL.
+ * Klíč: WordPress → Nastavení → MVGreen AI (nebo MVGREEN_GEMINI_API_KEY ve wp-config.php).
  */
 function mvgreen_detect_v2_kinds() {
     // kategorie v dotazu → kind v pluginu
@@ -111,7 +111,8 @@ function mvgreen_detect_v2_kinds() {
 add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
     if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
-    if (!defined('MVGREEN_GEMINI_API_KEY') || !MVGREEN_GEMINI_API_KEY) wp_send_json_error(['message' => 'Chybí MVGREEN_GEMINI_API_KEY ve wp-config.php.'], 200);
+    $gkey = function_exists('mvgreen_gemini_key') ? mvgreen_gemini_key() : '';
+    if (!$gkey) wp_send_json_error(['message' => 'Chybí klíč Google Gemini (WordPress → Nastavení → MVGreen AI).'], 200);
     $photo = isset($_POST['photo']) ? wp_unslash($_POST['photo']) : '';
     if (!preg_match('~^data:image/jpeg;base64,([A-Za-z0-9+/=]+)$~D', $photo, $m) || strlen($photo) > 4000000) wp_send_json_error(['message' => 'Chybí fotka.'], 400);
     $kinds = mvgreen_detect_v2_kinds();
@@ -126,7 +127,7 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
         $gc = ['responseMimeType' => 'application/json', 'temperature' => 0.3];
         $gc['thinkingConfig'] = strpos($model, 'gemini-2') === 0 ? ['thinkingBudget' => 0] : ['thinkingLevel' => 'minimal'];
         $r = wp_remote_post('https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent', [
-            'headers' => ['x-goog-api-key' => MVGREEN_GEMINI_API_KEY, 'Content-Type' => 'application/json'],
+            'headers' => ['x-goog-api-key' => $gkey, 'Content-Type' => 'application/json'],
             'body' => wp_json_encode(['contents' => [['parts' => [['inline_data' => ['mime_type' => 'image/jpeg', 'data' => $m[1]]], ['text' => $prompt]]]], 'generationConfig' => $gc]),
             'timeout' => 120,
         ]);

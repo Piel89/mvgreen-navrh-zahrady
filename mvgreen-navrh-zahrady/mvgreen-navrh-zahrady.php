@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.239
+ * Version: 0.6.240
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.239');
+define('MVGREEN_VERSION', '0.6.240');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -815,6 +815,40 @@ add_action('init', function () {
         'type' => 'integer', 'default' => 1, 'show_in_rest' => true,
         'sanitize_callback' => function ($v) { return max(0, min(20, (int) $v)); },
     ]);
+});
+
+/**
+ * Nastavení → MVGreen AI (2026-11-10): klíč Google Gemini pro AI předznačení se zadává ve
+ * WordPressu, ne do wp-config.php – majitel: „cestu jak se dostanu do wp-config“ (hosting WEDOS,
+ * jen přes FTP). Konstanta MVGREEN_GEMINI_API_KEY ve wp-config.php má přednost, pokud existuje.
+ * Klíč se do prohlížeče nikdy neposílá; pole ukazuje jen poslední 4 znaky.
+ */
+function mvgreen_gemini_key() {
+    if (defined('MVGREEN_GEMINI_API_KEY') && MVGREEN_GEMINI_API_KEY) return MVGREEN_GEMINI_API_KEY;
+    return (string) get_option('mvgreen_gemini_api_key', '');
+}
+add_action('admin_menu', function () {
+    add_options_page('MVGreen AI', 'MVGreen AI', 'manage_options', 'mvgreen-ai', function () {
+        if (!current_user_can('manage_options')) return;
+        $msg = '';
+        if (isset($_POST['mvgreen_gemini_save']) && check_admin_referer('mvgreen_gemini_key')) {
+            $k = isset($_POST['mvgreen_gemini_api_key']) ? trim(sanitize_text_field(wp_unslash($_POST['mvgreen_gemini_api_key']))) : '';
+            if (!empty($_POST['mvgreen_gemini_delete'])) { delete_option('mvgreen_gemini_api_key'); $msg = 'Klíč smazán.'; }
+            elseif ($k !== '') { update_option('mvgreen_gemini_api_key', $k, false); $msg = 'Klíč uložen.'; }
+        }
+        $cur = mvgreen_gemini_key();
+        echo '<div class="wrap"><h1>MVGreen AI</h1>';
+        if ($msg) echo '<div class="notice notice-success"><p>' . esc_html($msg) . '</p></div>';
+        echo '<form method="post"><table class="form-table"><tr><th><label for="mvg-gk">Klíč Google Gemini</label></th><td>';
+        echo '<input type="password" id="mvg-gk" name="mvgreen_gemini_api_key" class="regular-text" autocomplete="off" placeholder="' . esc_attr($cur ? 'uložen, končí …' . substr($cur, -4) : 'vložte klíč z aistudio.google.com') . '">';
+        echo '<p class="description">Pro AI předznačení v novém architektovi. Nový klíč přepíše starý. '
+            . (defined('MVGREEN_GEMINI_API_KEY') && MVGREEN_GEMINI_API_KEY ? 'Pozor: ve wp-config.php je klíč, ten má přednost.' : '') . '</p>';
+        if ($cur && !(defined('MVGREEN_GEMINI_API_KEY') && MVGREEN_GEMINI_API_KEY)) echo '<label><input type="checkbox" name="mvgreen_gemini_delete" value="1"> Smazat uložený klíč</label>';
+        echo '</td></tr></table>';
+        wp_nonce_field('mvgreen_gemini_key');
+        submit_button('Uložit', 'primary', 'mvgreen_gemini_save');
+        echo '</form></div>';
+    });
 });
 
 /**
