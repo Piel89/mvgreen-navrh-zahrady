@@ -149,7 +149,10 @@
     }
     // Test 0.6.248: SAM obkreslil u „Louka a les v pozadí“ jen les, louka zůstala bez barvy.
     // Neoznačený dílek, jehož střed leží v obdélníku plochy mimo pozemek, patří k ní.
-    var off = order.filter(function (i) { return objects[i].kind === 'offsite' && objects[i].box; });
+    // Test 0.6.249: SAM obkreslil jen spodek bílého auta a horní polovina (okna, střecha) pak
+    // připadla louce → nejdřív auta (nejmenší obdélník první), teprve potom plochy mimo pozemek.
+    var off = order.filter(function (i) { return objects[i].kind === 'car' && objects[i].box; })
+      .concat(order.filter(function (i) { return objects[i].kind === 'offsite' && objects[i].box; }));
     if (off.length) for (var s2 = 1; s2 <= N; s2++) {
       if (owner[s2] >= 0) continue;
       var c = st.cen[s2];

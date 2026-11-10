@@ -21,7 +21,41 @@ add_action('wp_enqueue_scripts', function () {
     wp_enqueue_style('mvgreen-web-fonts', plugin_dir_url(__FILE__) . 'assets/fonts.css', [], $ver);
     wp_enqueue_style('mvgreen-web', plugin_dir_url(__FILE__) . 'assets/web.css', ['mvgreen-web-fonts'], $ver);
     wp_enqueue_script('mvgreen-web', plugin_dir_url(__FILE__) . 'assets/web.js', [], $ver, true);
+    // 2026-11-10: nový tmavý vzhled webu („2027“, návrh B) – jen pro stránky s body.mvg-lux-site.
+    wp_enqueue_style('mvgreen-web-lux', plugin_dir_url(__FILE__) . 'assets/web-lux.css', ['mvgreen-web'], MVGREEN_WEB_VERSION . '-' . filemtime(__DIR__ . '/assets/web-lux.css'));
 });
+
+/**
+ * Nový vzhled webu (2026-11-10, Martin: „chci změnit všechny stránky“). Dostanou ho stránky webu
+ * se společnou hlavičkou [mvgreen_hlavicka]; nástroje (AI architekt, návrhář, plán péče) zůstávají
+ * ve svém světlém vzhledu, ať se nerozbije jejich rozhraní. Vypnutí: konstanta MVGREEN_WEB_LUX = false.
+ */
+function mvgreen_web_is_lux() {
+    if (defined('MVGREEN_WEB_LUX') && !MVGREEN_WEB_LUX) return false;
+    if (!is_singular()) return false;
+    // Zapne se pro celý web až ve chvíli, kdy má úvodní stránka nový obsah (třída mvg-lux) –
+    // do té doby se po aktualizaci pluginu nic nezmění a stránky nejsou napůl ve starém vzhledu.
+    static $front = null;
+    if ($front === null) {
+        $fid = (int) get_option('page_on_front');
+        $front = $fid && strpos((string) get_post_field('post_content', $fid), 'mvg-lux') !== false;
+    }
+    if (!$front) return false;
+    $post = get_post();
+    if (!$post) return false;
+    $c = (string) $post->post_content;
+    if (!has_shortcode($c, 'mvgreen_hlavicka')) return false;
+    foreach (['mvgreen_ai_architekt', 'mvgreen_navrh_zahrady', 'mvgreen_plan_pece'] as $tool) if (has_shortcode($c, $tool)) return false;
+    return true;
+}
+add_filter('body_class', function ($classes) {
+    if (mvgreen_web_is_lux()) $classes[] = 'mvg-lux-site';
+    return $classes;
+});
+// pozadí stránky už v <head>, ať se při načítání neukáže bílý pruh šablony
+add_action('wp_head', function () {
+    if (mvgreen_web_is_lux()) echo "<style>html,body.mvg-lux-site{background:#0c1a13}</style>\n";
+}, 99);
 
 // 2026-11-08 (GDPR, Martin): WordPress by jinak pro každé emoji v textu stahoval obrázek ze s.w.org
 // (IP návštěvníka třetí straně bez souhlasu). Emoji pak vykreslí přímo zařízení návštěvníka.

@@ -1,0 +1,260 @@
+/* ===== Úvodní stránka „2027“ (2026-11-10, Martin vybral návrh B: tmavý, luxusní) =====
+   Vše jen uvnitř .mvg-lux – ostatní stránky (ceník, kontakty…) zůstávají ve starém vzhledu.
+   Obsah stránky: docs/web/uvodni-strana.html. Fotky: assets/web/. Písma: Young Serif + Schibsted Grotesk (fonts.css). */
+.mvg-lux-site,.mvg-lux{--bg:#0c1a13;--cream:#efebe0;--muted:#9fb0a4;--soft:#d6ddd2;--lime:#c8e07a;--line:rgba(239,235,224,.16);
+ background:var(--bg);color:var(--cream);font-family:"Schibsted Grotesk","Segoe UI",Arial,sans-serif;font-size:17px;line-height:1.6;font-weight:400}
+.mvg-lux *,.mvg-lux *::before,.mvg-lux *::after{box-sizing:border-box}
+.mvg-lux a{color:var(--lime)}
+.mvg-lux .lx-serif{font-family:'Young Serif',Georgia,serif;font-weight:400;letter-spacing:-.01em}
+.mvg-lux .lx-wrap{max-width:1360px;margin:0 auto;padding:0 40px}
+.mvg-lux .lx-eyebrow{font-size:13px;letter-spacing:.24em;color:var(--lime);font-weight:500;text-transform:uppercase}
+.mvg-lux h1,.mvg-lux h2,.mvg-lux h3{margin:0;color:inherit;text-transform:none}
+.mvg-lux .lx-h2{font-size:64px;line-height:.95}
+.mvg-lux i,.mvg-lux-site .mvg-site i{font-style:normal}
+.mvg-lux .lx-lime{color:var(--lime)}
+.mvg-lux .lx-btn{display:inline-flex;align-items:center;gap:12px;text-decoration:none!important;padding:17px 28px;border-radius:999px;font-weight:600;font-size:16px;min-height:48px}
+.mvg-lux .lx-btn--cream{background:var(--cream);color:var(--bg)!important}
+.mvg-lux .lx-btn--lime{background:var(--lime);color:var(--bg)!important}
+.mvg-lux .lx-btn:hover{filter:brightness(1.06)}
+
+/* hlavička [mvgreen_hlavicka] v tmavé variantě */
+.mvg-lux-site .mvg-header{background:var(--bg);border-bottom:1px solid var(--line)}
+.mvg-lux-site .mvg-header__in{max-width:1360px;padding:16px 40px}
+.mvg-lux-site .mvg-brand{color:var(--cream)!important}
+.mvg-lux-site .mvg-brand img{background:var(--cream);border-radius:50%;padding:5px;width:56px;height:56px}
+.mvg-lux-site .mvg-brand strong{font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:21px;letter-spacing:0;color:var(--cream)}
+.mvg-lux-site .mvg-brand span span{color:var(--muted)}
+.mvg-lux-site .mvg-nav a,.mvg-lux-site .mvg-nav__drop-btn{color:var(--cream)!important;font-weight:400}
+.mvg-lux-site .mvg-nav a:hover,.mvg-lux-site .mvg-nav a[aria-current=page]{color:var(--lime)!important;border-bottom-color:var(--lime)}
+.mvg-lux-site .mvg-nav__drop:hover .mvg-nav__drop-btn,.mvg-lux-site .mvg-nav__drop.is-open .mvg-nav__drop-btn{color:var(--lime)!important;border-bottom-color:var(--lime)}
+.mvg-lux-site .mvg-nav__drop-panel{background:#13261c;border-color:var(--line)}
+.mvg-lux-site .mvg-nav__drop-panel a:hover{background:rgba(239,235,224,.06)}
+.mvg-lux-site .mvg-header__call{background:var(--lime);color:var(--bg)!important;border-radius:999px;padding:12px 22px}
+.mvg-lux-site .mvg-menu-btn{background:transparent;border-color:var(--line);color:var(--cream)}
+
+/* úvod */
+.mvg-lux .lx-hero{position:relative;min-height:820px;display:flex;flex-direction:column;overflow:hidden}
+.mvg-lux .lx-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-width:none}
+.mvg-lux .lx-hero__shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,26,19,.35) 0%,rgba(12,26,19,.05) 30%,rgba(12,26,19,.15) 55%,rgba(12,26,19,.96) 100%)}
+.mvg-lux .lx-hero__in{position:relative;margin-top:auto;width:100%;padding-bottom:56px;display:flex;flex-direction:column;gap:36px}
+.mvg-lux .lx-hero h1{font-size:102px;line-height:.95;max-width:1100px}
+.mvg-lux .lx-hero__row{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;border-top:1px solid rgba(239,235,224,.22);padding-top:28px}
+.mvg-lux .lx-hero__row p{margin:0;max-width:480px;font-size:18px;color:var(--soft)}
+.mvg-lux .lx-hero__cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.mvg-lux .lx-rating{display:flex;align-items:center;gap:14px;background:rgba(12,26,19,.45);border:1px solid rgba(239,235,224,.25);border-radius:18px;padding:10px 18px 10px 10px;text-decoration:none!important;color:var(--cream)!important}
+.mvg-lux .lx-rating b{font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:32px;line-height:1}
+.mvg-lux .lx-rating small{display:flex;flex-direction:column;font-size:13px;line-height:1.4;color:var(--soft)}
+.mvg-lux .lx-g{width:44px;height:44px;flex:none;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center}
+.mvg-lux .lx-stars{color:#e9c46a;letter-spacing:2px}
+
+/* pruh služeb */
+.mvg-lux .lx-marquee{border-bottom:1px solid var(--line);overflow:hidden}
+.mvg-lux .lx-marquee div{display:flex;gap:48px;padding:26px 40px;white-space:nowrap;font-size:35px;color:#8fa394}
+.mvg-lux .lx-marquee b{font-weight:400;color:var(--lime)}
+
+/* služby – ceník */
+.mvg-lux .lx-sec{padding:120px 0}
+.mvg-lux .lx-services{display:flex;flex-wrap:wrap;gap:64px}
+.mvg-lux .lx-services__side{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:28px}
+.mvg-lux .lx-services__side p{margin:0;color:var(--muted);max-width:360px}
+.mvg-lux .lx-team{position:relative;border-radius:28px;overflow:hidden;height:400px}
+.mvg-lux .lx-team>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:35% 50%;max-width:none}
+.mvg-lux .lx-team__card{position:absolute;left:16px;right:16px;bottom:16px;background:rgba(12,26,19,.8);border:1px solid rgba(239,235,224,.18);border-radius:20px;padding:12px 16px;display:flex;align-items:center;gap:14px}
+.mvg-lux .lx-team__card strong{display:block;font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:21px;line-height:1.2}
+.mvg-lux .lx-team__card small{display:block;font-size:13px;color:#b9c6bc}
+.mvg-lux .lx-logo{flex:none;width:56px;height:56px;border-radius:16px;background:var(--cream);display:flex;align-items:center;justify-content:center}
+.mvg-lux .lx-logo img{width:46px;height:46px;object-fit:contain}
+.mvg-lux .lx-pricelist{flex:1.4 1 560px;min-width:0;border-top:1px solid var(--line);display:flex;flex-direction:column}
+.mvg-lux .lx-price{display:flex;align-items:center;gap:28px;padding:30px 0;border-bottom:1px solid var(--line);text-decoration:none!important;color:var(--cream)!important}
+.mvg-lux .lx-price__no{font-size:13px;letter-spacing:.2em;color:var(--lime);width:28px;flex:none}
+.mvg-lux .lx-price__name{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.mvg-lux .lx-price__name strong{font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:32px;line-height:1.05}
+.mvg-lux .lx-price__name span{color:var(--muted);font-size:15px}
+.mvg-lux .lx-price__val{text-align:right;white-space:nowrap;color:var(--muted);font-size:14px}
+.mvg-lux .lx-price__val b{font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:35px;color:var(--cream)}
+.mvg-lux .lx-arrow{width:48px;height:48px;flex:none;border-radius:50%;border:1px solid rgba(239,235,224,.25);display:flex;align-items:center;justify-content:center;transition:background .2s}
+.mvg-lux .lx-price:hover .lx-arrow{background:var(--lime);border-color:var(--lime);color:var(--bg)}
+.mvg-lux .lx-note{margin:28px 0 0;color:var(--muted);font-size:14px}
+
+/* kolečka před/po u služeb */
+.mvg-lux .lx-ba{position:relative;width:120px;height:120px;flex:none;border-radius:50%;overflow:hidden;border:1px solid rgba(239,235,224,.25)}
+.mvg-lux .lx-ba img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-width:none}
+.mvg-lux .lx-ba span{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);white-space:nowrap;border-radius:999px;padding:3px 10px;font-size:10px;letter-spacing:.16em;font-weight:600}
+.mvg-lux .lx-ba .t1{background:rgba(12,26,19,.78);color:var(--cream)}
+.mvg-lux .lx-ba .t2{background:var(--lime);color:var(--bg)}
+.mvg-lux .lx-ba .po,.mvg-lux .lx-ba .t2{animation:lxIn 6s ease-in-out infinite}
+.mvg-lux .lx-ba .t1{animation:lxOut 6s ease-in-out infinite}
+.mvg-lux .lx-ba.d1 .po,.mvg-lux .lx-ba.d1 span{animation-delay:1.5s}
+.mvg-lux .lx-ba.d2 .po,.mvg-lux .lx-ba.d2 span{animation-delay:3s}
+.mvg-lux .lx-ba.d3 .po,.mvg-lux .lx-ba.d3 span{animation-delay:4.5s}
+@keyframes lxIn{0%,38%{opacity:0}50%,88%{opacity:1}100%{opacity:0}}
+@keyframes lxOut{0%,38%{opacity:1}50%,88%{opacity:0}100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.mvg-lux .lx-ba .po,.mvg-lux .lx-ba span{animation:none!important}.mvg-lux .lx-ba .t1{opacity:0}}
+
+/* posuvníky před/po [mvgreen_srovnani] v tmavém rámu */
+.mvg-lux .lx-head{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;margin-bottom:48px}
+.mvg-lux .lx-head p{margin:0;max-width:380px;color:var(--muted)}
+.mvg-lux-site .mvg-ba__frame{border-radius:24px;border:1px solid rgba(239,235,224,.14);background:#13261c}
+.mvg-lux-site .mvg-ba figcaption{font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:22px;color:var(--cream)}
+.mvg-lux-site .mvg-ba figcaption small{font-family:"Schibsted Grotesk",sans-serif;color:var(--muted)}
+.mvg-lux-site .mvg-ba__tag--after{background:var(--lime);color:var(--bg)}
+.mvg-lux-site .mvg-ba__knob{color:var(--bg)}
+.mvg-lux .lx-links{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:center;margin-top:40px}
+.mvg-lux .lx-video{flex:1 1 520px;display:flex;flex-wrap:wrap;align-items:center;gap:16px 24px;padding:22px 28px;border-radius:24px;border:1px solid var(--line);text-decoration:none!important;color:var(--cream)!important}
+.mvg-lux .lx-video:hover{background:rgba(239,235,224,.04)}
+.mvg-lux .lx-video__play{width:56px;height:56px;border-radius:50%;background:var(--cream);color:#c4302b;display:flex;align-items:center;justify-content:center;flex:none}
+.mvg-lux .lx-video strong{display:block;font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:22px;line-height:1.1}
+.mvg-lux .lx-video small{color:var(--muted);font-size:15px}
+
+/* čísla */
+.mvg-lux .lx-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));border-top:1px solid var(--line)}
+.mvg-lux .lx-nums div{padding:36px 28px 0;display:flex;flex-direction:column;gap:8px;border-left:1px solid var(--line)}
+.mvg-lux .lx-nums div:first-child{border-left:0;padding-left:0}
+.mvg-lux .lx-nums b{font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:77px;line-height:1}
+.mvg-lux .lx-nums b i{font-size:38px}
+.mvg-lux .lx-nums span{color:var(--muted)}
+
+/* recenze */
+.mvg-lux .lx-reviews{background:var(--cream);color:var(--bg)}
+.mvg-lux .lx-reviews a{color:#2f5a3b}
+.mvg-lux .lx-reviews__top{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.mvg-lux .lx-gbadge{display:flex;align-items:center;gap:16px}
+.mvg-lux .lx-gbadge .lx-g{width:56px;height:56px;box-shadow:0 4px 14px rgba(12,26,19,.12)}
+.mvg-lux .lx-gbadge strong{display:block;font-size:15px}
+.mvg-lux .lx-gbadge small{display:block;font-size:14px;color:#3e6b4a}
+.mvg-lux .lx-reviews .lx-stars{color:#e7a512}
+.mvg-lux .lx-reviews__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:48px}
+.mvg-lux .lx-review{margin:0;background:#fff;border-radius:22px;padding:28px;display:flex;flex-direction:column;gap:16px}
+.mvg-lux .lx-review blockquote{margin:0;font-family:'Young Serif',Georgia,serif;font-size:21px;line-height:1.2;color:var(--bg)}
+.mvg-lux .lx-review figcaption{margin-top:auto;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600}
+.mvg-lux .lx-review figcaption span{color:#5c6e62;font-weight:400}
+
+/* kdo přijede */
+.mvg-lux .lx-about{display:flex;flex-wrap:wrap;gap:72px;align-items:center}
+.mvg-lux .lx-about>img{flex:0 1 460px;min-width:0;width:460px;max-width:100%;height:580px;object-fit:cover;border-radius:240px 240px 28px 28px}
+.mvg-lux .lx-about>div{flex:1 1 480px;min-width:0;display:flex;flex-direction:column;gap:28px}
+.mvg-lux .lx-quote{margin:0;font-family:'Young Serif',Georgia,serif;font-size:42px;line-height:1.1}
+.mvg-lux .lx-about p{margin:0}
+
+/* obce */
+.mvg-lux .lx-obce{position:relative;border-radius:32px;overflow:hidden;min-height:520px;display:flex}
+.mvg-lux .lx-obce>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-width:none}
+.mvg-lux .lx-obce__shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(12,26,19,.94) 0%,rgba(12,26,19,.7) 45%,rgba(12,26,19,.1) 100%)}
+.mvg-lux .lx-obce__in{position:relative;padding:64px;max-width:560px;display:flex;flex-direction:column;gap:22px;justify-content:center}
+.mvg-lux .lx-obce__in p{margin:0;color:var(--soft)}
+
+/* kontakt */
+.mvg-lux .lx-contact{display:flex;flex-wrap:wrap;gap:64px}
+.mvg-lux .lx-contact__side{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:28px}
+.mvg-lux .lx-contact__side>p{margin:0;color:var(--muted);max-width:420px}
+.mvg-lux .lx-contact__list{border-top:1px solid var(--line)}
+.mvg-lux .lx-contact__row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 0;border-bottom:1px solid var(--line);text-decoration:none!important;color:var(--cream)!important}
+.mvg-lux .lx-contact__row span:first-child{font-family:'Young Serif',Georgia,serif;font-size:29px;line-height:1.1}
+.mvg-lux .lx-contact__row span:last-child{color:var(--muted);font-size:14px;text-align:right}
+.mvg-lux .lx-contact__row:hover span:first-child{color:var(--lime)}
+.mvg-lux .lx-form{flex:1 1 520px;min-width:0;background:var(--cream);color:#12261b;border-radius:32px;padding:36px;display:flex;flex-direction:column;gap:12px}
+.mvg-lux .lx-form>strong{font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:27px;line-height:1.1}
+.mvg-lux .lx-form a{color:#2f5a3b}
+
+/* patička */
+.mvg-lux .lx-wordmark{font-family:'Young Serif',Georgia,serif;font-size:240px;line-height:.8;text-align:center;color:#16291f;padding:48px 0 0;white-space:nowrap;overflow:hidden;letter-spacing:-.02em}
+.mvg-lux-site .mvg-footer{background:var(--bg);border-top:1px solid var(--line)}
+
+@media (max-width:1100px){
+ .mvg-lux .lx-hero h1{font-size:70px}
+ .mvg-lux .lx-h2{font-size:48px}
+ .mvg-lux .lx-wordmark{font-size:144px}
+}
+@media (max-width:760px){
+ .mvg-lux{font-size:16px}
+ .mvg-lux .lx-wrap{padding:0 16px}
+ .mvg-lux-site .mvg-header__in{padding:12px 16px}
+ .mvg-lux-site .mvg-nav a,.mvg-lux-site .mvg-nav__drop-btn{border-bottom-color:var(--line)!important}
+ .mvg-lux .lx-hero{min-height:640px}
+ .mvg-lux .lx-hero h1{font-size:43px;line-height:1}
+ .mvg-lux .lx-hero__in{padding-bottom:32px;gap:24px}
+ .mvg-lux .lx-hero__row{gap:20px;padding-top:20px}
+ .mvg-lux .lx-hero__row p{font-size:16px}
+ .mvg-lux .lx-h2{font-size:35px}
+ .mvg-lux .lx-sec{padding:72px 0}
+ .mvg-lux .lx-marquee div{font-size:22px;gap:24px;padding:18px 16px}
+ .mvg-lux .lx-services{gap:40px}
+ .mvg-lux .lx-team{height:300px}
+ .mvg-lux .lx-team__card strong{font-size:21px}
+ .mvg-lux .lx-price{gap:14px;flex-wrap:wrap;padding:22px 0}
+ .mvg-lux .lx-price__no,.mvg-lux .lx-arrow{display:none}
+ .mvg-lux .lx-ba{width:84px;height:84px}
+ .mvg-lux .lx-ba span{bottom:6px;font-size:8px;padding:2px 7px;letter-spacing:.1em}
+ .mvg-lux .lx-price__name{flex:1 1 calc(100% - 100px)}
+ .mvg-lux .lx-price__name strong{font-size:24px}
+ .mvg-lux .lx-price__val{text-align:left;flex:1 1 100%}
+ .mvg-lux .lx-price__val b{font-size:27px}
+ .mvg-lux .lx-nums div{border-left:0;padding:24px 0;border-bottom:1px solid var(--line)}
+ .mvg-lux .lx-nums b{font-size:58px}
+ .mvg-lux .lx-review blockquote{font-size:22px}
+ .mvg-lux .lx-about{gap:32px}
+ .mvg-lux .lx-about>img{height:420px}
+ .mvg-lux .lx-quote{font-size:29px}
+ .mvg-lux .lx-obce__in{padding:32px 20px}
+ .mvg-lux .lx-obce__shade{background:linear-gradient(180deg,rgba(12,26,19,.55),rgba(12,26,19,.95))}
+ .mvg-lux .lx-contact{gap:40px}
+ .mvg-lux .lx-contact__row span:first-child{font-size:21px}
+ .mvg-lux .lx-form{padding:24px 18px;border-radius:24px}
+ .mvg-lux .lx-wordmark{font-size:70px;padding-bottom:96px}
+ .mvg-lux .lx-video{padding:18px}
+}
+
+/* ===== Ostatní stránky webu ve stejném vzhledu (Martin: „chci změnit všechny stránky“) =====
+   body.mvg-lux-site dostávají stránky s [mvgreen_hlavicka] (web.php). Barvy společných tříd
+   (.mvg-card, .mvg-h1, .mvg-price…) jdou přes proměnné z web.css – tady se přepnou na tmavé. */
+.mvg-lux-site .mvg-site{--ink:#efebe0;--text:#d6ddd2;--muted:#9fb0a4;--line:rgba(239,235,224,.16);--g700:#c8e07a;--g900:#efebe0;--g50:#10221a;--g100:rgba(200,224,122,.12);
+ background:var(--bg);color:var(--ink)}
+.mvg-lux-site .mvg-site h1,.mvg-lux-site .mvg-site h2,.mvg-lux-site .mvg-site h3{color:var(--cream)}
+.mvg-lux-site .mvg-h1{font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:67px;line-height:.98;letter-spacing:-.01em}
+.mvg-lux-site .mvg-h2{font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:42px;line-height:1.02;letter-spacing:-.01em}
+.mvg-lux-site .mvg-site h3{font-family:'Young Serif',Georgia,serif;font-weight:400}
+.mvg-lux-site .mvg-eyebrow{color:var(--lime);font-weight:500;letter-spacing:.24em;font-size:13px}
+.mvg-lux-site .mvg-lead{color:var(--soft)}
+.mvg-lux-site .mvg-note{color:var(--muted)}
+.mvg-lux-site .mvg-pagehead{background:var(--bg);border-bottom:1px solid var(--line);padding:96px 0 72px}
+.mvg-lux-site .mvg-sec--tint{background:#10221a}
+.mvg-lux-site .mvg-sec--dark{background:#13261c}
+.mvg-lux-site .mvg-card{background:#13261c;border-color:var(--line);border-radius:24px}
+.mvg-lux-site .mvg-btn{border-radius:999px;font-weight:600}
+.mvg-lux-site .mvg-btn--primary{background:var(--lime);color:var(--bg)!important}
+.mvg-lux-site .mvg-btn--primary:hover{background:#d8ec97}
+.mvg-lux-site .mvg-btn--ghost{background:transparent;color:var(--cream)!important;border-color:rgba(239,235,224,.3)}
+.mvg-lux-site .mvg-btn--light{background:var(--cream);color:var(--bg)!important}
+.mvg-lux-site .mvg-price__icon{background:rgba(200,224,122,.12);color:var(--lime)}
+.mvg-lux-site .mvg-price td{color:var(--soft)}
+.mvg-lux-site .mvg-price td:last-child{color:var(--lime)}
+.mvg-lux-site .mvg-steps li{background:#13261c;border-color:var(--line)}
+.mvg-lux-site .mvg-steps li::before{background:var(--lime);color:var(--bg)}
+.mvg-lux-site .mvg-contact-item{background:#13261c;border-color:var(--line);color:var(--cream)!important}
+.mvg-lux-site .mvg-contact-item__ico{background:var(--lime);color:var(--bg)}
+.mvg-lux-site .mvg-photos figure{background:#13261c}
+.mvg-lux-site .mvg-legal__sec h2{border-bottom-color:var(--line)}
+/* poptávkový formulář zůstává světlý – na tmavém pozadí by se špatně vyplňoval */
+.mvg-lux-site .mvg-poptavka{background:var(--cream);border-radius:24px;padding:24px}
+.mvg-lux-site .lx-form .mvg-poptavka,.mvg-lux-site [style*="background:#fff"] .mvg-poptavka{background:transparent;padding:0}
+.mvg-lux-site [style*="background:#fff"]{color:#12261b}
+/* patička a mobilní lišta */
+.mvg-lux-site .mvg-footer{color:var(--muted)}
+.mvg-lux-site .mvg-footer strong{color:var(--cream);font-family:'Young Serif',Georgia,serif;font-weight:400;font-size:22px}
+.mvg-lux-site .mvg-footer a{color:var(--soft)!important}
+.mvg-lux-site .mvg-footer a:hover{color:var(--lime)!important}
+.mvg-lux-site .mvg-footer__bottom{border-top-color:var(--line);color:var(--muted)}
+@media (max-width:860px){
+ .mvg-lux-site .mvg-h1{font-size:42px}
+ .mvg-lux-site .mvg-h2{font-size:30px}
+ .mvg-lux-site .mvg-pagehead{padding:56px 0 44px}
+ .mvg-lux-site .mvg-nav a{border-bottom-color:var(--line)}
+ .mvg-lux-site .mvg-callbar{background:var(--bg);border-top-color:var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.35)}
+ .mvg-lux-site .mvg-callbar a{background:#13261c;color:var(--cream)!important}
+ .mvg-lux-site .mvg-callbar a.mvg-call{background:var(--lime);color:var(--bg)!important}
+}
+
+/* text celého webu v novém písmu (místo Inter, které je v návrzích od AI všude) */
+.mvg-lux-site .mvg-site,.mvg-lux-site .mvg-poptavka{font-family:"Schibsted Grotesk","Segoe UI",Arial,sans-serif}
+.mvg-lux-site .mvg-site .lx-reviews h2{color:var(--bg)}
+@media (max-width:760px){.mvg-lux .lx-hero__shade{background:linear-gradient(180deg,rgba(12,26,19,.35) 0%,rgba(12,26,19,.6) 30%,rgba(12,26,19,.75) 60%,rgba(12,26,19,.97) 100%)}}
