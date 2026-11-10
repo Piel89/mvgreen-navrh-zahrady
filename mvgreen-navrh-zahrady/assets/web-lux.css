@@ -258,3 +258,18 @@
 .mvg-lux-site .mvg-site,.mvg-lux-site .mvg-poptavka{font-family:"Schibsted Grotesk","Segoe UI",Arial,sans-serif}
 .mvg-lux-site .mvg-site .lx-reviews h2{color:var(--bg)}
 @media (max-width:760px){.mvg-lux .lx-hero__shade{background:linear-gradient(180deg,rgba(12,26,19,.35) 0%,rgba(12,26,19,.6) 30%,rgba(12,26,19,.75) 60%,rgba(12,26,19,.97) 100%)}}
+/* světlá místa z obsahu stránek (inline styly v docs/web) přebarvená na tmavo */
+.mvg-lux-site .mvg-site .mvg-price .mvg-note{background:rgba(239,235,224,.06);color:var(--soft)}
+.mvg-lux-site .mvg-card[style*="#f4f9f5"]{background:#13261c!important;border:1px solid var(--line)!important}
+.mvg-lux-site .mvg-contact-item__ico[style*="#e8f1e9"]{background:rgba(200,224,122,.14)!important;color:var(--lime)!important}
+.mvg-lux-site .mvg-legal{color:var(--soft)}
+.mvg-lux-site .mvg-legal h1,.mvg-lux-site .mvg-legal h2{font-family:"Young Serif",Georgia,serif;font-weight:400;color:var(--cream)}
+.mvg-lux-site .mvg-legal p,.mvg-lux-site .mvg-legal li,.mvg-lux-site .mvg-legal td{color:var(--soft)}
+.mvg-lux-site .mvg-legal th{color:var(--cream);background:#13261c}
+.mvg-lux-site .mvg-legal th,.mvg-lux-site .mvg-legal td{border-bottom-color:var(--line)}
+.mvg-lux-site .mvg-legal .mvg-box{background:#13261c}
+.mvg-lux-site .mvg-legal a{color:var(--lime)}
+.mvg-lux-site .mvg-legal .mvg-small{color:var(--muted)}
+/* bílá karta s formulářem na Kontaktech: uvnitř zpět tmavý text */
+.mvg-lux-site .mvg-site [style*="background:#fff"]{--ink:#12261b;--text:#2b4434;--muted:#4f6457;--line:#e0eae3;--g700:#156333;--g900:#0f3d27;color:#12261b}
+.mvg-lux-site .mvg-site [style*="background:#fff"] h2,.mvg-lux-site .mvg-site [style*="background:#fff"] h3,.mvg-lux-site .mvg-site [style*="background:#fff"] strong{color:#12261b}
