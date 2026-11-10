@@ -143,7 +143,9 @@
       for (var k = 0; k < order.length; k++) {
         var oi = order[k];
         if (cov[oi][s] * 2 < tot) continue;
-        if (veg && NONVEG[objects[oi].kind]) continue;
+        // Test 0.6.259: přes okna auta je vidět louka → „zelený“ dílek, auto ho nedostalo a okna
+        // zůstala zelená. Když přesná maska SAM (img) pokrývá dílek ze 70 % a víc, má přednost před barvou.
+        if (veg && NONVEG[objects[oi].kind] && !(objects[oi].img && cov[oi][s] >= tot * 0.7)) continue;
         owner[s] = oi; break;
       }
     }
@@ -151,8 +153,9 @@
     // Neoznačený dílek, jehož střed leží v obdélníku plochy mimo pozemek, patří k ní.
     // Test 0.6.249: SAM obkreslil jen spodek bílého auta a horní polovina (okna, střecha) pak
     // připadla louce → nejdřív auta (nejmenší obdélník první), teprve potom plochy mimo pozemek.
-    var off = order.filter(function (i) { return objects[i].kind === 'car' && objects[i].box; })
-      .concat(order.filter(function (i) { return objects[i].kind === 'offsite' && objects[i].box; }));
+    // Test 0.6.259: pravidlo „nejdřív auta“ obarvilo i louku nad autem (obdélník auta je větší než auto)
+    // → zrušeno, okna řeší maska SAM výše; zůstávají jen plochy mimo pozemek.
+    var off = order.filter(function (i) { return objects[i].kind === 'offsite' && objects[i].box; });
     if (off.length) for (var s2 = 1; s2 <= N; s2++) {
       if (owner[s2] >= 0) continue;
       var c = st.cen[s2];
