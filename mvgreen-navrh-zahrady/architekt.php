@@ -120,8 +120,36 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
         . implode(', ', array_keys($kinds)) . '. Each car, tree, shed or house is a separate item; give fences, gates and walls even when they are thin. '
         . 'Output a JSON list of segmentation masks where each entry contains the 2D bounding box in the key "box_2d", the segmentation mask in key "mask", and the text label in the key "label". '
         . 'The label must be "<category>: <short Czech name with position>", e.g. "car: Bílé auto vpravo", "lawn: Tráva v popředí". At most 30 items.';
-    $models = array_values(array_unique(array_filter([defined('MVGREEN_GEMINI_MODEL') ? MVGREEN_GEMINI_MODEL : '', 'gemini-3.8-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash'])));
-    $last = 'AI neodpověděla.'; $items = null; $used = '';
+    // 1. test na Martinově fotce (2026-11-10): gemini-3-flash-preview vrátil jen obdélníky BEZ masek →
+    // tráva u domu „patřila“ domu, pole za autem autu. Nejdřív model, který masky vrací (2.5 Flash);
+    // když odpověď masky nemá, zkusí se další model a vezme se odpověď s nejvíc maskami.
+    $models = array_values(array_unique(array_filter([defined('MVGREEN_GEMINI_MODEL') ? MVGREEN_GEMINI_MODEL : '', 'gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3-flash-preview'])));
+    $parse = function ($items) use ($kinds) {
+        $objects = [];
+        foreach ((array) $items as $o) {
+            if (!is_array($o) || !isset($o['box_2d']) || count((array) $o['box_2d']) !== 4) continue;
+            $b = array_map(function ($v) { return max(0, min(1000, (float) $v)); }, array_values((array) $o['box_2d']));
+            if ($b[2] <= $b[0] || $b[3] <= $b[1]) continue;
+            $label = (string) ($o['label'] ?? '');
+            $cat = strtolower(trim(strstr($label, ':', true) ?: $label));
+            $kind = $kinds[$cat] ?? 'other';
+            $name = trim(strpos($label, ':') !== false ? substr($label, strpos($label, ':') + 1) : $label);
+            $mask = $o['mask'] ?? ($o['segmentation'] ?? ($o['polygon'] ?? null)); $outMask = null;
+            if (is_string($mask)) {
+                $mask = preg_replace('~\s+~', '', $mask);
+                if (preg_match('~^(data:image/png;base64,)?([A-Za-z0-9+/=]+)$~D', $mask, $mm) && strlen($mm[2]) < 1500000) $outMask = 'data:image/png;base64,' . $mm[2];
+            } elseif (is_array($mask) && $mask) {
+                $pts = [];
+                if (!is_array(reset($mask))) { $flat = array_values($mask); for ($i = 0; $i + 1 < count($flat); $i += 2) $pts[] = [$flat[$i], $flat[$i + 1]]; }
+                else foreach ($mask as $p) if (is_array($p) && count($p) >= 2) $pts[] = array_values($p);
+                $pts = array_map(function ($p) { return [max(0, min(1000, (float) $p[0])), max(0, min(1000, (float) $p[1]))]; }, $pts);
+                if (count($pts) >= 3) $outMask = $pts;
+            }
+            $objects[] = ['kind' => $kind, 'name' => sanitize_text_field($name ?: $cat), 'box' => $b, 'mask' => $outMask];
+        }
+        return $objects;
+    };
+    $last = 'AI neodpověděla.'; $best = null; $used = ''; $notes = [];
     foreach ($models as $model) {
         // „For better results, disable thinking“ (dokumentace Gemini, segmentace)
         $gc = ['responseMimeType' => 'application/json', 'temperature' => 0.3];
@@ -131,33 +159,25 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
             'body' => wp_json_encode(['contents' => [['parts' => [['inline_data' => ['mime_type' => 'image/jpeg', 'data' => $m[1]]], ['text' => $prompt]]]], 'generationConfig' => $gc]),
             'timeout' => 120,
         ]);
-        if (is_wp_error($r)) { $last = 'Spojení s Gemini selhalo: ' . $r->get_error_message(); continue; }
+        if (is_wp_error($r)) { $last = 'Spojení s Gemini selhalo: ' . $r->get_error_message(); $notes[] = $model . ': ' . $last; continue; }
         $code = wp_remote_retrieve_response_code($r); $json = json_decode(wp_remote_retrieve_body($r), true);
-        if ($code < 200 || $code >= 300) { $last = 'Gemini (' . $model . '): ' . sanitize_text_field($json['error']['message'] ?? ('HTTP ' . $code)); continue; }
+        if ($code < 200 || $code >= 300) { $last = 'Gemini (' . $model . '): ' . sanitize_text_field($json['error']['message'] ?? ('HTTP ' . $code)); $notes[] = $last; continue; }
         $text = '';
         foreach ((array) ($json['candidates'][0]['content']['parts'] ?? []) as $p) if (isset($p['text'])) $text .= $p['text'];
         $text = trim(preg_replace('~^\s*```(?:json)?|```\s*$~', '', $text));
         $out = json_decode($text, true);
         if (is_array($out) && isset($out['boxes'])) $out = $out['boxes'];
-        if (is_array($out)) { $items = $out; $used = $model; break; }
-        $last = 'Gemini (' . $model . ') nevrátilo seznam objektů.';
+        if (!is_array($out)) { $last = 'Gemini (' . $model . ') nevrátilo seznam objektů.'; $notes[] = $last . ' ' . sanitize_text_field(substr($text, 0, 120)); continue; }
+        $objs = $parse($out);
+        $withMask = count(array_filter($objs, function ($o) { return $o['mask'] !== null; }));
+        $first = is_array(reset($out)) ? reset($out) : [];
+        $notes[] = $model . ': ' . count($objs) . ' objektů, s maskou ' . $withMask . ' (klíče: ' . implode(',', array_keys($first)) . ')';
+        if (!$best || $withMask > $best['withMask']) { $best = ['objects' => $objs, 'withMask' => $withMask]; $used = $model; }
+        if ($objs && $withMask * 2 >= count($objs)) break;
     }
-    if ($items === null) wp_send_json_error(['message' => $last], 200);
-    $objects = [];
-    foreach ($items as $o) {
-        if (!is_array($o) || !isset($o['box_2d']) || count((array) $o['box_2d']) !== 4) continue;
-        $b = array_map(function ($v) { return max(0, min(1000, (float) $v)); }, array_values((array) $o['box_2d']));
-        if ($b[2] <= $b[0] || $b[3] <= $b[1]) continue;
-        $label = (string) ($o['label'] ?? '');
-        $cat = strtolower(trim(strstr($label, ':', true) ?: $label));
-        $kind = $kinds[$cat] ?? 'other';
-        $name = trim(strpos($label, ':') !== false ? substr($label, strpos($label, ':') + 1) : $label);
-        $mask = $o['mask'] ?? null; $outMask = null;
-        if (is_string($mask) && preg_match('~^(data:image/png;base64,)?([A-Za-z0-9+/=]+)$~D', $mask, $mm) && strlen($mm[2]) < 1500000) $outMask = 'data:image/png;base64,' . $mm[2];
-        elseif (is_array($mask)) { $pts = []; foreach ($mask as $p) if (is_array($p) && count($p) >= 2) $pts[] = [max(0, min(1000, (float) $p[0])), max(0, min(1000, (float) $p[1]))]; if (count($pts) >= 3) $outMask = $pts; }
-        $objects[] = ['kind' => $kind, 'name' => sanitize_text_field($name ?: $cat), 'box' => $b, 'mask' => $outMask];
-    }
-    wp_send_json_success(['objects' => array_slice($objects, 0, 40), 'model' => $used]);
+    if (!$best) wp_send_json_error(['message' => $last, 'notes' => $notes], 200);
+    $objects = $best['objects'];
+    wp_send_json_success(['objects' => array_slice($objects, 0, 40), 'model' => $used, 'notes' => $notes]);
 });
 
 /**

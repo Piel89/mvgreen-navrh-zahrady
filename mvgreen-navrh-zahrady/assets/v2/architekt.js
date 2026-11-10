@@ -168,7 +168,7 @@
     };
     M.open(st.original, {
       cacheKey: st.cacheKey, initial: st.markState || null,
-      detect: function () { return ajax('mvgreen_ai_detect_v2', { photo: scaled(st.original, 1024, 'image/jpeg', 0.85) }).then(function (d) { log('AI předznačení: ' + (d.objects || []).length + ' objektů.'); return d.objects || []; }); },
+      detect: function () { return ajax('mvgreen_ai_detect_v2', { photo: scaled(st.original, 1024, 'image/jpeg', 0.85) }).then(function (d) { log('AI předznačení (' + (d.model || '?') + '): ' + (d.objects || []).length + ' objektů, s maskou ' + (d.objects || []).filter(function (o) { return o.mask; }).length + '. ' + (d.notes || []).join(' | ')); return d.objects || []; }); },
       onBrush: function (r) { st.markState = null; st.removeNames = []; took(r); }
     }).then(function (r) { if (r) took(r); });
   }

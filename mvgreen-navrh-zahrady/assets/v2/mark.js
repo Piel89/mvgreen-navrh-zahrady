@@ -104,16 +104,19 @@
 
   /* ---------- přiřazení dílků k objektům AI ---------- */
   // Objekt = { box:[y0,x0,y1,x1] 0–1000, img (maska PNG uvnitř boxu) | mask (obrys [x,y] 0–1000) | nic (jen box) }
+  // Dílek dostane nejmenší objekt, který pokrývá aspoň polovinu dílku a „barevně sedí“.
+  // 1. test s Gemini (2026-11-10, Martinova fotka): bez masek patřil klín trávy před domem domu a pole
+  // za autem autu → zelená (rostlinná) ploška nesmí patřit stavbě, autu, dlažbě ani obloze.
+  var NONVEG = { house: 1, neighbor: 1, car: 1, shed: 1, wall: 1, gate: 1, paving: 1, path: 1, terrace: 1, steps: 1, gravel: 1, rubble: 1, container: 1, sky: 1 };
+  function isVeg(c) { var r = c[0], g = c[1], b = c[2]; return g > r * 1.04 && g > b * 1.12 && g - Math.min(r, b) > 14; }
   function assign(seg, objects) {
-    var W = seg.W, H = seg.H, L = seg.labels, N = seg.numSegments;
+    var W = seg.W, H = seg.H, L = seg.labels, N = seg.numSegments, st = stats(seg);
     var owner = new Int16Array(N + 1).fill(-1);
     if (!objects.length) return owner;
     var barea = function (o) { var b = o.box || [0, 0, 0, 0]; return (b[2] - b[0]) * (b[3] - b[1]); };
-    // větší objekty dřív, menší (auto před dlažbou, plot před trávou) je přepíšou
-    var order = objects.map(function (o, i) { return i; }).sort(function (a, b) { return barea(objects[b]) - barea(objects[a]); });
-    var c = mk(W, H), x = c.getContext('2d', { willReadFrequently: true }), px = new Int16Array(W * H).fill(-1);
-    order.forEach(function (oi) {
-      var o = objects[oi], b = o.box; if (!b) return;
+    var c = mk(W, H), x = c.getContext('2d', { willReadFrequently: true });
+    var cov = objects.map(function (o) {
+      var cnt = new Uint32Array(N + 1), b = o.box; if (!b) return cnt;
       var bx = b[1] / 1000 * W, by = b[0] / 1000 * H, bw = Math.max(1, (b[3] - b[1]) / 1000 * W), bh = Math.max(1, (b[2] - b[0]) / 1000 * H);
       x.clearRect(0, 0, W, H);
       if (o.img) x.drawImage(o.img, bx, by, bw, bh);
@@ -125,19 +128,24 @@
       }
       var X0 = Math.max(0, Math.floor(bx) - 1), Y0 = Math.max(0, Math.floor(by) - 1), X1 = Math.min(W, Math.ceil(bx + bw) + 1), Y1 = Math.min(H, Math.ceil(by + bh) + 1);
       if (o.mask && !o.img) { X0 = 0; Y0 = 0; X1 = W; Y1 = H; }
-      if (X1 <= X0 || Y1 <= Y0) return;
+      if (X1 <= X0 || Y1 <= Y0) return cnt;
       var d = x.getImageData(X0, Y0, X1 - X0, Y1 - Y0).data, ww = X1 - X0;
       for (var yy = Y0; yy < Y1; yy++) for (var xx = X0; xx < X1; xx++) {
         var p = ((yy - Y0) * ww + (xx - X0)) * 4;
-        if (d[p] * d[p + 3] / 255 > 127) px[yy * W + xx] = oi;   // maska = pravděpodobnost 0–255
+        if (d[p] * d[p + 3] / 255 > 127) cnt[L[yy * W + xx]]++;   // maska = pravděpodobnost 0–255
       }
+      return cnt;
     });
-    var votes = {};
-    for (var i = 0; i < W * H; i++) { var s = L[i], o2 = px[i] + 1, v = votes[s] || (votes[s] = {}); v[o2] = (v[o2] || 0) + 1; }
-    for (var s2 = 1; s2 <= N; s2++) {
-      var v2 = votes[s2]; if (!v2) continue;
-      var best = 0, bn = -1; Object.keys(v2).forEach(function (k) { if (v2[k] > bn) { bn = v2[k]; best = +k; } });
-      owner[s2] = best - 1;   // 0 = žádný objekt → -1
+    // menší objekty mají přednost (auto před dlažbou, sokl před domem, plot před trávou)
+    var order = objects.map(function (o, i) { return i; }).sort(function (a, b) { return barea(objects[a]) - barea(objects[b]); });
+    for (var s = 1; s <= N; s++) {
+      var tot = st.cnt[s] || 1, veg = isVeg(st.mean[s]);
+      for (var k = 0; k < order.length; k++) {
+        var oi = order[k];
+        if (cov[oi][s] * 2 < tot) continue;
+        if (veg && NONVEG[objects[oi].kind]) continue;
+        owner[s] = oi; break;
+      }
     }
     return owner;
   }
@@ -244,9 +252,11 @@
           objects = list.map(function (o) { return { name: o.name || 'Objekt', kind: o.kind, state: FORCE[o.kind] || DEFAULT[o.kind] || 'change', box: o.box, mask: o.mask, img: o.img }; });
           owner = assign(seg, objects);
           // obloha z analýzy fotky, pokud ji AI nevrátila
-          if ((seg.skyIds || []).length && !objects.some(function (o) { return o.kind === 'sky'; })) {
-            objects.push({ name: 'Obloha', kind: 'sky', state: 'keep' }); var si = objects.length - 1;
-            seg.skyIds.forEach(function (s) { if (owner[s] < 0) owner[s] = si; });
+          // obloha z analýzy fotky vždy – 1. test: AI vrátila oblohu jen vpravo od domu, levý roh zůstal volný
+          if ((seg.skyIds || []).length) {
+            var si = -1; objects.forEach(function (o, i) { if (o.kind === 'sky' && si < 0) si = i; });
+            if (si < 0) { objects.push({ name: 'Obloha', kind: 'sky', state: 'keep' }); si = objects.length - 1; }
+            seg.skyIds.forEach(function (s) { if (owner[s] < 0 || objects[owner[s]].kind === 'lawn' || objects[owner[s]].kind === 'soil') owner[s] = si; });
           }
           objects.forEach(function (o) { delete o.box; delete o.mask; delete o.img; });
           if (det && det.error) toast('AI teď objekty nenašla (' + det.error.message + '). Ťukněte na to, co má zůstat nebo zmizet.', 5000);

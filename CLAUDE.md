@@ -215,8 +215,11 @@ A4 PDF). It is being built **next to** the old designer, not replacing it:
   options 3 + 8 of 10: finger too thick at fence edges, fullscreen toolbars covered the photo).
   Server `mvgreen_ai_detect_v2` = Google Gemini segmentation (0.6.239; GPT-4.1 polygons were
   useless on a real photo – owner: "absolutně nedostačující"). Key: WP admin Nastavení → MVGreen AI (option `mvgreen_gemini_api_key`, 0.6.240) or `MVGREEN_GEMINI_API_KEY`
-  (optional `MVGREEN_GEMINI_MODEL`) in wp-config; tries gemini-3.8-flash → 3-flash-preview →
-  2.5-flash. Returns {kind, name, box [y0,x0,y1,x1] 0–1000, mask = PNG data URL inside the box OR
+  (optional `MVGREEN_GEMINI_MODEL`) in wp-config; tries gemini-2.5-flash → 3.8-flash →
+  3-flash-preview and keeps the answer with the most masks (0.6.241: 3-flash-preview returned boxes
+  only on the owner's photo; response `notes` + the wizard log show model/mask counts). Client:
+  segment → smallest object covering ≥50 % of it; green (vegetation) segments never go to house/
+  car/shed/paving/sky (`NONVEG`); sky from `seg.skyIds` is always added. Returns {kind, name, box [y0,x0,y1,x1] 0–1000, mask = PNG data URL inside the box OR
   [x,y] polygon OR null}. Owner is on the FREE tier for testing (Google may train on free-tier
   data → paid tier or Grounded SAM on Replicate before customers). If Gemini isn't good enough the
   agreed fallback is Grounded SAM (Replicate). Client snaps masks to SLIC segments (majority vote, smaller objects win),
