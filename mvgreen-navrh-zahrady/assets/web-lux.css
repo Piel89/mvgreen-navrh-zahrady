@@ -289,3 +289,14 @@
  .mvg-lux .lx-marquee b{display:none}
  .mvg-lux .lx-marquee span{white-space:nowrap}
 }
+/* majitel: pruh služeb „není moc vidět na počítači“ (tlumená šedozelená, nevypadal jako odkazy)
+   → světlé položky v rámečku, po najetí limetkové; vycentrované všude, bez hvězdiček */
+.mvg-lux .lx-marquee{border-bottom:1px solid var(--line)}
+.mvg-lux .lx-marquee div{flex-wrap:wrap;white-space:normal;justify-content:center;align-items:center;gap:12px;padding:28px 40px;font-size:26px;color:var(--cream)}
+.mvg-lux .lx-marquee b{display:none}
+.mvg-lux .lx-marquee a{display:inline-block;border:1px solid rgba(239,235,224,.3);border-radius:999px;padding:8px 24px;line-height:1.3;transition:background .2s,color .2s,border-color .2s}
+.mvg-lux .lx-marquee a:hover,.mvg-lux .lx-marquee a:focus-visible{background:var(--lime);border-color:var(--lime);color:var(--bg)!important}
+@media (max-width:760px){
+ .mvg-lux .lx-marquee div{gap:8px;padding:18px 12px;font-size:17px}
+ .mvg-lux .lx-marquee a{padding:7px 14px}
+}
