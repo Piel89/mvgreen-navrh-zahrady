@@ -256,7 +256,10 @@
           if ((seg.skyIds || []).length) {
             var si = -1; objects.forEach(function (o, i) { if (o.kind === 'sky' && si < 0) si = i; });
             if (si < 0) { objects.push({ name: 'Obloha', kind: 'sky', state: 'keep' }); si = objects.length - 1; }
-            seg.skyIds.forEach(function (s) { if (owner[s] < 0 || objects[owner[s]].kind === 'lawn' || objects[owner[s]].kind === 'soil') owner[s] = si; });
+            // test 0.6.244: maska lesu (SAM v obdélníku lesa) zabrala i pruh oblohy nad stromy → obloha
+            // z analýzy barev má přednost i před stromy a plochami mimo pozemek (ne před domem)
+            var SKY_OVER = { lawn: 1, soil: 1, tree: 1, shrub: 1, hedge: 1, offsite: 1 };
+            seg.skyIds.forEach(function (s) { if (owner[s] < 0 || SKY_OVER[objects[owner[s]].kind]) owner[s] = si; });
           }
           objects.forEach(function (o) { delete o.box; delete o.mask; delete o.img; });
           if (det && det.error) toast('AI teď objekty nenašla (' + det.error.message + '). Ťukněte na to, co má zůstat nebo zmizet.', 5000);
@@ -272,6 +275,9 @@
             var s = L[i], o = owner[s], c = cat[s], R = b[p], G = b[p + 1], B = b[p + 2];
             if (c === PROTECT) { R = R * 0.55 + 47 * 0.45; G = G * 0.55 + 174 * 0.45; B = B * 0.55 + 74 * 0.45; }
             else if (c === REMOVE) { R = R * 0.45 + 217 * 0.55; G = G * 0.45 + 69 * 0.55; B = B * 0.45 + 63 * 0.55; }
+            // „Změnit“ jemně žlutě – legenda v seznamu slibuje žlutou, na fotce ale byla jen bílá čára
+            // (test 0.6.244: trávník a štěrk vypadaly jako neoznačené)
+            else if (o >= 0) { R = R * 0.7 + 236 * 0.3; G = G * 0.7 + 186 * 0.3; B = B * 0.7 + 40 * 0.3; }
             var x = i % W, edge = (x + 1 < W && owner[L[i + 1]] !== o) || (i + W < W * H && owner[L[i + W]] !== o);
             if (edge && (o >= 0 || (x + 1 < W && owner[L[i + 1]] >= 0) || (i + W < W * H && owner[L[i + W]] >= 0))) { R = G = B = 255; }
             if (hiObj >= 0 && o === hiObj && ((i / W | 0) + x) % 6 < 3) { R = R * 0.5 + 127; G = G * 0.5 + 127; B = B * 0.5 + 127; }
