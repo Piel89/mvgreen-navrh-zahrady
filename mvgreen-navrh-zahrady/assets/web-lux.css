@@ -273,3 +273,12 @@
 /* bílá karta s formulářem na Kontaktech: uvnitř zpět tmavý text */
 .mvg-lux-site .mvg-site [style*="background:#fff"]{--ink:#12261b;--text:#2b4434;--muted:#4f6457;--line:#e0eae3;--g700:#156333;--g900:#0f3d27;color:#12261b}
 .mvg-lux-site .mvg-site [style*="background:#fff"] h2,.mvg-lux-site .mvg-site [style*="background:#fff"] h3,.mvg-lux-site .mvg-site [style*="background:#fff"] strong{color:#12261b}
+/* 2026-11-10 po spuštění: pruh služeb pod úvodní fotkou byl na mobilu useknutý („Sekání ✦ Vertikutace ✦ ŽIV…“) → zalomit */
+@media (max-width:760px){
+ .mvg-lux .lx-marquee div{flex-wrap:wrap;white-space:normal;justify-content:center;gap:4px 14px;font-size:22px;padding:18px 16px;line-height:1.3}
+}
+/* šablona Astra kreslí tabulkám rámečky a citátům kurzívu s čárou – na našich stránkách ne */
+.mvg-lux table,.mvg-lux th,.mvg-lux td{border-left:0!important;border-right:0!important;border-top:0!important;background:transparent}
+.mvg-lux table{border:0!important;margin:0}
+.mvg-lux blockquote{border:0!important;padding:0!important;margin:0!important;font-style:normal!important;quotes:none}
+.mvg-lux blockquote p{margin:0}
