@@ -21,7 +21,7 @@
   var STATE_CAT = { keep: PROTECT, remove: REMOVE, change: 0 };
   var STATE_NAME = { keep: 'Zůstane', remove: 'Pryč', change: 'Navrhnout znovu' };
   var NEXT = { keep: 'remove', remove: 'change', change: 'keep' };
-  var FORCE = { house: 'keep', neighbor: 'keep', sky: 'keep', fence: 'keep', gate: 'keep', car: 'remove', container: 'remove', rubble: 'remove' };
+  var FORCE = { house: 'keep', neighbor: 'keep', sky: 'keep', offsite: 'keep', fence: 'keep', gate: 'keep', car: 'remove', container: 'remove', rubble: 'remove' };
   var DEFAULT = { tree: 'keep', shrub: 'keep', hedge: 'keep', wall: 'keep', shed: 'keep', paving: 'keep', path: 'keep', terrace: 'keep', steps: 'keep', lawn: 'change', bed: 'change', soil: 'change', gravel: 'change' };
 
   function mk(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }

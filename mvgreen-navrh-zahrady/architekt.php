@@ -106,7 +106,7 @@ function mvgreen_detect_v2_kinds() {
     return ['house' => 'house', 'neighboring house' => 'neighbor', 'fence' => 'fence', 'gate' => 'gate', 'retaining wall' => 'wall',
         'car' => 'car', 'trailer' => 'car', 'shed' => 'shed', 'tree' => 'tree', 'shrub' => 'shrub', 'hedge' => 'hedge',
         'lawn' => 'lawn', 'flower bed' => 'bed', 'paving' => 'paving', 'path' => 'path', 'terrace' => 'terrace', 'steps' => 'steps',
-        'gravel' => 'gravel', 'bare soil' => 'soil', 'construction material' => 'rubble', 'trash bin' => 'container', 'sky' => 'sky'];
+        'gravel' => 'gravel', 'bare soil' => 'soil', 'construction material' => 'rubble', 'trash bin' => 'container', 'sky' => 'sky', 'outside property' => 'offsite'];
 }
 add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
@@ -116,20 +116,23 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
     $photo = isset($_POST['photo']) ? wp_unslash($_POST['photo']) : '';
     if (!preg_match('~^data:image/jpeg;base64,([A-Za-z0-9+/=]+)$~D', $photo, $m) || strlen($photo) > 4000000) wp_send_json_error(['message' => 'Chybí fotka.'], 400);
     $kinds = mvgreen_detect_v2_kinds();
-    $prompt = 'Give the segmentation masks for every separate object and surface in this garden photo from these categories: '
+    // 3. test (0.6.243): obrysy kreslí SAM v prohlížeči (sam.js), od Gemini stačí obdélník a druh –
+    // bez polygonů odpovídá rychleji. Majitel: les a louka za domem nejsou pozemek majitelky →
+    // vlastní kategorie „outside property“ (mark.js je nechá beze změny).
+    $prompt = 'Find every separate object and surface in this garden photo from these categories: '
         . implode(', ', array_keys($kinds)) . '. Each car, tree, shed or house is a separate item; give fences, gates and walls even when they are thin. '
-        . 'Output a JSON list of segmentation masks where each entry contains the 2D bounding box in the key "box_2d" as [ymin, xmin, ymax, xmax] normalized to 0-1000, the segmentation mask in key "mask" as a polygon of 12-60 [x, y] points normalized to 0-1000 that tightly follows the visible outline of the object, and the text label in the key "label". '
-        . 'The label must be "<category>: <short Czech name with position>", e.g. "car: Bílé auto vpravo", "lawn: Tráva v popředí". At most 30 items.';
+        . 'Only the garden of the photographed house is the property. Everything clearly beyond it - fields, meadows, forest, land of other owners, roads, hills in the distance - is "outside property" (one item per area), never lawn, tree or bare soil. Neighbouring houses stay "neighboring house". '
+        . 'Output a JSON list where each entry contains the 2D bounding box in the key "box_2d" as [ymin, xmin, ymax, xmax] normalized to 0-1000 and the text label in the key "label". The box must tightly enclose the whole visible object. '
+        . 'The label must be "<category>: <short Czech name with position>", e.g. "car: Bílé auto vpravo", "lawn: Tráva v popředí", "outside property: Louka za domem". At most 30 items.';
     // 1. test na Martinově fotce (2026-11-10): gemini-3-flash-preview vrátil jen obdélníky BEZ masek →
     // tráva u domu „patřila“ domu, pole za autem autu. Nejdřív model, který masky vrací (2.5 Flash);
     // když odpověď masky nemá, zkusí se další model a vezme se odpověď s nejvíc maskami.
     // 2. test: 2.5 Flash už nový účet nedostane, 3.8 Flash odmítl thinkingLevel „minimal“, 3 Flash Preview
     // vrátil jen box_2d+label → povinné schéma s obrysem (mask = [x,y] 0–1000) a postupně nastavení přemýšlení.
     $models = array_values(array_unique(array_filter([defined('MVGREEN_GEMINI_MODEL') ? MVGREEN_GEMINI_MODEL : '', 'gemini-3.8-flash', 'gemini-3-flash-preview'])));
-    $schema = ['type' => 'ARRAY', 'items' => ['type' => 'OBJECT', 'required' => ['box_2d', 'label', 'mask'], 'properties' => [
+    $schema = ['type' => 'ARRAY', 'items' => ['type' => 'OBJECT', 'required' => ['box_2d', 'label'], 'properties' => [
         'box_2d' => ['type' => 'ARRAY', 'items' => ['type' => 'INTEGER']],
         'label' => ['type' => 'STRING'],
-        'mask' => ['type' => 'ARRAY', 'items' => ['type' => 'ARRAY', 'items' => ['type' => 'INTEGER']]],
     ]]];
     $parse = function ($items) use ($kinds) {
         $objects = [];
@@ -190,8 +193,8 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
         $withMask = count(array_filter($objs, function ($o) { return $o['mask'] !== null; }));
         $first = is_array(reset($out)) ? reset($out) : [];
         $notes[] = $model . ': ' . count($objs) . ' objektů, s maskou ' . $withMask . ' (klíče: ' . implode(',', array_keys($first)) . ')';
-        if (!$best || $withMask > $best['withMask']) { $best = ['objects' => $objs, 'withMask' => $withMask]; $used = $model; }
-        if ($objs && $withMask * 2 >= count($objs)) break;
+        if (!$best || count($objs) > count($best['objects'])) { $best = ['objects' => $objs, 'withMask' => $withMask]; $used = $model; }
+        if ($objs) break;
     }
     if (!$best) wp_send_json_error(['message' => $last, 'notes' => $notes], 200);
     $objects = $best['objects'];
