@@ -4,7 +4,7 @@
  * „když si dám full screen, tak přes všechny texty a nástroje nevidím, kde chci označovat“.
  * Vybral řešení 3 (AI předznačí, zákazník jen potvrdí) a 8 (čistá celá obrazovka).
  *
- *  - Server (mvgreen_ai_detect_v2) vrátí objekty s hrubým obrysem a návrhem keep/remove/change.
+ *  - Server (mvgreen_ai_detect_v2, Google Gemini) vrátí objekty s maskou (PNG v boxu nebo obrys).
  *  - Obrysy se přichytí k dílkům fotky (SLIC z mg-paint-mask.js): dílek patří objektu, který ho
  *    pokrývá z větší části → hrany sedí na skutečné okraje plotu, auta, dlažby.
  *  - Ťuknutí na objekt přepne Zůstane → Pryč → Navrhnout znovu. Ťuknutí mimo objekty vybere plochu
@@ -22,6 +22,7 @@
   var STATE_NAME = { keep: 'Zůstane', remove: 'Pryč', change: 'Navrhnout znovu' };
   var NEXT = { keep: 'remove', remove: 'change', change: 'keep' };
   var FORCE = { house: 'keep', neighbor: 'keep', sky: 'keep', fence: 'keep', gate: 'keep', car: 'remove', container: 'remove', rubble: 'remove' };
+  var DEFAULT = { tree: 'keep', shrub: 'keep', hedge: 'keep', wall: 'keep', shed: 'keep', paving: 'keep', path: 'keep', terrace: 'keep', steps: 'keep', lawn: 'change', bed: 'change', soil: 'change', gravel: 'change' };
 
   function mk(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
@@ -102,30 +103,50 @@
   }
 
   /* ---------- přiřazení dílků k objektům AI ---------- */
+  // Objekt = { box:[y0,x0,y1,x1] 0–1000, img (maska PNG uvnitř boxu) | mask (obrys [x,y] 0–1000) | nic (jen box) }
   function assign(seg, objects) {
     var W = seg.W, H = seg.H, L = seg.labels, N = seg.numSegments;
     var owner = new Int16Array(N + 1).fill(-1);
     if (!objects.length) return owner;
+    var barea = function (o) { var b = o.box || [0, 0, 0, 0]; return (b[2] - b[0]) * (b[3] - b[1]); };
     // větší objekty dřív, menší (auto před dlažbou, plot před trávou) je přepíšou
-    var order = objects.map(function (o, i) { return i; }).sort(function (a, b) { return area(objects[b].polygon) - area(objects[a].polygon); });
-    var c = mk(W, H), x = c.getContext('2d'), px = new Int16Array(W * H).fill(-1);
+    var order = objects.map(function (o, i) { return i; }).sort(function (a, b) { return barea(objects[b]) - barea(objects[a]); });
+    var c = mk(W, H), x = c.getContext('2d', { willReadFrequently: true }), px = new Int16Array(W * H).fill(-1);
     order.forEach(function (oi) {
-      x.clearRect(0, 0, W, H); x.beginPath();
-      objects[oi].polygon.forEach(function (p, k) { x[k ? 'lineTo' : 'moveTo'](p[0] / 1000 * W, p[1] / 1000 * H); });
-      x.closePath(); x.fillStyle = '#000'; x.fill();
-      var d = x.getImageData(0, 0, W, H).data;
-      for (var i = 0; i < W * H; i++) if (d[i * 4 + 3] > 127) px[i] = oi;
+      var o = objects[oi], b = o.box; if (!b) return;
+      var bx = b[1] / 1000 * W, by = b[0] / 1000 * H, bw = Math.max(1, (b[3] - b[1]) / 1000 * W), bh = Math.max(1, (b[2] - b[0]) / 1000 * H);
+      x.clearRect(0, 0, W, H);
+      if (o.img) x.drawImage(o.img, bx, by, bw, bh);
+      else {
+        x.fillStyle = '#fff'; x.beginPath();
+        if (o.mask && o.mask.length >= 3) o.mask.forEach(function (p, k) { x[k ? 'lineTo' : 'moveTo'](p[0] / 1000 * W, p[1] / 1000 * H); });
+        else x.rect(bx, by, bw, bh);
+        x.closePath(); x.fill();
+      }
+      var X0 = Math.max(0, Math.floor(bx) - 1), Y0 = Math.max(0, Math.floor(by) - 1), X1 = Math.min(W, Math.ceil(bx + bw) + 1), Y1 = Math.min(H, Math.ceil(by + bh) + 1);
+      if (o.mask && !o.img) { X0 = 0; Y0 = 0; X1 = W; Y1 = H; }
+      if (X1 <= X0 || Y1 <= Y0) return;
+      var d = x.getImageData(X0, Y0, X1 - X0, Y1 - Y0).data, ww = X1 - X0;
+      for (var yy = Y0; yy < Y1; yy++) for (var xx = X0; xx < X1; xx++) {
+        var p = ((yy - Y0) * ww + (xx - X0)) * 4;
+        if (d[p] * d[p + 3] / 255 > 127) px[yy * W + xx] = oi;   // maska = pravděpodobnost 0–255
+      }
     });
     var votes = {};
-    for (var i = 0; i < W * H; i++) { var s = L[i], o = px[i] + 1, v = votes[s] || (votes[s] = {}); v[o] = (v[o] || 0) + 1; }
+    for (var i = 0; i < W * H; i++) { var s = L[i], o2 = px[i] + 1, v = votes[s] || (votes[s] = {}); v[o2] = (v[o2] || 0) + 1; }
     for (var s2 = 1; s2 <= N; s2++) {
       var v2 = votes[s2]; if (!v2) continue;
-      var best = 0, bn = -1, tot = 0; Object.keys(v2).forEach(function (k) { tot += v2[k]; if (v2[k] > bn) { bn = v2[k]; best = +k; } });
+      var best = 0, bn = -1; Object.keys(v2).forEach(function (k) { if (v2[k] > bn) { bn = v2[k]; best = +k; } });
       owner[s2] = best - 1;   // 0 = žádný objekt → -1
     }
     return owner;
   }
-  function area(poly) { var a = 0; for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) a += (poly[j][0] + poly[i][0]) * (poly[j][1] - poly[i][1]); return Math.abs(a / 2); }
+  function loadMasks(list) {
+    return Promise.all(list.map(function (o) {
+      if (typeof o.mask !== 'string') return Promise.resolve(o);
+      return new Promise(function (ok) { var im = new Image(); im.onload = function () { o.img = im; ok(o); }; im.onerror = function () { ok(o); }; im.src = o.mask; });
+    }));
+  }
 
   /* ---------- masky pro generování (stejně jako mg-paint-mask.js) ---------- */
   function catMask(seg, category, pw, ph, match) {
@@ -212,7 +233,7 @@
       $('[data-x]').onclick = function () { close(null); };
 
       var segP = Pm.prepareSegmentation(photo, opts.cacheKey);
-      var detP = opts.initial ? Promise.resolve(null) : (opts.detect ? opts.detect().catch(function (e) { return { error: e }; }) : Promise.resolve([]));
+      var detP = opts.initial ? Promise.resolve(null) : (opts.detect ? opts.detect().then(loadMasks).catch(function (e) { return { error: e }; }) : Promise.resolve([]));
       Promise.all([segP, detP]).then(function (res) {
         var seg = res[0], det = res[1], W = seg.W, H = seg.H, L = seg.labels, N = seg.numSegments;
         var objects, owner;
@@ -220,14 +241,14 @@
           objects = opts.initial.objects.map(function (o) { return Object.assign({}, o); }); owner = new Int16Array(opts.initial.owner);
         } else {
           var list = det && !det.error ? det : [];
-          objects = list.map(function (o) { return { name: o.name || 'Objekt', kind: o.kind, state: FORCE[o.kind] || (STATE_CAT[o.suggestion] !== undefined ? o.suggestion : 'change'), polygon: o.polygon }; });
+          objects = list.map(function (o) { return { name: o.name || 'Objekt', kind: o.kind, state: FORCE[o.kind] || DEFAULT[o.kind] || 'change', box: o.box, mask: o.mask, img: o.img }; });
           owner = assign(seg, objects);
           // obloha z analýzy fotky, pokud ji AI nevrátila
           if ((seg.skyIds || []).length && !objects.some(function (o) { return o.kind === 'sky'; })) {
             objects.push({ name: 'Obloha', kind: 'sky', state: 'keep' }); var si = objects.length - 1;
             seg.skyIds.forEach(function (s) { if (owner[s] < 0) owner[s] = si; });
           }
-          objects.forEach(function (o) { delete o.polygon; });
+          objects.forEach(function (o) { delete o.box; delete o.mask; delete o.img; });
           if (det && det.error) toast('AI teď objekty nenašla (' + det.error.message + '). Ťukněte na to, co má zůstat nebo zmizet.', 5000);
         }
         var history = [], hiObj = -1;

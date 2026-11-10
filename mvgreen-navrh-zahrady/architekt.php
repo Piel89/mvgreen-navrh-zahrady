@@ -92,57 +92,71 @@ add_action('wp_ajax_mvgreen_ai_plan_v2', function () {
 
 /**
  * AI předznačení (2026-11-10, Martin vybral řešení 3 ze „10 způsobů označování“: na mobilu je prst
- * moc tlustý na plot a okraje). AI najde na fotce objekty a plochy s hrubým obrysem a navrhne, co
- * zůstane / pryč / smí se změnit. V prohlížeči se obrysy přichytí k dílkům fotky (SLIC), takže hrany
- * sedí na skutečné okraje; zákazník jen ťuká na opravy (assets/v2/mark.js).
+ * moc tlustý na plot a okraje). Model najde na fotce objekty a vrátí jejich MASKY; v prohlížeči se
+ * přichytí k dílkům fotky (SLIC) a zákazník jen ťuká opravy (assets/v2/mark.js).
+ * 1. pokus s GPT-4.1 (obrysy z bodů) byl nepoužitelný – Martin: „absolutně nedostačující“ (dům
+ * napůl, auta vůbec). GPT obrysy kreslit neumí → Google Gemini, které vrací masky objektů. Martin
+ * chce nejdřív bezplatnou úroveň; když nebude stačit, přejde se na Grounded SAM (Replicate).
+ * POZOR: bezplatná úroveň Gemini smí data použít ke zlepšování modelů – jen na testy s vlastními
+ * fotkami, pro zákazníky placená úroveň (GDPR).
+ * wp-config.php: define('MVGREEN_GEMINI_API_KEY', '…'); volitelně MVGREEN_GEMINI_MODEL.
  */
-function mvgreen_detect_v2_schema() {
-    $num = ['type' => 'number'];
-    return [
-        'type' => 'object', 'additionalProperties' => false, 'required' => ['objects'],
-        'properties' => ['objects' => ['type' => 'array', 'items' => [
-            'type' => 'object', 'additionalProperties' => false,
-            'required' => ['kind', 'name', 'suggestion', 'polygon'],
-            'properties' => [
-                'kind' => ['type' => 'string', 'enum' => ['house', 'neighbor', 'fence', 'gate', 'wall', 'car', 'tree', 'shrub', 'hedge', 'lawn', 'bed', 'paving', 'path', 'terrace', 'steps', 'gravel', 'soil', 'sky', 'shed', 'container', 'rubble', 'other']],
-                'name' => ['type' => 'string'],
-                'suggestion' => ['type' => 'string', 'enum' => ['keep', 'remove', 'change']],
-                'polygon' => ['type' => 'array', 'items' => ['type' => 'array', 'items' => $num]],
-            ],
-        ]]],
-    ];
+function mvgreen_detect_v2_kinds() {
+    // kategorie v dotazu → kind v pluginu
+    return ['house' => 'house', 'neighboring house' => 'neighbor', 'fence' => 'fence', 'gate' => 'gate', 'retaining wall' => 'wall',
+        'car' => 'car', 'trailer' => 'car', 'shed' => 'shed', 'tree' => 'tree', 'shrub' => 'shrub', 'hedge' => 'hedge',
+        'lawn' => 'lawn', 'flower bed' => 'bed', 'paving' => 'paving', 'path' => 'path', 'terrace' => 'terrace', 'steps' => 'steps',
+        'gravel' => 'gravel', 'bare soil' => 'soil', 'construction material' => 'rubble', 'trash bin' => 'container', 'sky' => 'sky'];
 }
 add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
     if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
-    if (!defined('MVGREEN_OPENAI_API_KEY') || !MVGREEN_OPENAI_API_KEY) wp_send_json_error(['message' => 'Chybí MVGREEN_OPENAI_API_KEY.'], 400);
+    if (!defined('MVGREEN_GEMINI_API_KEY') || !MVGREEN_GEMINI_API_KEY) wp_send_json_error(['message' => 'Chybí MVGREEN_GEMINI_API_KEY ve wp-config.php.'], 200);
     $photo = isset($_POST['photo']) ? wp_unslash($_POST['photo']) : '';
-    if (!preg_match('~^data:image/jpeg;base64,[A-Za-z0-9+/=]+$~D', $photo) || strlen($photo) > 4000000) wp_send_json_error(['message' => 'Chybí fotka.'], 400);
-    $prompt = "Na fotce je zahrada nebo pozemek u domu. Najdi na ní VŠECHNY samostatné objekty a plochy a ke každému vrať obrys.\n"
-        . "polygon = 8–30 bodů [x, y] PŘESNĚ po obvodu objektu tak, jak je vidět na fotce, v souřadnicích 0–1000 (x zleva doprava, y shora dolů, 0,0 = levý horní roh). Obrys veď těsně po hraně objektu, ne obdélník kolem něj. Části zakryté jiným objektem do obrysu nezahrnuj.\n"
-        . "kind: house = dům zákazníka (hlavní stavba), neighbor = sousední domy a stavby za plotem, fence = plot, gate = brána/branka, wall = zídka/opěrná zeď, car = auto/přívěs, tree, shrub, hedge = živý plot, lawn = tráva, bed = záhon, paving = dlažba/beton, path = chodník/cesta, terrace, steps = schody, gravel = štěrk/kačírek, soil = holá zemina, sky = obloha, shed = kůlna/altán, container = popelnice/sud/kontejner, rubble = suť/stavební materiál/nepořádek, other = ostatní.\n"
-        . "name: krátký český název s polohou, např. „Plot vlevo“, „Auto bílé“, „Tráva v popředí“.\n"
-        . "suggestion: keep = má zůstat beze změny (dům, sousedé, plot, brána, obloha, vzrostlé stromy, hotová dlažba), remove = má zmizet (auta, kontejnery, suť, nepořádek, stavební materiál), change = plocha, kterou může zahradní architekt navrhnout znovu (tráva, holá zemina, záhony, staveniště).\n"
-        . "Raději víc menších objektů než jeden velký přes různé věci. Nevynech plot ani brány, i když jsou úzké.";
-    $model = defined('MVGREEN_OPENAI_DETECT_MODEL') ? MVGREEN_OPENAI_DETECT_MODEL : 'gpt-4.1';
-    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
-        'headers' => ['Authorization' => 'Bearer ' . MVGREEN_OPENAI_API_KEY, 'Content-Type' => 'application/json'],
-        'body' => wp_json_encode(['model' => $model, 'messages' => [['role' => 'user', 'content' => [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $photo, 'detail' => 'high']]]]],
-            'response_format' => ['type' => 'json_schema', 'json_schema' => ['name' => 'garden_objects', 'strict' => true, 'schema' => mvgreen_detect_v2_schema()]]]),
-        'timeout' => 90,
-    ]);
-    if (is_wp_error($response)) wp_send_json_error(['message' => 'Spojení s AI selhalo: ' . $response->get_error_message()], 200);
-    $json = json_decode(wp_remote_retrieve_body($response), true);
-    $status = wp_remote_retrieve_response_code($response);
-    if ($status < 200 || $status >= 300) wp_send_json_error(['message' => isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.'], 200);
-    $out = json_decode($json['choices'][0]['message']['content'] ?? '', true);
-    $objects = [];
-    foreach ((array) ($out['objects'] ?? []) as $o) {
-        $pts = [];
-        foreach ((array) ($o['polygon'] ?? []) as $p) if (is_array($p) && count($p) >= 2) $pts[] = [max(0, min(1000, (float) $p[0])), max(0, min(1000, (float) $p[1]))];
-        if (count($pts) >= 3) $objects[] = ['kind' => sanitize_key($o['kind'] ?? 'other'), 'name' => sanitize_text_field($o['name'] ?? ''), 'suggestion' => sanitize_key($o['suggestion'] ?? 'change'), 'polygon' => $pts];
+    if (!preg_match('~^data:image/jpeg;base64,([A-Za-z0-9+/=]+)$~D', $photo, $m) || strlen($photo) > 4000000) wp_send_json_error(['message' => 'Chybí fotka.'], 400);
+    $kinds = mvgreen_detect_v2_kinds();
+    $prompt = 'Give the segmentation masks for every separate object and surface in this garden photo from these categories: '
+        . implode(', ', array_keys($kinds)) . '. Each car, tree, shed or house is a separate item; give fences, gates and walls even when they are thin. '
+        . 'Output a JSON list of segmentation masks where each entry contains the 2D bounding box in the key "box_2d", the segmentation mask in key "mask", and the text label in the key "label". '
+        . 'The label must be "<category>: <short Czech name with position>", e.g. "car: Bílé auto vpravo", "lawn: Tráva v popředí". At most 30 items.';
+    $models = array_values(array_unique(array_filter([defined('MVGREEN_GEMINI_MODEL') ? MVGREEN_GEMINI_MODEL : '', 'gemini-3.8-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash'])));
+    $last = 'AI neodpověděla.'; $items = null; $used = '';
+    foreach ($models as $model) {
+        // „For better results, disable thinking“ (dokumentace Gemini, segmentace)
+        $gc = ['responseMimeType' => 'application/json', 'temperature' => 0.3];
+        $gc['thinkingConfig'] = strpos($model, 'gemini-2') === 0 ? ['thinkingBudget' => 0] : ['thinkingLevel' => 'minimal'];
+        $r = wp_remote_post('https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent', [
+            'headers' => ['x-goog-api-key' => MVGREEN_GEMINI_API_KEY, 'Content-Type' => 'application/json'],
+            'body' => wp_json_encode(['contents' => [['parts' => [['inline_data' => ['mime_type' => 'image/jpeg', 'data' => $m[1]]], ['text' => $prompt]]]], 'generationConfig' => $gc]),
+            'timeout' => 120,
+        ]);
+        if (is_wp_error($r)) { $last = 'Spojení s Gemini selhalo: ' . $r->get_error_message(); continue; }
+        $code = wp_remote_retrieve_response_code($r); $json = json_decode(wp_remote_retrieve_body($r), true);
+        if ($code < 200 || $code >= 300) { $last = 'Gemini (' . $model . '): ' . sanitize_text_field($json['error']['message'] ?? ('HTTP ' . $code)); continue; }
+        $text = '';
+        foreach ((array) ($json['candidates'][0]['content']['parts'] ?? []) as $p) if (isset($p['text'])) $text .= $p['text'];
+        $text = trim(preg_replace('~^\s*```(?:json)?|```\s*$~', '', $text));
+        $out = json_decode($text, true);
+        if (is_array($out) && isset($out['boxes'])) $out = $out['boxes'];
+        if (is_array($out)) { $items = $out; $used = $model; break; }
+        $last = 'Gemini (' . $model . ') nevrátilo seznam objektů.';
     }
-    wp_send_json_success(['objects' => array_slice($objects, 0, 60), 'model' => $model]);
+    if ($items === null) wp_send_json_error(['message' => $last], 200);
+    $objects = [];
+    foreach ($items as $o) {
+        if (!is_array($o) || !isset($o['box_2d']) || count((array) $o['box_2d']) !== 4) continue;
+        $b = array_map(function ($v) { return max(0, min(1000, (float) $v)); }, array_values((array) $o['box_2d']));
+        if ($b[2] <= $b[0] || $b[3] <= $b[1]) continue;
+        $label = (string) ($o['label'] ?? '');
+        $cat = strtolower(trim(strstr($label, ':', true) ?: $label));
+        $kind = $kinds[$cat] ?? 'other';
+        $name = trim(strpos($label, ':') !== false ? substr($label, strpos($label, ':') + 1) : $label);
+        $mask = $o['mask'] ?? null; $outMask = null;
+        if (is_string($mask) && preg_match('~^(data:image/png;base64,)?([A-Za-z0-9+/=]+)$~D', $mask, $mm) && strlen($mm[2]) < 1500000) $outMask = 'data:image/png;base64,' . $mm[2];
+        elseif (is_array($mask)) { $pts = []; foreach ($mask as $p) if (is_array($p) && count($p) >= 2) $pts[] = [max(0, min(1000, (float) $p[0])), max(0, min(1000, (float) $p[1]))]; if (count($pts) >= 3) $outMask = $pts; }
+        $objects[] = ['kind' => $kind, 'name' => sanitize_text_field($name ?: $cat), 'box' => $b, 'mask' => $outMask];
+    }
+    wp_send_json_success(['objects' => array_slice($objects, 0, 40), 'model' => $used]);
 });
 
 /**

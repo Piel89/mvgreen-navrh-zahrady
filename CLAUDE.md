@@ -213,8 +213,13 @@ A4 PDF). It is being built **next to** the old designer, not replacing it:
   Review data: `node scripts/photo-review-data.js <dir>` (thumbnails stay out of the public repo).
 - `assets/v2/mark.js` (`MVGreenMarkV2`, 0.6.238) – step-1 marking WITHOUT the brush (owner picked
   options 3 + 8 of 10: finger too thick at fence edges, fullscreen toolbars covered the photo).
-  Server `mvgreen_ai_detect_v2` (gpt-4.1 vision, ~1 Kč) returns objects {kind, name, suggestion,
-  polygon 0–1000}; client snaps polygons to SLIC segments (majority vote, smaller objects win),
+  Server `mvgreen_ai_detect_v2` = Google Gemini segmentation (0.6.239; GPT-4.1 polygons were
+  useless on a real photo – owner: "absolutně nedostačující"). Needs `MVGREEN_GEMINI_API_KEY`
+  (optional `MVGREEN_GEMINI_MODEL`) in wp-config; tries gemini-3.8-flash → 3-flash-preview →
+  2.5-flash. Returns {kind, name, box [y0,x0,y1,x1] 0–1000, mask = PNG data URL inside the box OR
+  [x,y] polygon OR null}. Owner is on the FREE tier for testing (Google may train on free-tier
+  data → paid tier or Grounded SAM on Replicate before customers). If Gemini isn't good enough the
+  agreed fallback is Grounded SAM (Replicate). Client snaps masks to SLIC segments (majority vote, smaller objects win),
   adds sky from `seg.skyIds`. Tap = cycle Zůstane → Pryč → Navrhnout znovu; tap on unassigned =
   grow a similar-colour region; long-press = split that part off. Clean fullscreen: only ×,
   Hotovo, undo, list button; they hide while touching; pinch zoom. Output = same contract as
