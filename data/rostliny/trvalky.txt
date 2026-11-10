@@ -1,0 +1,96 @@
+# převzato z plants-curated.js (162 ověřených druhů, 2026-11-08)
+Šalvěj hajní ‘Caradonna’|Salvia nemorosa ‘Caradonna’|perennial|mid|0.5|0.4|S|DN|#6B5BB5|#7E9A6E|6-9|-
+Šalvěj hajní ‘Ostfriesland’|Salvia nemorosa ‘Ostfriesland’|perennial|front|0.45|0.4|S|DN|#6A4FA8|#7E9A6E|6-9|-
+Šanta Faassenova ‘Walker’s Low’|Nepeta × faassenii ‘Walker’s Low’|perennial|front|0.5|0.45|SP|DN|#8E86C9|#9AAA8C|5-9|-
+Šanta ‘Six Hills Giant’|Nepeta ‘Six Hills Giant’|perennial|mid|0.8|0.6|SP|DN|#8E86C9|#9AAA8C|5-9|-
+Levandule úzkolistá ‘Hidcote’|Lavandula angustifolia ‘Hidcote’|perennial|front|0.4|0.4|S|D|#6E5FB3|#8A9A82|6-8|-
+Levandule úzkolistá ‘Munstead’|Lavandula angustifolia ‘Munstead’|perennial|front|0.4|0.4|S|D|#8E7FC9|#8A9A82|6-8|-
+Levandule ‘Grosso’|Lavandula × intermedia ‘Grosso’|perennial|mid|0.7|0.6|S|D|#7A68BF|#8A9A82|7-8|-
+Třapatkovka nachová|Echinacea purpurea|perennial|mid|0.8|0.45|S|DN|#C9548F|#6E8F5A|7-9|-
+Třapatkovka ‘White Swan’|Echinacea purpurea ‘White Swan’|perennial|mid|0.6|0.45|S|DN|#F2F0E4|#6E8F5A|7-9|-
+Třapatka zářivá ‘Goldsturm’|Rudbeckia fulgida ‘Goldsturm’|perennial|mid|0.6|0.45|SP|N|#E6B931|#5E7F4B|7-10|-
+Třapatka ‘Herbstsonne’|Rudbeckia nitida ‘Herbstsonne’|perennial|back|1.8|0.6|SP|N|#E6C531|#5E7F4B|7-9|-
+Kakost ‘Rozanne’|Geranium ‘Rozanne’|perennial|front|0.4|0.5|SP|N|#7E8FC9|#6E8F5A|6-10|-
+Kakost krvavý|Geranium sanguineum|perennial|front|0.3|0.4|S|D|#C2307A|#6E8F5A|5-8|-
+Kakost ‘Biokovo’|Geranium × cantabrigiense ‘Biokovo’|perennial|front|0.2|0.35|SP|DN|#F2D9E3|#6E8F5A|5-7|-
+Rozchodník ‘Herbstfreude’|Hylotelephium ‘Herbstfreude’|perennial|mid|0.5|0.4|S|D|#C25B6E|#8FA77E|8-10|-
+Rozchodník ‘Matrona’|Hylotelephium ‘Matrona’|perennial|mid|0.6|0.45|S|D|#D58A9A|#7E7A6E|8-10|-
+Rozchodník pochybný ‘Fuldaglut’|Sedum spurium ‘Fuldaglut’|perennial|front|0.1|0.3|S|D|#B8303E|#7E3C47|7-8|-
+Řebříček ‘Terracotta’|Achillea millefolium ‘Terracotta’|perennial|mid|0.6|0.4|S|D|#D9875A|#8FA77E|6-9|-
+Řebříček ‘Coronation Gold’|Achillea filipendulina ‘Coronation Gold’|perennial|mid|0.9|0.5|S|D|#E6C531|#8FA77E|6-9|-
+Kopretina ‘Becky’|Leucanthemum × superbum ‘Becky’|perennial|mid|0.9|0.45|S|N|#FBFAF2|#5E7F4B|7-9|-
+Denivka ‘Stella de Oro’|Hemerocallis ‘Stella de Oro’|perennial|front|0.4|0.45|SP|N|#E9B52E|#6E8F5A|6-9|-
+Denivka ‘Pink Damask’|Hemerocallis ‘Pink Damask’|perennial|mid|0.8|0.6|SP|N|#D9879A|#6E8F5A|7-8|-
+Kontryhel měkký|Alchemilla mollis|perennial|front|0.4|0.4|SP|N|#CFD36A|#9AB07A|6-7|-
+Hvězdnice ‘Lady in Blue’|Aster dumosus ‘Lady in Blue’|perennial|front|0.35|0.4|SP|N|#6F7FD0|#6E8F5A|9-10|-
+Hvězdnice novoanglická ‘Purple Dome’|Symphyotrichum novae-angliae ‘Purple Dome’|perennial|mid|0.5|0.5|S|N|#7E3F9E|#6E8F5A|9-10|-
+Hvězdnice ‘Mönch’|Aster × frikartii ‘Mönch’|perennial|mid|0.7|0.45|S|N|#9A9AD8|#6E8F5A|7-10|-
+Mateřídouška ‘Coccineus’|Thymus serpyllum ‘Coccineus’|perennial|front|0.1|0.3|S|D|#C25B9E|#7E9A6E|6-7|-
+Krásnoočko přeslenité ‘Zagreb’|Coreopsis verticillata ‘Zagreb’|perennial|front|0.35|0.35|S|D|#E9C534|#6E8F5A|6-9|-
+Svíčkovec ‘Whirling Butterflies’|Gaura lindheimeri ‘Whirling Butterflies’|perennial|mid|0.7|0.5|S|D|#F4ECEF|#6E8F5A|6-10|-
+Perovskie ‘Blue Spire’|Perovskia atriplicifolia ‘Blue Spire’|perennial|back|1|0.6|S|D|#8B92D0|#A9B4A8|7-9|-
+Rozrazil klasnatý ‘Ulster Blue Dwarf’|Veronica spicata ‘Ulster Blue Dwarf’|perennial|front|0.3|0.3|S|N|#4E58B0|#6E8F5A|6-8|-
+Rozrazilovec ‘Fascination’|Veronicastrum virginicum ‘Fascination’|perennial|back|1.5|0.6|SP|NW|#B79AD0|#6E8F5A|7-9|-
+Agastache ‘Blue Fortune’|Agastache ‘Blue Fortune’|perennial|mid|0.8|0.45|S|DN|#7A72C4|#6E8F5A|7-9|-
+Zavinutka ‘Jacob Cline’|Monarda ‘Jacob Cline’|perennial|mid|1|0.5|SP|N|#C0263A|#6E8F5A|7-8|-
+Plamenka latnatá ‘David’|Phlox paniculata ‘David’|perennial|mid|1|0.5|SP|N|#FBFAF2|#6E8F5A|7-9|-
+Plamenka latnatá ‘Blue Paradise’|Phlox paniculata ‘Blue Paradise’|perennial|mid|0.9|0.5|SP|N|#7E7FC9|#6E8F5A|7-9|-
+Plamenka šídlovitá ‘Emerald Blue’|Phlox subulata ‘Emerald Blue’|perennial|front|0.1|0.3|S|D|#A8A6E0|#6E8F5A|4-5|-
+Čistec vlnatý ‘Silver Carpet’|Stachys byzantina ‘Silver Carpet’|perennial|front|0.2|0.35|S|D|-|#B9BDB4|-|-
+Čistec lékařský ‘Hummelo’|Stachys officinalis ‘Hummelo’|perennial|front|0.5|0.35|SP|N|#B1478F|#6E8F5A|6-8|-
+Chrastavec makedonský|Knautia macedonica|perennial|mid|0.6|0.45|S|D|#8E1F3D|#6E8F5A|6-9|-
+Hlaváč ‘Butterfly Blue’|Scabiosa columbaria ‘Butterfly Blue’|perennial|front|0.35|0.35|S|D|#9C9EDB|#6E8F5A|6-10|-
+Kosatec sibiřský|Iris sibirica|perennial|mid|0.8|0.45|SP|NW|#4F4BA8|#6E8F5A|5-6|-
+Kosatec německý|Iris germanica|perennial|mid|0.7|0.4|S|D|#7C5BB0|#8FA4A0|5-6|-
+Pivoňka ‘Sarah Bernhardt’|Paeonia lactiflora ‘Sarah Bernhardt’|perennial|mid|0.9|0.8|S|N|#F2B8C6|#4E7A40|5-6|-
+Mák východní|Papaver orientale|perennial|mid|0.8|0.6|S|DN|#E2543A|#6E8F5A|5-6|-
+Pryšec mnohobarvý|Euphorbia polychroma|perennial|front|0.4|0.5|S|D|#E2DD4A|#6E8F5A|4-5|-
+Máčka plocholistá|Eryngium planum|perennial|mid|0.7|0.45|S|D|#7E8FC9|#8FA4A0|7-8|-
+Zvonek karpatský|Campanula carpatica|perennial|front|0.25|0.3|SP|N|#7E8FD9|#6E8F5A|6-8|-
+Zvonek broskvolistý|Campanula persicifolia|perennial|mid|0.8|0.35|SP|N|#9AA6E0|#6E8F5A|6-7|-
+Hvozdík kropenatý|Dianthus deltoides|perennial|front|0.15|0.25|S|D|#D23A72|#6E8F5A|6-8|-
+Trávnička přímořská|Armeria maritima|perennial|front|0.2|0.25|S|D|#E58AA8|#6E8F5A|5-6|-
+Tařička kosníkovitá|Aubrieta × cultorum|perennial|front|0.1|0.3|S|D|#8A5BB5|#6E8F5A|4-5|-
+Iberka vždyzelená|Iberis sempervirens|perennial|front|0.25|0.35|S|D|#FBFAF2|#4E7A40|4-5|-
+Rožec plstnatý|Cerastium tomentosum|perennial|front|0.15|0.35|S|D|#FBFAF2|#B9BDB4|5-6|-
+Záplevák ‘Moerheim Beauty’|Helenium ‘Moerheim Beauty’|perennial|mid|0.9|0.5|S|N|#B5462B|#6E8F5A|7-9|-
+Janeba ‘Summer Sun’|Heliopsis helianthoides ‘Summer Sun’|perennial|back|1|0.6|S|N|#E6B931|#6E8F5A|7-9|-
+Slunečnice ‘Lemon Queen’|Helianthus ‘Lemon Queen’|perennial|back|1.8|0.8|S|N|#EDE07A|#6E8F5A|8-10|-
+Sadec nachový ‘Atropurpureum’|Eupatorium maculatum ‘Atropurpureum’|perennial|back|1.8|0.8|SP|NW|#A35C7E|#6E8F5A|8-9|-
+Rdesno ‘Firetail’|Persicaria amplexicaulis ‘Firetail’|perennial|mid|1|0.6|SP|NW|#C0263A|#6E8F5A|7-10|-
+Kyprej vrbice ‘Robert’|Lythrum salicaria ‘Robert’|perennial|mid|0.8|0.5|S|W|#C2307A|#6E8F5A|7-8|-
+Šurik klasnatý|Liatris spicata|perennial|mid|0.6|0.3|S|N|#9A3F9E|#6E8F5A|7-8|-
+Sasanka ‘September Charm’|Anemone hupehensis ‘September Charm’|perennial|mid|0.8|0.5|SP|N|#EBB5CB|#6E8F5A|8-10|-
+Sasanka ‘Honorine Jobert’|Anemone × hybrida ‘Honorine Jobert’|perennial|mid|1|0.5|SP|N|#FBFAF2|#6E8F5A|8-10|-
+Kokarda ‘Kobold’|Gaillardia × grandiflora ‘Kobold’|perennial|front|0.3|0.35|S|D|#C9452E|#6E8F5A|6-9|-
+Mochna ‘Gibson’s Scarlet’|Potentilla ‘Gibson’s Scarlet’|perennial|front|0.35|0.4|S|N|#C0263A|#6E8F5A|6-8|-
+Kakost ‘Johnson’s Blue’|Geranium ‘Johnson’s Blue’|perennial|front|0.45|0.45|SP|N|#7E8FD9|#6E8F5A|6-7|-
+Bohyška ‘Francee’|Hosta ‘Francee’|perennial|front|0.5|0.6|PT|NW|#E0DDF5|#4E7A40|7-8|-
+Bohyška ‘Sum and Substance’|Hosta ‘Sum and Substance’|perennial|mid|0.7|0.9|PT|NW|#F2F0E4|#C6C64A|7-8|-
+Bohyška ‘Halcyon’|Hosta ‘Halcyon’|perennial|front|0.4|0.5|PT|NW|#C9C4E6|#7E9AA6|7-8|-
+Bergénie srdčitá|Bergenia cordifolia|perennial|front|0.4|0.45|PT|DN|#D86A9A|#4E7A40|4-5|-
+Čechrava ‘Fanal’|Astilbe × arendsii ‘Fanal’|perennial|mid|0.6|0.4|PT|NW|#B8303E|#4E6A3F|6-8|-
+Čechrava čínská ‘Pumila’|Astilbe chinensis ‘Pumila’|perennial|front|0.3|0.35|PT|NW|#C27AA5|#4E7A40|7-9|-
+Brčál menší|Vinca minor|perennial|front|0.15|0.3|PT|N|#6F7FD0|#3F6E45|4-5|-
+Dlužicha ‘Palace Purple’|Heuchera ‘Palace Purple’|perennial|front|0.4|0.4|PT|N|#F2EAE0|#6B2E3D|6-7|-
+Dlužicha ‘Lime Marmalade’|Heuchera ‘Lime Marmalade’|perennial|front|0.35|0.4|PT|N|#F2EAE0|#C8D14A|6-7|-
+Pomněnkovec ‘Jack Frost’|Brunnera macrophylla ‘Jack Frost’|perennial|front|0.4|0.45|PT|N|#8FA9E0|#B7C2B4|4-5|-
+Plicník ‘Trevi Fountain’|Pulmonaria ‘Trevi Fountain’|perennial|front|0.3|0.4|PT|N|#5E6FC2|#5E7F4B|3-5|-
+Škornice červená|Epimedium × rubrum|perennial|front|0.3|0.35|PT|DN|#C24A5A|#7E6A40|4-5|-
+Srdcovka nádherná|Lamprocapnos spectabilis|perennial|mid|0.7|0.6|PT|N|#D86A9A|#6E8F5A|4-6|-
+Udatna lesní|Aruncus dioicus|perennial|back|1.6|1|PT|NW|#F2F0E4|#4E7A40|6-7|-
+Ploštičník ‘Brunette’|Actaea simplex ‘Brunette’|perennial|back|1.2|0.6|PT|N|#F0E2EC|#4A2E33|9-10|-
+Kokořík mnohokvětý|Polygonatum multiflorum|perennial|mid|0.7|0.4|PT|N|#F2F0E4|#6E8F5A|5-6|-
+Hluchavka ‘White Nancy’|Lamium maculatum ‘White Nancy’|perennial|front|0.2|0.35|PT|DN|#FBFAF2|#B7C2B4|5-7|-
+Pachysandra klasnatá|Pachysandra terminalis|perennial|front|0.2|0.25|PT|N|#FBFAF2|#3F6E45|4-5|-
+Valdštejnka trojčetná|Waldsteinia ternata|perennial|front|0.1|0.3|SPT|DN|#E9C534|#4E7A40|4-5|-
+Zběhovec ‘Atropurpurea’|Ajuga reptans ‘Atropurpurea’|perennial|front|0.15|0.3|PT|N|#5E58B0|#5E3346|5-6|-
+Mitrovnice srdčitá|Tiarella cordifolia|perennial|front|0.25|0.3|PT|N|#F2EAE8|#6E8F5A|5-6|-
+Popelivka ‘The Rocket’|Ligularia ‘The Rocket’|perennial|back|1.5|0.8|PT|W|#E6C531|#4E7A40|7-8|-
+Čemeřice východní|Helleborus orientalis|perennial|front|0.4|0.45|PT|N|#C9A0B5|#4E7A40|2-4|-
+Kakost ‘Spessart’|Geranium macrorrhizum ‘Spessart’|perennial|front|0.3|0.4|SPT|DN|#F0E6EC|#6E8F5A|5-6|-
+Mařinka vonná|Galium odoratum|perennial|front|0.2|0.3|PT|N|#FBFAF2|#6E8F5A|5-5|-
+Kapraď samec|Dryopteris filix-mas|perennial|mid|0.9|0.6|PT|DN|-|#4E7A40|-|-
+Pérovník pštrosí|Matteuccia struthiopteris|perennial|mid|1|0.6|PT|NW|-|#6E9A4A|-|-
+Papratka ‘Metallicum’|Athyrium niponicum ‘Metallicum’|perennial|front|0.4|0.45|PT|N|-|#9AA6A0|-|-
+Kapradina štětinatá|Polystichum setiferum|perennial|mid|0.6|0.6|PT|N|-|#3F6E45|-|e

@@ -1,0 +1,134 @@
+# Okrasné trávy a cibuloviny – doplněno 2026-11-10
+Třtina ‘Overdam’|Calamagrostis × acutiflora ‘Overdam’|g|b|1.4|0.5|SP|N|kr|pe|7-9|-
+Třtina ‘Avalanche’|Calamagrostis × acutiflora ‘Avalanche’|g|b|1.4|0.5|SP|N|kr|pe|7-9|-
+Třtina krátkovlasá|Calamagrostis brachytricha|g|m|1.0|0.6|SP|N|ru|z|8-10|-
+Dochan psárkovitý ‘Little Bunny’|Pennisetum alopecuroides ‘Little Bunny’|g|f|0.3|0.35|S|N|kr|z|8-10|-
+Dochan ‘Red Head’|Pennisetum alopecuroides ‘Red Head’|g|m|0.8|0.7|S|N|vi|z|8-10|-
+Dochan východní|Pennisetum orientale|g|m|0.6|0.5|S|D|ru|sz|7-9|-
+Dochan ‘Viridescens’|Pennisetum alopecuroides ‘Viridescens’|g|m|0.8|0.7|S|N|vi|tz|8-10|-
+Ozdobnice ‘Zebrinus’|Miscanthus sinensis ‘Zebrinus’|g|b|1.8|1.0|S|N|ru|pe|9-10|-
+Ozdobnice ‘Malepartus’|Miscanthus sinensis ‘Malepartus’|g|b|1.8|1.0|S|N|vi|z|8-10|-
+Ozdobnice ‘Ferner Osten’|Miscanthus sinensis ‘Ferner Osten’|g|b|1.4|0.8|S|N|cv|z|8-10|-
+Ozdobnice ‘Adagio’|Miscanthus sinensis ‘Adagio’|g|m|1.0|0.7|S|N|ru|sz|8-10|-
+Ozdobnice ‘Yaku Jima’|Miscanthus sinensis ‘Yaku Jima’|g|m|1.0|0.7|S|N|ru|z|8-10|-
+Ozdobnice ‘Strictus’|Miscanthus sinensis ‘Strictus’|g|b|2.0|0.9|S|N|ru|pe|9-10|-
+Ozdobnice cukrová|Miscanthus sacchariflorus|g|b|2.5|1.2|S|NW|bi|z|9-10|i
+Proso prutnaté ‘Northwind’|Panicum virgatum ‘Northwind’|g|b|1.5|0.6|S|DN|kr|mz|8-10|-
+Proso prutnaté ‘Rehbraun’|Panicum virgatum ‘Rehbraun’|g|m|1.1|0.6|S|DN|ru|cv|8-10|-
+Proso prutnaté ‘Squaw’|Panicum virgatum ‘Squaw’|g|m|1.0|0.6|S|DN|ru|z|8-10|-
+Bezkolenec ‘Edith Dudszus’|Molinia caerulea ‘Edith Dudszus’|g|m|0.8|0.5|SP|NW|vi|z|8-9|-
+Bezkolenec ‘Variegata’|Molinia caerulea ‘Variegata’|g|f|0.5|0.4|SP|NW|kr|pe|8-9|-
+Bezkolenec ‘Transparent’|Molinia arundinacea ‘Transparent’|g|b|1.8|0.7|SP|NW|kr|z|8-10|-
+Pěchava vápnomilná|Sesleria caerulea|lg|f|0.25|0.3|SP|D|-|mz|-|e
+Pěchava ‘Greenlee’|Sesleria ‘Greenlee’|lg|f|0.35|0.35|SPT|DN|-|z|-|e
+Kavyl Ivanův|Stipa pennata|g|f|0.6|0.4|S|D|si|sz|5-6|-
+Kavyl obrovský|Stipa gigantea|g|b|1.8|0.8|S|D|zl|sz|6-8|-
+Kavyl vláskovitý|Stipa capillata|g|f|0.6|0.35|S|D|kr|sz|7-8|-
+Kavyl ‘Pony Tails’|Stipa tenuissima ‘Pony Tails’|g|f|0.5|0.35|S|D|kr|zl|6-9|-
+Smělek sivý|Koeleria glauca|lg|f|0.3|0.25|S|D|kr|mz|6-7|e
+Metlice trsnatá ‘Bronzeschleier’|Deschampsia cespitosa ‘Bronzeschleier’|g|m|0.8|0.5|PT|NW|zl|z|6-8|-
+Metlice křivolaká|Avenella flexuosa ‘Tatra Gold’|lg|f|0.3|0.25|PT|N|hn|zl|6-7|a
+Kostřava sivá ‘Elijah Blue’|Festuca glauca ‘Elijah Blue’|lg|f|0.25|0.25|S|D|-|mz|-|e
+Kostřava ‘Intense Blue’|Festuca glauca ‘Intense Blue’|lg|f|0.25|0.25|S|D|-|mz|-|e
+Kostřava Gautierova|Festuca gautieri|lg|f|0.15|0.25|SP|D|-|tz|-|e
+Kostřava ametystová|Festuca amethystina|lg|f|0.4|0.3|S|D|-|mz|-|e
+Ostřice ‘Ice Dance’|Carex morrowii ‘Ice Dance’|lg|f|0.3|0.4|PT|N|-|pe|-|e
+Ostřice ‘Everest’|Carex oshimensis ‘Everest’|lg|f|0.3|0.4|PT|N|-|pe|-|e
+Ostřice ‘Bronco’|Carex comans ‘Bronco’|lg|f|0.35|0.4|SP|N|-|hn|-|e
+Ostřice převislá|Carex pendula|g|m|1.0|0.7|PT|NW|hn|z|5-6|ei
+Ostřice ‘Feather Falls’|Carex oshimensis ‘Feather Falls’|lg|f|0.3|0.4|PT|N|-|pe|-|e
+Ostřice ‘Variegata’|Carex morrowii ‘Variegata’|lg|f|0.3|0.4|PT|N|-|pe|-|e
+Ostřice vyvýšená ‘Aurea’|Carex elata ‘Aurea’|lg|f|0.6|0.45|SP|W|-|zl|-|v
+Ostřice nízká|Carex humilis|lg|f|0.15|0.2|S|D|-|z|-|-
+Ostřice ‘Prairie Fire’|Carex testacea ‘Prairie Fire’|lg|f|0.4|0.4|SP|N|-|or|-|e
+Hakonéchloa ‘All Gold’|Hakonechloa macra ‘All Gold’|lg|f|0.35|0.4|PT|N|-|zl|-|-
+Hakonéchloa velká|Hakonechloa macra|lg|f|0.4|0.45|PT|N|-|z|-|-
+Ovsíř stálezelený ‘Saphirsprudel’|Helictotrichon sempervirens ‘Saphirsprudel’|g|f|0.6|0.45|S|D|kr|mz|6-7|e
+Bika sněžná|Luzula nivea|lg|f|0.4|0.3|PT|DN|bi|z|6-7|e
+Bika ‘Aurea’|Luzula sylvatica ‘Aurea’|lg|f|0.3|0.35|PT|N|hn|zl|5-6|e
+Chasmanthium širokolisté|Chasmanthium latifolium|g|m|0.9|0.45|SPT|N|ze|z|8-10|-
+Pšeníčko rozkladité ‘Aureum’|Milium effusum ‘Aureum’|lg|f|0.4|0.3|PT|N|zl|zl|5-7|-
+Perlička brvitá|Melica ciliata|g|f|0.5|0.3|S|D|kr|sz|5-7|-
+Sporobolus různošupinatý|Sporobolus heterolepis|g|f|0.6|0.5|S|D|ru|z|8-9|-
+Bouteloua štíhlá ‘Blonde Ambition’|Bouteloua gracilis ‘Blonde Ambition’|g|f|0.6|0.4|S|D|kr|sz|7-9|-
+Vousatka ‘Standing Ovation’|Schizachyrium scoparium ‘Standing Ovation’|g|m|0.9|0.45|S|D|ru|mz|8-10|-
+Vousatice Gerardova ‘Red October’|Andropogon gerardii ‘Red October’|g|b|1.5|0.6|S|D|vi|cv|8-10|-
+Sorghastrum ‘Indian Steel’|Sorghastrum nutans ‘Indian Steel’|g|b|1.5|0.6|S|DN|zl|mz|8-10|-
+Lesknice ‘Picta’|Phalaris arundinacea ‘Picta’|g|m|1.0|0.6|SP|NW|kr|pe|6-7|i
+Ozdobnice ‘Little Kitten’|Miscanthus sinensis ‘Little Kitten’|g|f|0.6|0.45|S|N|ru|z|8-10|-
+Ostřice ‘Frosted Curls’|Carex comans ‘Frosted Curls’|lg|f|0.3|0.35|SP|N|-|sz|-|e
+Ophiopogon plochostvolý ‘Nigrescens’|Ophiopogon planiscapus ‘Nigrescens’|lg|f|0.2|0.25|SPT|N|la|cv|7-8|e
+Sítina rozkladitá ‘Spiralis’|Juncus effusus ‘Spiralis’|lg|f|0.3|0.3|SP|W|-|z|-|v
+Pýr magellanský|Elymus magellanicus|lg|f|0.3|0.35|S|D|-|mz|-|e
+Ječmenice písečná ‘Blue Dune’|Leymus arenarius ‘Blue Dune’|g|m|1.0|0.6|S|D|kr|mz|6-8|i
+Bambus ‘Jumbo’|Fargesia murielae ‘Jumbo’|k|b|3.0|1.2|SP|N|-|z|-|e
+Bambus ‘Rufa’|Fargesia rufa|k|b|2.0|1.0|SPT|N|-|z|-|e
+Bambus ‘Simba’|Fargesia murielae ‘Simba’|k|m|1.8|0.9|SPT|N|-|z|-|e
+Tulipán ‘Queen of Night’|Tulipa ‘Queen of Night’|b|bu|0.6|0.12|S|DN|vi|z|5-5|x
+Tulipán ‘Apeldoorn’|Tulipa ‘Apeldoorn’|b|bu|0.55|0.12|S|DN|cv|z|4-5|x
+Tulipán ‘White Triumphator’|Tulipa ‘White Triumphator’|b|bu|0.6|0.12|S|DN|bi|z|5-5|x
+Tulipán ‘Ballerina’|Tulipa ‘Ballerina’|b|bu|0.55|0.12|S|DN|or|z|4-5|x
+Tulipán ‘Pink Impression’|Tulipa ‘Pink Impression’|b|bu|0.6|0.12|S|DN|ru|z|4-5|x
+Tulipán ‘Golden Apeldoorn’|Tulipa ‘Golden Apeldoorn’|b|bu|0.55|0.12|S|DN|zl|z|4-5|x
+Tulipán ‘Angélique’|Tulipa ‘Angélique’|b|bu|0.45|0.12|S|DN|sr|z|5-5|x
+Tulipán Tardův|Tulipa tarda|b|bu|0.12|0.1|S|D|zl|z|4-5|x
+Tulipán ‘Lilac Wonder’|Tulipa saxatilis ‘Lilac Wonder’|b|bu|0.15|0.1|S|D|la|z|4-5|x
+Tulipán ‘Red Riding Hood’|Tulipa greigii ‘Red Riding Hood’|b|bu|0.25|0.1|S|DN|cv|pe|4-4|x
+Tulipán ‘Purissima’|Tulipa fosteriana ‘Purissima’|b|bu|0.45|0.12|S|DN|bi|z|4-4|x
+Narcis ‘Tête-à-Tête’|Narcissus ‘Tête-à-Tête’|b|bu|0.2|0.1|SP|N|zl|z|3-4|x
+Narcis ‘Dutch Master’|Narcissus ‘Dutch Master’|b|bu|0.45|0.12|SP|N|zl|z|4-4|x
+Narcis ‘Thalia’|Narcissus ‘Thalia’|b|bu|0.35|0.1|SP|N|bi|z|4-4|x
+Narcis ‘Ice Follies’|Narcissus ‘Ice Follies’|b|bu|0.4|0.12|SP|N|kr|z|3-4|x
+Narcis ‘Jetfire’|Narcissus ‘Jetfire’|b|bu|0.25|0.1|SP|N|or|z|3-4|x
+Narcis bílý|Narcissus poeticus ‘Actaea’|b|bu|0.45|0.12|SP|N|bi|z|4-5|x
+Narcis ‘Pheasant’s Eye’|Narcissus poeticus var. recurvus|b|bu|0.4|0.12|SP|N|bi|z|5-5|x
+Narcis ‘Jack Snipe’|Narcissus ‘Jack Snipe’|b|bu|0.2|0.1|SP|N|sz|z|3-4|x
+Hyacint ‘Delft Blue’|Hyacinthus orientalis ‘Delft Blue’|b|bu|0.25|0.12|SP|N|sv|z|4-4|x
+Hyacint ‘Pink Pearl’|Hyacinthus orientalis ‘Pink Pearl’|b|bu|0.25|0.12|SP|N|ru|z|4-4|x
+Hyacint ‘Carnegie’|Hyacinthus orientalis ‘Carnegie’|b|bu|0.25|0.12|SP|N|bi|z|4-4|x
+Modřenec arménský|Muscari armeniacum|b|bu|0.15|0.08|SP|N|mo|z|4-5|i
+Modřenec ‘White Magic’|Muscari aucheri ‘White Magic’|b|bu|0.15|0.08|SP|N|bi|z|4-5|-
+Modřenec latifolium|Muscari latifolium|b|bu|0.2|0.08|SP|N|fi|z|4-5|-
+Krokus ‘Pickwick’|Crocus vernus ‘Pickwick’|b|bu|0.12|0.07|SP|N|la|z|3-3|-
+Krokus ‘Jeanne d’Arc’|Crocus vernus ‘Jeanne d’Arc’|b|bu|0.12|0.07|SP|N|bi|z|3-3|-
+Krokus ‘Ruby Giant’|Crocus tommasinianus ‘Ruby Giant’|b|bu|0.1|0.07|SP|N|fi|z|2-3|-
+Krokus ‘Cream Beauty’|Crocus chrysanthus ‘Cream Beauty’|b|bu|0.08|0.07|SP|N|kr|z|2-3|-
+Krokus ‘Golden Yellow’|Crocus ‘Golden Yellow’|b|bu|0.1|0.07|SP|N|zl|z|3-3|-
+Krokus podzimní|Crocus speciosus|b|bu|0.12|0.07|SP|N|la|z|9-10|-
+Ocún jesenní|Colchicum autumnale|b|bu|0.15|0.1|SP|N|la|z|9-10|x
+Ocún ‘Waterlily’|Colchicum ‘Waterlily’|b|bu|0.15|0.12|SP|N|ru|z|9-10|x
+Sněženka podsněžník|Galanthus nivalis|b|bu|0.12|0.07|PT|N|bi|z|2-3|x
+Sněženka Elwesova|Galanthus elwesii|b|bu|0.2|0.08|PT|N|bi|mz|2-3|x
+Bledule jarní|Leucojum vernum|b|bu|0.2|0.08|PT|NW|bi|z|2-4|x
+Bledule letní ‘Gravetye Giant’|Leucojum aestivum ‘Gravetye Giant’|b|bu|0.5|0.12|SP|NW|bi|z|4-5|x
+Ladoňka sibiřská|Scilla siberica|b|bu|0.12|0.07|SPT|N|mo|z|3-4|x
+Ladoňka Luciliina|Scilla luciliae|b|bu|0.15|0.07|SP|N|sv|z|3-4|x
+Talovín zimní|Eranthis hyemalis|b|bu|0.1|0.07|PT|N|zl|z|2-3|x
+Sasanka vábná ‘Blue Shades’|Anemone blanda ‘Blue Shades’|b|bu|0.12|0.08|SPT|N|mo|z|3-4|x
+Sasanka vábná ‘White Splendour’|Anemone blanda ‘White Splendour’|b|bu|0.12|0.08|SPT|N|bi|z|3-4|x
+Kosatec síťkovaný ‘Harmony’|Iris reticulata ‘Harmony’|b|bu|0.12|0.07|S|D|mo|z|2-3|-
+Kosatec ‘Katharine Hodgkin’|Iris ‘Katharine Hodgkin’|b|bu|0.12|0.07|S|D|sv|z|2-3|-
+Česnek ‘Purple Sensation’|Allium hollandicum ‘Purple Sensation’|b|bu|0.8|0.15|S|D|fi|z|5-6|-
+Česnek ‘Globemaster’|Allium ‘Globemaster’|b|bu|0.8|0.25|S|D|la|z|6-6|-
+Česnek Christophův|Allium cristophii|b|bu|0.5|0.2|S|D|la|z|6-6|-
+Česnek kulatohlavý|Allium sphaerocephalon|b|bu|0.6|0.1|S|D|vi|z|7-7|-
+Česnek ‘Mount Everest’|Allium ‘Mount Everest’|b|bu|0.9|0.2|S|D|bi|z|5-6|-
+Česnek modrý|Allium caeruleum|b|bu|0.6|0.1|S|D|mo|z|6-7|-
+Česnek žlutý|Allium moly|b|bu|0.25|0.1|SP|D|zl|mz|5-6|-
+Česnek ‘Gladiator’|Allium ‘Gladiator’|b|bu|1.0|0.2|S|D|fi|z|5-6|-
+Řebčík královský ‘Rubra’|Fritillaria imperialis ‘Rubra’|b|bu|0.9|0.3|SP|DN|or|z|4-5|x
+Řebčík královský ‘Lutea’|Fritillaria imperialis ‘Lutea’|b|bu|0.9|0.3|SP|DN|zl|z|4-5|x
+Řebčík kostkovaný|Fritillaria meleagris|b|bu|0.3|0.1|SP|NW|vi|z|4-5|x
+Řebčík perský|Fritillaria persica|b|bu|0.8|0.25|S|D|vi|mz|4-5|x
+Kamasie Leichtlinova ‘Caerulea’|Camassia leichtlinii ‘Caerulea’|b|bu|0.8|0.15|SP|NW|mo|z|5-6|-
+Ladonička Forbesova ‘Pink Giant’|Chionodoxa forbesii ‘Pink Giant’|b|bu|0.15|0.07|SP|N|ru|z|3-4|x
+Puškinie ladoňkovitá|Puschkinia scilloides|b|bu|0.15|0.07|SP|N|sv|z|3-4|-
+Snědek okoličnatý|Ornithogalum umbellatum|b|bu|0.2|0.08|S|D|bi|z|4-5|xi
+Hyacintovec španělský|Hyacinthoides hispanica|b|bu|0.35|0.1|PT|N|sv|z|5-5|xi
+Lilie Henryho|Lilium henryi|b|bu|1.5|0.3|SP|N|or|z|7-8|x
+Galtonie bělavá|Galtonia candicans|b|bu|1.0|0.2|S|N|bi|z|8-9|-
+Mečík ‘Byzantinus’|Gladiolus communis subsp. byzantinus|b|bu|0.7|0.15|S|N|ma|z|6-7|-
+Liliochvostec úzkolistý|Eremurus stenophyllus|b|bu|1.2|0.4|S|D|zl|z|6-7|-
+Liliochvostec statný|Eremurus robustus|b|bu|2.5|0.6|S|D|sr|z|5-6|-
+Ladonička ‘Blue Giant’|Scilla forbesii ‘Blue Giant’|b|bu|0.15|0.07|SP|N|mo|z|3-4|x
+Brimeura ametystová|Brimeura amethystina|b|bu|0.2|0.07|SP|D|mo|z|5-5|-

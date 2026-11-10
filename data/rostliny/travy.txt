@@ -1,0 +1,19 @@
+# převzato z plants-curated.js (162 ověřených druhů, 2026-11-08)
+Třtina ostrokvětá ‘Karl Foerster’|Calamagrostis × acutiflora ‘Karl Foerster’|grass|back|1.5|0.6|SP|N|-|#BDB46A|-|-
+Dochan ‘Hameln’|Pennisetum alopecuroides ‘Hameln’|grass|mid|0.6|0.6|S|N|-|#C9BE8A|-|-
+Ozdobnice čínská ‘Gracillimus’|Miscanthus sinensis ‘Gracillimus’|grass|back|1.6|1|S|N|-|#B5AE68|-|-
+Ozdobnice ‘Morning Light’|Miscanthus sinensis ‘Morning Light’|grass|back|1.5|1|S|N|-|#C8C9AE|-|-
+Ozdobnice ‘Kleine Fontäne’|Miscanthus sinensis ‘Kleine Fontäne’|grass|back|1.4|0.9|S|N|-|#B5AE68|-|-
+Proso prutnaté ‘Heavy Metal’|Panicum virgatum ‘Heavy Metal’|grass|back|1.2|0.7|S|DN|-|#8FA6A8|-|-
+Proso prutnaté ‘Shenandoah’|Panicum virgatum ‘Shenandoah’|grass|mid|1|0.6|S|DN|-|#9A5A4A|-|-
+Bezkolenec ‘Moorhexe’|Molinia caerulea ‘Moorhexe’|grass|mid|0.6|0.45|SP|NW|-|#9AAA6A|-|-
+Pěchava podzimní|Sesleria autumnalis|lowgrass|front|0.4|0.35|SP|DN|-|#C8CE7A|-|-
+Kavyl nejjemnější|Stipa tenuissima|lowgrass|front|0.5|0.35|S|D|-|#D9CF9A|-|-
+Metlice trsnatá ‘Goldtau’|Deschampsia cespitosa ‘Goldtau’|grass|mid|0.6|0.45|SP|NW|-|#C9BE8A|-|-
+Kostřava sivá|Festuca glauca|lowgrass|front|0.25|0.3|S|D|-|#9AB3BB|-|-
+Ostřice ‘Evergold’|Carex oshimensis ‘Evergold’|lowgrass|front|0.3|0.4|PT|N|-|#C8C46A|-|-
+Hakonechloa ‘Aureola’|Hakonechloa macra ‘Aureola’|lowgrass|front|0.35|0.4|PT|N|-|#D3C35A|-|-
+Ovsíř vždyzelený|Helictotrichon sempervirens|grass|mid|0.6|0.5|S|D|-|#9AB3BB|-|-
+Bika lesní|Luzula sylvatica|lowgrass|front|0.35|0.4|PT|DN|-|#4E7A40|-|-
+Imperata ‘Red Baron’|Imperata cylindrica ‘Red Baron’|lowgrass|front|0.4|0.3|S|N|-|#A83A3A|-|-
+Vousatka ‘Blaze’|Schizachyrium scoparium ‘Blaze’|grass|mid|0.9|0.45|S|D|-|#9A6A4A|-|-

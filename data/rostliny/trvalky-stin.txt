@@ -1,0 +1,154 @@
+# Trvalky, půdopokryvné a kapradiny do polostínu a stínu – doplněno 2026-11-10
+Bohyška ‘Patriot’|Hosta ‘Patriot’|p|f|0.5|0.6|PT|N|la|pe|7-8|-
+Bohyška ‘June’|Hosta ‘June’|p|f|0.4|0.6|PT|N|la|pe|7-8|-
+Bohyška ‘Blue Angel’|Hosta ‘Blue Angel’|p|m|0.9|1.0|PT|N|bi|mz|7-8|-
+Bohyška ‘Wide Brim’|Hosta ‘Wide Brim’|p|f|0.5|0.7|PT|N|la|pe|7-8|-
+Bohyška ‘Gold Standard’|Hosta ‘Gold Standard’|p|f|0.6|0.8|PT|N|la|zl|7-8|-
+Bohyška ‘Undulata Albomarginata’|Hosta undulata ‘Albomarginata’|p|f|0.4|0.5|PT|N|la|pe|7-8|-
+Bohyška ‘Blue Mouse Ears’|Hosta ‘Blue Mouse Ears’|p|f|0.2|0.3|PT|N|la|mz|7-8|-
+Bohyška Sieboldova ‘Elegans’|Hosta sieboldiana ‘Elegans’|p|m|0.7|1.0|PT|N|bi|mz|7-8|-
+Bohyška ‘Guacamole’|Hosta ‘Guacamole’|p|m|0.6|0.9|PT|N|bi|zl|8-9|-
+Bohyška ‘Fire and Ice’|Hosta ‘Fire and Ice’|p|f|0.35|0.5|PT|N|la|pe|7-8|-
+Bohyška ‘Empress Wu’|Hosta ‘Empress Wu’|p|b|1.2|1.6|PT|N|la|tz|7-8|-
+Bohyška ‘Frances Williams’|Hosta sieboldiana ‘Frances Williams’|p|m|0.7|1.0|PT|N|bi|pe|7-8|-
+Tavolníček Arendsův ‘Amethyst’|Astilbe × arendsii ‘Amethyst’|p|m|0.8|0.45|PT|NW|la|z|7-8|-
+Tavolníček Arendsův ‘Brautschleier’|Astilbe × arendsii ‘Brautschleier’|p|m|0.7|0.45|PT|NW|bi|z|7-8|-
+Tavolníček ‘Europa’|Astilbe japonica ‘Europa’|p|f|0.5|0.4|PT|NW|sr|z|6-7|-
+Tavolníček ‘Montgomery’|Astilbe japonica ‘Montgomery’|p|f|0.6|0.4|PT|NW|cv|tz|6-7|-
+Tavolníček ‘Visions’|Astilbe chinensis ‘Visions’|p|f|0.4|0.4|PT|N|ma|z|7-8|-
+Tavolníček ‘Purpurlanze’|Astilbe chinensis var. taquetii ‘Purpurlanze’|p|m|1.0|0.5|PT|N|ma|z|8-9|-
+Tavolníček ‘Sprite’|Astilbe simplicifolia ‘Sprite’|p|f|0.3|0.35|PT|NW|sr|tz|7-8|-
+Tavolníček ‘Deutschland’|Astilbe japonica ‘Deutschland’|p|f|0.5|0.4|PT|NW|bi|z|6-7|-
+Dlužicha ‘Obsidian’|Heuchera ‘Obsidian’|p|f|0.3|0.4|SPT|N|bi|cv|6-7|e
+Dlužicha ‘Caramel’|Heuchera ‘Caramel’|p|f|0.3|0.4|SPT|N|bi|or|6-7|e
+Dlužicha ‘Forever Purple’|Heuchera ‘Forever Purple’|p|f|0.3|0.4|SPT|N|ru|cv|6-7|e
+Dlužicha ‘Silver Scrolls’|Heuchera ‘Silver Scrolls’|p|f|0.3|0.4|SPT|N|bi|si|6-7|e
+Dlužicha krvavá ‘Splendens’|Heuchera sanguinea ‘Splendens’|p|f|0.4|0.35|SP|N|cv|z|6-8|e
+Dlužicha ‘Berry Smoothie’|Heuchera ‘Berry Smoothie’|p|f|0.3|0.4|SPT|N|bi|ma|6-7|e
+Dlužela ‘Tapestry’|× Heucherella ‘Tapestry’|p|f|0.25|0.35|PT|N|ru|pe|5-7|e
+Dlužela ‘Sweet Tea’|× Heucherella ‘Sweet Tea’|p|f|0.3|0.4|PT|N|bi|or|5-7|e
+Pomněnkovec ‘Looking Glass’|Brunnera macrophylla ‘Looking Glass’|p|f|0.3|0.4|PT|N|sv|si|4-5|-
+Pomněnkovec velkolistý|Brunnera macrophylla|p|f|0.4|0.45|PT|N|mo|z|4-5|-
+Pomněnkovec ‘Variegata’|Brunnera macrophylla ‘Variegata’|p|f|0.35|0.45|PT|N|mo|pe|4-5|-
+Plicník lékařský|Pulmonaria officinalis|p|f|0.25|0.35|PT|N|fi|pe|3-5|-
+Plicník ‘Sissinghurst White’|Pulmonaria ‘Sissinghurst White’|p|f|0.25|0.35|PT|N|bi|pe|3-5|-
+Plicník ‘Blue Ensign’|Pulmonaria ‘Blue Ensign’|p|f|0.3|0.4|PT|N|mo|tz|3-5|-
+Škornice ‘Sulphureum’|Epimedium × versicolor ‘Sulphureum’|p|f|0.3|0.35|PT|DN|sz|z|4-5|e
+Škornice ‘Frohnleiten’|Epimedium × perralchicum ‘Frohnleiten’|p|f|0.3|0.35|PT|DN|zl|z|4-5|e
+Škornice ‘Lilafee’|Epimedium grandiflorum ‘Lilafee’|p|f|0.25|0.3|PT|N|la|z|4-5|-
+Srdcovka ‘Alba’|Lamprocapnos spectabilis ‘Alba’|p|m|0.7|0.5|PT|N|bi|z|4-6|x
+Srdcovka ‘Valentine’|Lamprocapnos spectabilis ‘Valentine’|p|m|0.7|0.5|PT|N|cv|z|4-6|x
+Srdcovka ‘Gold Heart’|Lamprocapnos spectabilis ‘Gold Heart’|p|m|0.6|0.5|PT|N|ru|zl|4-6|x
+Srdcovka překrásná ‘Luxuriant’|Dicentra ‘Luxuriant’|p|f|0.35|0.35|PT|N|ru|sz|4-9|x
+Udatna lesní ‘Kneiffii’|Aruncus dioicus ‘Kneiffii’|p|m|0.7|0.6|PT|N|bi|z|6-7|-
+Udatna ‘Horatio’|Aruncus ‘Horatio’|p|m|0.8|0.6|SPT|N|bi|z|6-7|-
+Udatna ‘Misty Lace’|Aruncus ‘Misty Lace’|p|f|0.5|0.45|PT|N|kr|z|6-7|-
+Ploštičník ‘Atropurpurea’|Actaea simplex ‘Atropurpurea’|p|b|1.5|0.6|PT|N|bi|cv|9-10|x
+Ploštičník hroznatý|Actaea racemosa|p|b|1.6|0.6|PT|N|bi|z|7-8|x
+Ploštičník ‘Pink Spike’|Actaea simplex ‘Pink Spike’|p|b|1.4|0.6|PT|N|sr|cv|9-10|x
+Kokořík ‘Variegatum’|Polygonatum odoratum ‘Variegatum’|p|m|0.5|0.35|PT|N|bi|pe|5-6|x
+Kokořík vonný|Polygonatum odoratum|p|m|0.5|0.35|PT|DN|bi|z|5-6|x
+Hluchavka skvrnitá ‘Beacon Silver’|Lamium maculatum ‘Beacon Silver’|p|f|0.15|0.35|PT|N|ma|si|5-7|-
+Hluchavka ‘Pink Pewter’|Lamium maculatum ‘Pink Pewter’|p|f|0.15|0.35|PT|N|ru|si|5-7|-
+Pitulník ‘Herman’s Pride’|Lamium galeobdolon ‘Herman’s Pride’|p|f|0.3|0.4|PT|DN|zl|pe|5-6|-
+Pačišník ‘Green Carpet’|Pachysandra terminalis ‘Green Carpet’|p|f|0.15|0.25|PT|N|bi|tz|4-5|e
+Pačišník ‘Variegata’|Pachysandra terminalis ‘Variegata’|p|f|0.15|0.25|PT|N|bi|pe|4-5|e
+Barvínek ‘Alba’|Vinca minor ‘Alba’|p|f|0.15|0.3|SPT|N|bi|tz|4-5|ex
+Barvínek ‘Atropurpurea’|Vinca minor ‘Atropurpurea’|p|f|0.15|0.3|SPT|N|vi|tz|4-5|ex
+Barvínek ‘Illumination’|Vinca minor ‘Illumination’|p|f|0.15|0.3|SPT|N|mo|zl|4-5|ex
+Barvínek velký ‘Variegata’|Vinca major ‘Variegata’|p|f|0.3|0.45|PT|N|mo|pe|4-6|ex
+Zběhovec plazivý|Ajuga reptans|p|f|0.15|0.3|SPT|N|mo|z|5-6|e
+Pěnišník ‘Spring Symphony’|Tiarella ‘Spring Symphony’|p|f|0.25|0.3|PT|N|sr|z|4-6|e
+Pěnišník ‘Pink Skyrocket’|Tiarella ‘Pink Skyrocket’|p|f|0.3|0.3|PT|N|ru|z|4-6|e
+Popelivka ‘Britt-Marie Crawford’|Ligularia dentata ‘Britt-Marie Crawford’|p|m|0.9|0.7|PT|W|or|cv|7-9|v
+Popelivka ‘Desdemona’|Ligularia dentata ‘Desdemona’|p|m|1.0|0.7|PT|W|or|cv|7-9|v
+Popelivka Przewalského|Ligularia przewalskii|p|b|1.5|0.7|PT|W|zl|z|7-8|v
+Čemeřice černá|Helleborus niger|p|f|0.3|0.4|PT|N|bi|tz|12-3|ex
+Čemeřice ‘Ivory Prince’|Helleborus ‘Ivory Prince’|p|f|0.35|0.45|PT|N|kr|tz|1-4|ex
+Čemeřice smrdutá|Helleborus foetidus|p|f|0.5|0.45|PT|D|ze|tz|2-4|ex
+Čemeřice ‘Red Lady’|Helleborus × hybridus ‘Red Lady’|p|f|0.4|0.45|PT|N|vi|tz|2-4|ex
+Kakost hnědočervený|Geranium phaeum|p|f|0.6|0.45|PT|DN|vi|z|5-6|-
+Kakost oddenkatý ‘Ingwersen’s Variety’|Geranium macrorrhizum ‘Ingwersen’s Variety’|p|f|0.3|0.45|SPT|DN|sr|z|5-7|-
+Kakost oddenkatý ‘Czakor’|Geranium macrorrhizum ‘Czakor’|p|f|0.3|0.45|SPT|DN|ma|z|5-7|-
+Kakost ‘Philippe Vapelle’|Geranium ‘Philippe Vapelle’|p|f|0.4|0.4|SP|D|fi|sz|5-7|-
+Kakost uzlinatý|Geranium nodosum|p|f|0.4|0.45|PT|DN|la|z|5-9|-
+Kopytník evropský|Asarum europaeum|p|f|0.1|0.25|PT|N|vi|tz|3-4|ex
+Konvalinka vonná|Convallaria majalis|p|f|0.2|0.2|PT|N|bi|z|5-5|xi
+Sasanka hajní|Anemone nemorosa|p|f|0.15|0.2|PT|N|bi|z|3-4|x
+Sasanka ‘Robinsoniana’|Anemone nemorosa ‘Robinsoniana’|p|f|0.15|0.2|PT|N|sv|z|3-4|x
+Jaterník podléška|Hepatica nobilis|p|f|0.12|0.2|PT|N|mo|tz|3-4|-
+Petrklíč jarní|Primula veris|p|f|0.2|0.2|SP|N|zl|z|4-5|-
+Petrklíč bezlodyžný|Primula vulgaris|p|f|0.15|0.2|PT|N|sz|z|3-5|-
+Prvosenka japonská|Primula japonica|p|f|0.45|0.3|PT|W|ma|z|5-6|v
+Prvosenka zoubkatá|Primula denticulata|p|f|0.3|0.25|PT|NW|la|z|3-5|-
+Orlíček ‘Nora Barlow’|Aquilegia vulgaris ‘Nora Barlow’|p|m|0.7|0.35|SPT|N|ru|sz|5-6|x
+Orlíček ‘Blue Barlow’|Aquilegia vulgaris ‘Blue Barlow’|p|m|0.7|0.35|SPT|N|mo|sz|5-6|x
+Orlíček ‘McKana Giants’|Aquilegia ‘McKana Giants’|p|m|0.8|0.35|SP|N|sz|sz|5-6|x
+Orlíček kanadský|Aquilegia canadensis|p|f|0.5|0.3|SPT|DN|cv|z|4-6|x
+Orlíček ‘Winky Blue-White’|Aquilegia ‘Winky Blue-White’|p|f|0.4|0.3|SP|N|mo|sz|5-6|x
+Měsíčnice vytrvalá|Lunaria rediviva|p|m|0.8|0.4|PT|DN|la|z|5-6|-
+Zvonečník klasnatý|Phyteuma spicatum|p|f|0.5|0.25|PT|N|kr|z|5-7|-
+Zvonek kopřivolistý|Campanula trachelium|p|m|0.7|0.35|PT|N|fi|z|7-8|-
+Zvonek širokolistý ‘Alba’|Campanula latifolia ‘Alba’|p|m|1.0|0.45|PT|DN|bi|z|6-8|-
+Oměj šalamounek|Aconitum napellus|p|b|1.2|0.4|SPT|N|mo|z|7-8|x
+Oměj Carmichaelův ‘Arendsii’|Aconitum carmichaelii ‘Arendsii’|p|b|1.3|0.45|SP|N|mo|z|9-10|x
+Oměj ‘Stainless Steel’|Aconitum ‘Stainless Steel’|p|b|1.0|0.4|SP|N|sv|z|7-8|x
+Rodgersie kaštanolistá|Rodgersia aesculifolia|p|b|1.2|0.9|PT|W|kr|z|6-7|v
+Rodgersie ‘Chocolate Wings’|Rodgersia pinnata ‘Chocolate Wings’|p|m|0.9|0.8|PT|W|ru|cv|6-7|v
+Lomikámen ‘Variegata’|Saxifraga × urbium ‘Variegata’|p|f|0.25|0.3|PT|N|sr|pe|5-6|e
+Lomikámen Arendsův ‘Peter Pan’|Saxifraga × arendsii ‘Peter Pan’|p|f|0.1|0.25|PT|N|cv|z|4-5|e
+Lomikámen hroznovitý|Saxifraga paniculata|p|f|0.15|0.2|SP|D|bi|sz|5-6|e
+Hořec tolitovitý|Gentiana asclepiadea|p|m|0.6|0.4|PT|NW|mo|z|8-9|-
+Pupkovec jarní|Omphalodes verna|p|f|0.2|0.3|PT|N|mo|z|4-5|-
+Pryšec mandloňovitý ‘Robbiae’|Euphorbia amygdaloides var. robbiae|p|f|0.5|0.5|PT|D|ze|tz|4-6|exi
+Mochyně židovská|Physalis alkekengi|p|f|0.5|0.5|SP|N|or|z|9-10|xi
+Touleň srdčitá ‘Chameleon’|Houttuynia cordata ‘Chameleon’|p|f|0.2|0.3|SPT|W|bi|pe|6-7|i
+Kakost ‘St. Ola’|Geranium × cantabrigiense ‘St. Ola’|p|f|0.2|0.35|SPT|DN|bi|z|5-7|-
+Brslen plazivý ‘Minimus’|Euonymus fortunei ‘Minimus’|k|f|0.1|0.4|SPT|N|-|tz|-|ex
+Břečťan popínavý ‘Goldchild’|Hedera helix ‘Goldchild’|p|f|0.15|0.4|SPT|N|-|pe|-|ex
+Žindava evropská|Sanicula europaea|p|f|0.4|0.25|PT|N|bi|tz|5-6|-
+Jahodník obecný ‘Pink Panda’|Fragaria ‘Pink Panda’|p|f|0.15|0.3|SP|N|ru|z|5-9|i
+Kuklík potoční ‘Leonard’s Variety’|Geum rivale ‘Leonard’s Variety’|p|f|0.35|0.3|SP|NW|or|z|5-6|-
+Kuklík ‘Mrs J. Bradshaw’|Geum chiloense ‘Mrs J. Bradshaw’|p|f|0.5|0.35|SP|N|cv|z|5-7|-
+Kuklík ‘Totally Tangerine’|Geum ‘Totally Tangerine’|p|f|0.6|0.45|SP|N|or|z|5-9|-
+Kuklík ‘Lady Stratheden’|Geum chiloense ‘Lady Stratheden’|p|f|0.5|0.35|SP|N|zl|z|5-7|-
+Kuklík ‘Flames of Passion’|Geum ‘Flames of Passion’|p|f|0.35|0.3|SP|N|cv|z|5-8|-
+Bažanka vytrvalá|Mercurialis perennis|p|f|0.3|0.3|T|N|ze|z|3-4|xi
+Šišák bajkalský|Scutellaria baicalensis|p|f|0.3|0.3|S|D|fi|z|7-8|-
+Kapraď samec ‘Linearis Polydactyla’|Dryopteris filix-mas ‘Linearis Polydactyla’|p|m|0.8|0.6|PT|DN|-|z|-|-
+Kapraď rozložená|Dryopteris dilatata|p|m|0.9|0.6|PT|N|-|z|-|-
+Kapraď červenavá|Dryopteris erythrosora|p|f|0.6|0.5|PT|N|-|or|-|e
+Kapraď Wallichova|Dryopteris wallichiana|p|m|0.9|0.6|PT|N|-|zl|-|-
+Kapraď ‘Cristata’|Dryopteris affinis ‘Cristata’|p|m|0.8|0.6|PT|N|-|z|-|-
+Papratka samičí|Athyrium filix-femina|p|m|0.8|0.5|PT|NW|-|z|-|-
+Papratka ‘Ghost’|Athyrium ‘Ghost’|p|f|0.6|0.45|PT|N|-|si|-|-
+Papratka ‘Lady in Red’|Athyrium filix-femina ‘Lady in Red’|p|m|0.7|0.5|PT|NW|-|cv|-|-
+Kapradina ‘Burgundy Lace’|Athyrium niponicum ‘Burgundy Lace’|p|f|0.4|0.4|PT|N|-|cv|-|-
+Kapradiník štětinatý ‘Herrenhausen’|Polystichum setiferum ‘Herrenhausen’|p|f|0.5|0.6|PT|N|-|tz|-|e
+Kapradiník laločnatý|Polystichum aculeatum|p|m|0.7|0.6|PT|N|-|tz|-|e
+Kapradiník lesklý|Polystichum polyblepharum|p|f|0.6|0.6|PT|N|-|tz|-|e
+Jelení jazyk|Asplenium scolopendrium|p|f|0.4|0.4|PT|N|-|z|-|e
+Jelení jazyk ‘Crispum’|Asplenium scolopendrium ‘Crispum’|p|f|0.35|0.4|PT|N|-|z|-|e
+Žebrovice různolistá|Blechnum spicant|p|f|0.4|0.4|PT|N|-|tz|-|ea
+Osladič obecný|Polypodium vulgare|p|f|0.3|0.3|PT|D|-|tz|-|e
+Pštrosí pero ‘Jumbo’|Matteuccia struthiopteris ‘Jumbo’|p|b|1.4|0.7|PT|NW|-|z|-|i
+Podezřeň královská|Osmunda regalis|p|b|1.5|1.0|PT|W|-|z|-|av
+Podezřeň skořicová|Osmundastrum cinnamomeum|p|b|1.0|0.8|PT|W|-|z|-|av
+Netík jemný|Adiantum pedatum|p|f|0.45|0.4|PT|N|-|z|-|-
+Netík venustum|Adiantum venustum|p|f|0.3|0.4|PT|N|-|z|-|e
+Onoklea citlivá|Onoclea sensibilis|p|f|0.6|0.6|PT|W|-|z|-|iv
+Kapraď kristatá|Dryopteris cristata|p|f|0.6|0.5|PT|W|-|z|-|v
+Hasivka orličí|Pteridium aquilinum|p|b|1.5|1.0|SP|DN|-|z|-|xi
+Puchýřník křehký|Cystopteris fragilis|p|f|0.25|0.25|PT|N|-|z|-|-
+Sleziník routička|Asplenium ruta-muraria|p|f|0.1|0.15|SP|D|-|tz|-|e
+Bělozářka liliovitá|Anthericum liliago|p|f|0.5|0.3|S|D|bi|z|5-6|-
+Rozchodník ‘Bertram Anderson’|Hylotelephium ‘Bertram Anderson’|p|f|0.2|0.3|S|D|ru|cv|8-9|-
+Hrachor ‘Alboroseus’|Lathyrus vernus ‘Alboroseus’|p|f|0.3|0.3|PT|N|sr|z|4-5|-
+Kakost ‘Azure Rush’|Geranium ‘Azure Rush’|p|f|0.35|0.6|SP|N|sv|z|6-10|-
+Dlužicha ‘Marmalade’|Heuchera ‘Marmalade’|p|f|0.3|0.4|SPT|N|bi|or|6-7|e
+Dlužicha ‘Green Spice’|Heuchera ‘Green Spice’|p|f|0.3|0.4|SPT|N|bi|pe|6-7|e
+Bohyška ‘Krossa Regal’|Hosta ‘Krossa Regal’|p|m|0.8|0.9|PT|N|la|mz|7-8|-
+Jaterník ‘Rubra Plena’|Hepatica nobilis ‘Rubra Plena’|p|f|0.1|0.2|PT|N|ru|tz|3-4|-
+Krtičník ‘Variegata’|Scrophularia auriculata ‘Variegata’|p|m|0.8|0.45|PT|W|vi|pe|7-9|v
+Kozlík lékařský|Valeriana officinalis|p|b|1.5|0.5|SP|NW|sr|z|6-8|-
+Ostrožka ‘Snow Queen’|Delphinium ‘Snow Queen’|p|b|1.5|0.5|S|N|bi|z|6-8|x

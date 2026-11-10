@@ -232,7 +232,11 @@
       }).catch(function (e) { alert(e.message || 'Podmínky se nepodařilo zjistit.'); });
   }
 
-  /* ---------- výběr rostlin (ověřený seznam plants-curated.js) ---------- */
+  /* ---------- výběr rostlin (katalog plants-catalog.js, generovaný z data/rostliny/*.txt) ---------- */
+  // Martin 2026-11-10: „nemůžeme to dělat z 33… aspoň 1000 trav, keřů, stromů, kytek“ → katalog ~1200 druhů.
+  // Do záhonů se automaticky berou jen role back/mid/front; stromy, popínavky a cibuloviny jsou v katalogu
+  // pro přání zákazníka. Vyřazeno z automatického výběru: rostliny na kyselou půdu (rododendron –
+  // 1. test), rozpínavé, a jedovaté tam, kde jsou děti nebo pes.
   // Martin: „dělat návrhy z 33 druhů je strašně málo“ → ~150 druhů; výběr váží styl, půdu a údržbu,
   // hlídá pestrost barev a druhů a u větší péče přidá víc druhů.
   var STYLE_W = {
@@ -245,7 +249,7 @@
     var all = window.MVGreenPlantsV2 || [], rnd = seeded(Date.now() % 100000);
     var water = st.water === 'none' || st.soil === 'sand' ? 'dry' : st.soil === 'clay' ? 'wet' : 'normal';
     var okWater = function (p) { return p.water.indexOf(water) >= 0 || p.water.indexOf('normal') >= 0 && water !== 'dry' || (water === 'normal' && p.water.indexOf('dry') >= 0); };
-    var fits = function (p) { return p.sun.indexOf(st.sun) >= 0 && okWater(p) && !(p.thorny && (st.users.kids || st.users.dog)); };
+    var fits = function (p) { return p.sun.indexOf(st.sun) >= 0 && okWater(p) && !p.acid && !p.spreads && !((p.thorny || p.toxic) && (st.users.kids || st.users.dog)); };
     var wts = STYLE_W[st.style] || STYLE_W.prirodni;
     // vážené náhodné pořadí: lepší shoda se stylem = dřív na řadě, ale pokaždé jiný návrh
     var pool = all.filter(fits).map(function (p) { return { p: p, k: Math.pow(rnd(), 1 / (wts[p.kind] || 1)) }; }).sort(function (a, b) { return b.k - a.k; }).map(function (x) { return x.p; });
@@ -344,7 +348,7 @@
         ctx.facts = fx.facts;
         log('Údaje o rostlinách hotové. Hledám fotky rostlin…');
         return plants.reduce(function (pr, p) {
-          return pr.then(function () { return ajax('mvgreen_plant_photo', { latin: p.latin }).then(function (ph) { p.photo = ph.url; p.credit = ph.url ? ph.author + ', Wikimedia Commons, ' + ph.license : ''; if (!ph.url) log('Fotka „' + p.name + '“ nenalezena (' + (ph.reason || '?') + ').'); }, function (e) { log('Fotka „' + p.name + '“: ' + e.message); }); });
+          return pr.then(function () { return ajax('mvgreen_plant_photo', { latin: p.latin, file: p.photoFile || '' }).then(function (ph) { p.photo = ph.url; p.credit = ph.url ? ph.author + ', Wikimedia Commons, ' + ph.license : ''; if (!ph.url) log('Fotka „' + p.name + '“ nenalezena (' + (ph.reason || '?') + ').'); }, function (e) { log('Fotka „' + p.name + '“: ' + e.message); }); });
         }, Promise.resolve());
       })
       .then(function () {
@@ -487,7 +491,9 @@
     var plants = sheet.legend.map(function (l) {
       var spec = ctx.plants.filter(function (p) { return p.key === l.key; })[0] || {}, f = factsBy[String(l.latin).toLowerCase()] || {};
       return { name: l.name, latin: l.latin, count: l.count, color: spec.color, photo: spec.photo, credit: spec.credit, spacing: f.spacing_cm || Math.round((spec.spon || 0.4) * 100), height_cm: f.height_cm || Math.round((spec.height || 0.5) * 100), width_cm: f.width_cm,
-        bloom_from: f.bloom_from || (spec.bloom || [])[0], bloom_to: f.bloom_to || (spec.bloom || [])[1], sun: f.sun, water: f.water, pruning: f.pruning, toxic: f.pet_toxic, price: f.price_czk, container: f.container, alternative: f.alternative, alternative_reason: f.alternative_reason };
+        // Kvetení bere z katalogu (má ho každá rostlina; null = nekvete okrasně). AI ho u stálezelených
+        // vyplňovala na celý rok (Martin 2026-11-08) – AI údaj jen pro rostliny mimo katalog.
+        bloom_from: spec.bloom !== undefined ? (spec.bloom || [])[0] : f.bloom_from, bloom_to: spec.bloom !== undefined ? (spec.bloom || [])[1] : f.bloom_to, sun: f.sun, water: f.water, pruning: f.pruning, toxic: f.pet_toxic, price: f.price_czk, container: f.container, alternative: f.alternative, alternative_reason: f.alternative_reason };
     });
     var lawnArea = w * d - project.beds.reduce(function (s, b) { return s + area(b.poly); }, 0) - project.areas.filter(function (a) { return a.type === 'paving' || a.type === 'building'; }).reduce(function (s, a) { return s + area(a.poly); }, 0);
     var usersL = [st.users.kids && 'děti', st.users.dog && 'pes', st.users.cat && 'kočka'].filter(Boolean);

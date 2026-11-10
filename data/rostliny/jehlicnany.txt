@@ -1,0 +1,6 @@
+# převzato z plants-curated.js (162 ověřených druhů, 2026-11-08)
+Borovice kleč ‘Mops’|Pinus mugo ‘Mops’|conifer|mid|0.8|0.8|S|D|-|#3F6E45|-|e
+Jalovec ‘Blue Chip’|Juniperus horizontalis ‘Blue Chip’|conifer|front|0.3|1|S|D|-|#7E9AA6|-|e
+Jalovec šupinatý ‘Blue Star’|Juniperus squamata ‘Blue Star’|conifer|front|0.5|0.6|S|D|-|#8FA6B8|-|e
+Zerav ‘Danica’|Thuja occidentalis ‘Danica’|conifer|mid|0.6|0.6|SP|N|-|#4E7A40|-|e
+Tis červený ‘Fastigiata’|Taxus baccata ‘Fastigiata’|conifer|back|2.5|0.8|SPT|N|-|#2F5A35|-|e

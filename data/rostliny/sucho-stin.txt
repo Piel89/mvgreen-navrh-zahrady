@@ -1,0 +1,70 @@
+# Rostliny do suchého stínu (pod stromy, u zdi, bez zálivky) – doplněno 2026-11-10 na pokyn majitele
+Zimolez pýřitý|Lonicera xylosteum|k|b|2.5|1.5|SPT|DN|kr|z|5-6|x
+Zimolez ‘Clavey’s Dwarf’|Lonicera × xylosteoides ‘Clavey’s Dwarf’|k|m|1.2|1.0|SPT|DN|kr|sz|5-6|-
+Zimolez kloboučkatý|Lonicera pileata|k|f|0.6|0.9|SPT|DN|-|tz|-|e
+Meruzalka alpínská ‘Schmidt’|Ribes alpinum ‘Schmidt’|k|b|1.8|0.6|SPT|DN|ze|z|4-5|-
+Meruzalka alpínská ‘Green Mound’|Ribes alpinum ‘Green Mound’|k|m|0.9|0.8|SPT|DN|ze|z|4-5|-
+Zob obecný ‘Lodense’|Ligustrum vulgare ‘Lodense’|k|m|0.8|0.7|SPT|DN|bi|tz|6-7|x
+Svída krvavá|Cornus sanguinea|k|b|3.0|2.0|SPT|DN|bi|z|5-6|-
+Kalina tušalaj ‘Aureum’|Viburnum lantana ‘Aureum’|k|b|2.5|2.0|SPT|D|bi|zl|5-6|-
+Pustoryl ‘Dame Blanche’|Philadelphus ‘Dame Blanche’|k|m|1.2|1.0|SPT|DN|bi|z|6-6|-
+Třezalka ‘Albury Purple’|Hypericum androsaemum ‘Albury Purple’|k|f|0.8|0.7|SPT|DN|zl|cv|6-8|-
+Sarkokoka Hookerova|Sarcococca hookeriana var. humilis|k|f|0.5|0.6|PT|DN|bi|tz|1-3|e
+Sarkokoka zakřivená|Sarcococca confusa|k|m|1.2|0.9|PT|DN|bi|tz|1-3|e
+Mahónie ‘Smaragd’|Mahonia aquifolium ‘Smaragd’|k|m|1.2|1.0|SPT|D|zl|tz|4-5|e
+Tis prostřední ‘Densiformis’|Taxus × media ‘Densiformis’|j|m|1.2|1.2|SPT|DN|-|tz|-|ex
+Hvězdnice rozkladitá|Eurybia divaricata|p|f|0.5|0.45|PT|DN|bi|tz|8-10|-
+Hvězdnice velkolistá|Eurybia macrophylla|p|m|0.7|0.5|PT|DN|la|z|8-10|-
+Kosatec smrdutý|Iris foetidissima|p|m|0.6|0.45|SPT|DN|la|tz|6-6|ex
+Kosatec smrdutý ‘Variegata’|Iris foetidissima ‘Variegata’|p|f|0.5|0.4|PT|DN|la|pe|6-6|ex
+Kakost oddenkatý ‘Bevan’s Variety’|Geranium macrorrhizum ‘Bevan’s Variety’|p|f|0.35|0.45|SPT|D|ma|z|5-7|-
+Kakost oddenkatý ‘Album’|Geranium macrorrhizum ‘Album’|p|f|0.35|0.45|SPT|D|bi|z|5-7|-
+Kakost hnědočervený ‘Lily Lovell’|Geranium phaeum ‘Lily Lovell’|p|m|0.7|0.45|PT|DN|fi|z|5-7|-
+Kakost ‘Sirak’|Geranium ‘Sirak’|p|m|0.6|0.5|SP|DN|ru|z|6-8|-
+Škornice ‘Orangekönigin’|Epimedium × warleyense ‘Orangekönigin’|p|f|0.35|0.4|PT|D|or|z|4-5|e
+Škornice zpeřená kolchická|Epimedium pinnatum subsp. colchicum|p|f|0.35|0.4|PT|D|zl|tz|4-5|e
+Škornice ‘Niveum’|Epimedium × youngianum ‘Niveum’|p|f|0.25|0.3|PT|DN|bi|z|4-5|-
+Pryšec mandloňovitý|Euphorbia amygdaloides|p|m|0.6|0.45|PT|D|ze|tz|4-6|ex
+Pupkovec kapadocký ‘Starry Eyes’|Omphalodes cappadocica ‘Starry Eyes’|p|f|0.2|0.3|PT|DN|mo|z|4-5|-
+Pomněnkovec ‘Hadspen Cream’|Brunnera macrophylla ‘Hadspen Cream’|p|f|0.4|0.45|PT|DN|mo|pe|4-5|-
+Bergenie ‘Overture’|Bergenia ‘Overture’|p|f|0.35|0.4|SPT|DN|ma|cv|4-5|e
+Bergenie ‘Silberlicht’|Bergenia ‘Silberlicht’|p|f|0.4|0.45|SPT|DN|bi|tz|4-5|e
+Dlužicha chlupatá ‘Autumn Bride’|Heuchera villosa ‘Autumn Bride’|p|f|0.5|0.45|PT|DN|bi|z|8-10|e
+Dlužicha chlupatá ‘Caramel’|Heuchera villosa ‘Caramel’|p|f|0.4|0.45|PT|DN|bi|or|8-9|e
+Lomikámen stinný ‘London Pride’|Saxifraga × urbium|p|f|0.25|0.3|PT|DN|sr|tz|5-6|e
+Kontryhel ‘Robustica’|Alchemilla mollis ‘Robustica’|p|f|0.5|0.5|SPT|DN|ze|z|6-8|-
+Zvonek kopřivolistý ‘Bernice’|Campanula trachelium ‘Bernice’|p|m|0.6|0.35|PT|DN|fi|z|7-8|-
+Zvonek širokolistý|Campanula latifolia|p|b|1.2|0.5|PT|DN|fi|z|6-8|-
+Udatna kamčatská|Aruncus dioicus var. kamtschaticus|p|b|1.2|0.7|PT|DN|bi|z|6-7|-
+Ploštičník ‘James Compton’|Actaea simplex ‘James Compton’|p|m|1.0|0.5|PT|DN|bi|cv|9-10|x
+Náprstník rezavý|Digitalis ferruginea|p|b|1.4|0.35|SP|D|hn|z|7-8|x
+Náprstník žlutý|Digitalis lutea|p|m|0.7|0.3|PT|D|sz|z|6-8|x
+Kokořík mnohokvětý ‘Weihenstephan’|Polygonatum × hybridum ‘Weihenstephan’|p|m|0.9|0.4|PT|DN|bi|z|5-6|x
+Kopretina chocholičnatá|Tanacetum corymbosum|p|m|0.9|0.4|SPT|D|bi|z|6-7|-
+Strdivka jednokvětá|Melica uniflora|lg|f|0.4|0.3|PT|D|kr|z|5-6|-
+Strdivka jednokvětá ‘Variegata’|Melica uniflora ‘Variegata’|lg|f|0.35|0.3|PT|D|kr|pe|5-6|-
+Ostřice lesní|Carex sylvatica|lg|f|0.5|0.4|PT|DN|ze|z|5-6|e
+Ostřice prstnatá|Carex digitata|lg|f|0.2|0.25|PT|D|hn|z|4-5|e
+Ostřice horská|Carex montana|lg|f|0.25|0.3|SPT|D|hn|z|4-5|-
+Ostřice ‘Ice Ballet’|Carex siderosticta ‘Variegata’|lg|f|0.3|0.4|PT|DN|-|pe|-|-
+Bika chlupatá|Luzula pilosa|lg|f|0.25|0.25|PT|D|hn|z|4-5|e
+Bika lesní ‘Hohe Tatra’|Luzula sylvatica ‘Hohe Tatra’|lg|f|0.4|0.4|PT|DN|hn|z|5-6|e
+Pěchava Heuflerova|Sesleria heufleriana|lg|f|0.4|0.35|SPT|D|vi|mz|3-4|e
+Lipnice hajní|Poa nemoralis|lg|f|0.5|0.3|PT|D|ze|z|6-7|-
+Strdivka nicí|Melica nutans|lg|f|0.4|0.25|PT|D|hn|z|5-6|-
+Ophiopogon ‘Minor’|Ophiopogon japonicus ‘Minor’|lg|f|0.1|0.2|PT|DN|bi|tz|7-8|e
+Liriope ‘Big Blue’|Liriope muscari ‘Big Blue’|lg|f|0.35|0.35|SPT|DN|fi|tz|8-10|e
+Liriope ‘Monroe White’|Liriope muscari ‘Monroe White’|lg|f|0.35|0.35|PT|DN|bi|tz|8-10|e
+Kapraď rezavá|Dryopteris affinis|p|m|0.9|0.6|PT|DN|-|z|-|-
+Kapradiník ‘Plumosum Densum’|Polystichum setiferum ‘Plumosum Densum’|p|f|0.5|0.6|PT|DN|-|tz|-|e
+Kapraď Goldieho|Dryopteris goldiana|p|b|1.2|0.7|PT|DN|-|z|-|-
+Brambořík břečťanolistý|Cyclamen hederifolium|b|bu|0.12|0.15|PT|D|ru|pe|9-10|x
+Brambořík břečťanolistý ‘Album’|Cyclamen hederifolium ‘Album’|b|bu|0.12|0.15|PT|D|bi|pe|9-10|x
+Brambořík jarní|Cyclamen coum|b|bu|0.1|0.12|PT|D|ma|pe|2-3|x
+Česnek medvědí|Allium ursinum|b|bu|0.3|0.15|PT|N|bi|z|4-5|i
+Ladoňka dvoulistá|Scilla bifolia|b|bu|0.15|0.07|PT|DN|mo|z|3-4|x
+Sasanka pryskyřníkovitá|Anemone ranunculoides|b|bu|0.15|0.15|PT|DN|zl|z|3-4|x
+Dymnivka dutá|Corydalis cava|b|bu|0.2|0.12|PT|DN|la|z|3-4|x
+Barvínek větší ‘Wojo’s Gem’|Vinca major ‘Wojo’s Gem’|p|f|0.3|0.45|PT|DN|mo|pe|4-6|ex
+Hluchavka ‘Golden Anniversary’|Lamium maculatum ‘Golden Anniversary’|p|f|0.15|0.35|PT|DN|ma|pe|5-7|-
+Pitulník ‘Florentinum’|Lamium galeobdolon ‘Florentinum’|p|f|0.3|0.45|PT|D|zl|pe|5-6|i

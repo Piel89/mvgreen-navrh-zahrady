@@ -1,0 +1,171 @@
+# Jehličnany, stromy a popínavé rostliny – doplněno 2026-11-10
+Borovice kleč ‘Gnom’|Pinus mugo ‘Gnom’|j|m|1.5|1.2|S|DN|-|tz|-|e
+Borovice kleč ‘Pumilio’|Pinus mugo var. pumilio|j|m|1.5|2.0|S|DN|-|tz|-|e
+Borovice kleč ‘Winter Gold’|Pinus mugo ‘Winter Gold’|j|f|0.8|1.0|S|DN|-|zl|-|e
+Borovice černá ‘Nana’|Pinus nigra ‘Nana’|j|b|2.0|2.0|S|D|-|tz|-|e
+Borovice vejmutovka ‘Radiata’|Pinus strobus ‘Radiata’|j|b|2.5|2.0|S|N|-|mz|-|e
+Borovice Thunbergova ‘Thunderhead’|Pinus thunbergii ‘Thunderhead’|j|m|1.5|1.5|S|D|-|tz|-|e
+Borovice lesní ‘Watereri’|Pinus sylvestris ‘Watereri’|j|b|3.0|2.0|S|D|-|mz|-|e
+Smrk pichlavý ‘Glauca Globosa’|Picea pungens ‘Glauca Globosa’|j|m|1.2|1.5|S|N|-|mz|-|e
+Smrk pichlavý ‘Hoopsii’|Picea pungens ‘Hoopsii’|j|b|8.0|4.0|S|N|-|mz|-|e
+Smrk sivý ‘Conica’|Picea glauca ‘Conica’|j|m|2.0|1.0|SP|N|-|z|-|e
+Smrk ztepilý ‘Nidiformis’|Picea abies ‘Nidiformis’|j|f|0.8|1.5|SP|N|-|tz|-|e
+Smrk ztepilý ‘Little Gem’|Picea abies ‘Little Gem’|j|f|0.4|0.6|SP|N|-|tz|-|e
+Smrk omorika|Picea omorika|j|b|15.0|3.0|SP|N|-|tz|-|e
+Smrk omorika ‘Nana’|Picea omorika ‘Nana’|j|m|2.0|1.5|SP|N|-|tz|-|e
+Jedle korejská ‘Silberlocke’|Abies koreana ‘Silberlocke’|j|b|3.0|2.0|SP|N|-|si|-|e
+Jedle korejská|Abies koreana|j|b|5.0|3.0|SP|N|-|tz|-|e
+Jedle ojíněná|Abies concolor|j|b|15.0|5.0|S|DN|-|mz|-|e
+Jalovec čínský ‘Old Gold’|Juniperus × pfitzeriana ‘Old Gold’|j|m|1.0|2.0|S|D|-|zl|-|ex
+Jalovec ‘Mint Julep’|Juniperus × pfitzeriana ‘Mint Julep’|j|m|1.2|2.0|S|D|-|z|-|ex
+Jalovec obecný ‘Hibernica’|Juniperus communis ‘Hibernica’|j|b|3.0|0.6|S|D|-|mz|-|ex
+Jalovec obecný ‘Repanda’|Juniperus communis ‘Repanda’|j|f|0.3|1.5|S|D|-|z|-|ex
+Jalovec obecný ‘Green Carpet’|Juniperus communis ‘Green Carpet’|j|f|0.1|1.0|S|D|-|z|-|ex
+Jalovec skalní ‘Blue Arrow’|Juniperus scopulorum ‘Blue Arrow’|j|b|3.0|0.6|S|D|-|mz|-|ex
+Jalovec skalní ‘Skyrocket’|Juniperus scopulorum ‘Skyrocket’|j|b|4.0|0.6|S|D|-|mz|-|ex
+Jalovec šupinatý ‘Blue Carpet’|Juniperus squamata ‘Blue Carpet’|j|f|0.3|1.5|S|D|-|mz|-|ex
+Jalovec polehlý ‘Wiltonii’|Juniperus horizontalis ‘Wiltonii’|j|f|0.1|1.5|S|D|-|mz|-|ex
+Jalovec polehlý ‘Golden Carpet’|Juniperus horizontalis ‘Golden Carpet’|j|f|0.1|1.2|S|D|-|zl|-|ex
+Jalovec netvařec ‘Tamariscifolia’|Juniperus sabina ‘Tamariscifolia’|j|f|0.6|1.5|S|D|-|mz|-|ex
+Jalovec viržinský ‘Grey Owl’|Juniperus virginiana ‘Grey Owl’|j|m|1.2|2.5|S|D|-|si|-|ex
+Zerav západní ‘Smaragd’ (živý plot)|Thuja occidentalis ‘Smaragd’|j|b|4.0|0.6|SP|N|-|tz|-|ex
+Zerav západní ‘Brabant’ (živý plot)|Thuja occidentalis ‘Brabant’|j|b|5.0|0.7|SP|N|-|z|-|ex
+Zerav západní ‘Golden Globe’|Thuja occidentalis ‘Golden Globe’|j|f|0.8|0.8|SP|N|-|zl|-|ex
+Zerav západní ‘Tiny Tim’|Thuja occidentalis ‘Tiny Tim’|j|f|0.5|0.5|SP|N|-|z|-|ex
+Zerav obrovský ‘Atrovirens’ (živý plot)|Thuja plicata ‘Atrovirens’|j|b|6.0|0.8|SPT|N|-|tz|-|ex
+Zeravec východní ‘Aurea Nana’|Platycladus orientalis ‘Aurea Nana’|j|f|0.8|0.6|S|D|-|zl|-|ex
+Cypřišek hrachonosný ‘Filifera Aurea’|Chamaecyparis pisifera ‘Filifera Aurea’|j|m|1.5|1.5|SP|N|-|zl|-|ex
+Cypřišek tupolistý ‘Nana Gracilis’|Chamaecyparis obtusa ‘Nana Gracilis’|j|m|1.2|0.9|SP|N|-|tz|-|ex
+Cypřišek Lawsonův ‘Columnaris’|Chamaecyparis lawsoniana ‘Columnaris’|j|b|5.0|1.0|SP|N|-|mz|-|ex
+Tis prostřední ‘Hillii’ (živý plot)|Taxus × media ‘Hillii’|j|b|3.0|0.6|SPT|N|-|tz|-|ex
+Tis prostřední ‘Hicksii’|Taxus × media ‘Hicksii’|j|b|3.0|0.8|SPT|N|-|tz|-|ex
+Tis červený ‘Summergold’|Taxus baccata ‘Summergold’|j|f|0.6|1.2|SPT|N|-|zl|-|ex
+Tis červený ‘Repandens’|Taxus baccata ‘Repandens’|j|f|0.6|1.5|SPT|N|-|tz|-|ex
+Tis červený (živý plot)|Taxus baccata|j|b|3.0|0.5|SPT|N|-|tz|-|ex
+Jedlovec kanadský ‘Jeddeloh’|Tsuga canadensis ‘Jeddeloh’|j|f|0.6|1.2|PT|N|-|z|-|ea
+Modřín opadavý ‘Pendula’|Larix decidua ‘Pendula’|j|m|2.0|1.5|S|N|-|z|-|-
+Metasekvoje čínská|Metasequoia glyptostroboides|j|b|20.0|6.0|S|NW|-|z|-|-
+Mikrobiota křižmolistá|Microbiota decussata|j|f|0.4|1.5|SPT|N|-|z|-|e
+Javor mléč ‘Globosum’|Acer platanoides ‘Globosum’|s|t|5.0|4.0|SP|N|-|z|-|-
+Javor mléč ‘Crimson King’|Acer platanoides ‘Crimson King’|s|t|12.0|8.0|S|N|-|cv|-|-
+Javor babyka ‘Elsrijk’|Acer campestre ‘Elsrijk’|s|t|8.0|5.0|SP|DN|-|z|-|-
+Javor červený ‘Red Sunset’|Acer rubrum ‘Red Sunset’|s|t|12.0|7.0|S|NW|-|cv|-|-
+Javor ginnala|Acer tataricum subsp. ginnala|s|t|5.0|4.0|SP|N|-|cv|-|-
+Javor kapucínský|Acer pensylvanicum|s|t|6.0|4.0|PT|N|-|z|-|a
+Javor šedý|Acer griseum|s|t|7.0|5.0|SP|N|-|or|-|-
+Habr obecný ‘Fastigiata’|Carpinus betulus ‘Fastigiata’|s|t|10.0|5.0|SP|N|-|z|-|-
+Habr obecný ‘Lucas’|Carpinus betulus ‘Lucas’|s|t|8.0|2.0|SP|N|-|z|-|-
+Buk lesní ‘Dawyck’|Fagus sylvatica ‘Dawyck’|s|t|15.0|3.0|SP|N|-|z|-|-
+Buk lesní ‘Purpurea Pendula’|Fagus sylvatica ‘Purpurea Pendula’|s|t|3.0|3.0|SP|N|-|cv|-|-
+Bříza bělokorá|Betula pendula|s|t|18.0|8.0|S|N|-|z|-|-
+Bříza ‘Youngii’|Betula pendula ‘Youngii’|s|t|4.0|4.0|S|N|-|z|-|-
+Bříza Jacquemontova|Betula utilis ‘Doorenbos’|s|t|12.0|6.0|S|N|-|z|-|-
+Lípa srdčitá ‘Greenspire’|Tilia cordata ‘Greenspire’|s|t|15.0|8.0|SP|N|kr|z|6-7|-
+Lípa srdčitá|Tilia cordata|s|t|20.0|12.0|SP|N|kr|z|6-7|-
+Dub letní ‘Fastigiata’|Quercus robur ‘Fastigiata’|s|t|15.0|3.0|S|N|-|z|-|-
+Dub letní|Quercus robur|s|t|25.0|15.0|S|N|-|z|-|-
+Dub bahenní|Quercus palustris|s|t|18.0|10.0|S|NW|-|cv|-|a
+Dub červený|Quercus rubra|s|t|20.0|12.0|S|N|-|cv|-|i
+Jírovec maďal|Aesculus hippocastanum|s|t|20.0|15.0|SP|N|bi|z|5-5|x
+Jírovec pleťový ‘Briotii’|Aesculus × carnea ‘Briotii’|s|t|12.0|8.0|SP|N|cv|z|5-5|x
+Katalpa trubačovitá ‘Nana’|Catalpa bignonioides ‘Nana’|s|t|4.0|4.0|S|N|-|z|-|-
+Katalpa trubačovitá|Catalpa bignonioides|s|t|12.0|10.0|S|N|bi|z|6-7|-
+Ambroň západní|Liquidambar styraciflua|s|t|15.0|8.0|S|N|-|cv|-|-
+Ginkgo dvoulaločné|Ginkgo biloba|s|t|15.0|8.0|S|N|-|z|-|-
+Ginkgo ‘Mariken’|Ginkgo biloba ‘Mariken’|s|t|1.5|1.5|S|N|-|z|-|-
+Liliovník tulipánokvětý|Liriodendron tulipifera|s|t|25.0|12.0|S|N|zl|z|6-6|-
+Magnólie Soulangeova|Magnolia × soulangeana|s|t|5.0|5.0|SP|N|sr|z|4-5|-
+Magnólie hvězdovitá|Magnolia stellata|s|t|3.0|3.0|SP|N|bi|z|3-4|-
+Magnólie ‘Susan’|Magnolia ‘Susan’|s|t|3.5|3.0|SP|N|vi|z|4-5|-
+Magnólie ‘Genie’|Magnolia ‘Genie’|s|t|4.0|2.5|SP|N|vi|z|4-6|-
+Magnólie ‘Yellow Bird’|Magnolia ‘Yellow Bird’|s|t|8.0|5.0|SP|N|zl|z|5-5|-
+Sakura ‘Kanzan’|Prunus serrulata ‘Kanzan’|s|t|8.0|6.0|S|N|ru|z|4-5|-
+Sakura ‘Amanogawa’|Prunus serrulata ‘Amanogawa’|s|t|6.0|1.5|S|N|sr|z|4-5|-
+Sakura ‘Kiku-shidare-zakura’|Prunus serrulata ‘Kiku-shidare-zakura’|s|t|4.0|4.0|S|N|ru|z|4-5|-
+Třešeň ‘Accolade’|Prunus ‘Accolade’|s|t|6.0|6.0|S|N|sr|z|3-4|-
+Třešeň ‘Umineko’|Prunus ‘Umineko’|s|t|7.0|3.0|S|N|bi|z|4-4|-
+Slivoň Pissardova ‘Nigra’|Prunus cerasifera ‘Nigra’|s|t|6.0|5.0|S|DN|sr|cv|3-4|-
+Třešeň plstnatá|Prunus tomentosa|k|b|2.0|2.0|S|DN|bi|z|4-4|-
+Mandloň trojlaločná|Prunus triloba|k|b|2.0|1.5|S|DN|ru|z|4-4|-
+Okrasná jabloň ‘Evereste’|Malus ‘Evereste’|s|t|6.0|5.0|S|N|bi|z|4-5|-
+Okrasná jabloň ‘Royalty’|Malus ‘Royalty’|s|t|5.0|4.0|S|N|ma|cv|4-5|-
+Okrasná jabloň ‘Red Sentinel’|Malus ‘Red Sentinel’|s|t|5.0|4.0|S|N|bi|z|4-5|-
+Okrasná jabloň ‘Van Eseltine’|Malus ‘Van Eseltine’|s|t|6.0|2.5|S|N|ru|z|4-5|-
+Okrasná hrušeň ‘Chanticleer’|Pyrus calleryana ‘Chanticleer’|s|t|10.0|4.0|S|DN|bi|z|4-4|-
+Hrušeň vrbolistá ‘Pendula’|Pyrus salicifolia ‘Pendula’|s|t|5.0|4.0|S|D|bi|si|4-4|-
+Jeřáb ptačí|Sorbus aucuparia|s|t|10.0|5.0|SP|N|bi|z|5-6|-
+Jeřáb prostřední|Sorbus intermedia|s|t|10.0|6.0|S|D|bi|z|5-5|-
+Jeřáb ‘Joseph Rock’|Sorbus ‘Joseph Rock’|s|t|8.0|4.0|SP|N|bi|or|5-5|-
+Jeřáb muk|Sorbus aria ‘Lutescens’|s|t|8.0|5.0|S|D|bi|si|5-5|-
+Hloh obecný ‘Paul’s Scarlet’|Crataegus laevigata ‘Paul’s Scarlet’|s|t|6.0|5.0|S|DN|cv|z|5-5|t
+Hloh ‘Carrierei’|Crataegus × lavallei ‘Carrierei’|s|t|6.0|5.0|S|DN|bi|tz|5-6|t
+Judášovec kanadský ‘Forest Pansy’|Cercis canadensis ‘Forest Pansy’|s|t|5.0|5.0|SP|N|ma|cv|4-5|-
+Judášovec ‘Hearts of Gold’|Cercis canadensis ‘Hearts of Gold’|s|t|5.0|4.0|SP|N|ma|zl|4-5|-
+Judášovec evropský|Cercis siliquastrum|s|t|6.0|5.0|S|D|ma|z|4-5|-
+Trnovník akát ‘Umbraculifera’|Robinia pseudoacacia ‘Umbraculifera’|s|t|5.0|5.0|S|D|-|z|-|tx
+Trnovník akát ‘Frisia’|Robinia pseudoacacia ‘Frisia’|s|t|10.0|6.0|S|D|bi|zl|6-6|tx
+Dřezovec trojtrnný ‘Sunburst’|Gleditsia triacanthos ‘Sunburst’|s|t|10.0|8.0|S|D|-|zl|-|-
+Svitel latnatý|Koelreuteria paniculata|s|t|8.0|6.0|S|D|zl|z|7-8|-
+Platan javorolistý|Platanus × hispanica|s|t|25.0|15.0|S|N|-|z|-|-
+Vrba bílá ‘Tristis’|Salix alba ‘Tristis’|s|t|15.0|12.0|S|W|zl|z|4-4|v
+Olše lepkavá ‘Imperialis’|Alnus glutinosa ‘Imperialis’|s|t|10.0|5.0|SP|W|-|z|-|v
+Topol osika ‘Erecta’|Populus tremula ‘Erecta’|s|t|15.0|2.0|S|N|-|z|-|-
+Muchovník ‘Robin Hill’ (stromek)|Amelanchier arborea ‘Robin Hill’|s|t|6.0|4.0|SP|N|sr|or|4-4|-
+Parocie perská|Parrotia persica|s|t|6.0|6.0|SP|N|cv|or|2-3|-
+Davidie listenová|Davidia involucrata|s|t|10.0|7.0|SP|N|bi|z|5-5|-
+Zelkova ostrolistá|Zelkova serrata|s|t|15.0|10.0|S|N|-|z|-|-
+Morušovník bílý ‘Pendula’|Morus alba ‘Pendula’|s|t|3.0|3.0|S|D|-|z|-|-
+Jabloň ‘Gloster’ (ovocná)|Malus domestica ‘Gloster’|s|t|4.0|4.0|S|N|bi|z|4-5|-
+Hrušeň ‘Konference’ (ovocná)|Pyrus communis ‘Conference’|s|t|4.0|3.0|S|N|bi|z|4-4|-
+Třešeň ‘Kordia’ (ovocná)|Prunus avium ‘Kordia’|s|t|6.0|5.0|S|N|bi|z|4-4|-
+Švestka ‘Čačanská lepotica’ (ovocná)|Prunus domestica ‘Čačanská lepotica’|s|t|4.0|3.5|S|N|bi|z|4-4|-
+Meruňka ‘Velkopavlovická’ (ovocná)|Prunus armeniaca ‘Velkopavlovická’|s|t|4.0|4.0|S|D|bi|z|3-4|-
+Broskvoň ‘Redhaven’ (ovocná)|Prunus persica ‘Redhaven’|s|t|3.5|3.5|S|D|ru|z|4-4|-
+Višeň ‘Morela pozdní’ (ovocná)|Prunus cerasus ‘Morela pozdní’|s|t|4.0|3.5|SP|N|bi|z|4-5|-
+Ořešák královský|Juglans regia|s|t|15.0|12.0|S|N|-|z|-|-
+Kdouloň obecná|Cydonia oblonga|s|t|4.0|4.0|S|N|sr|z|5-5|-
+Mišpule obecná|Mespilus germanica|s|t|4.0|4.0|SP|N|bi|z|5-6|-
+Plamének ‘Jackmanii’|Clematis ‘Jackmanii’|c|c|3.0|0.8|SP|N|fi|z|7-9|x
+Plamének ‘Nelly Moser’|Clematis ‘Nelly Moser’|c|c|3.0|0.8|PT|N|sr|z|5-9|x
+Plamének ‘The President’|Clematis ‘The President’|c|c|3.0|0.8|SP|N|fi|z|5-9|x
+Plamének ‘Ville de Lyon’|Clematis ‘Ville de Lyon’|c|c|3.0|0.8|SP|N|cv|z|6-9|x
+Plamének ‘Etoile Violette’|Clematis viticella ‘Etoile Violette’|c|c|3.5|0.8|SP|N|fi|z|7-9|x
+Plamének ‘Polish Spirit’|Clematis viticella ‘Polish Spirit’|c|c|3.5|0.8|SP|N|fi|z|7-9|x
+Plamének horský ‘Rubens’|Clematis montana ‘Rubens’|c|c|8.0|2.0|SPT|N|ru|cv|5-6|x
+Plamének horský ‘Grandiflora’|Clematis montana ‘Grandiflora’|c|c|8.0|2.0|SPT|N|bi|z|5-6|x
+Plamének tangutský|Clematis tangutica|c|c|4.0|1.0|S|N|zl|z|7-10|x
+Plamének alpský ‘Pamela Jackman’|Clematis alpina ‘Pamela Jackman’|c|c|2.5|0.8|SPT|N|mo|z|4-5|x
+Plamének ‘Arabella’|Clematis ‘Arabella’|c|c|1.8|0.8|SP|N|la|z|6-9|x
+Plamének ‘Princess Diana’|Clematis texensis ‘Princess Diana’|c|c|2.5|0.8|SP|N|ma|z|7-9|x
+Popínavá růže ‘New Dawn’|Rosa ‘New Dawn’|c|c|4.0|1.5|S|N|sr|tz|6-10|t
+Popínavá růže ‘Sympathie’|Rosa ‘Sympathie’|c|c|3.0|1.5|S|N|cv|tz|6-10|t
+Popínavá růže ‘Golden Gate’|Rosa ‘Golden Gate’|c|c|3.0|1.5|S|N|zl|tz|6-10|t
+Popínavá růže ‘Ilse Krohn Superior’|Rosa ‘Ilse Krohn Superior’|c|c|3.0|1.5|S|N|bi|tz|6-10|t
+Popínavá růže ‘Paul’s Himalayan Musk’|Rosa ‘Paul’s Himalayan Musk’|c|c|8.0|3.0|SP|N|sr|z|6-7|t
+Zimolez ‘Goldflame’|Lonicera × heckrottii ‘Goldflame’|c|c|4.0|1.0|SP|N|ru|z|6-9|x
+Zimolez kozí list|Lonicera caprifolium|c|c|5.0|1.0|SP|N|kr|z|5-6|x
+Zimolez Henryův|Lonicera henryi|c|c|5.0|1.0|SPT|N|vi|tz|6-7|ex
+Zimolez ovíjivý ‘Serotina’|Lonicera periclymenum ‘Serotina’|c|c|5.0|1.0|SP|N|vi|z|7-9|x
+Zimolez ‘Halliana’|Lonicera japonica ‘Halliana’|c|c|5.0|1.0|SP|N|bi|z|6-9|xi
+Vistárie čínská|Wisteria sinensis|c|c|10.0|3.0|S|N|la|z|5-5|x
+Vistárie ‘Alba’|Wisteria floribunda ‘Alba’|c|c|8.0|3.0|S|N|bi|z|5-6|x
+Vistárie ‘Macrobotrys’|Wisteria floribunda ‘Macrobotrys’|c|c|9.0|3.0|S|N|la|z|5-6|x
+Přísavník trojcípý ‘Veitchii’|Parthenocissus tricuspidata ‘Veitchii’|c|c|15.0|3.0|SPT|N|-|cv|-|x
+Přísavník pětilistý|Parthenocissus quinquefolia|c|c|15.0|3.0|SPT|N|-|cv|-|xi
+Břečťan popínavý|Hedera helix|c|c|10.0|1.5|PT|N|-|tz|-|ex
+Břečťan ‘Arborescens’|Hedera helix ‘Arborescens’|k|m|1.5|1.2|PT|N|ze|tz|9-10|ex
+Břečťan colchický ‘Sulphur Heart’|Hedera colchica ‘Sulphur Heart’|c|c|5.0|1.5|PT|N|-|pe|-|ex
+Trubač kořenující|Campsis radicans|c|c|8.0|2.0|S|N|or|z|7-9|i
+Trubač ‘Madame Galen’|Campsis × tagliabuana ‘Madame Galen’|c|c|6.0|2.0|S|N|or|z|7-9|-
+Trubač ‘Flava’|Campsis radicans ‘Flava’|c|c|8.0|2.0|S|N|zl|z|7-9|i
+Aktinidie ‘Issai’|Actinidia arguta ‘Issai’|c|c|5.0|2.0|SP|N|bi|z|5-6|-
+Aktinidie kolomikta|Actinidia kolomikta|c|c|4.0|1.5|SP|N|bi|pe|5-6|-
+Chmel otáčivý ‘Aureus’|Humulus lupulus ‘Aureus’|c|c|6.0|1.5|SP|N|ze|zl|7-8|-
+Opletka čínská|Fallopia baldschuanica|c|c|12.0|3.0|SP|DN|bi|z|7-10|i
+Akébie pětičetná|Akebia quinata|c|c|8.0|2.0|SP|N|vi|z|4-5|-
+Hortenzie řapíkatá ‘Miranda’|Hydrangea anomala subsp. petiolaris ‘Miranda’|c|c|6.0|1.5|PT|N|bi|pe|6-7|-
+Réva vinná ‘Regent’|Vitis vinifera ‘Regent’|c|c|5.0|1.5|S|DN|ze|z|6-6|-
+Réva ‘Purpurea’|Vitis vinifera ‘Purpurea’|c|c|5.0|1.5|S|DN|ze|cv|6-6|-
+Plamének ‘Bill MacKenzie’|Clematis ‘Bill MacKenzie’|c|c|5.0|1.0|S|N|zl|z|7-10|x
+Plamének ‘Purpurea Plena Elegans’|Clematis viticella ‘Purpurea Plena Elegans’|c|c|3.0|0.8|SP|N|vi|z|7-9|x
+Brslen Fortuneův ‘Vegetus’|Euonymus fortunei ‘Vegetus’|c|c|3.0|1.0|SPT|N|-|tz|-|ex

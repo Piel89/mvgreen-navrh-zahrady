@@ -1,0 +1,45 @@
+# převzato z plants-curated.js (162 ověřených druhů, 2026-11-08)
+Hortenzie latnatá ‘Limelight’|Hydrangea paniculata ‘Limelight’|shrub|back|1.8|1.5|SP|N|#FBFAF2|#4B7A40|7-10|-
+Hortenzie latnatá ‘Bobo’|Hydrangea paniculata ‘Bobo’|shrub|mid|0.8|0.8|SP|N|#FBFAF2|#4B7A40|7-9|-
+Hortenzie stromkovitá ‘Annabelle’|Hydrangea arborescens ‘Annabelle’|shrub|back|1.2|1.2|PT|N|#FBFAF2|#4B7A40|6-9|-
+Hortenzie velkolistá ‘Endless Summer’|Hydrangea macrophylla ‘Endless Summer’|shrub|mid|1|1|PT|NW|#7E8FD9|#4E7A40|6-9|-
+Tavolník japonský ‘Goldflame’|Spiraea japonica ‘Goldflame’|shrub|mid|0.6|0.6|SP|N|#E0708A|#CDB13C|6-7|-
+Tavolník ‘Little Princess’|Spiraea japonica ‘Little Princess’|shrub|mid|0.5|0.6|SP|N|#E58AA8|#5E8E46|6-7|-
+Tavolník Van Houtteův|Spiraea × vanhouttei|shrub|back|1.8|1.5|SP|N|#FBFAF2|#6E8F5A|5-5|-
+Tavolník ‘Grefsheim’|Spiraea × cinerea ‘Grefsheim’|shrub|back|1.5|1.2|SP|N|#FBFAF2|#6E8F5A|4-5|-
+Mochna křovitá ‘Goldfinger’|Potentilla fruticosa ‘Goldfinger’|shrub|mid|0.8|0.8|S|DN|#E6B931|#6E8F5A|6-10|-
+Mochna křovitá ‘Abbotswood’|Potentilla fruticosa ‘Abbotswood’|shrub|mid|0.8|0.8|S|DN|#FBFAF2|#6E8F5A|6-10|-
+Vajgélie ‘Nana Purpurea’|Weigela florida ‘Nana Purpurea’|shrub|mid|0.9|0.9|SP|N|#E58AA8|#7E3C47|5-6|-
+Vajgélie ‘Bristol Ruby’|Weigela ‘Bristol Ruby’|shrub|back|2|1.5|SP|N|#B8303E|#6E8F5A|5-6|-
+Dřišťál ‘Atropurpurea Nana’|Berberis thunbergii ‘Atropurpurea Nana’|shrub|mid|0.5|0.6|SP|DN|-|#8E3440|-|t
+Pustoryl ‘Manteau d’Hermine’|Philadelphus ‘Manteau d’Hermine’|shrub|back|0.8|0.9|SP|N|#FBFAF2|#5E8E46|6-6|-
+Pustoryl věncový|Philadelphus coronarius|shrub|back|2.5|1.8|SPT|DN|#FBFAF2|#6E8F5A|5-6|-
+Komule Davidova ‘Nanho Blue’|Buddleja davidii ‘Nanho Blue’|shrub|back|1.5|1.2|S|N|#6F5FB5|#7E9A6E|7-9|-
+Kalina ‘Eskimo’|Viburnum ‘Eskimo’|shrub|back|1.2|1.2|SPT|N|#FBFAF2|#3F6E45|5-5|-
+Kalina obecná ‘Roseum’|Viburnum opulus ‘Roseum’|shrub|back|3|2|SP|NW|#FBFAF2|#6E8F5A|5-6|-
+Kalina Burkwoodova|Viburnum × burkwoodii|shrub|back|2|1.5|SP|N|#F7EEF0|#4E7A40|4-5|-
+Svída bílá ‘Sibirica’|Cornus alba ‘Sibirica’|shrub|back|2|1.5|SPT|NW|#F2F0E4|#4E7A40|5-6|-
+Svída bílá ‘Elegantissima’|Cornus alba ‘Elegantissima’|shrub|back|2|1.5|SPT|NW|#F2F0E4|#B7C9A4|5-6|-
+Tavola kalinolistá ‘Diabolo’|Physocarpus opulifolius ‘Diabolo’|shrub|back|2|1.5|SP|DN|#F2EAE0|#5A2A33|6-6|-
+Tavola ‘Little Devil’|Physocarpus opulifolius ‘Little Devil’|shrub|mid|1|0.9|SP|DN|#F2EAE0|#5A2A33|6-6|-
+Trojpuk ‘Nikko’|Deutzia gracilis ‘Nikko’|shrub|mid|0.6|0.7|SP|N|#FBFAF2|#6E8F5A|5-6|-
+Ořechoplodec ‘Heavenly Blue’|Caryopteris × clandonensis ‘Heavenly Blue’|shrub|mid|0.8|0.7|S|D|#6F7FD0|#8FA4A0|8-9|-
+Třezalka ‘Hidcote’|Hypericum ‘Hidcote’|shrub|mid|1|0.9|SP|N|#E6B931|#6E8F5A|7-9|-
+Růže ‘The Fairy’|Rosa ‘The Fairy’|shrub|mid|0.6|0.6|S|N|#F2B8C6|#4E7A40|6-10|t
+Růže ‘Bonica’|Rosa ‘Bonica’|shrub|mid|0.8|0.7|S|N|#F2A6B8|#4E7A40|6-10|t
+Ruj vlasatá ‘Royal Purple’|Cotinus coggygria ‘Royal Purple’|shrub|back|3|2.5|S|D|#B58A9A|#5A2A33|6-7|-
+Zlatice ‘Week End’|Forsythia × intermedia ‘Week End’|shrub|back|1.8|1.5|SP|N|#E9C534|#6E8F5A|3-4|-
+Kolkvície čínská|Kolkwitzia amabilis|shrub|back|2.5|2|SP|N|#F2C6D0|#6E8F5A|5-6|-
+Šeřík Meyerův ‘Palibin’|Syringa meyeri ‘Palibin’|shrub|back|1.3|1.2|S|N|#C9A0D8|#6E8F5A|5-6|-
+Brslen Fortuneův ‘Emerald ’n’ Gold’|Euonymus fortunei ‘Emerald ’n’ Gold’|shrub|front|0.4|0.5|SPT|N|-|#C8C46A|-|e
+Brslen křídlatý ‘Compactus’|Euonymus alatus ‘Compactus’|shrub|back|1.5|1.2|SP|N|-|#B8303E|-|-
+Cesmína vroubkovaná ‘Dark Green’|Ilex crenata ‘Dark Green’|shrub|mid|0.8|0.6|SP|N|-|#2F5A35|-|e
+Bobkovišeň ‘Otto Luyken’|Prunus laurocerasus ‘Otto Luyken’|shrub|mid|1|1|PT|N|#FBFAF2|#2F5A35|5-5|-
+Zimolez kloboučkovitý ‘Maigrün’|Lonicera nitida ‘Maigrün’|shrub|mid|0.8|0.8|SPT|DN|-|#6E9A4A|-|e
+Skalník Dammerův|Cotoneaster dammeri|shrub|front|0.2|0.6|SP|DN|#FBFAF2|#3F6E45|5-6|-
+Kdoulovec ‘Pink Lady’|Chaenomeles × superba ‘Pink Lady’|shrub|mid|1.2|1|SP|DN|#E58AA8|#6E8F5A|4-5|t
+Meruzalka krvavá|Ribes sanguineum|shrub|back|2|1.5|SP|N|#D86A9A|#6E8F5A|4-5|-
+Zákula japonská ‘Pleniflora’|Kerria japonica ‘Pleniflora’|shrub|back|1.8|1.2|SPT|DN|#E6B931|#6E8F5A|4-5|-
+Bez černý ‘Black Lace’|Sambucus nigra ‘Black Lace’|shrub|back|2.5|1.8|SPT|NW|#F2C6D0|#3A2530|6-6|-
+Mahónie cesmínolistá|Mahonia aquifolium|shrub|mid|1|0.9|SPT|DN|#E9C534|#2F5A35|4-5|t
+Muchovník Lamarckův|Amelanchier lamarckii|shrub|back|4|2.5|SP|N|#FBFAF2|#B5462B|4-4|-

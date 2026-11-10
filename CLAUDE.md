@@ -193,8 +193,24 @@ A4 PDF). It is being built **next to** the old designer, not replacing it:
   AI vs. customer sketch, style, wishes → summary → result + 11-page PDF). Global for plan render is
   `MVGreenPlanV2` (not `MVGreenPlan` – collides with garden-plan.js). Test hook:
   `window.MVGreenArchitektTest` (state, build(ctx), pickPlants) – used by node tests.
-- `assets/v2/plants-curated.js` – 162 vetted species (role back/mid/front, sun, water, thorny);
-  replaces catalog-805 for v2.
+- `assets/v2/plants-catalog.js` – **generated, never edit by hand.** ~1200 plants (perennials,
+  grasses, ferns, bulbs, shrubs, hedges, conifers, trees, fruit trees, climbers), built by
+  `node scripts/build-plants.js` from the pipe tables in `data/rostliny/*.txt` (format + codes in
+  `data/rostliny/README.md`). Owner 2026-11-10: "nemůžeme to dělat z 33… aspoň 1000". Replaced
+  `plants-curated.js` (its 162 species are the files trvalky/kere/travy/jehlicnany.txt). Bloom is
+  `null` for non-flowering/evergreen plants and the catalog's bloom wins over AI facts in the PDF.
+  Flags: thorny, evergreen, toxic, acid, spreads, wet. `pickPlants` only auto-picks roles
+  back/mid/front and skips acid + spreads always, thorny + toxic with kids/dog. Weak spot: dry
+  shade has few tall plants.
+- Plant photos: `node scripts/plant-photos.js` pre-picks one Wikimedia Commons file per plant
+  (scored: whole plant/flower, cultivar match; bark/fruit/insects/drawings rejected) into
+  `data/plant-photos.json` (`status` auto/ok/rejected/missing; rejected files remembered). The
+  catalog carries only `photoFile`; `mvgreen_plant_photo` downloads exactly that file to uploads
+  (GDPR – customer browser never hits Wikimedia), falls back to search. Commons titles can be
+  wrong (a "Taxus" file showed a pine), so the owner reviews photos in a claude.ai artifact
+  "Kontrola fotek rostlin" (db collection `verdicts/<plant key>` = {s:'ok'|'bad'}); read it with
+  ArtifactData, set those statuses in plant-photos.json, rerun plant-photos.js + build-plants.js.
+  Review data: `node scripts/photo-review-data.js <dir>` (thumbnails stay out of the public repo).
 - `assets/v2/sketch.js` – customer sketch by TAPPING (owner rejected finger-drawing as imprecise):
   wall/path = points, steps = two edges (width), areas = corners, tree/shrub = tap; optional note
   per element. Sent to gpt-image as a 2nd `image[]` (`guide`, same letterbox as the photo) plus a
@@ -208,8 +224,8 @@ A4 PDF). It is being built **next to** the old designer, not replacing it:
   evaluate the tapping sketch himself next and was not yet convinced.
 - Admin daily AI test limit option `mvgreen_ai_daily_limit` was raised to 5 (owner approved).
 
-Known data gap: `catalog-805.js` has no bloom months and no prices for any plant (all
-`"bloom":"neuvedeno"`, `"price":null`) – needed before the PDF budget/bloom calendar can be real.
+Known data gap: `catalog-805.js` (old designer only) has no bloom months and no prices. The v2
+catalog has bloom months but still no prices – PDF prices come from AI facts.
 
 ## Conventions
 

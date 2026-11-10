@@ -103,7 +103,11 @@ add_action('wp_ajax_mvgreen_plant_photo', function () {
     if ($latin === '' || strlen($latin) > 120) wp_send_json_error(['message' => 'Chybí název.'], 400);
     // Uložená fotka platí trvale; neúspěch se pamatuje jen 6 hodin. V 1. testu v2 (2026-11-08) se
     // uložila prázdná odpověď natrvalo a všechny karty pak ukazovaly „fotka se doplní“.
-    $key = 'mvgreen_plant_photo_' . md5(strtolower($latin));
+    // Katalog (2026-11-10) nese předem vybranou a majitelem kontrolovanou fotku (název souboru na
+    // Commons) – vyhledávání brávalo kůru, bobule nebo jinou rostlinu. Hledání zůstává jako záloha.
+    $file = isset($_POST['file']) ? sanitize_text_field(wp_unslash($_POST['file'])) : '';
+    if (!preg_match('/^File:[^|#<>\[\]{}]{3,240}\.jpe?g$/i', $file)) $file = '';
+    $key = 'mvgreen_plant_photo_' . md5(strtolower($latin) . ($file ? '|' . $file : ''));
     $cached = get_option($key);
     if (is_array($cached) && !empty($cached['url'])) wp_send_json_success($cached);
     if (get_transient($key . '_miss')) wp_send_json_success(['url' => '', 'license' => '', 'author' => '', 'page' => '', 'reason' => 'nedávno nenalezeno']);
@@ -113,9 +117,11 @@ add_action('wp_ajax_mvgreen_plant_photo', function () {
     $base_name = trim(preg_replace('/\s*[‘’\'"].*$/u', '', $latin));
     $queries = array_unique(array_filter([$base_name, implode(' ', array_slice(preg_split('/\s+/', str_replace('×', '', $base_name)), 0, 2))]));
     $found = null; $reason = 'nic nenalezeno';
-    foreach ($queries as $q) {
-        $url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=20&gsrsearch='
-            . rawurlencode($q . ' filetype:bitmap') . '&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=640';
+    $urls = [];
+    if ($file) $urls[] = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&titles=' . rawurlencode($file) . '&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=640';
+    foreach ($queries as $q) $urls[] = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=20&gsrsearch='
+        . rawurlencode($q . ' filetype:bitmap') . '&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=640';
+    foreach ($urls as $url) {
         $r = wp_remote_get($url, ['headers' => ['User-Agent' => $ua], 'timeout' => 20]);
         if (is_wp_error($r)) { $reason = 'spojení: ' . $r->get_error_message(); continue; }
         if (wp_remote_retrieve_response_code($r) !== 200) { $reason = 'Wikimedia HTTP ' . wp_remote_retrieve_response_code($r); continue; }
@@ -163,7 +169,7 @@ add_shortcode('mvgreen_ai_architekt', function ($atts) {
     wp_enqueue_script('mvgreen-ai-safety', $base . 'assets/ai-safety.js', [], $v, true);
     wp_enqueue_script('mvgreen-paint-mask', $base . 'assets/mg-paint-mask.js', ['mvgreen-ai-safety'], $v, true);
     wp_enqueue_script('mvgreen-plan-render', $base . 'assets/v2/plan-render.js', [], $v, true);
-    wp_enqueue_script('mvgreen-plants-v2', $base . 'assets/v2/plants-curated.js', [], $v, true);
+    wp_enqueue_script('mvgreen-plants-v2', $base . 'assets/v2/plants-catalog.js', [], $v, true);
     wp_enqueue_script('mvgreen-sketch', $base . 'assets/v2/sketch.js', [], $v, true);
     wp_enqueue_script('mvgreen-architekt-pdf', $base . 'assets/v2/architekt-pdf.js', ['mvgreen-plan-render'], $v, true);
     wp_enqueue_script('mvgreen-architekt', $base . 'assets/v2/architekt.js', ['mvgreen-plan-render', 'mvgreen-architekt-pdf', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-plants-v2', 'mvgreen-sketch'], $v, true);
