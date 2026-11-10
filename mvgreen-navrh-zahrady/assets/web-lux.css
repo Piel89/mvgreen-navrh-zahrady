@@ -303,3 +303,15 @@
 /* majitel: „Péče o zeleň · Domažlice a okolí do 40 km“ v úvodu není na PC dobře vidět (malé písmo přes fotku) */
 .mvg-lux .lx-hero .lx-eyebrow{align-self:flex-start;background:rgba(12,26,19,.78);border:1px solid rgba(200,224,122,.35);border-radius:999px;padding:9px 18px;font-size:15px;letter-spacing:.18em;font-weight:600}
 @media (max-width:760px){.mvg-lux .lx-hero .lx-eyebrow{font-size:12px;letter-spacing:.12em;padding:7px 12px}}
+/* majitel: „sjednoť tlačítka pod textem v mobilní verzi“ – hodnocení Google a Nezávazná poptávka
+   v úvodu (a dvojice tlačítek v ceníku) byly různě široké a různě zaoblené → stejná šířka i tvar */
+@media (max-width:760px){
+ .mvg-lux .lx-hero__cta{flex-direction:column;align-items:stretch;width:100%;gap:10px}
+ .mvg-lux .lx-hero__cta>a{width:100%;min-height:58px;justify-content:center;border-radius:999px;box-sizing:border-box}
+ .mvg-lux .lx-rating{padding:8px 18px 8px 8px}
+ .mvg-lux .lx-rating .lx-g{width:40px;height:40px}
+ .mvg-lux .lx-rating b{font-size:30px}
+ .mvg-lux .lx-btn{width:100%;justify-content:center;box-sizing:border-box}
+ .mvg-lux .lx-links{flex-direction:column;align-items:stretch}
+ .mvg-lux [style*="gap: 12px; flex-wrap: wrap"]>a{flex:1 1 100%;text-align:center;box-sizing:border-box}
+}
