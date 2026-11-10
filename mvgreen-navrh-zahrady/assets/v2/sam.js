@@ -71,6 +71,17 @@
     for (p = 0; p < w * h; p++) if (!bits[p] && !seen[p]) bits[p] = 1;
   }
 
+  // Test 0.6.248: okna bílého auta s otevřeným kufrem a dveřmi nebyla „díra“ (přes otevřené dveře
+  // navazují na okolí), takže zůstala zelená. U aut se vyplní vše, co leží mezi krajními body masky
+  // v řádku NEBO ve sloupci – auto je zhruba vypouklé, okna a otevřené dveře tím patří autu.
+  function fillSpans(bits, w, h) {
+    var x0 = new Int32Array(h).fill(w), x1 = new Int32Array(h).fill(-1), y0 = new Int32Array(w).fill(h), y1 = new Int32Array(w).fill(-1), x, y;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) if (bits[y * w + x]) {
+      if (x < x0[y]) x0[y] = x; if (x > x1[y]) x1[y] = x; if (y < y0[x]) y0[x] = y; if (y > y1[x]) y1[x] = y;
+    }
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) if ((x >= x0[y] && x <= x1[y]) || (y >= y0[x] && y <= y1[x])) bits[y * w + x] = 1;
+  }
+
   function segment(src, objects) {
     var list = (objects || []).filter(function (o) { return o && o.box && o.box.length === 4 && o.box[2] > o.box[0] && o.box[3] > o.box[1]; });
     if (!list.length) return Promise.resolve(objects || []);
@@ -88,6 +99,7 @@
       }).then(function (masks) {
         list.forEach(function (o, i) {
           var m = masks[i]; if (!m) return;
+          if (o.kind === 'car') fillSpans(m.bits, m.w, m.h);
           if (SOLID[o.kind]) fillHoles(m.bits, m.w, m.h);
           var cc = document.createElement('canvas'); cc.width = m.w; cc.height = m.h;
           var cx = cc.getContext('2d'), im = cx.createImageData(m.w, m.h), d = im.data;

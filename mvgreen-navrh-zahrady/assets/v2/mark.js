@@ -147,6 +147,17 @@
         owner[s] = oi; break;
       }
     }
+    // Test 0.6.248: SAM obkreslil u „Louka a les v pozadí“ jen les, louka zůstala bez barvy.
+    // Neoznačený dílek, jehož střed leží v obdélníku plochy mimo pozemek, patří k ní.
+    var off = order.filter(function (i) { return objects[i].kind === 'offsite' && objects[i].box; });
+    if (off.length) for (var s2 = 1; s2 <= N; s2++) {
+      if (owner[s2] >= 0) continue;
+      var c = st.cen[s2];
+      for (var q = 0; q < off.length; q++) {
+        var bb = objects[off[q]].box;
+        if (c[0] * 1000 >= bb[1] && c[0] * 1000 <= bb[3] && c[1] * 1000 >= bb[0] && c[1] * 1000 <= bb[2]) { owner[s2] = off[q]; break; }
+      }
+    }
     return owner;
   }
   function loadMasks(list) {
