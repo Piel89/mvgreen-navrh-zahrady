@@ -282,3 +282,10 @@
 .mvg-lux table{border:0!important;margin:0}
 .mvg-lux blockquote{border:0!important;padding:0!important;margin:0!important;font-style:normal!important;quotes:none}
 .mvg-lux blockquote p{margin:0}
+/* majitel: pruh na mobilu „není zarovnaný na střed“ – hvězdičky ✦ zůstávaly na koncích/začátcích řádků
+   a řádky působily posunutě → na mobilu bez hvězdiček, služby jako vycentrované řádky */
+@media (max-width:760px){
+ .mvg-lux .lx-marquee div{justify-content:center;align-items:center;text-align:center;gap:6px 22px}
+ .mvg-lux .lx-marquee b{display:none}
+ .mvg-lux .lx-marquee span{white-space:nowrap}
+}
