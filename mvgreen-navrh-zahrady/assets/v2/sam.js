@@ -55,6 +55,22 @@
     return ready;
   }
 
+  // Test 0.6.246: SAM obkreslil bílé auto bez oken (přes sklo je vidět louka) → okna zůstala
+  // „Mimo pozemek“ (zelená) uprostřed červeného auta. U pevných věcí se díry uvnitř masky vyplní.
+  var SOLID = { car: 1, house: 1, neighbor: 1, shed: 1, container: 1, gate: 1 };
+  function fillHoles(bits, w, h) {
+    var seen = new Uint8Array(w * h), st = [], p;
+    function push(q) { if (!bits[q] && !seen[q]) { seen[q] = 1; st.push(q); } }
+    for (var x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+    for (var y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+    while (st.length) {
+      p = st.pop(); var px = p % w;
+      if (px > 0) push(p - 1); if (px < w - 1) push(p + 1);
+      if (p >= w) push(p - w); if (p < w * (h - 1)) push(p + w);
+    }
+    for (p = 0; p < w * h; p++) if (!bits[p] && !seen[p]) bits[p] = 1;
+  }
+
   function segment(src, objects) {
     var list = (objects || []).filter(function (o) { return o && o.box && o.box.length === 4 && o.box[2] > o.box[0] && o.box[3] > o.box[1]; });
     if (!list.length) return Promise.resolve(objects || []);
@@ -72,6 +88,7 @@
       }).then(function (masks) {
         list.forEach(function (o, i) {
           var m = masks[i]; if (!m) return;
+          if (SOLID[o.kind]) fillHoles(m.bits, m.w, m.h);
           var cc = document.createElement('canvas'); cc.width = m.w; cc.height = m.h;
           var cx = cc.getContext('2d'), im = cx.createImageData(m.w, m.h), d = im.data;
           for (var p = 0; p < m.bits.length; p++) if (m.bits[p]) d[p * 4] = d[p * 4 + 1] = d[p * 4 + 2] = d[p * 4 + 3] = 255;
