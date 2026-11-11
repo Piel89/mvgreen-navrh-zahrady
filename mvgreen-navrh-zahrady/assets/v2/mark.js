@@ -440,6 +440,16 @@
         $('[data-list]').onclick = function () { rows(); $('[data-sheet]').classList.add('is-on'); };
         $('[data-sheetclose]').onclick = function () { hiObj = -1; repaint(); $('[data-sheet]').classList.remove('is-on'); };
 
+        // 2026-11-11, majitel: „nahoře měla být cesta až k zahradnímu domku a je tam záhon“ – AI dostala
+        // z náčrtu jen procenta. Polohy označených věcí (obdélník ze středů dílků, 0–1) jdou do popisu
+        // náčrtu, ať může říct „cesta končí u: Kůlna vpravo“.
+        function landmarks() {
+          var st2 = stats(seg), bb = {};
+          for (var s = 1; s <= N; s++) { var o = owner[s]; if (o < 0) continue; var c = st2.cen[s], b = bb[o] || (bb[o] = [1, 1, 0, 0, 0]);
+            if (c[0] < b[0]) b[0] = c[0]; if (c[1] < b[1]) b[1] = c[1]; if (c[0] > b[2]) b[2] = c[0]; if (c[1] > b[3]) b[3] = c[1]; b[4] += st2.cnt[s]; }
+          return Object.keys(bb).map(function (k) { var o = objects[k], b = bb[k]; return { name: o.name, kind: o.kind, state: o.state, box: [b[0], b[1], b[2], b[3]], px: b[4] }; })
+            .filter(function (l) { return l.kind !== 'sky' && l.px > 50; });
+        }
         function finish() {
           var category_ = category();
           var editMask = catMask(seg, category_, pw, ph, function (c) { return c !== PROTECT; });
@@ -453,7 +463,7 @@
           var hasRemove = false; for (var s = 1; s <= N; s++) if (category_[s] === REMOVE) { hasRemove = true; break; }
           var names = function (k) { return objects.filter(function (o, i) { return o.state === k && Array.prototype.some.call(owner, function (x) { return x === i; }); }).map(function (o) { return o.name; }); };
           close({ editMask: editMask, removeMask: removeMask, category: category_, hasRemove: hasRemove, previewDataUrl: previewUrl(seg, category_, photo, pw, ph),
-            state: { objects: objects.map(function (o) { return { name: o.name, kind: o.kind, state: o.state }; }), owner: Array.from(owner) }, keepNames: names('keep'), removeNames: names('remove') });
+            state: { objects: objects.map(function (o) { return { name: o.name, kind: o.kind, state: o.state }; }), owner: Array.from(owner) }, keepNames: names('keep'), removeNames: names('remove'), landmarks: landmarks() });
         }
         $('[data-ok]').onclick = finish; $('[data-ok2]').onclick = finish;
         $('[data-brush]').onclick = function () {

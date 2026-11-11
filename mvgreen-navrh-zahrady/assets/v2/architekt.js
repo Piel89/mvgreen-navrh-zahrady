@@ -150,7 +150,7 @@
       var s = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url; st.markState = null; st.removeNames = []; st.paintCategory = null;
+      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url; st.markState = null; st.removeNames = []; st.landmarks = []; st.paintCategory = null;
       render();
     }).catch(function (e) { alert(e.message); });
   }
@@ -161,7 +161,7 @@
     if (!M) return markBrush();
     var took = function (r) {
       st.paintCategory = r.category; st.maskPreview = r.previewDataUrl || '';
-      st.markState = r.state || null; st.removeNames = r.removeNames || [];
+      st.markState = r.state || null; st.removeNames = r.removeNames || []; st.landmarks = r.landmarks || [];
       st.removeWhere = r.hasRemove ? maskWhere(r.removeMask) : '';
       st.editMask = S.growMask(fillHoles(r.editMask, r.hasRemove ? r.removeMask : null));
       render();
@@ -185,7 +185,7 @@
           }).catch(function (e) { log('SAM obrysy selhaly: ' + (e && e.message || e) + ' – použity obrysy Gemini.'); return objs; });
         });
       },
-      onBrush: function (r) { st.markState = null; st.removeNames = []; took(r); }
+      onBrush: function (r) { st.markState = null; st.removeNames = []; took(r); st.landmarks = []; }
     }).then(function (r) { if (r) took(r); });
   }
   function markBrush() {
@@ -316,8 +316,10 @@
       + ((st.removeNames || []).length ? 'Zákazník chce odstranit: ' + st.removeNames.join(', ') + '. ' : '')
       + (st.removeWhere ? 'Věci, které zákazník nechal odstranit, stály ' + st.removeWhere + '. Když přání mluví o místě, kde stojí/stály (např. „kde stojí auta“), myslí PŘESNĚ tuto oblast – nové zpevněné plochy a zídky dej jen tam a zbytek upravované plochy řeš podle stylu (trávník, záhony). ' : '')
       + (hasSketch() ? 'ROZMÍSTĚNÍ PODLE NÁČRTU ZÁKAZNÍKA (druhý obrázek) – ZÁVAZNÉ, má přednost před vlastním nápadem: '
-          + window.MVGreenSketch.describe(st.sketch).replace(/\n/g, ' ')
-          + ' Náčrt je kreslený prstem na mobilu, je jen PŘIBLIŽNÝ: určuje CO a ZHRUBA KDE, polohy v % jsou orientační. Prvky dolaď podle celé fotky, aby vše na sebe logicky navazovalo a vypadalo jako skutečná realizace (zeď rovná a navazující na terén, schody kolmo ve zdi, chodník souběžně s domem, dlažba až k zídce, plynulé hrany záhonů). Kde v upravované ploše žádná značka není, dej upravený trávník. ' : '')
+          + window.MVGreenSketch.describe(st.sketch, st.landmarks).replace(/\n/g, ' ')
+          + ' Náčrt je kreslený prstem na mobilu, je jen PŘIBLIŽNÝ: určuje CO a ZHRUBA KDE, polohy v % jsou orientační. Prvky dolaď podle celé fotky, aby vše na sebe logicky navazovalo a vypadalo jako skutečná realizace (zeď rovná a navazující na terén, schody kolmo ve zdi, chodník souběžně s domem, dlažba až k zídce, plynulé hrany záhonů). Kde v upravované ploše žádná značka není, dej upravený trávník. '
+          // 2026-11-11: cesta k zahradnímu domku nahoře skončila jako záhon
+          + 'Cesty, chodníky a dlažbu z náčrtu nakresli CELÉ od začátku až ke konci – až k místu, u kterého podle náčrtu končí (např. k domku nebo kůlně) – a NIKDY je nenahrazuj záhonem ani trávníkem. ' : '')
       + (fences.length && !hasSketch() ? 'Plot je ' + fences.join(' a ') + ' – záhon u plotu veď jako souvislý pás těsně podél plotu, široký 1–1,5 m, vysoké rostliny přímo u plotu. ' : '')
       + 'Trávník zachovej jako hlavní plochu. Záhony mají plynule zaoblenou hranu s obrubou a jsou mulčované. '
       + 'Použij POUZE tyto rostliny: ' + plants.map(function (p) { return p.name + ' (' + p.latin + ', výška ' + Math.round(p.height * 100) + ' cm)'; }).join('; ') + '. '
@@ -340,7 +342,7 @@
     return 'Dům na fotce: ' + HOUSES[st.house].toLowerCase() + '. Plot/hranice pozemku: ' + (fences.join(', ') || 'neuvedeno') + '. '
       + (st.width ? 'Šířka zahrady zleva doprava ≈ ' + st.width + ' m. ' : '') + (st.depth ? 'Hloubka od fotografa dozadu ≈ ' + st.depth + ' m. ' : '')
       + (st.removeWhere ? 'Odstraněné věci (např. auta) stály ' + st.removeWhere + '. ' : '')
-      + (hasSketch() ? 'NÁČRT ZÁKAZNÍKA (obrázek 4, závazný pro polohu prvků): ' + window.MVGreenSketch.describe(st.sketch).replace(/\n/g, ' ') + ' ' : '')
+      + (hasSketch() ? 'NÁČRT ZÁKAZNÍKA (obrázek 4, závazný pro polohu prvků): ' + window.MVGreenSketch.describe(st.sketch, st.landmarks).replace(/\n/g, ' ') + ' ' : '')
       + 'Přání zákazníka: ' + (st.wish || 'žádné') + '.';
   }
 
@@ -375,7 +377,7 @@
         log('Půdorys načten: ' + pl.plan.elements.length + ' prvků, ' + pl.plan.width_m + ' × ' + pl.plan.depth_m + ' m. Doplňuji údaje o rostlinách…');
         var brief = 'Styl: ' + STYLES[st.style] + '. Místo: ' + (st.geo ? st.geo.name : '') + ', ' + (st.climate ? st.climate.elevation + ' m n. m., ' + st.climate.zone : '') + '. Slunce: ' + st.sun + '. Přání: ' + (st.wish || 'žádné') + '. '
           // Test 4: koncept tvrdil „místo aut trávník“, přitom tam je podle náčrtu dlažba → AI pro texty dostává i náčrt a prvky půdorysu.
-          + (hasSketch() ? 'Náčrt zákazníka: ' + window.MVGreenSketch.describe(st.sketch).replace(/\n/g, ' ') + ' ' : '')
+          + (hasSketch() ? 'Náčrt zákazníka: ' + window.MVGreenSketch.describe(st.sketch, st.landmarks).replace(/\n/g, ' ') + ' ' : '')
           + 'Prvky návrhu: ' + pl.plan.elements.filter(function (e) { return e.is_new; }).map(function (e) { return e.label; }).join(', ') + '. Popis AI: ' + (pl.plan.notes || '');
         return ajax('mvgreen_ai_plant_facts', { plants: plantList, brief: brief });
       })

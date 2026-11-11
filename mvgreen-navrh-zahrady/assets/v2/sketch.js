@@ -87,7 +87,25 @@
     var x = pts.reduce(function (s, p) { return s + p[0]; }, 0) / pts.length, y = pts.reduce(function (s, p) { return s + p[1]; }, 0) / pts.length;
     return (x < 0.34 ? 'vlevo' : x > 0.66 ? 'vpravo' : 'uprostřed') + (y > 0.66 ? ' v popředí' : y < 0.4 ? ' vzadu' : '');
   }
-  function describe(items) {
+  // Co na fotce leží u bodu (z označování, mark.js landmarks: {name, kind, state, box:[x0,y0,x1,y1] 0–1}).
+  var LM_SKIP = { sky: 1, lawn: 1, soil: 1, tap: 1 };
+  function near(p, lms) {
+    var best = null, bd = 1e9;
+    (lms || []).forEach(function (l) {
+      if (LM_SKIP[l.kind] || l.state === 'remove') return;
+      var b = l.box, dx = Math.max(b[0] - 0.04 - p[0], 0, p[0] - b[2] - 0.04), dy = Math.max(b[1] - 0.04 - p[1], 0, p[1] - b[3] - 0.04);
+      var d = Math.hypot(dx, dy) * 10 + (b[2] - b[0]) * (b[3] - b[1]);   // uvnitř/blízko + menší objekt má přednost
+      if (Math.hypot(dx, dy) < 0.08 && d < bd) { bd = d; best = l; }
+    });
+    return best ? best.name : '';
+  }
+  // Čára kreslená tam a zpátky (2026-11-11: cesta k domku) – začátek a konec = dva nejvzdálenější body.
+  function ends(pts) {
+    var a = 0, b = pts.length - 1, m = -1;
+    for (var i = 0; i < pts.length; i++) for (var j = i + 1; j < pts.length; j++) { var d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]); if (d > m) { m = d; a = i; b = j; } }
+    return [pts[a], pts[b]];
+  }
+  function describe(items, lms) {
     items = (items || []).filter(done);
     if (!items.length) return '';
     var used = TOOLS.filter(function (t) { return items.some(function (it) { return it.tool === t.id; }); });
@@ -96,8 +114,11 @@
     items.forEach(function (it) {
       var t = BY[it.tool]; n[t.id] = (n[t.id] || 0) + 1;
       var name = t.name + (items.filter(function (x) { return x.tool === t.id; }).length > 1 ? ' ' + n[t.id] : ''), s;
-      if (t.type === 'area') s = name + ': plocha ' + where(it.pts) + ' s rohy ' + it.pts.map(P2).join(', ');
-      else if (t.type === 'line') s = name + ': vede ' + it.pts.map(P2).join(' → ');
+      if (t.type === 'area') { var cx = [it.pts.reduce(function (q, p) { return q + p[0]; }, 0) / it.pts.length, it.pts.reduce(function (q, p) { return q + p[1]; }, 0) / it.pts.length], na = near(cx, lms); s = name + ': plocha ' + where(it.pts) + (na ? ' (u: ' + na + ')' : '') + ' s rohy ' + it.pts.map(P2).join(', '); }
+      else if (t.type === 'line') {
+        var e = ends(it.pts), n0 = near(e[0], lms), n1 = near(e[1], lms);
+        s = name + ': vede OD ' + P2(e[0]) + (n0 ? ' (u: ' + n0 + ')' : '') + ' DO ' + P2(e[1]) + (n1 ? ' (u: ' + n1 + ' – cesta musí vést až sem)' : '') + ', průběh ' + it.pts.map(P2).join(' → ');
+      }
       else if (t.type === 'steps') s = name + ': ' + where(it.pts) + ', jeden kraj ' + P2(it.pts[0]) + ', druhý kraj ' + P2(it.pts[1]) + ' – šířka schodů = vzdálenost krajů, stupně vedou kolmo na tuto spojnici';
       else s = name + ': ' + P2(it.pts[0]);
       out.push('- ' + s + (it.note ? ' – upřesnění zákazníka: „' + it.note + '“' : '') + '.');
