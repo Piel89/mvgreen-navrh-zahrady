@@ -145,7 +145,8 @@
         if (cov[oi][s] * 2 < tot) continue;
         // Test 0.6.259: přes okna auta je vidět louka → „zelený“ dílek, auto ho nedostalo a okna
         // zůstala zelená. Když přesná maska SAM (img) pokrývá dílek ze 70 % a víc, má přednost před barvou.
-        if (veg && NONVEG[objects[oi].kind] && !(objects[oi].img && cov[oi][s] >= tot * 0.7)) continue;
+        // 2026-11-11 (fotka se studnou): výjimka platila pro všechny objekty a „Kameny na zemi“ pak zabraly trávu mezi kameny → jen auta
+        if (veg && NONVEG[objects[oi].kind] && !(objects[oi].kind === 'car' && objects[oi].img && cov[oi][s] >= tot * 0.7)) continue;
         owner[s] = oi; break;
       }
     }
@@ -317,7 +318,9 @@
             else if (c === REMOVE) { R = R * 0.45 + 217 * 0.55; G = G * 0.45 + 69 * 0.55; B = B * 0.45 + 63 * 0.55; }
             // „Změnit“ jemně žlutě – legenda v seznamu slibuje žlutou, na fotce ale byla jen bílá čára
             // (test 0.6.244: trávník a štěrk vypadaly jako neoznačené)
-            else if (o >= 0) { R = R * 0.7 + 236 * 0.3; G = G * 0.7 + 186 * 0.3; B = B * 0.7 + 40 * 0.3; }
+            // „Změnit“ i neoznačená místa (AI je nepřiřadila, v návrhu se ale upravují) – majitel je viděl jen
+            // jako bílý obrys (fotka se studnou, 2026-11-11)
+            else { R = R * 0.7 + 236 * 0.3; G = G * 0.7 + 186 * 0.3; B = B * 0.7 + 40 * 0.3; }
             var x = i % W, edge = (x + 1 < W && owner[L[i + 1]] !== o) || (i + W < W * H && owner[L[i + W]] !== o);
             if (edge && (o >= 0 || (x + 1 < W && owner[L[i + 1]] >= 0) || (i + W < W * H && owner[L[i + W]] >= 0))) { R = G = B = 255; }
             if (hiObj >= 0 && o === hiObj && ((i / W | 0) + x) % 6 < 3) { R = R * 0.5 + 127; G = G * 0.5 + 127; B = B * 0.5 + 127; }
