@@ -150,7 +150,7 @@
       var s = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url; st.markState = null; st.removeNames = []; st.landmarks = []; st.terrain = ''; st.horizon = null; st.paintCategory = null;
+      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url; st.markState = null; st.removeNames = []; st.landmarks = []; st.terrain = ''; st.paintCategory = null;
       render();
     }).catch(function (e) { alert(e.message); });
   }
@@ -175,7 +175,6 @@
         return ajax('mvgreen_ai_detect_v2', { photo: scaled(st.original, 1024, 'image/jpeg', 0.85) }).then(function (d) {
           var objs = d.objects || [];
           st.terrain = d.terrain || '';
-          st.horizon = d.horizon != null ? d.horizon / 1000 : null;
           if (st.terrain) log('Terén podle AI: ' + st.terrain);
           log('AI předznačení (' + (d.model || '?') + '): ' + objs.length + ' objektů, s maskou ' + objs.filter(function (o) { return o.mask; }).length + '. ' + (d.notes || []).join(' | '));
           return samP.then(function (r) {
@@ -380,10 +379,7 @@
         return ajax('mvgreen_ai_plan_v2', { after: scaled(done.canvas, 1600), before: scaled(original, 1024), marked: st.maskPreview || '', sketch: hasSketch() ? st.sketchPreview : '', plants: plantList, hints: hintsText() });
       })
       .then(function (pl) {
-        var gp = groundPlan(pl.plan);
-        if (gp) { gp.aiNotes = pl.plan.notes; ctx.plan = gp; log('Půdorys přepočtený z vašeho náčrtu (' + gp.elements.length + ' prvků, ' + gp.width_m + ' × ' + gp.depth_m + ' m).'); }
-        else ctx.plan = pl.plan;
-        pl = { plan: ctx.plan };
+        ctx.plan = pl.plan;
         log('Půdorys načten: ' + pl.plan.elements.length + ' prvků, ' + pl.plan.width_m + ' × ' + pl.plan.depth_m + ' m. Doplňuji údaje o rostlinách…');
         var brief = 'Styl: ' + STYLES[st.style] + '. Místo: ' + (st.geo ? st.geo.name : '') + ', ' + (st.climate ? st.climate.elevation + ' m n. m., ' + st.climate.zone : '') + '. Slunce: ' + st.sun + '. Přání: ' + (st.wish || 'žádné') + '. '
           // Test 4: koncept tvrdil „místo aut trávník“, přitom tam je podle náčrtu dlažba → AI pro texty dostává i náčrt a prvky půdorysu.
@@ -413,66 +409,6 @@
       if ((e.data && e.data.final) || fails >= 6) throw e;
       return new Promise(function (r) { setTimeout(r, 3000 * (fails + 1)); }).then(function () { return poll(jobId, fails + 1); });
     });
-  }
-
-  /* ---------- půdorys přímo z náčrtu (2026-11-11) ----------
-   * Majitel k PDF: „vůbec to nepřipomíná, co jsme si řekli … nikdo se v tom nevyzná“ – GPT odhadoval
-   * půdorys z perspektivní fotky (dům přes půl plánu, záhony v rohu, cesta jako „opěrná zídka“).
-   * Teď se prvky z náčrtu a označené stavby přepočítají na zem jako u fotogrammetrie: kamera ve výšce
-   * 1,6 m, horizont od Gemini (horizon_y), široký objektiv; pak se plán natáhne na rozměry od zákazníka.
-   * AI půdorys zůstává jen jako zdroj rostlin pro záhony. */
-  function groundPlan(aiPlan) {
-    if (!hasSketch()) return null;
-    var W = st.original.width, H = st.original.height, cam = 1.6;
-    var vh = (st.horizon != null ? st.horizon : 0.42) * H, f = (W / 2) / Math.tan(50 * Math.PI / 180);
-    var P = function (p) { var v = Math.max(p[1] * H, vh + 0.03 * H), Z = cam * f / (v - vh); return [(p[0] * W - W / 2) * Z / f, Z]; };
-    var els = [], items = st.sketch.filter(window.MVGreenSketch.done);
-    var closedLine = function (pts) { var a = pts[0], b = pts[pts.length - 1]; return pts.length >= 6 && Math.hypot(a[0] - b[0], a[1] - b[1]) < 0.05; };
-    items.forEach(function (it) {
-      var pts = it.pts.map(P), t = it.tool;
-      if (t === 'wall') els.push({ type: 'wall', label: 'Opěrná zeď – nová', is_new: true, points: pts, width_m: 0.3, plants: [] });
-      else if (t === 'path') {
-        if (closedLine(it.pts)) els.push({ type: 'paving', label: 'Cesta – nová', is_new: true, points: pts, width_m: 0, plants: [], surface: 'path' });
-        else els.push({ type: 'path', label: 'Cesta – nová', is_new: true, points: pts, width_m: 1.2, plants: [] });
-      }
-      else if (t === 'steps' && pts.length >= 2) {
-        var a = pts[0], b = pts[1], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, nx = -dy / L * 1.2, ny = dx / L * 1.2;
-        els.push({ type: 'steps', label: 'Schody – nové', is_new: true, points: [a, b, [b[0] + nx, b[1] + ny], [a[0] + nx, a[1] + ny]], width_m: 0, plants: [] });
-      }
-      else if (t === 'paving') els.push({ type: 'paving', label: 'Zámková dlažba – nová', is_new: true, points: pts, width_m: 0, plants: [] });
-      else if (t === 'gravel') els.push({ type: 'gravel', label: 'Kačírek', is_new: true, points: pts, width_m: 0, plants: [] });
-      else if (t === 'lawn') els.push({ type: 'lawn', label: 'Trávník', is_new: true, points: pts, width_m: 0, plants: [] });
-      else if (t === 'bed') els.push({ type: 'bed', label: 'Záhon', is_new: true, points: pts, width_m: 0, plants: [], note: it.note || '' });
-      else if (t === 'tree' || t === 'shrub') els.push({ type: t, label: t === 'tree' ? 'Strom' : 'Keř', is_new: true, points: [pts[0]], width_m: 0, plants: [] });
-    });
-    if (!els.length) return null;
-    // stavby z označení: spodní hrana na fotce = kde stojí na zemi
-    (st.landmarks || []).forEach(function (l) {
-      if (l.state === 'remove') return;
-      var b = l.box, deep = { house: 8, neighbor: 8, shed: 2.5 }[l.kind];
-      if (deep) {
-        var p1 = P([b[0], b[3]]), p2 = P([b[2], b[3]]);
-        if (p2[0] - p1[0] < 1) return;
-        els.push({ type: 'house', label: l.kind === 'shed' ? 'Zahradní domek – stávající' : l.kind === 'neighbor' ? 'Soused – stávající' : 'Dům – stávající', is_new: false, points: [p1, p2, [p2[0], p2[1] + deep], [p1[0], p1[1] + deep]], width_m: 0, plants: [] });
-      } else if (l.kind === 'fence' || l.kind === 'hedge') {
-        els.push({ type: l.kind, label: l.name, is_new: false, points: [P([b[0], b[3]]), P([b[2], b[3]])], width_m: 0.6, plants: [] });
-      } else if (l.kind === 'tree') els.push({ type: 'tree', label: l.name, is_new: false, points: [P([(b[0] + b[2]) / 2, b[3]])], width_m: 0, plants: [] });
-    });
-    // zarovnat: x od 0, y = vzdálenost od fotografa od 0; natáhnout na rozměry od zákazníka
-    var xs = [], ys = [];
-    els.forEach(function (e) { e.points.forEach(function (q) { xs.push(q[0]); ys.push(q[1]); }); });
-    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
-    var w = parseFloat(st.width) || 0, d = parseFloat(st.depth) || 0;
-    var sx = w ? w / Math.max(1, x1 - x0) : 1, sy = d ? d / Math.max(1, y1 - y0) : 1;
-    if (!w && d) sx = sy; if (!d && w) sy = sx;
-    els.forEach(function (e) { e.points = e.points.map(function (q) { return [Math.round((q[0] - x0) * sx * 100) / 100, Math.round((q[1] - y0) * sy * 100) / 100]; }); if (e.width_m && (e.type === 'path' || e.type === 'wall' || e.type === 'fence' || e.type === 'hedge')) e.width_m = e.width_m; });
-    // rostliny do záhonů z AI půdorysu (podle pořadí zleva doprava)
-    var aiBeds = ((aiPlan && aiPlan.elements) || []).filter(function (e) { return e.type === 'bed' && e.plants && e.plants.length; })
-      .sort(function (a, b) { return (a.points[0] || [0])[0] - (b.points[0] || [0])[0]; });
-    els.filter(function (e) { return e.type === 'bed'; }).sort(function (a, b) { return a.points[0][0] - b.points[0][0]; })
-      .forEach(function (e, i) { if (aiBeds[i]) e.plants = aiBeds[i].plants; });
-    return { width_m: Math.round((x1 - x0) * sx * 10) / 10, depth_m: Math.round((y1 - y0) * sy * 10) / 10, elements: els,
-      notes: 'Půdorys je přepočtený z vašeho náčrtu na fotce, rozměry jsou orientační.' };
   }
 
   /* ---------- z AI půdorysu (metry od fotografa) na projekt pro výkres ---------- */
