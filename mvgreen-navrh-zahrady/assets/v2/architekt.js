@@ -632,12 +632,24 @@
     // rozpočet, nákupní seznam, nářadí a harmonogram v PDF (dřív si každá strana počítala zvlášť).
     var perim = function (poly) { var s2 = 0; for (var i = 0; i < poly.length; i++) { var a2 = poly[i], b2 = poly[(i + 1) % poly.length]; s2 += Math.hypot(b2[0] - a2[0], b2[1] - a2[1]); } return s2; };
     var lineLen = function (l) { var s2 = 0; for (var i = 1; i < l.length; i++) s2 += Math.hypot(l[i][0] - l[i - 1][0], l[i][1] - l[i - 1][1]); return s2; };
+    // Test 2026-11-11 (studna): zákazník nakreslil zeď, architekt ji zadal, AI ji nakreslila – ale půdorys
+    // ji měl jako stávající, takže v rozpočtu chyběla. Zeď z náčrtu je VŽDY nová; délka z půdorysu,
+    // jinak hrubě z náčrtu (šířka × hloubka zahrady). Cesta: když ji architekt zadal z dlažby/kamene,
+    // počítá se jako dlažba (ne štěrk).
+    var skWalls = hasSketch() ? st.sketch.filter(function (it) { return it.tool === 'wall' && window.MVGreenSketch.done(it); }) : [];
+    var newWalls = project.walls.filter(function (w2) { return w2.isNew; }).map(function (w2) { return { length: lineLen(w2.line), height: 0.6 }; });
+    if (skWalls.length && !newWalls.length) newWalls = skWalls.map(function (it) {
+      var fromPlan = project.walls.map(function (w2) { return lineLen(w2.line); }).sort(function (x, y) { return y - x; })[0];
+      return { length: fromPlan || lineLen(it.pts.map(function (p) { return [p[0] * w, p[1] * d]; })), height: 0.6 };
+    });
+    var pavedPath = /dlažb|dlaždic|kamenn[áé] (cest|chodník)|chodník[^.]*kámen/i.test((ctx.brief || []).filter(function (t) { return /cest|chodník/i.test(t); }).join(' '));
+    var pathPaving = pavedPath ? project.paths.map(function (p2) { var L = lineLen(p2.line); return { area: L * (p2.width || 1), perimeter: 2 * L }; }) : [];
     var model = {
       beds: project.beds.filter(function (b) { return b.surface !== 'gravel'; }).map(function (b) { return { area: area(b.poly), perimeter: perim(b.poly) }; }),
       gravel: project.beds.filter(function (b) { return b.surface === 'gravel'; }).map(function (b) { return { area: area(b.poly), perimeter: perim(b.poly) }; }),
-      paving: project.areas.filter(function (a2) { return a2.type === 'paving' && a2.isNew; }).map(function (a2) { return { area: area(a2.poly), perimeter: perim(a2.poly) }; }),
-      paths: project.paths.map(function (p2) { var L = lineLen(p2.line); return { length: L, area: L * (p2.width || 1) }; }),
-      walls: project.walls.filter(function (w2) { return w2.isNew; }).map(function (w2) { return { length: lineLen(w2.line), height: 0.6 }; }),
+      paving: project.areas.filter(function (a2) { return a2.type === 'paving' && a2.isNew; }).map(function (a2) { return { area: area(a2.poly), perimeter: perim(a2.poly) }; }).concat(pathPaving),
+      paths: pavedPath ? [] : project.paths.map(function (p2) { var L = lineLen(p2.line); return { length: L, area: L * (p2.width || 1) }; }),
+      walls: newWalls,
       steps: project.structures.filter(function (s3) { return s3.steps && s3.isNew; }).map(function () { return { count: 3 }; }),
       lawn: Math.max(0, lawnArea), lawnExtra: parseFloat(st.extraLawn) || 0
     };
