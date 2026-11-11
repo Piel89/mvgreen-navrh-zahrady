@@ -288,6 +288,18 @@
             // z analýzy barev má přednost i před stromy a plochami mimo pozemek (ne před domem)
             var SKY_OVER = { lawn: 1, soil: 1, tree: 1, shrub: 1, hedge: 1, offsite: 1 };
             seg.skyIds.forEach(function (s) { if (owner[s] < 0 || SKY_OVER[objects[owner[s]].kind]) owner[s] = si; });
+            // 2026-11-11, majitel: kousek oblohy nad bílým autem dostalo auto (pravidlo „nezelené v obdélníku
+            // auta = auto“) a ťuknutí na něj přepnulo celé auto. Dílek oblohy, který sousedí s oblohou, vrátit
+            // obloze (opakovaně, ať se vrátí celý kousek); okna obklopená autem oblohy nesousedí, zůstanou autu.
+            var skySet = {}; seg.skyIds.forEach(function (s) { skySet[s] = 1; });
+            var nbs = stats(seg).nb, moved = true, guard = 0;
+            while (moved && guard++ < 50) {
+              moved = false;
+              seg.skyIds.forEach(function (s) {
+                if (owner[s] < 0 || owner[s] === si || objects[owner[s]].kind !== 'car') return;
+                if (nbs[s].some(function (n) { return owner[n] === si; })) { owner[s] = si; moved = true; }
+              });
+            }
           }
           objects.forEach(function (o) { delete o.box; delete o.mask; delete o.img; });
           if (det && det.error) toast('AI teď objekty nenašla (' + det.error.message + '). Ťukněte na to, co má zůstat nebo zmizet.', 5000);
@@ -370,6 +382,7 @@
         var ptrs = new Map(), g0 = null, tapC = null, holdT = null;
         stage.addEventListener('pointerdown', function (e) {
           if (e.target !== cv && e.target !== stage) return;
+          if (e.pointerType === 'mouse' && e.button !== 0) return;   // pravé tlačítko řeší contextmenu (oddělení části)
           e.preventDefault(); stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
           el.classList.add('is-touch');
           if (ptrs.size === 1) {
@@ -402,6 +415,8 @@
           if (ptrs.size === 0) { tapC = null; setTimeout(function () { if (!ptrs.size) el.classList.remove('is-touch'); }, 250); }
         }
         stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+        // na počítači oddělí část i pravé tlačítko myši (majitel nevěděl o podržení)
+        stage.addEventListener('contextmenu', function (e) { if (e.target !== cv && e.target !== stage) return; e.preventDefault(); clearTimeout(holdT); tapC = null; hold(e); });
 
         /* --- seznam objektů --- */
         function rows() {
@@ -449,7 +464,7 @@
         $('[data-load]').remove();
         fit(); repaint(); rows();
         var tip = window.innerHeight > window.innerWidth && W > H ? ' Tip: otočte telefon na šířku.' : '';
-        if (!(det && det.error)) toast((objects.length ? 'Zelená = zůstane, červená = pryč. Ťuknutím přepnete, seznam je vpravo dole.' : 'Ťukněte na to, co má zůstat.') + tip, 5500);
+        if (!(det && det.error)) toast((objects.length ? 'Zelená = zůstane, červená = pryč. Ťuknutím přepnete celý objekt, podržením (nebo pravým tlačítkem myši) jen tu jednu část. Seznam je vpravo dole.' : 'Ťukněte na to, co má zůstat.') + tip, 5500);
       }).catch(function (e) {
         var ld = $('[data-load]'); if (ld) ld.innerHTML = '<div><b>Fotku se nepodařilo připravit</b><span>' + String((e && e.message) || e).replace(/</g, '&lt;') + '</span></div>';
       });
