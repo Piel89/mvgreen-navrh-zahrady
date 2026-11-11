@@ -112,6 +112,38 @@
     return '<div class="mvg2-dims">' + svg + labels.map(function (l) { return '<span class="mvg2-dims__' + l.cls + '" style="left:' + l.x + 'px;top:' + l.y + 'px">' + esc(l.t) + '</span>'; }).join('') + '</div>';
   }
 
+  /* ---------- strany 8 a 9 ze znalostní báze (2026-11-11, „projekt za 50 000 Kč“) ----------
+   * Výkaz výměr, nákupní seznam, nářadí, půjčovna a harmonogram po víkendech – vše z projektového
+   * modelu a cen/norem v assets/v2/kb.js (ceny jsou odhady, Martin je upraví). */
+  function page8kb(ctx, steps) {
+    var e = ctx.estimate, t = e.totals;
+    var sub = t.weekends <= 1 ? 'Zvládnete to sami za víkend' : 'Odhad: ' + t.hours + ' hodin práce = ' + t.weekends + ' víkendy pro 2 lidi';
+    return '<section class="mvg2-page">' + head(ctx, 8) + title('POSTUP, HARMONOGRAM A NÁŘADÍ', sub)
+      + '<table class="mvg2-table mvg2-table--work"><thead><tr><th>Práce</th><th>Rozsah</th><th>Hodin</th></tr></thead><tbody>'
+      + e.tasks.map(function (k) { return '<tr><td>' + esc(k.name) + '</td><td>' + esc(k.scope) + '</td><td>' + k.hours + ' h</td></tr>'; }).join('')
+      + '<tr class="mvg2-total"><td>Celkem</td><td>2 lidé, víkend ≈ 28 h</td><td>' + t.hours + ' h</td></tr></tbody></table>'
+      + '<div class="mvg2-kbweeks">' + e.weekends.map(function (w) { return '<div><em>' + w.n + '. víkend</em><span>' + w.items.map(esc).join('<br>') + '</span></div>'; }).join('') + '</div>'
+      + '<div class="mvg2-kbtools"><div><strong>Vlastní nářadí</strong><ul>' + e.own.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') + '</ul></div>'
+      + '<div><strong>Z půjčovny</strong>' + (e.rent.length ? '<ul>' + e.rent.map(function (r) { return '<li>' + esc(r.name) + ' – ' + r.qty + ' ' + esc(r.unit) + (r.qty > 1 && r.unit === 'den' ? 'y' : '') + ' (' + kc(r.cost) + ')</li>'; }).join('') + '</ul>' : '<p>Nic – vystačíte s vlastním nářadím.</p>') + '</div></div>'
+      + '<div class="mvg2-steps mvg2-steps--compact">' + steps.map(function (s, i) { return '<div><em>' + (i + 1) + '</em><span><strong>' + s[0] + '</strong>' + s[1] + '</span></div>'; }).join('') + '</div>'
+      + '<div class="mvg2-tip mvg2-tip--warn"><strong>Pozor:</strong> než začnete kopat, přečtěte si stranu 11 – podzemní sítě a vzdálenosti od hranice pozemku.</div></section>';
+  }
+  function page9kb(ctx) {
+    var e = ctx.estimate, t = e.totals, box = '<td><i class="mvg2-box"></i></td>';
+    var fq = function (q) { return String(q).replace('.', ','); };
+    return '<section class="mvg2-page">' + head(ctx, 9) + title('ROZPOČET A NÁKUPNÍ SEZNAM', 'Vytiskněte a vezměte s sebou')
+      + '<table class="mvg2-table mvg2-table--shop"><thead><tr><th></th><th>Materiál</th><th>Množství</th><th>Cena</th></tr></thead><tbody>'
+      + e.materials.map(function (m) { return '<tr>' + box + '<td>' + esc(m.name) + '</td><td>' + fq(m.qty) + ' ' + esc(m.unit) + '</td><td>' + kc(m.cost) + '</td></tr>'; }).join('')
+      + '<tr class="mvg2-total"><td></td><td>Materiál celkem</td><td></td><td>' + kc(t.material) + '</td></tr></tbody></table>'
+      + '<table class="mvg2-table mvg2-table--shop"><thead><tr><th></th><th>Rostliny</th><th>Kusů</th><th>Cena</th></tr></thead><tbody>'
+      + e.plants.map(function (p) { return '<tr>' + box + '<td>' + esc(p.name) + (p.container ? ', ' + esc(p.container) : '') + '</td><td>' + p.count + ' ks</td><td>' + kc(p.cost) + '</td></tr>'; }).join('')
+      + '<tr class="mvg2-total"><td></td><td>Rostliny celkem</td><td></td><td>' + kc(t.plants) + '</td></tr></tbody></table>'
+      + '<div class="mvg2-kbsum">'
+      + [['Materiál', kc(t.material)], ['Rostliny', kc(t.plants)], ['Půjčovna strojů', kc(t.rent)], ['Celkem', kc(t.total)], ['Vaše práce', t.hours + ' h ≈ ' + t.weekends + ' víkend' + (t.weekends === 1 ? '' : t.weekends < 5 ? 'y' : 'ů')]]
+        .map(function (r, i) { return '<div' + (i === 3 ? ' class="is-total"' : '') + '><span>' + r[0] + '</span><strong>' + r[1] + '</strong></div>'; }).join('') + '</div>'
+      + '<p class="mvg2-page__src">Množství je spočítané z výměr návrhu (strana 5) včetně podkladových vrstev a rezervy. Ceny jsou orientační (běžné ceny v ČR, ±20 %), doprava materiálu není započtená. Přesnou cenu realizace vám MV GREEN rád spočítá zdarma.</p></section>';
+  }
+
   function pages(ctx) {
     var f = ctx.facts || {}, plants = ctx.plants, out = [];
     var total = plants.reduce(function (s, p) { return s + p.count * (p.price || 0); }, 0);
@@ -125,7 +157,7 @@
       + (ctx.after ? '<img class="mvg2-cover__photo" src="' + esc(ctx.after) + '" alt="Vizualizace návrhu">' : '')
       + '<div class="mvg2-cover__info">'
       + [['PRO', ctx.name || '—'], ['MÍSTO', ctx.place], ['DATUM', ctx.date], ['STYL', ctx.styleLabel]].map(function (r) { return '<div><span>' + r[0] + '</span><strong>' + esc(r[1]) + '</strong></div>'; }).join('')
-      + '<ol class="mvg2-toc">' + ['Rozbor stanoviště', 'Koncept, před a po', 'Osazovací plán', 'Rozměry a spon', 'Karty rostlin', 'Kvetení a zálivka', 'Návod krok za krokem', 'Rozpočet a nákup', 'Péče a hnojení', 'Dobré vědět, zdroje'].map(function (t, i) { return '<li><span>' + t + '</span><em>' + (i + 2) + '</em></li>'; }).join('') + '</ol></div>'
+      + '<ol class="mvg2-toc">' + ['Rozbor stanoviště', 'Koncept, před a po', 'Osazovací plán', 'Rozměry a spon', 'Karty rostlin', 'Kvetení a zálivka', 'Postup a harmonogram', 'Rozpočet a nákup', 'Péče a hnojení', 'Dobré vědět, zdroje'].map(function (t, i) { return '<li><span>' + t + '</span><em>' + (i + 2) + '</em></li>'; }).join('') + '</ol></div>'
       + '<div class="mvg2-cover__foot"><span>mvgreen.cz</span><span>723 339 650 · mvgreen@seznam.cz</span></div></section>');
 
     // 2 – rozbor stanoviště
@@ -197,7 +229,7 @@
     if (wp.paving) steps.push(['Obrubníky a dlažba', 'Obrubníky do betonového lože, dlažbu kladte ve vazbě, zapískujte a zavibrujte přes gumovou podložku.']);
     steps.push(['Úklid a příprava půdy', 'Odstraňte drn a plevel s kořeny, prorýčujte 20–25 cm a zapracujte 3–5 cm kompostu.'], ['Obruba a výsadba', 'Obrubu 1 cm nad trávník. Jamka 2× širší než bal, bal namočte, po zasazení zalijte.'], ['Mulč nebo štěrk', '5 cm vrstva, kolem rostlin 5 cm volno.'], ['Trávník', 'Urovnejte, uválcujte, vysejte 30–35 g/m² a udržujte vlhko.']);
     var subtitle = wp.weekends <= 1 ? 'Zvládnete to sami za víkend' : wp.weekends <= 4 && !hard ? 'Zvládnete to sami za ' + wp.weekends + ' víkendy' : 'Odhad práce: asi ' + wp.weekends + ' víkendů pro 2 lidi';
-    out.push('<section class="mvg2-page">' + head(ctx, 8) + title('NÁVOD KROK ZA KROKEM', subtitle)
+    out.push(ctx.estimate ? page8kb(ctx, steps) : '<section class="mvg2-page">' + head(ctx, 8) + title('NÁVOD KROK ZA KROKEM', subtitle)
       + '<table class="mvg2-table mvg2-table--work"><thead><tr><th>Práce</th><th>Rozsah</th><th>Odhad</th></tr></thead><tbody>' + wp.rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + ' h</td></tr>'; }).join('')
       + '<tr class="mvg2-total"><td>Celkem</td><td>2 lidé, víkend ≈ 28 h práce</td><td>' + wp.hours + ' h</td></tr></tbody></table>'
       + (hard ? '<div class="mvg2-tip mvg2-tip--warn"><strong>Stavební část</strong> (' + [wp.paving && 'dlažba', wp.wall && 'opěrná zeď', wp.steps && 'schody'].filter(Boolean).join(', ') + ') je nejtěžší a zabere většinu času. Vyplatí se půjčit minibagr a vibrační desku, nebo ji svěřit stavební firmě – záhony a trávník pak zvládnete sami za ' + wp.gardenWeekends + ' ' + (wp.gardenWeekends === 1 ? 'víkend' : 'víkendy') + '.</div>' : '')
@@ -206,7 +238,7 @@
       + '<div class="mvg2-tip mvg2-tip--warn"><strong>Pozor:</strong> než začnete kopat, přečtěte si stranu 11 – podzemní sítě a vzdálenosti od hranice pozemku.</div></section>');
 
     // 9 – rozpočet, nákup, náhrady
-    out.push('<section class="mvg2-page">' + head(ctx, 9) + title('ROZPOČET A NÁKUPNÍ SEZNAM', 'Vytiskněte a vezměte do zahradnictví')
+    out.push(ctx.estimate ? page9kb(ctx) : '<section class="mvg2-page">' + head(ctx, 9) + title('ROZPOČET A NÁKUPNÍ SEZNAM', 'Vytiskněte a vezměte do zahradnictví')
       + '<table class="mvg2-table mvg2-table--shop"><tbody>' + plants.map(function (p) { return '<tr><td><i class="mvg2-box"></i></td><td>' + esc(p.name) + (p.container ? ', ' + esc(p.container) : '') + '</td><td>' + p.count + ' ks</td><td>' + (p.price ? kc(p.count * p.price) : '—') + '</td></tr>'; }).join('')
       + '<tr class="mvg2-total"><td></td><td>Rostliny celkem</td><td>' + nPlants + ' ks</td><td>' + kc(total) + '</td></tr></tbody></table>'
       + '<p class="mvg2-page__src">Orientační ceny ±20 % (AI odhad běžných cen v českých zahradnictvích). Materiál (mulč, obruba, geotextilie) se dopočítá podle výměry ze strany 5.</p>'

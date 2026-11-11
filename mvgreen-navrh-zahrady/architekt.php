@@ -442,7 +442,8 @@ add_shortcode('mvgreen_ai_architekt', function ($atts) {
     wp_enqueue_script('mvgreen-mark-v2', $base . 'assets/v2/mark.js', ['mvgreen-paint-mask', 'mvgreen-ai-safety'], $v, true);
     wp_enqueue_script('mvgreen-sam-v2', $base . 'assets/v2/sam.js', [], $v, true);
     wp_enqueue_script('mvgreen-sketch', $base . 'assets/v2/sketch.js', ['mvgreen-mark-v2'], $v, true);
-    wp_enqueue_script('mvgreen-architekt-pdf', $base . 'assets/v2/architekt-pdf.js', ['mvgreen-plan-render'], $v, true);
+    wp_enqueue_script('mvgreen-kb-v2', $base . 'assets/v2/kb.js', [], $v, true);
+    wp_enqueue_script('mvgreen-architekt-pdf', $base . 'assets/v2/architekt-pdf.js', ['mvgreen-plan-render', 'mvgreen-kb-v2'], $v, true);
     wp_enqueue_script('mvgreen-architekt', $base . 'assets/v2/architekt.js', ['mvgreen-plan-render', 'mvgreen-architekt-pdf', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-plants-v2', 'mvgreen-sketch', 'mvgreen-mark-v2', 'mvgreen-sam-v2'], $v, true);
     $logo_id = (int) get_theme_mod('custom_logo', 0);
     if (!$logo_id) $logo_id = (int) get_option('site_logo', 0);

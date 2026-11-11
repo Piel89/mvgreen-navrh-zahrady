@@ -628,12 +628,26 @@
         bloom_from: spec.bloom !== undefined ? (spec.bloom || [])[0] : f.bloom_from, bloom_to: spec.bloom !== undefined ? (spec.bloom || [])[1] : f.bloom_to, sun: f.sun, water: f.water, pruning: f.pruning, toxic: f.pet_toxic, price: f.price_czk, container: f.container, alternative: f.alternative, alternative_reason: f.alternative_reason };
     });
     var lawnArea = w * d - project.beds.reduce(function (s, b) { return s + area(b.poly); }, 0) - project.areas.filter(function (a) { return a.type === 'paving' || a.type === 'building'; }).reduce(function (s, a) { return s + area(a.poly); }, 0);
+    // Projektový model (2026-11-11, bod 1 „projekt za 50 000 Kč“): JEDEN zdroj pravdy pro výměry,
+    // rozpočet, nákupní seznam, nářadí a harmonogram v PDF (dřív si každá strana počítala zvlášť).
+    var perim = function (poly) { var s2 = 0; for (var i = 0; i < poly.length; i++) { var a2 = poly[i], b2 = poly[(i + 1) % poly.length]; s2 += Math.hypot(b2[0] - a2[0], b2[1] - a2[1]); } return s2; };
+    var lineLen = function (l) { var s2 = 0; for (var i = 1; i < l.length; i++) s2 += Math.hypot(l[i][0] - l[i - 1][0], l[i][1] - l[i - 1][1]); return s2; };
+    var model = {
+      beds: project.beds.filter(function (b) { return b.surface !== 'gravel'; }).map(function (b) { return { area: area(b.poly), perimeter: perim(b.poly) }; }),
+      gravel: project.beds.filter(function (b) { return b.surface === 'gravel'; }).map(function (b) { return { area: area(b.poly), perimeter: perim(b.poly) }; }),
+      paving: project.areas.filter(function (a2) { return a2.type === 'paving' && a2.isNew; }).map(function (a2) { return { area: area(a2.poly), perimeter: perim(a2.poly) }; }),
+      paths: project.paths.map(function (p2) { var L = lineLen(p2.line); return { length: L, area: L * (p2.width || 1) }; }),
+      walls: project.walls.filter(function (w2) { return w2.isNew; }).map(function (w2) { return { length: lineLen(w2.line), height: 0.6 }; }),
+      steps: project.structures.filter(function (s3) { return s3.steps && s3.isNew; }).map(function () { return { count: 3 }; }),
+      lawn: Math.max(0, lawnArea), lawnExtra: parseFloat(st.extraLawn) || 0
+    };
+    var estimate = window.MVGreenKB ? window.MVGreenKB.estimate(model, plants.map(function (p2) { var spec = ctx.plants.filter(function (q) { return q.name === p2.name; })[0] || {}; return { name: p2.name, count: p2.count, price: p2.price, kind: spec.kind, container: p2.container }; })) : null;
     var usersL = [st.users.kids && 'děti', st.users.dog && 'pes', st.users.cat && 'kočka'].filter(Boolean);
     var fencesL = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     var pctx = { logo: cfg.logo, place: project.place || st.place, date: project.date, number: 'MVG-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-4), name: st.name,
       styleLabel: STYLES[st.style] + ', údržba ' + CARES[st.care].toLowerCase(), before: ctx.before, after: ctx.after, marked: st.maskPreview, sketch: hasSketch() ? st.sketchPreview : '', facts: ctx.facts, plants: plants, climate: st.climate,
       sizeLabel: '≈ ' + w.toFixed(0) + ' × ' + d.toFixed(0) + ' m', sun: st.sun, orient: st.orient, house: st.house, fences: fencesL, soil: st.soil, soilLabel: SOILS[st.soil],
-      usersLabel: usersL.length ? usersL.join(', ') : 'bez dětí a zvířat', water: st.water, sheetHtml: sheet.html, photoPlanHtml: pplan ? pplan.html : '', bedRows: pplan ? pplan.bedRows : null, project: project, lawnArea: Math.max(0, lawnArea) + (parseFloat(st.extraLawn) || 0), extraLawn: parseFloat(st.extraLawn) || 0, planNotes: plan.notes };
+      usersLabel: usersL.length ? usersL.join(', ') : 'bez dětí a zvířat', water: st.water, sheetHtml: sheet.html, photoPlanHtml: pplan ? pplan.html : '', bedRows: pplan ? pplan.bedRows : null, project: project, lawnArea: Math.max(0, lawnArea) + (parseFloat(st.extraLawn) || 0), model: model, estimate: estimate, extraLawn: parseFloat(st.extraLawn) || 0, planNotes: plan.notes };
     st.result = { pdfHtml: window.MVGreenPdfV2.pages(pctx), before: ctx.before, after: ctx.after, plants: plants, facts: ctx.facts, plan: plan };
   }
 

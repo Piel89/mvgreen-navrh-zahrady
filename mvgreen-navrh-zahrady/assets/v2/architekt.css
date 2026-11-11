@@ -236,3 +236,18 @@ html.mvg2-sk-open,html.mvg2-sk-open body{overflow:hidden}
 .mvg2-pp__legend li i{color:#5c6e62}
 .mvg2-pp__legend li em{font-style:normal;color:#2E5E2C;font-weight:600}
 .mvg2-pp__legend p{margin:4px 0 0;color:#5c6e62;font-size:11px;line-height:1.45}
+/* strany 8 a 9 ze znalostní báze (2026-11-11) */
+.mvg2-kbweeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.mvg2-kbweeks>div{background:#EEF3E7;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;font-size:11px;line-height:1.35}
+.mvg2-kbweeks em{font-style:normal;font-weight:800;color:#2E5E2C;font-size:12px}
+.mvg2-kbtools{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:11.5px}
+.mvg2-kbtools ul{margin:4px 0 0;padding-left:16px}
+.mvg2-kbtools p{margin:4px 0 0}
+.mvg2-steps--compact{font-size:10.5px;line-height:1.35}
+.mvg2-steps--compact>div{padding:5px 0}
+.mvg2-kbsum{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.mvg2-kbsum>div{background:#EEF3E7;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:2px}
+.mvg2-kbsum span{font-size:10.5px;color:#5c6e62}
+.mvg2-kbsum strong{font-size:14px}
+.mvg2-kbsum .is-total{background:#2E5E2C;color:#fff}
+.mvg2-kbsum .is-total span{color:#d6e5d0}
