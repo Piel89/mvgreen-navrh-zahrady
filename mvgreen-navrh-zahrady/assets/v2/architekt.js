@@ -425,7 +425,7 @@
     if (!hasSketch()) return null;
     var W = st.original.width, H = st.original.height, cam = 1.6;
     var vh = (st.horizon != null ? st.horizon : 0.42) * H, f = (W / 2) / Math.tan(50 * Math.PI / 180);
-    var P = function (p) { var v = Math.max(p[1] * H, vh + 0.03 * H), Z = cam * f / (v - vh); return [(p[0] * W - W / 2) * Z / f, Z]; };
+    var P = function (p) { var v = Math.max(p[1] * H, vh + 0.07 * H), Z = cam * f / (v - vh); return [(p[0] * W - W / 2) * Z / f, Z]; };
     var els = [], items = st.sketch.filter(window.MVGreenSketch.done);
     var closedLine = function (pts) { var a = pts[0], b = pts[pts.length - 1]; return pts.length >= 6 && Math.hypot(a[0] - b[0], a[1] - b[1]) < 0.05; };
     items.forEach(function (it) {
@@ -462,7 +462,8 @@
     var xs = [], ys = [];
     els.forEach(function (e) { e.points.forEach(function (q) { xs.push(q[0]); ys.push(q[1]); }); });
     var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
-    var w = parseFloat(st.width) || 0, d = parseFloat(st.depth) || 0;
+    // rozměry od zákazníka, jinak odhad AI z fotek (u Martinovy fotky bez rozměrů vyšlo 87 × 54 m)
+    var w = parseFloat(st.width) || (aiPlan && aiPlan.width_m) || 0, d = parseFloat(st.depth) || (aiPlan && aiPlan.depth_m) || 0;
     var sx = w ? w / Math.max(1, x1 - x0) : 1, sy = d ? d / Math.max(1, y1 - y0) : 1;
     if (!w && d) sx = sy; if (!d && w) sy = sx;
     els.forEach(function (e) { e.points = e.points.map(function (q) { return [Math.round((q[0] - x0) * sx * 100) / 100, Math.round((q[1] - y0) * sy * 100) / 100]; }); if (e.width_m && (e.type === 'path' || e.type === 'wall' || e.type === 'fence' || e.type === 'hedge')) e.width_m = e.width_m; });
