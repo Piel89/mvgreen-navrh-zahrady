@@ -10,7 +10,8 @@
  * MVGreenKB.estimate(model, plants) → { materials, plants, tools, own, tasks, weekends, totals }
  *   model = projektový model z architekt.js (jeden zdroj pravdy pro celé PDF):
  *     { beds:[{area, perimeter}], gravel:[{area, perimeter}], paving:[{area, perimeter}],
- *       paths:[{area, length}], walls:[{length, height}], steps:[{count}], lawn: m², lawnExtra: m² }
+ *       paths:[{area, length}], walls:[{length, height}], steps:[{count}], lawn: m², lawnExtra: m²,
+ *       finish: { paving: 'zamkova'|'vf'|'kamen', mulch: 'kura'|'sterk', edge: 'plast'|'ocel'|'beton' } }
  *   plants = [{name, count, price}] (price z AI, jinak odhad podle druhu níže)
  */
 (function () {
@@ -19,6 +20,10 @@
   // ---------- materiál (cena za jednotku, Kč s DPH) ----------
   var M = {
     dlazba:     { name: 'Zámková dlažba 6 cm', unit: 'm²', price: 340 },
+    // 0.6.278: materiál dlažby, mulče a obruby podle stylu / zadání architekta (dřív vždy zámková a kůra)
+    dlazbavf:   { name: 'Velkoformátová betonová dlažba 60 × 30 cm', unit: 'm²', price: 690 },
+    dlazbakamen:{ name: 'Kamenná dlažba – přírodní kámen (rula, pískovec)', unit: 'm²', price: 1150 },
+    obrubaocel: { name: 'Ocelová obruba záhonu (pozink / corten)', unit: 'm', price: 380 },
     sterkodrt:  { name: 'Štěrkodrť 0/32 (podklad)', unit: 't', price: 480 },
     drt48:      { name: 'Drť 4/8 (lože pod dlažbu)', unit: 't', price: 620 },
     obrubnik:   { name: 'Zahradní obrubník betonový 100 × 25 × 5 cm', unit: 'ks', price: 75 },
@@ -69,15 +74,18 @@
     var wallL = sum(m.walls, function (w) { return w.length; }), wallA = sum(m.walls, function (w) { return w.length * (w.height || 0.6); });
     var steps = sum(m.steps, function (s) { return s.count || 3; });
     var lawn = (m.lawn || 0) + (m.lawnExtra || 0);
+    var fin = m.finish || {}, pavId = { vf: 'dlazbavf', kamen: 'dlazbakamen' }[fin.paving] || 'dlazba';
+    var pavName = { dlazba: 'Zámková dlažba', dlazbavf: 'Velkoformátová dlažba', dlazbakamen: 'Kamenná dlažba' }[pavId];
+    var edgeId = { ocel: 'obrubaocel', beton: 'obrubnik' }[fin.edge] || 'obruba';
 
     // zámková dlažba: 20 cm štěrkodrť (1,9 t/m³), 4 cm drť 4/8 (1,6 t/m³), geotextilie, obrubníky po obvodu v betonu
-    if (pav > 0.3) { add('dlazba', pav * 1.05); add('sterkodrt', pav * 0.2 * 1.9); add('drt48', pav * 0.04 * 1.6); add('geotex', pav * 1.1); add('obrubnik', Math.ceil(pavPer)); concrete += pavPer * 0.01; }
+    if (pav > 0.3) { add(pavId, pav * 1.05); add('sterkodrt', pav * 0.2 * 1.9); add('drt48', pav * 0.04 * 1.6); add('geotex', pav * 1.1); add('obrubnik', Math.ceil(pavPer)); concrete += pavPer * 0.01; }
     // štěrková cesta: 15 cm štěrkodrť, 5 cm štěrk 8/16, geotextilie, obruba po obou stranách
     if (path > 0.3) { add('sterkodrt', path * 0.15 * 1.9); add('sterkcesta', path * 0.05 * 1.6); add('geotex', path * 1.1); add('obrubnik', Math.ceil(pathLen * 2)); concrete += pathLen * 2 * 0.01; }
-    // záhony: 4 cm kompost, textilie, 5 cm kůra, obruba
-    if (bed > 0.3) { add('kompost', bed * 0.04); add('textilie', bed * 1.1); add('kura', bed * 0.05); add('obruba', Math.ceil(bedPer)); }
+    // záhony: 4 cm kompost, textilie, 5 cm kůra (moderní / nízká údržba: 5 cm kačírku), obruba podle stylu
+    if (bed > 0.3) { add('kompost', bed * 0.04); add('textilie', bed * 1.1); if (fin.mulch === 'sterk') add('kacirek', bed * 0.05 * 1.6); else add('kura', bed * 0.05); add(edgeId, Math.ceil(bedPer)); }
     // kačírek: textilie, 5 cm kačírku (1,6 t/m³), obruba
-    if (grav > 0.3) { add('textilie', grav * 1.1); add('kacirek', grav * 0.05 * 1.6); add('obruba', Math.ceil(gravPer)); }
+    if (grav > 0.3) { add('textilie', grav * 1.1); add('kacirek', grav * 0.05 * 1.6); add(edgeId, Math.ceil(gravPer)); }
     // opěrná zeď: pohledová plocha, základ 40 × 30 cm z betonu, drenáž a štěrk za zdí
     if (wallL > 0.3) { add('tvarnice', wallA); concrete += wallL * 0.4 * 0.3; add('drenaz', Math.ceil(wallL)); add('sterkodrt', wallL * 0.3 * 0.6 * 1.9); }
     if (steps) { add('stupen', steps); concrete += steps * 0.05; }
@@ -104,13 +112,13 @@
     // práce po krocích (pořadí = harmonogram)
     var tasks = [], task = function (name, scope, h, group) { if (h > 0.2) tasks.push({ name: name, scope: scope, hours: Math.max(1, Math.round(h)), group: group }); };
     task('Vytyčení podle plánu', 'celá úprava', H.vytyceni + (bed + pav + path + grav) * 0.02, 'Příprava');
-    if (pav > 0.3) task('Zámková dlažba vč. výkopu, podkladu a obrubníků', r1(pav) + ' m²', pav * H.dlazba, 'Stavební část');
+    if (pav > 0.3) task(pavName + ' vč. výkopu, podkladu a obrubníků', r1(pav) + ' m²', pav * H.dlazba * (pavId === 'dlazbakamen' ? 1.5 : pavId === 'dlazbavf' ? 1.2 : 1), 'Stavební část');
     if (path > 0.3) task('Štěrková cesta vč. výkopu a obruby', r1(path) + ' m²', path * H.cesta, 'Stavební část');
     if (wallL > 0.3) task('Opěrná zeď vč. základu a drenáže', r1(wallL) + ' m', wallL * H.zed, 'Stavební část');
     if (steps) task('Schody', steps + ' stupňů', H.schody * Math.max(1, steps / 3), 'Stavební část');
     if (bed > 0.3) task('Záhony – příprava půdy, obruba, textilie', r1(bed) + ' m²', bed * H.zahon, 'Záhony');
     var nPl = sum(plants, function (p) { return p.count; });
-    if (nPl) task('Výsadba rostlin a mulč', nPl + ' ks', nPl * H.vysadba, 'Záhony');
+    if (nPl) task('Výsadba rostlin a ' + (fin.mulch === 'sterk' ? 'kačírek' : 'mulč'), nPl + ' ks', nPl * H.vysadba + (fin.mulch === 'sterk' ? bed * H.kacirek : 0), 'Záhony');
     if (grav > 0.3) task('Kačírek', r1(grav) + ' m²', grav * H.kacirek, 'Záhony');
     if (lawn > 1) task('Trávník – urovnání, výsev, válcování', Math.round(lawn) + ' m²', lawn * H.travnik, 'Trávník');
 

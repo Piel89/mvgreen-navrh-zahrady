@@ -25,7 +25,7 @@
     orient: 'unknown', house: 'none', fence: { left: false, right: false, back: false },
     mode: 'ai', sketch: [], sketchPreview: '',
     style: 'prirodni', wish: '', users: { kids: false, dog: false, cat: false }, care: 'mid', name: '',
-    result: null, busy: false, log: []
+    result: null, busy: false, log: [], scale: null
   };
   var STYLES = { prirodni: 'Přírodní', moderni: 'Moderní', nizka: 'Nízká údržba', rodina: 'Pro rodinu' };
   var SOILS = { unknown: 'Nevím', normal: 'Hlinitá', sand: 'Písčitá', clay: 'Jílovitá' };
@@ -82,6 +82,9 @@
         + '<h3>Kde je na fotce dům?</h3>' + chips('house', HOUSES, st.house)
         + '<h3>Kde je plot nebo hranice pozemku?</h3>' + multi('fence', { left: 'Vlevo', right: 'Vpravo', back: 'Vzadu' }, st.fence)
         + '<h3>Přibližné rozměry zahrady na fotce (m)</h3><div class="mvg2-row"><input type="number" placeholder="šířka zleva doprava" value="' + esc(st.width) + '" data-w><input type="number" placeholder="hloubka od vás dozadu" value="' + esc(st.depth) + '" data-d></div><p class="mvg2-sub">Stačí odhad krokem (1 krok ≈ 0,7 m). Když nevíte, nechte prázdné – odhadneme z fotky.</p>'
+        // 0.6.278 (bod C): AI odhadla záhon ~15 m² na 5,4 m² → rozpočet i počet rostlin byly moc nízké.
+        + '<h3>Měřítko (doporučujeme)</h3><p class="mvg2-sub">Ťukněte na fotce na dva body, jejichž vzdálenost znáte – třeba šířku dlažby, délku plotového dílu nebo šířku studny – a napište ji. Výměry záhonů, počet rostlin i rozpočet pak budou přesnější.</p>'
+        + '<button type="button" class="mvg2-btn mvg2-btn--ghost" data-measure>' + (st.scale ? 'Změřeno: ' + String(st.scale.m).replace('.', ',') + ' m – změnit' : 'Změřit na fotce') + '</button>'
         // 2026-11-11, majitel: když je zahrada větší než fotka a zbytek má být jen trávník, musí se započítat do rozpočtu
         + '<h3>Další trávník mimo fotku (m²)</h3><input type="number" min="0" placeholder="např. 300 – část zahrady, která na fotce není" value="' + esc(st.extraLawn) + '" data-xl><p class="mvg2-sub">Když máte zahradu větší, než je na fotce, a zbytek má být jen trávník, napište jeho přibližnou plochu – započítáme ho do rozpočtu i do péče o trávník.</p>'
         + '<h3>Kolik slunce tam svítí?</h3>' + chips('sun', { 'Slunce': 'Slunce', 'Polostín': 'Polostín', 'Stín': 'Stín' }, st.sun)
@@ -131,6 +134,7 @@
       window.MVGreenSketch.open(st.original, st.editMask, st.sketch, { cacheKey: st.cacheKey }).then(function (r) { if (r) { st.sketch = r.strokes; st.sketchPreview = r.strokes.length ? r.preview : ''; } render(); });
     };
     var geo = $('[data-geo]'); if (geo) geo.onclick = function () { save(); lookupPlace(); };
+    var ms = $('[data-measure]'); if (ms) ms.onclick = function () { save(); measure().then(function (r) { if (r) st.scale = r; render(); }); };
     var run = $('[data-run]'); if (run) run.onclick = function () { save(); runAll(); };
     var pr = $('[data-print]'); if (pr) pr.onclick = function () { document.body.classList.add('mvg2-printing'); window.print(); setTimeout(function () { document.body.classList.remove('mvg2-printing'); }, 500); };
     var slide = function (v) { $('[data-after]').style.clipPath = 'inset(0 ' + (100 - v) + '% 0 0)'; $('[data-divider]').style.left = v + '%'; };
@@ -146,6 +150,68 @@
     if (v('[data-name]') !== null) st.name = v('[data-name]').slice(0, 80);
   }
 
+  /* Kalibrace měřítka (0.6.278, bod C): zákazník ťukne na dva body se známou vzdáleností a zadá metry.
+   * Výsledek {a:[x,y], b:[x,y], m} (x,y 0–1 na fotce) jde jako údaj do zadání architekta a do půdorysu
+   * a čára s popiskem se vykreslí do fotky PŘED pro půdorys (plan_v2), aby AI věděla, co měřítko je. */
+  function measure() {
+    return new Promise(function (done) {
+      var img = st.original, pts = st.scale ? [st.scale.a.slice(), st.scale.b.slice()] : [];
+      var el = document.createElement('div');
+      el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:#111;display:flex;flex-direction:column;font:15px system-ui,sans-serif;color:#fff';
+      el.innerHTML = '<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;touch-action:none"><canvas style="max-width:100%;max-height:100%"></canvas></div>'
+        + '<div style="padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#1d2420;display:grid;gap:8px">'
+        + '<div data-msg></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+        + '<label style="display:flex;gap:6px;align-items:center">Vzdálenost <input type="text" inputmode="decimal" placeholder="např. 1,2" style="width:90px;font:16px system-ui;padding:8px;border-radius:8px;border:0" value="' + (st.scale ? String(st.scale.m).replace('.', ',') : '') + '"> m</label>'
+        + '<span style="flex:1"></span><button type="button" data-x style="padding:10px 14px;border-radius:99px;border:1px solid #fff;background:none;color:#fff;font:600 15px system-ui">Zrušit</button>'
+        + '<button type="button" data-ok style="padding:10px 16px;border-radius:99px;border:0;background:#8DC58A;color:#10200f;font:700 15px system-ui">Uložit</button></div></div>';
+      document.body.appendChild(el);
+      var cv = el.querySelector('canvas'), g = cv.getContext('2d'), inp = el.querySelector('input'), msg = el.querySelector('[data-msg]'), ok = el.querySelector('[data-ok]');
+      var k = Math.min(1, 1600 / Math.max(img.width, img.height)); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+      var val = function () { var v = parseFloat(String(inp.value).replace(',', '.')); return v > 0 && v < 100 ? v : 0; };
+      var draw = function () {
+        g.drawImage(img, 0, 0, cv.width, cv.height);
+        var r = Math.max(6, cv.width / 140);
+        g.lineWidth = Math.max(3, cv.width / 400); g.strokeStyle = '#FFE14D';
+        if (pts.length === 2) { g.beginPath(); g.moveTo(pts[0][0] * cv.width, pts[0][1] * cv.height); g.lineTo(pts[1][0] * cv.width, pts[1][1] * cv.height); g.stroke(); }
+        pts.forEach(function (p) { g.beginPath(); g.arc(p[0] * cv.width, p[1] * cv.height, r, 0, Math.PI * 2); g.fillStyle = '#FFE14D'; g.fill(); g.strokeStyle = '#000'; g.lineWidth = 2; g.stroke(); });
+        msg.textContent = pts.length === 0 ? 'Ťukněte na první bod (např. levý kraj dlažby).' : pts.length === 1 ? 'Ťukněte na druhý bod.' : 'Hotovo – napište skutečnou vzdálenost mezi body. Bod posunete dalším ťuknutím vedle něj.';
+        ok.disabled = !(pts.length === 2 && val()); ok.style.opacity = ok.disabled ? 0.45 : 1;
+      };
+      cv.addEventListener('pointerup', function (e) {
+        var b = cv.getBoundingClientRect(), p = [(e.clientX - b.left) / b.width, (e.clientY - b.top) / b.height];
+        if (p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1) return;
+        if (pts.length < 2) pts.push(p);
+        else { var d0 = Math.hypot(pts[0][0] - p[0], pts[0][1] - p[1]), d1 = Math.hypot(pts[1][0] - p[0], pts[1][1] - p[1]); pts[d0 < d1 ? 0 : 1] = p; }
+        draw();
+      });
+      inp.oninput = draw;
+      var close = function (r) { el.remove(); done(r); };
+      el.querySelector('[data-x]').onclick = function () { close(null); };
+      ok.onclick = function () { if (!ok.disabled) close({ a: pts[0], b: pts[1], m: val() }); };
+      draw();
+    });
+  }
+  function scaleText() {
+    var s = st.scale; if (!s) return '';
+    var pc = function (p) { return Math.round(p[0] * 100) + ' % zleva, ' + Math.round(p[1] * 100) + ' % shora'; };
+    return 'MĚŘÍTKO OD ZÁKAZNÍKA (změřeno, nejspolehlivější údaj – podle něj přepočítej VŠECHNY rozměry a plochy, i když odhad z fotky vychází jinak): vzdálenost mezi body (' + pc(s.a) + ') a (' + pc(s.b) + ') na fotce PŘED je ve skutečnosti ' + String(s.m).replace('.', ',') + ' m (na fotce PŘED pro půdorys je to žlutá čára). ';
+  }
+  // Fotka PŘED pro půdorys se žlutou měřicí čárou a popiskem.
+  function withScaleLine(src, maxSide) {
+    var s = st.scale, k = Math.min(1, maxSide / Math.max(src.width, src.height)), c = document.createElement('canvas');
+    c.width = Math.round(src.width * k); c.height = Math.round(src.height * k);
+    var g = c.getContext('2d'); g.drawImage(src, 0, 0, c.width, c.height);
+    if (s) {
+      var ax = s.a[0] * c.width, ay = s.a[1] * c.height, bx = s.b[0] * c.width, by = s.b[1] * c.height, lw = Math.max(3, c.width / 300);
+      g.strokeStyle = '#FFE14D'; g.lineWidth = lw; g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+      [[ax, ay], [bx, by]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], lw * 2, 0, Math.PI * 2); g.fillStyle = '#FFE14D'; g.fill(); });
+      var t = String(s.m).replace('.', ',') + ' m', fs = Math.max(18, c.width / 40);
+      g.font = '700 ' + fs + 'px system-ui,sans-serif'; var tw = g.measureText(t).width, tx = (ax + bx) / 2 - tw / 2, ty = Math.min(ay, by) - fs * 0.6;
+      g.fillStyle = 'rgba(0,0,0,.7)'; g.fillRect(tx - 6, ty - fs, tw + 12, fs * 1.3); g.fillStyle = '#FFE14D'; g.fillText(t, tx, ty);
+    }
+    return c.toDataURL('image/jpeg', 0.85);
+  }
+
   /* ---------- krok 1: fotka a označení ---------- */
   function loadPhoto(file) {
     var url = URL.createObjectURL(file);
@@ -153,7 +219,7 @@
       var s = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url; st.markState = null; st.removeNames = []; st.landmarks = []; st.terrain = ''; st.paintCategory = null;
+      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url; st.markState = null; st.removeNames = []; st.landmarks = []; st.terrain = ''; st.paintCategory = null; st.scale = null;
       render();
     }).catch(function (e) { alert(e.message); });
   }
@@ -278,9 +344,36 @@
   // 1. test), rozpínavé, a jedovaté tam, kde jsou děti nebo pes.
   // Martin: „dělat návrhy z 33 druhů je strašně málo“ → ~150 druhů; výběr váží styl, půdu a údržbu,
   // hlídá pestrost barev a druhů a u větší péče přidá víc druhů.
+  // Designový jazyk stylů (2026-11-11, test „přírodní vs. moderní“ na fotce se studnou): moderní vypadal
+  // skoro stejně jako přírodní – styl byl v zadání jen jedno slovo a lišila se jen dlažba cesty. Každý
+  // styl má teď pravidla pro tvary, materiály, mulč, obruby, barvy a rostliny; dostane je architekt
+  // (zadání), kreslení, kontrola i rozpočet (path/mulch/edge → kb.js).
+  var STYLE_SPEC = {
+    prirodni: { path: 'kamen', mulch: 'kura', edge: 'ocel', solo: /Amelanchier|Malus|Acer|Cornus|Sorbus|Cercis/,
+      rules: 'PŘÍRODNÍ STYL: volné, měkce zaoblené tvary záhonů a cest; přírodní materiály – cesta z plochých nepravidelných kamenů nebo štěrku, kamenné zídky; záhony mulčované kůrou; bohatě vrstvené výsadby trvalek a trav v loukovém duchu, pestré, ale sladěné barvy; zahrada volně splývá s okolím.',
+      check: 'Působí návrh přírodně: měkké tvary, přírodní kámen, volné vrstvené výsadby?' },
+    moderni: { path: 'vf', mulch: 'sterk', edge: 'ocel', palette: true, solo: /Amelanchier|Carpinus|Acer|Fastigiata|Red Sentinel|Pyrus|Gleditsia|Columnar|Ballerina/,
+      rules: 'MODERNÍ STYL: čisté rovné linie a pravé úhly; záhony obdélníkové nebo z pravidelných geometrických tvarů s tenkou ocelovou obrubou; cesty a dlažba z velkoformátových světle šedých betonových dlaždic v pravidelném rastru (např. 60 × 30 cm); záhony mulčované šedým štěrkem nebo kačírkem, NE kůrou; výsadba v opakovaných pravidelných blocích a řadách – okrasné trávy, stálezelené tvarované koule a nízké kvádry; omezená paleta barev (bílá, fialová, modrá, stříbrná a zelená), žádná pestrá směs barev; trávník s ostrými rovnými hranami; minimalistický, čistý vzhled.',
+      check: 'Působí návrh moderně: rovné linie a geometrické záhony, velkoformátová dlažba, štěrk místo kůry, pravidelné bloky trav a omezená paleta barev?' },
+    nizka: { path: 'zamkova', mulch: 'sterk', edge: 'beton', solo: /Amelanchier|Carpinus|Acer|Malus/,
+      rules: 'STYL NÍZKÁ ÚDRŽBA: jednoduché velké plochy; záhony s půdopokryvnými a stálezelenými keři a okrasnými travami, málo druhů ve velkých skupinách; mulč z kačírku na textilii; pevné betonové obruby; žádné náročné trvalky.',
+      check: 'Je návrh jednoduchý na údržbu: velké skupiny keřů a trav, kamenný mulč, pevné obruby?' },
+    rodina: { path: 'zamkova', mulch: 'kura', edge: 'plast', solo: /Amelanchier|Malus|Acer|Tilia|Carpinus/,
+      rules: 'STYL PRO RODINU: co největší souvislý trávník na hraní; záhony jen po okrajích; odolné, netrnité a nejedovaté rostliny; široké bezpečné cesty bez ostrých hran; zaoblené tvary; mulč kůrou.',
+      check: 'Má návrh velký souvislý trávník na hraní a záhony jen po okrajích?' }
+  };
+  var styleSpec = function () { return STYLE_SPEC[st.style] || STYLE_SPEC.prirodni; };
+  // Barva květu do palety moderního stylu: bílá, modrá, fialová, stříbrná (z hex barvy v katalogu).
+  function inPalette(hex) {
+    var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || ''); if (!m) return true;
+    var r = parseInt(m[1], 16) / 255, g = parseInt(m[2], 16) / 255, b = parseInt(m[3], 16) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, s = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1));
+    if (s < 0.22 || l > 0.85) return true;   // bílá, stříbrná, šedá
+    var h = mx === r ? 60 * (((g - b) / (mx - mn)) % 6) : mx === g ? 60 * ((b - r) / (mx - mn) + 2) : 60 * ((r - g) / (mx - mn) + 4); if (h < 0) h += 360;
+    return h >= 190 && h <= 300;   // modrá až fialová
+  }
   var STYLE_W = {
     prirodni: { perennial: 3, grass: 3, lowgrass: 2, shrub: 1.5, conifer: 0.3 },
-    moderni: { perennial: 1, grass: 3, lowgrass: 3, shrub: 2, conifer: 2 },
+    moderni: { perennial: 0.8, grass: 5, lowgrass: 3, shrub: 2, conifer: 2.5 },
     nizka: { perennial: 1, grass: 2.5, lowgrass: 2.5, shrub: 3, conifer: 2.5 },
     rodina: { perennial: 2.5, grass: 1.5, lowgrass: 1.5, shrub: 2.5, conifer: 1 }
   };
@@ -295,7 +388,10 @@
     var fits = function (p) { return (wantHerbs || !HERB.test(p.latin)) && p.sun.indexOf(st.sun) >= 0 && okWater(p) && !p.acid && !p.spreads && !((p.thorny || p.toxic) && (st.users.kids || st.users.dog)); };
     var wts = STYLE_W[st.style] || STYLE_W.prirodni;
     // vážené náhodné pořadí: lepší shoda se stylem = dřív na řadě, ale pokaždé jiný návrh
-    var pool = all.filter(fits).map(function (p) { return { p: p, k: Math.pow(rnd(), 1 / (wts[p.kind] || 1)) }; }).sort(function (a, b) { return b.k - a.k; }).map(function (x) { return x.p; });
+    var spec = styleSpec();
+    // moderní styl: květy mimo paletu (růžová, žlutá, oranžová, červená) jdou silně dozadu
+    var palW = function (p) { return spec.palette && p.flower && !inPalette(p.flower) ? 0.12 : 1; };
+    var pool = all.filter(fits).map(function (p) { return { p: p, k: Math.pow(rnd(), 1 / ((wts[p.kind] || 1) * palW(p))) }; }).sort(function (a, b) { return b.k - a.k; }).map(function (x) { return x.p; });
     var chosen = [], usedColors = [];
     var hue = function (c) { return String(c || '').slice(1, 3); };
     var take = function (role, n, pref) {
@@ -311,7 +407,7 @@
     };
     // profesionální záhon: 7–9 druhů (dřív 5–6 a AI z nich v půdorysu použila jen 4)
     var n = { low: [2, 2, 2], mid: [3, 3, 2], high: [3, 4, 3] }[st.care] || [3, 3, 2];
-    take('back', 1, function (p) { return p.kind === 'shrub' || p.kind === 'conifer'; });
+    take('back', 1, st.style === 'moderni' || st.style === 'nizka' ? function (p) { return (p.kind === 'shrub' || p.kind === 'conifer') && p.evergreen; } : function (p) { return p.kind === 'shrub' || p.kind === 'conifer'; });
     take('back', n[0] - 1, function (p) { return p.kind === 'grass' || p.kind === 'perennial'; });
     take('mid', n[1], st.care === 'low' ? function (p) { return p.kind !== 'perennial'; } : null);
     take('front', n[2], null);
@@ -320,7 +416,11 @@
     var skN = function (t) { return hasSketch() ? st.sketch.filter(function (it) { return it.tool === t && window.MVGreenSketch.done(it); }).length : 0; };
     var solo = function (kind, count, maxH) {
       if (!count) return;
-      var p = pool.filter(function (q) { return q.kind === kind && chosen.indexOf(q) < 0 && q.height <= maxH && (kind !== 'shrub' || q.role === 'back'); })[0];
+      // Test 0.6.276/277: na strom u domu vybral ovocnou višeň, pak švestku (padající ovoce, nevzhledné) →
+      // ovocné jen na přání; okrasné druhy typické pro styl mají přednost.
+      var wantFruit = /ovoc/i.test(st.wish || '');
+      var list = pool.filter(function (q) { return q.kind === kind && chosen.indexOf(q) < 0 && q.height <= maxH && (kind !== 'shrub' || q.role === 'back') && (wantFruit || !/ovocn/i.test(q.name)); });
+      var p = list.filter(function (q) { return spec.solo.test(q.latin); })[0] || list[0];
       if (p) chosen.push(Object.assign({}, p, { role: 'solo', soloCount: count }));
     };
     solo('tree', skN('tree'), 8); solo('shrub', skN('shrub'), 3);
@@ -331,6 +431,7 @@
     var users = [st.users.kids && 'děti', st.users.dog && 'pes', st.users.cat && 'kočka'].filter(Boolean);
     var fences = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     return 'Navrhni zahradu ve stylu „' + STYLES[st.style] + '“ s ' + { low: 'minimální', mid: 'střední', high: 'vyšší' }[st.care] + ' údržbou. '
+      + styleSpec().rules + ' Styl musí být na první pohled poznat. '
       + (brief && brief.length ? 'ZADÁNÍ ARCHITEKTA (hlavní podklad, řiď se jím): ' + brief.join(' ') + ' ' : '')
       + (st.wish ? 'PŘÁNÍ ZÁKAZNÍKA (má přednost před vším ostatním a musí být na fotce jasně vidět): ' + st.wish + '. ' : '')
       + ((st.removeNames || []).length ? 'Zákazník chce odstranit: ' + st.removeNames.join(', ') + '. ' : '')
@@ -345,7 +446,10 @@
       // 2026-11-11, majitel: záhon pod domem ve svahu nakreslen na rovinu a se zídkou, kterou nechtěl
       + (st.terrain ? 'TERÉN NA FOTCE: ' + st.terrain + ' ' : '')
       + 'ZACHOVEJ TVAR TERÉNU z fotky: svahy zůstávají svahy, záhony a cesty ve svahu kopírují sklon, nic nesrovnávej do roviny. Opěrné zdi, zídky a terasy dělej JEN tam, kde je zákazník nakreslil v náčrtu nebo kde už na fotce jsou – jinde žádné nepřidávej. '
-      + 'Trávník zachovej jako hlavní plochu. Záhony mají plynule zaoblenou hranu s obrubou a jsou mulčované. '
+      + 'Trávník zachovej jako hlavní plochu. Záhony mají čistou hranu s obrubou a jsou mulčované – tvar, obruba a mulč podle stylu výše. '
+      // Test 0.6.277: drátěný plot před bílým domem (Gemini ho nenašlo, spodek byl v upravované ploše) AI
+      // nahradila stříhaným živým plotem.
+      + 'Všechny stávající ploty – i tenké drátěné a pletivové, přes které je vidět – zůstávají na svém místě a viditelné; před ně ani místo nich nesázej živý plot ani řadu keřů. '
       + plants.filter(function (p) { return p.role === 'solo'; }).map(function (p) { return (p.kind === 'tree' ? 'Stromy' : 'Solitérní keře') + ' z náčrtu (' + p.soloCount + ' ks) = ' + p.name + ' (' + p.latin + '), výška po výsadbě cca ' + Math.min(4, Math.round(p.height * 0.5 * 10) / 10) + ' m – každý CELÝ: kmen i plná koruna, nic nesmí být useknuté ani schované. Ploty, zdi a domy ZA stromy zůstávají přesně jako na fotce – koruna je jen částečně zakrývá, nic za stromy neodstraňuj ani nepřekresluj. '; }).join('')
       + 'Použij POUZE tyto rostliny: ' + plants.map(function (p) { return p.name + ' (' + p.latin + ', výška ' + Math.round(p.height * 100) + ' cm)'; }).join('; ') + '. '
       + 'Rostliny sázej ve skupinách po 3–7 kusech stejného druhu, vysoké dozadu, nízké dopředu. '
@@ -367,11 +471,39 @@
   function hintsText() {
     var fences = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     return 'Dům na fotce: ' + HOUSES[st.house].toLowerCase() + '. Plot/hranice pozemku: ' + (fences.join(', ') || 'neuvedeno') + '. '
-      + (st.width ? 'Šířka zahrady zleva doprava ≈ ' + st.width + ' m. ' : '') + (st.depth ? 'Hloubka od fotografa dozadu ≈ ' + st.depth + ' m. ' : '')
+      + (st.width ? 'Šířka zahrady zleva doprava ≈ ' + st.width + ' m. ' : '') + (st.depth ? 'Hloubka od fotografa dozadu ≈ ' + st.depth + ' m. ' : '') + scaleText()
       + (st.removeWhere ? 'Odstraněné věci (např. auta) stály ' + st.removeWhere + '. ' : '')
       + (hasSketch() ? 'NÁČRT ZÁKAZNÍKA (obrázek 4, závazný pro polohu prvků): ' + window.MVGreenSketch.describe(st.sketch, st.landmarks).replace(/\n/g, ' ') + ' ' : '')
       + (st.terrain ? 'Terén na fotce: ' + st.terrain + ' ' : '')
       + 'Přání zákazníka: ' + (st.wish || 'žádné') + '.';
+  }
+
+  /* Povinné kontroly (2026-11-11, test 0.6.277): kontrola napsala „bez podstatných chyb“, přestože chyběla
+   * přední polovina zdi a drátěný plot byl nahrazený živým plotem. Kontrolor teď dostane ke každému prvku
+   * z náčrtu jednu ověřitelnou otázku s místem na fotce, seznam věcí, které musí zůstat, a styl. */
+  function mustChecks() {
+    var out = [], pct = function (p) { return Math.round(p[0] * 100) + ' % zleva, ' + Math.round(p[1] * 100) + ' % shora'; };
+    var where = function (p) { return (p[0] < 0.33 ? 'vlevo' : p[0] > 0.66 ? 'vpravo' : 'uprostřed') + (p[1] > 0.66 ? ' v popředí' : p[1] < 0.45 ? ' vzadu' : ''); };
+    if (hasSketch()) {
+      var items = st.sketch.filter(window.MVGreenSketch.done), cnt = function (t) { return items.filter(function (it) { return it.tool === t; }).length; };
+      items.forEach(function (it) {
+        var pts = it.pts, a = pts[0], b = pts[pts.length - 1];
+        if (it.tool === 'wall') out.push('Nová zeď vede po CELÉ délce z náčrtu: od místa ' + pct(a) + ' (' + where(a) + ') až k místu ' + pct(b) + ' (' + where(b) + '). Chybí-li kterákoli část (např. je jen zadní nebo jen přední polovina), je to chyba.');
+        if (it.tool === 'path') {
+          var near = pts.slice().sort(function (p, q) { return q[1] - p[1]; })[0], far = pts.slice().sort(function (p, q) { return p[1] - q[1]; })[0];
+          out.push('Cesta je souvislá od místa ' + pct(near) + ' (' + where(near) + ') až k cíli u místa ' + pct(far) + ' (' + where(far) + ').');
+        }
+        if (it.tool === 'steps') out.push('Schody jsou u místa ' + pct(a) + ' (' + where(a) + ').');
+      });
+      if (cnt('bed')) out.push('Všechny nové záhony z náčrtu (' + cnt('bed') + ') jsou na svých místech.');
+      if (cnt('paving')) out.push('Nová dlažba z náčrtu (' + cnt('paving') + ' ploch) je na svém místě.');
+      if (cnt('tree')) out.push('Všech ' + cnt('tree') + ' stromů z náčrtu má celý kmen i plnou korunu.');
+    }
+    var keep = (st.landmarks || []).filter(function (l) { return l.state === 'keep' && l.kind !== 'sky'; }).map(function (l) { return l.name; });
+    if (keep.length) out.push('Beze změny a viditelné zůstalo: ' + keep.join(', ') + '.');
+    out.push('Stávající ploty (i tenké drátěné nebo pletivové) jsou na obrázku 2 na stejném místě jako na obrázku 1 a nejsou nahrazené ani zakryté novým živým plotem, řadou keřů nebo tújí.');
+    out.push(styleSpec().check);
+    return out;
   }
 
   /* Koruny stromů z náčrtu (2026-11-11, majitel: „stromy na levo jednomu chybí úplně koruna“): strom
@@ -411,7 +543,7 @@
       for (var i = 1; i < it.pts.length; i++) {
         var a = it.pts[i - 1], b = it.pts[i], L = Math.hypot((b[0] - a[0]) * W, (b[1] - a[1]) * H), n = Math.max(2, Math.ceil(L / 6));
         for (var k = 0; k <= n; k++) {
-          var t = k / n, x = (a[0] + (b[0] - a[0]) * t) * W, y = (a[1] + (b[1] - a[1]) * t) * H, near = 0.6 + y / H, hh = H * 0.05 * near;
+          var t = k / n, x = (a[0] + (b[0] - a[0]) * t) * W, y = (a[1] + (b[1] - a[1]) * t) * H, near = 0.6 + y / H, hh = H * 0.065 * near;   // 0.6.278: výraznější (dřív 0.05, AI pás přehlédla)
           for (var r = 0; r < 3; r++) {
             var v = 105 + Math.floor(rnd() * 70);
             g.fillStyle = 'rgb(' + v + ',' + (v - 4) + ',' + (v - 12) + ')';
@@ -422,7 +554,7 @@
     });
     g.globalCompositeOperation = 'destination-in'; g.drawImage(mask, 0, 0, W, H);   // jen v upravované ploše
     var out = document.createElement('canvas'); out.width = W; out.height = H; var o = out.getContext('2d');
-    o.drawImage(photo, 0, 0); o.globalAlpha = 0.85; o.drawImage(layer, 0, 0);
+    o.drawImage(photo, 0, 0); o.drawImage(layer, 0, 0);
     return out;
   }
 
@@ -443,14 +575,18 @@
     // 1) AI architekt napíše odborné zadání, 2) kreslení podle něj, 3) kontrola a nejvýš jedna oprava.
     var guide = hasSketch() ? guideFor(prepared.box) : '';
     var gen = function (instr) {
-      var f = { image: prepared.image, mask: S.maskToApi(bufferMask, prepared.box), coreMask: S.maskToApi(editMask, prepared.box), instructions: instr.slice(0, 5900) };
+      var f = { image: prepared.image, mask: S.maskToApi(bufferMask, prepared.box), coreMask: S.maskToApi(editMask, prepared.box), instructions: instr.slice(0, 12000) };
+      // 2026-11-11 (test 0.6.277): se zadáním architekta a náčrtem měl prompt ~7 700 znaků a starý řez na
+      // 5 900 usekl konec – seznam rostlin, zákaz živých plotů a tújí i celou OPRAVU PO KONTROLE. Proto
+      // AI nahradila drátěný plot živým plotem a překreslení zeď nikdy neopravilo. Server bere až 40 000 B.
+      if (instr.length > 12000) log('Pozor: zadání pro AI je delší než 12 000 znaků, konec se usekne.');
       if (guide) f.guide = guide;
       return ajax('mvgreen_ai_preview_start', f)
         .then(function (start) { log('AI kreslí návrh…'); return poll(start.jobId, 0); })
         .then(function (step) { if (!step.image) throw new Error(step.message || 'AI nevrátila obrázek.'); return loadImg(step.image); })
         .then(function (img) { return S.finish(original, editMask, img, prepared.box, bufferMask); });
     };
-    var info = 'Styl: ' + STYLES[st.style] + ', údržba ' + CARES[st.care].toLowerCase() + '. ' + hintsText()
+    var info = 'Styl: ' + STYLES[st.style] + ', údržba ' + CARES[st.care].toLowerCase() + '. PRAVIDLA STYLU (závazná): ' + styleSpec().rules + ' ' + hintsText()
       + ' Rostliny k použití: ' + plantList + '. ' + ((st.removeNames || []).length ? 'Odstranit: ' + st.removeNames.join(', ') + '. ' : '')
       + ((st.landmarks || []).length ? 'Na fotce rozpoznáno: ' + st.landmarks.filter(function (l) { return l.kind !== 'sky'; }).map(function (l) { return l.name + (l.state === 'keep' ? ' (zůstává)' : l.state === 'remove' ? ' (pryč)' : ''); }).join(', ') + '.' : '');
     log('AI architekt promýšlí návrh podle vašeho zadání' + (hasSketch() ? ' a náčrtu' : '') + '…');
@@ -464,11 +600,13 @@
       .then(function (done) {
         if (!ctx.checks || !ctx.checks.length) return done;
         log('Kontroluji návrh, jestli nemá chyby…');
-        return ajax('mvgreen_ai_design_check', { before: scaled(original, 1024), after: scaled(done.canvas, 1024), brief: ctx.brief.join(' / '), checks: ctx.checks.join(' / ') })
+        return ajax('mvgreen_ai_design_check', { before: scaled(original, 1536), after: scaled(done.canvas, 1536), brief: ctx.brief.join(' / '), checks: ctx.checks.join(' / '), must: mustChecks().join('\n') })
           .then(function (c) {
-            if (c.ok || !c.fix) { log('Kontrola: bez podstatných chyb.'); return done; }
+            if (c.ok) { log('Kontrola: bez podstatných chyb.'); return done; }
+            if (!c.fix) c.fix = c.problems.join(' ');
+            if (!c.fix) { log('Kontrola hlásí chybu bez popisu – pokračuji s prvním návrhem.'); return done; }
             log('Kontrola našla: ' + c.problems.join(' | ') + ' → překresluji s opravou.');
-            return gen(promptText(plants, ctx.brief) + ' OPRAVA PO KONTROLE (nejdůležitější): ' + c.fix).then(function (d2) { log('Opravený návrh hotový.'); return d2; }, function (e) { log('Překreslení se nepovedlo (' + e.message + ') – použiji první návrh.'); return done; });
+            return gen('OPRAVA PO KONTROLE (nejdůležitější, oprav přesně tohle): ' + c.fix + ' ' + promptText(plants, ctx.brief)).then(function (d2) { log('Opravený návrh hotový.'); return d2; }, function (e) { log('Překreslení se nepovedlo (' + e.message + ') – použiji první návrh.'); return done; });
           }, function (e) { log('Kontrola se nepovedla (' + e.message + ') – pokračuji.'); return done; });
       })
       .then(function (done) {
@@ -476,7 +614,7 @@
         ctx.after = done.canvas.toDataURL('image/jpeg', 0.9);
         ctx.before = scaled(original, 1600);
         log('AI čte z fotek přesný půdorys v metrech…');
-        return ajax('mvgreen_ai_plan_v2', { after: scaled(done.canvas, 1600), before: scaled(original, 1024), marked: st.maskPreview || '', sketch: hasSketch() ? st.sketchPreview : '', plants: plantList, hints: hintsText() + ((ctx.brief || []).length ? ' ZADÁNÍ ARCHITEKTA (výsadba záhonů – podle něj vyjmenuj rostliny v záhonech): ' + ctx.brief.join(' / ') : '') });
+        return ajax('mvgreen_ai_plan_v2', { after: scaled(done.canvas, 1600), before: withScaleLine(original, st.scale ? 1600 : 1024), marked: st.maskPreview || '', sketch: hasSketch() ? st.sketchPreview : '', plants: plantList, hints: hintsText() + ((ctx.brief || []).length ? ' ZADÁNÍ ARCHITEKTA (výsadba záhonů – podle něj vyjmenuj rostliny v záhonech): ' + ctx.brief.join(' / ') : '') });
       })
       .then(function (pl) {
         ctx.plan = pl.plan;
@@ -731,6 +869,14 @@
       return { length: fromPlan || lineLen(it.pts.map(function (p) { return [p[0] * w, p[1] * d]; })), height: 0.6 };
     });
     var pavedPath = /dlažb|dlaždic|kamenn[áé] (cest|chodník)|chodník[^.]*kámen/i.test((ctx.brief || []).filter(function (t) { return /cest|chodník/i.test(t); }).join(' '));
+    // 0.6.278: materiály podle zadání architekta, jinak podle stylu (test: kamenná cesta počítaná jako zámková dlažba)
+    var spec = styleSpec(), briefTxt = (ctx.brief || []).join(' '), pathTxt = (ctx.brief || []).filter(function (t) { return /cest|chodník|dlažb/i.test(t); }).join(' '), bedTxt = (ctx.brief || []).filter(function (t) { return /záhon/i.test(t); }).join(' ');
+    var finish = {
+      paving: /velkoformát|betonov[áé] (dlažb|dlaždic)/i.test(pathTxt) ? 'vf' : /kamenn|přírodní(ho)? kam|plochých kamen|pískov|rul[ay]/i.test(pathTxt) ? 'kamen' : /zámkov/i.test(pathTxt) ? 'zamkova' : spec.path,
+      mulch: /(štěrk|kačír)[^.]{0,40}(mulč|záhon)|mulč[^.]{0,30}(štěrk|kačír)/i.test(bedTxt) ? 'sterk' : /kůr/i.test(bedTxt) ? 'kura' : spec.mulch,
+      edge: /ocelov|corten/i.test(briefTxt) ? 'ocel' : spec.edge
+    };
+    if (finish.paving === 'kamen' && /štěrkov[áé] cest/i.test(pathTxt)) finish.paving = spec.path;
     var pathPaving = pavedPath ? project.paths.map(function (p2) { var L = lineLen(p2.line); return { area: L * (p2.width || 1), perimeter: 2 * L }; }) : [];
     var model = {
       beds: project.beds.filter(function (b) { return b.surface !== 'gravel'; }).map(function (b) { return { area: area(b.poly), perimeter: perim(b.poly) }; }),
@@ -739,7 +885,7 @@
       paths: pavedPath ? [] : project.paths.map(function (p2) { var L = lineLen(p2.line); return { length: L, area: L * (p2.width || 1) }; }),
       walls: newWalls,
       steps: project.structures.filter(function (s3) { return s3.steps && s3.isNew; }).map(function () { return { count: 3 }; }),
-      lawn: Math.max(0, lawnArea), lawnExtra: parseFloat(st.extraLawn) || 0
+      lawn: Math.max(0, lawnArea), lawnExtra: parseFloat(st.extraLawn) || 0, finish: finish
     };
     var estimate = window.MVGreenKB ? window.MVGreenKB.estimate(model, plants.map(function (p2) { var spec = ctx.plants.filter(function (q) { return q.name === p2.name; })[0] || {}; return { name: p2.name, count: p2.count, price: p2.price, kind: spec.kind, container: p2.container }; })) : null;
     var usersL = [st.users.kids && 'děti', st.users.dog && 'pes', st.users.cat && 'kočka'].filter(Boolean);

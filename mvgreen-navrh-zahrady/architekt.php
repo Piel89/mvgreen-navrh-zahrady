@@ -88,8 +88,12 @@ add_action('wp_ajax_mvgreen_ai_design_brief', function () {
         . ($marked ? ', zeleně označil, co má zůstat beze změny' : '')
         . ($sketch ? ' a prstem na mobilu HRUBĚ načmáral, kde chce jaké prvky (barevné tahy na fotce, význam barev je v údajích níže)' : '') . ".\n"
         . "Tvůj úkol: pochopit ZÁMĚR zákazníka a navrhnout z něj kvalitní, profesionální a luxusně působící zahradu. Náčrt je jen VODÍTKO, KDE co zhruba má být – NEKOPÍRUJ jeho tvary ani klikaté čáry. Rozhodni jako architekt:\n"
-        . "- cesty: plynulé, elegantní oblouky nebo čisté přímky, jednotná šířka 1–1,2 m, logický začátek a cíl (např. z dlažby ke vstupu, ke studně, k domku), kvalitní obruba;\n"
-        . "- záhony: pěkný, vyvážený tvar (měkce zaoblený nebo čistě geometrický podle stylu a okolí), rozumná hloubka 1–2,5 m, vrstvení rostlin odzadu dopředu;\n"
+        // 0.6.278 (test přírodní vs. moderní): styl se projevil jen na dlažbě cesty → pravidla stylu
+        // (tvary, materiály, mulč, obruby, barvy) přicházejí v ÚDAJÍCH a jsou závazná.
+        . "- STYL: v údajích jsou PRAVIDLA STYLU – jsou závazná pro tvary, materiály, mulč, obruby i barvy rostlin, a v každém bodě zadání napiš konkrétní materiál a tvar podle nich, ať je styl na první pohled poznat;\n"
+        . "- cesty: podle stylu plynulé oblouky, nebo čisté přímky a pravé úhly; jednotná šířka 1–1,2 m, logický začátek a cíl (např. z dlažby ke vstupu, ke studně, k domku), kvalitní obruba;\n"
+        . "- záhony: tvar podle stylu (měkce zaoblený, nebo obdélníkový/geometrický), rozumná hloubka 1–2,5 m, vrstvení rostlin odzadu dopředu;\n"
+        . "- stávající ploty (i drátěné a pletivové), domy a stavby zůstávají viditelné, nic před ně ani místo nich nepřidávej (žádné živé ploty);\n"
         . "- zdi a zídky: VŽDY navazují na stávající zeď, dům, plot nebo terén – nikdy nestojí samostatně v trávníku; materiál ladí se stávajícími stavbami;\n"
         . "- svah zachovej, prvky ve svahu ho kopírují; schody jen tam, kde je výškový rozdíl;\n"
         . "- celkově: proporce, symetrie/rytmus, kvalitní materiály, čistota detailu. Žádné nelogické nebo nerealizovatelné prvky. Nepřidávej nic, o co zákazník nežádal (terasy, nábytek, pergoly, ploty, brány).\n"
@@ -115,11 +119,16 @@ add_action('wp_ajax_mvgreen_ai_design_check', function () {
     if (!$before || !$after) wp_send_json_error(['message' => 'Chybí fotky.'], 400);
     $brief = isset($_POST['brief']) ? sanitize_textarea_field(wp_unslash($_POST['brief'])) : '';
     $checks = isset($_POST['checks']) ? sanitize_textarea_field(wp_unslash($_POST['checks'])) : '';
+    // 0.6.278 (test 0.6.277): kontrola pustila chybějící přední polovinu zdi i živý plot místo drátěného
+    // plotu → povinné kontroly z náčrtu (prohlížeč: mustChecks), fotka PŘED ve vysokém rozlišení
+    // (tenký drátěný plot na „low“ nebyl vidět) a postup kontroly po jednotlivých bodech.
+    $must = isset($_POST['must']) ? sanitize_textarea_field(wp_unslash($_POST['must'])) : '';
     $prompt = "Jsi přísný kontrolor kvality vizualizací zahrad. Obrázek 1 = původní fotka, obrázek 2 = vizualizace návrhu na stejné fotce.\n"
         . "Zadání návrhu:\n" . $brief . "\nKontroly:\n" . $checks . "\n"
-        . "Posuď obrázek 2: splňuje každou kontrolu? Hledej i obecné chyby: zeď nebo zídka stojící samostatně bez napojení, cesta nikam nevedoucí nebo s ostrými nelogickými zlomy, prvky ve vzduchu nebo nesedící do perspektivy, rozbité okraje, nerealistické rostliny, zničené nebo změněné stávající stavby, dům, plot, obloha. "
-        . "ok = true, jen když je návrh bez podstatných chyb. Do problems napiš konkrétní chyby česky. Do fix napiš krátký přesný pokyn pro opravu při překreslení (co a kde změnit), nebo prázdný text.";
-    $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => 'low']], ['type' => 'image_url', 'image_url' => ['url' => $after, 'detail' => 'high']]];
+        . ($must ? "POVINNÉ KONTROLY (každou ověř zvlášť porovnáním obou obrázků; když kterákoli neplatí, ok = false):\n" . $must . "\n" : '')
+        . "Postupuj bod po bodu, u každé kontroly se podívej na příslušné místo obou obrázků a nic nepředpokládej. Hledej i obecné chyby: zeď nebo zídka stojící samostatně bez napojení nebo jen zčásti, cesta nikam nevedoucí nebo s ostrými nelogickými zlomy, prvky ve vzduchu nebo nesedící do perspektivy, rozbité okraje, nerealistické rostliny, zničené, zakryté nebo změněné stávající stavby, dům, plot (i drátěný), obloha, a přidané věci, které nejsou v zadání (živé ploty, řady tújí, nábytek). "
+        . "ok = true, jen když platí všechny povinné kontroly a návrh je bez podstatných chyb. Do problems napiš každou chybu česky zvlášť. Do fix napiš přesný pokyn pro opravu při překreslení – u každé chyby co a KDE na fotce změnit (v % zleva a shora) – nebo prázdný text.";
+    $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => 'high']], ['type' => 'image_url', 'image_url' => ['url' => $after, 'detail' => 'high']]];
     $schema = ['type' => 'object', 'additionalProperties' => false, 'required' => ['ok', 'problems', 'fix'], 'properties' => [
         'ok' => ['type' => 'boolean'], 'problems' => ['type' => 'array', 'items' => ['type' => 'string']], 'fix' => ['type' => 'string'],
     ]];
@@ -150,10 +159,13 @@ add_action('wp_ajax_mvgreen_ai_plan_v2', function () {
         . "Pro každý prvek dej points: plochy (house, terrace, paving, gravel = kačírek/štěrk, lawn, bed, structure, steps = schody) jako mnohoúhelník 4–12 bodů po obvodu; čáry (fence, wall, hedge, path, stepping) jako lomená čára 2–8 bodů se šířkou width_m; strom/keř jako 1 bod. "
         . "Nové prvky z návrhu mají is_new true, stávající false. Záhon zakresli PŘESNĚ tam a v takovém tvaru, kde je na fotce PO (např. úzký pás podél plotu = úzký pás podél čáry plotu). Trávník zakresli jako celou zbývající travnatou plochu. "
         . "U každého nového záhonu vyjmenuj rostliny podle ZADÁNÍ ARCHITEKTA v údajích níže (které druhy patří do kterého záhonu), jinak podle fotky PO – jen z tohoto seznamu: {$plants}. "
+        . "Když údaje obsahují MĚŘÍTKO OD ZÁKAZNÍKA (žlutá čára na fotce PŘED), je ZÁVAZNÉ: nejdřív podle něj urči, kolik metrů odpovídá věcem v jeho okolí a v různých hloubkách fotky, a teprve pak odvoď rozměry všech prvků; plochy záhonů ani délky zdí nepodhodnocuj.\n"
         . "Popisky česky a krátce. Do notes 1–2 věty, co je odhad.\n"
         . "ÚDAJE OD ZÁKAZNÍKA (mají přednost před odhadem): {$hints}";
     $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $after, 'detail' => 'high']]];
-    if ($before) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => 'low']];
+    // 0.6.278 (bod C): s měřítkem od zákazníka nese fotka PŘED žlutou měřicí čáru → vysoké rozlišení.
+    $scaled = strpos($hints, 'MĚŘÍTKO OD ZÁKAZNÍKA') !== false;
+    if ($before) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => $scaled ? 'high' : 'low']];
     if ($marked) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $marked, 'detail' => 'low']];
     if ($sketch) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $sketch, 'detail' => 'high']];
     $model = defined('MVGREEN_OPENAI_PLAN_V2_MODEL') ? MVGREEN_OPENAI_PLAN_V2_MODEL : 'gpt-4.1';
@@ -202,7 +214,7 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
     // bez polygonů odpovídá rychleji. Majitel: les a louka za domem nejsou pozemek majitelky →
     // vlastní kategorie „outside property“ (mark.js je nechá beze změny).
     $prompt = 'Find every separate object and surface in this garden photo from these categories: '
-        . implode(', ', array_keys($kinds)) . '. Each car, tree, shed or house is a separate item; give fences, gates and walls even when they are thin. '
+        . implode(', ', array_keys($kinds)) . '. Each car, tree, shed or house is a separate item; give fences, gates and walls even when they are thin - including see-through wire mesh fences (pletivo) in front of houses or between gardens. '
         . 'Only the garden of the photographed house is the property. Everything clearly beyond it - fields, meadows, forest, land of other owners, roads, hills in the distance - is "outside property" (one item per area), never lawn, tree or bare soil. Neighbouring houses stay "neighboring house". '
         . 'Output a JSON list where each entry contains the 2D bounding box in the key "box_2d" as [ymin, xmin, ymax, xmax] normalized to 0-1000 and the text label in the key "label". The box must tightly enclose the whole visible object. '
         . 'The label must be "<category>: <short Czech name with position>", e.g. "car: Bílé auto vpravo", "lawn: Tráva v popředí", "outside property: Louka za domem". At most 30 items. '
