@@ -150,7 +150,7 @@
       var s = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url; st.markState = null; st.removeNames = []; st.landmarks = []; st.paintCategory = null;
+      st.original = c; st.photoName = file.name; st.editMask = null; st.maskPreview = ''; st.removeWhere = ''; st.sketch = []; st.sketchPreview = ''; st.cacheKey = url; st.markState = null; st.removeNames = []; st.landmarks = []; st.terrain = ''; st.paintCategory = null;
       render();
     }).catch(function (e) { alert(e.message); });
   }
@@ -174,6 +174,8 @@
         var S = window.MVGreenSamV2, t0 = Date.now(), samP = S ? S.prepare().catch(function (e) { return { error: e }; }) : Promise.resolve({ error: new Error('sam.js chybí') });
         return ajax('mvgreen_ai_detect_v2', { photo: scaled(st.original, 1024, 'image/jpeg', 0.85) }).then(function (d) {
           var objs = d.objects || [];
+          st.terrain = d.terrain || '';
+          if (st.terrain) log('Terén podle AI: ' + st.terrain);
           log('AI předznačení (' + (d.model || '?') + '): ' + objs.length + ' objektů, s maskou ' + objs.filter(function (o) { return o.mask; }).length + '. ' + (d.notes || []).join(' | '));
           return samP.then(function (r) {
             if (r && r.error) throw r.error;
@@ -321,6 +323,9 @@
           // 2026-11-11: cesta k zahradnímu domku nahoře skončila jako záhon
           + 'Cesty, chodníky a dlažbu z náčrtu nakresli CELÉ od začátku až ke konci – až k místu, u kterého podle náčrtu končí (např. k domku nebo kůlně) – a NIKDY je nenahrazuj záhonem ani trávníkem. ' : '')
       + (fences.length && !hasSketch() ? 'Plot je ' + fences.join(' a ') + ' – záhon u plotu veď jako souvislý pás těsně podél plotu, široký 1–1,5 m, vysoké rostliny přímo u plotu. ' : '')
+      // 2026-11-11, majitel: záhon pod domem ve svahu nakreslen na rovinu a se zídkou, kterou nechtěl
+      + (st.terrain ? 'TERÉN NA FOTCE: ' + st.terrain + ' ' : '')
+      + 'ZACHOVEJ TVAR TERÉNU z fotky: svahy zůstávají svahy, záhony a cesty ve svahu kopírují sklon, nic nesrovnávej do roviny. Opěrné zdi, zídky a terasy dělej JEN tam, kde je zákazník nakreslil v náčrtu nebo kde už na fotce jsou – jinde žádné nepřidávej. '
       + 'Trávník zachovej jako hlavní plochu. Záhony mají plynule zaoblenou hranu s obrubou a jsou mulčované. '
       + 'Použij POUZE tyto rostliny: ' + plants.map(function (p) { return p.name + ' (' + p.latin + ', výška ' + Math.round(p.height * 100) + ' cm)'; }).join('; ') + '. '
       + 'Rostliny sázej ve skupinách po 3–7 kusech stejného druhu, vysoké dozadu, nízké dopředu. '
@@ -343,6 +348,7 @@
       + (st.width ? 'Šířka zahrady zleva doprava ≈ ' + st.width + ' m. ' : '') + (st.depth ? 'Hloubka od fotografa dozadu ≈ ' + st.depth + ' m. ' : '')
       + (st.removeWhere ? 'Odstraněné věci (např. auta) stály ' + st.removeWhere + '. ' : '')
       + (hasSketch() ? 'NÁČRT ZÁKAZNÍKA (obrázek 4, závazný pro polohu prvků): ' + window.MVGreenSketch.describe(st.sketch, st.landmarks).replace(/\n/g, ' ') + ' ' : '')
+      + (st.terrain ? 'Terén na fotce: ' + st.terrain + ' ' : '')
       + 'Přání zákazníka: ' + (st.wish || 'žádné') + '.';
   }
 

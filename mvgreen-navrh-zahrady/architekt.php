@@ -123,17 +123,22 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
         . implode(', ', array_keys($kinds)) . '. Each car, tree, shed or house is a separate item; give fences, gates and walls even when they are thin. '
         . 'Only the garden of the photographed house is the property. Everything clearly beyond it - fields, meadows, forest, land of other owners, roads, hills in the distance - is "outside property" (one item per area), never lawn, tree or bare soil. Neighbouring houses stay "neighboring house". '
         . 'Output a JSON list where each entry contains the 2D bounding box in the key "box_2d" as [ymin, xmin, ymax, xmax] normalized to 0-1000 and the text label in the key "label". The box must tightly enclose the whole visible object. '
-        . 'The label must be "<category>: <short Czech name with position>", e.g. "car: Bílé auto vpravo", "lawn: Tráva v popředí", "outside property: Louka za domem". At most 30 items.';
+        . 'The label must be "<category>: <short Czech name with position>", e.g. "car: Bílé auto vpravo", "lawn: Tráva v popředí", "outside property: Louka za domem". At most 30 items. '
+        // 2026-11-11, majitel: záhon pod domem ve svahu AI nakreslila na rovinu (a se zídkou) → popis terénu
+        . 'Put the list in the key "items". In the key "terrain" describe the ground shape in Czech in 1–3 short sentences: which parts of the photo slope and in which direction (e.g. "pod domem vlevo svah klesá dolů k trávníku"), where are existing retaining walls, steps or terraces, and which parts are flat.';
     // 1. test na Martinově fotce (2026-11-10): gemini-3-flash-preview vrátil jen obdélníky BEZ masek →
     // tráva u domu „patřila“ domu, pole za autem autu. Nejdřív model, který masky vrací (2.5 Flash);
     // když odpověď masky nemá, zkusí se další model a vezme se odpověď s nejvíc maskami.
     // 2. test: 2.5 Flash už nový účet nedostane, 3.8 Flash odmítl thinkingLevel „minimal“, 3 Flash Preview
     // vrátil jen box_2d+label → povinné schéma s obrysem (mask = [x,y] 0–1000) a postupně nastavení přemýšlení.
     $models = array_values(array_unique(array_filter([defined('MVGREEN_GEMINI_MODEL') ? MVGREEN_GEMINI_MODEL : '', 'gemini-3.8-flash', 'gemini-3-flash-preview'])));
-    $schema = ['type' => 'ARRAY', 'items' => ['type' => 'OBJECT', 'required' => ['box_2d', 'label'], 'properties' => [
-        'box_2d' => ['type' => 'ARRAY', 'items' => ['type' => 'INTEGER']],
-        'label' => ['type' => 'STRING'],
-    ]]];
+    $schema = ['type' => 'OBJECT', 'required' => ['items', 'terrain'], 'properties' => [
+        'items' => ['type' => 'ARRAY', 'items' => ['type' => 'OBJECT', 'required' => ['box_2d', 'label'], 'properties' => [
+            'box_2d' => ['type' => 'ARRAY', 'items' => ['type' => 'INTEGER']],
+            'label' => ['type' => 'STRING'],
+        ]]],
+        'terrain' => ['type' => 'STRING'],
+    ]];
     $parse = function ($items) use ($kinds) {
         $objects = [];
         foreach ((array) $items as $o) {
@@ -197,18 +202,20 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
         foreach ((array) ($json['candidates'][0]['content']['parts'] ?? []) as $p) if (isset($p['text'])) $text .= $p['text'];
         $text = trim(preg_replace('~^\s*```(?:json)?|```\s*$~', '', $text));
         $out = json_decode($text, true);
+        $terrainNow = is_array($out) && isset($out['terrain']) ? sanitize_text_field((string) $out['terrain']) : '';
+        if (is_array($out) && isset($out['items'])) $out = $out['items'];
         if (is_array($out) && isset($out['boxes'])) $out = $out['boxes'];
         if (!is_array($out)) { $last = 'Gemini (' . $model . ') nevrátilo seznam objektů.'; $notes[] = $last . ' ' . sanitize_text_field(substr($text, 0, 120)); continue; }
         $objs = $parse($out);
         $withMask = count(array_filter($objs, function ($o) { return $o['mask'] !== null; }));
         $first = is_array(reset($out)) ? reset($out) : [];
         $notes[] = $model . ': ' . count($objs) . ' objektů, s maskou ' . $withMask . ' (klíče: ' . implode(',', array_keys($first)) . ')';
-        if (!$best || count($objs) > count($best['objects'])) { $best = ['objects' => $objs, 'withMask' => $withMask]; $used = $model; }
+        if (!$best || count($objs) > count($best['objects'])) { $best = ['objects' => $objs, 'withMask' => $withMask, 'terrain' => $terrainNow]; $used = $model; }
         if ($objs) break;
     }
     if (!$best) wp_send_json_error(['message' => $last, 'notes' => $notes], 200);
     $objects = $best['objects'];
-    wp_send_json_success(['objects' => array_slice($objects, 0, 40), 'model' => $used, 'notes' => $notes]);
+    wp_send_json_success(['objects' => array_slice($objects, 0, 40), 'terrain' => mb_substr($best['terrain'] ?? '', 0, 600), 'model' => $used, 'notes' => $notes]);
 });
 
 /**
