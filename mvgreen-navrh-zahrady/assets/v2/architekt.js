@@ -432,7 +432,7 @@
           .then(function (c) {
             if (c.ok || !c.fix) { log('Kontrola: bez podstatných chyb.'); return done; }
             log('Kontrola našla: ' + c.problems.join(' | ') + ' → překresluji s opravou.');
-            return gen(promptText(plants, ctx.brief) + ' OPRAVA PO KONTROLE (nejdůležitější): ' + c.fix).then(function (d2) { log('Opravený návrh hotový.'); return d2; });
+            return gen(promptText(plants, ctx.brief) + ' OPRAVA PO KONTROLE (nejdůležitější): ' + c.fix).then(function (d2) { log('Opravený návrh hotový.'); return d2; }, function (e) { log('Překreslení se nepovedlo (' + e.message + ') – použiji první návrh.'); return done; });
           }, function (e) { log('Kontrola se nepovedla (' + e.message + ') – pokračuji.'); return done; });
       })
       .then(function (done) {
