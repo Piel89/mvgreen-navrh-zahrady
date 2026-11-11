@@ -245,8 +245,9 @@
       var placed = layoutBed(b, (project.seed || 7) + bi * 31);
       placed.forEach(function (pl) {
         var sp = pl.sp;
-        if (!legendByKey[sp.key]) { legendByKey[sp.key] = { key: sp.key, name: sp.name, latin: sp.latin, kind: sp.kind, leaf: sp.leaf, flower: sp.flower, count: 0, inst: [] }; legend.push(legendByKey[sp.key]); }
+        if (!legendByKey[sp.key]) { legendByKey[sp.key] = { key: sp.key, name: sp.name, latin: sp.latin, kind: sp.kind, leaf: sp.leaf, flower: sp.flower, count: 0, inst: [], beds: {} }; legend.push(legendByKey[sp.key]); }
         legendByKey[sp.key].count++;
+        legendByKey[sp.key].beds[bi] = (legendByKey[sp.key].beds[bi] || 0) + 1;   // počty po záhonech (plán na fotce, 2026-11-11)
         legendByKey[sp.key].inst.push(pl.p);
         placedAll.push(pl);
       });

@@ -150,15 +150,18 @@
       + '<div class="mvg2-cards3 mvg2-ideas">' + (f.ideas || []).slice(0, 3).map(function (i, k) { return '<div><em>0' + (k + 1) + '</em><strong>' + esc(i.title) + '</strong><span>' + esc(i.text) + '</span></div>'; }).join('') + '</div></section>');
 
     // 4 – osazovací plán (na šířku)
-    out.push('<section class="mvg2-page mvg2-page--land">' + head(ctx, 4) + '<div class="mvg2-land__sheet">' + ctx.sheetHtml + '</div></section>');
+    // 2026-11-11: s náčrtem plán na fotce (majitel: výkres shora „nikdo se v tom nevyzná“), bez náčrtu výkres jako dřív
+    out.push(ctx.photoPlanHtml ? '<section class="mvg2-page mvg2-page--land">' + head(ctx, 4) + title('OSAZOVACÍ PLÁN', 'Plán na fotce – co kam patří') + ctx.photoPlanHtml + '</section>'
+      : '<section class="mvg2-page mvg2-page--land">' + head(ctx, 4) + '<div class="mvg2-land__sheet">' + ctx.sheetHtml + '</div></section>');
 
     // 5 – rozměry a spon
     var area = window.MVGreenPlanV2 ? window.MVGreenPlanV2.polyArea : function () { return 0; };
     out.push('<section class="mvg2-page">' + head(ctx, 5) + title('ROZMĚRY A SPON', 'Podle čeho vytyčit a sázet')
-      + (ctx.project ? dimsDrawing(ctx.project) : '')
+      + (ctx.project && !ctx.photoPlanHtml ? dimsDrawing(ctx.project) : '')
       + '<table class="mvg2-table"><thead><tr><th>Plocha</th><th>Výměra</th></tr></thead><tbody>'
-      + (ctx.project ? ctx.project.beds.map(function (b, i) { return '<tr><td>' + bedName(ctx.project.beds, i) + '</td><td>' + area(b.poly).toFixed(1).replace('.', ',') + ' m²</td></tr>'; }).join('') : '')
-      + '<tr><td>Trávník</td><td>' + Math.round(ctx.lawnArea || 0) + ' m²</td></tr></tbody></table>'
+      + (ctx.bedRows ? ctx.bedRows.map(function (r) { return '<tr><td>' + esc(r.name) + ' (na plánu na fotce)</td><td>' + (r.area ? '≈ ' + r.area.toFixed(1).replace('.', ',') + ' m²' : 'upřesníme na místě') + '</td></tr>'; }).join('')
+        : ctx.project ? ctx.project.beds.map(function (b, i) { return '<tr><td>' + bedName(ctx.project.beds, i) + '</td><td>' + area(b.poly).toFixed(1).replace('.', ',') + ' m²</td></tr>'; }).join('') : '')
+      + '<tr><td>Trávník' + (ctx.extraLawn ? ' (z toho ' + Math.round(ctx.extraLawn) + ' m² mimo fotku)' : '') + '</td><td>≈ ' + Math.round(ctx.lawnArea || 0) + ' m²</td></tr></tbody></table>'
       + '<table class="mvg2-table"><thead><tr><th>Rostlina</th><th>Spon</th><th>Velikost v dospělosti</th></tr></thead><tbody>'
       + plants.map(function (p) { return '<tr><td><strong>' + esc(p.name) + '</strong></td><td>' + (p.spacing ? p.spacing + ' cm' : '—') + '</td><td>' + (p.height_cm ? p.height_cm + ' × ' + p.width_cm + ' cm' : '—') + '</td></tr>'; }).join('') + '</tbody></table>'
       + '<div class="mvg2-tip"><strong>Jak vytyčit:</strong> od hrany dlažby nebo domu naměřte rozměry pásmem, okraje záhonů a cest vyznačte provázkem mezi kolíky a obtáhněte pískem. Rozměry jsou odhadnuté z fotky – když se skutečnost liší, upravte šířky záhonů, spon rostlin zachovejte.</div></section>');
