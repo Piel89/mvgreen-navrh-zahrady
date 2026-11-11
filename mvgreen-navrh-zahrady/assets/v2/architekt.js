@@ -288,7 +288,11 @@
     var all = window.MVGreenPlantsV2 || [], rnd = seeded(Date.now() % 100000);
     var water = st.water === 'none' || st.soil === 'sand' ? 'dry' : st.soil === 'clay' ? 'wet' : 'normal';
     var okWater = function (p) { return p.water.indexOf(water) >= 0 || p.water.indexOf('normal') >= 0 && water !== 'dry' || (water === 'normal' && p.water.indexOf('dry') >= 0); };
-    var fits = function (p) { return p.sun.indexOf(st.sun) >= 0 && okWater(p) && !p.acid && !p.spreads && !((p.thorny || p.toxic) && (st.users.kids || st.users.dog)); };
+    // 2026-11-11 (majitel: „vyber rostlin je spatny“ – 23× pažitka v okrasném záhonu): kuchyňské bylinky
+    // jen když o ně zákazník stojí.
+    var HERB = /^(Allium schoenoprasum|Allium tuberosum|Mentha|Melissa|Petroselinum|Levisticum|Origanum vulgare|Salvia officinalis|Salvia rosmarinus|Rosmarinus|Artemisia dracunculus|Anethum|Ocimum|Satureja|Thymus vulgaris)/i;
+    var wantHerbs = /bylin/i.test(st.wish || '');
+    var fits = function (p) { return (wantHerbs || !HERB.test(p.latin)) && p.sun.indexOf(st.sun) >= 0 && okWater(p) && !p.acid && !p.spreads && !((p.thorny || p.toxic) && (st.users.kids || st.users.dog)); };
     var wts = STYLE_W[st.style] || STYLE_W.prirodni;
     // vážené náhodné pořadí: lepší shoda se stylem = dřív na řadě, ale pokaždé jiný návrh
     var pool = all.filter(fits).map(function (p) { return { p: p, k: Math.pow(rnd(), 1 / (wts[p.kind] || 1)) }; }).sort(function (a, b) { return b.k - a.k; }).map(function (x) { return x.p; });
@@ -305,11 +309,21 @@
         chosen.push(p); if (p.flower) usedColors.push(p.flower); n--;
       }
     };
-    var n = { low: [2, 1, 2], mid: [2, 2, 2], high: [2, 3, 3] }[st.care] || [2, 2, 2];
+    // profesionální záhon: 7–9 druhů (dřív 5–6 a AI z nich v půdorysu použila jen 4)
+    var n = { low: [2, 2, 2], mid: [3, 3, 2], high: [3, 4, 3] }[st.care] || [3, 3, 2];
     take('back', 1, function (p) { return p.kind === 'shrub' || p.kind === 'conifer'; });
     take('back', n[0] - 1, function (p) { return p.kind === 'grass' || p.kind === 'perennial'; });
     take('mid', n[1], st.care === 'low' ? function (p) { return p.kind !== 'perennial'; } : null);
     take('front', n[2], null);
+    // Stromy a keře, které zákazník ťukl do náčrtu, dostanou vlastní druh (role solo – nejsou v záhonech),
+    // počet = počet ťuknutí. Dřív je AI kreslila z keře do záhonu a v rozpočtu chyběly.
+    var skN = function (t) { return hasSketch() ? st.sketch.filter(function (it) { return it.tool === t && window.MVGreenSketch.done(it); }).length : 0; };
+    var solo = function (kind, count, maxH) {
+      if (!count) return;
+      var p = pool.filter(function (q) { return q.kind === kind && chosen.indexOf(q) < 0 && q.height <= maxH && (kind !== 'shrub' || q.role === 'back'); })[0];
+      if (p) chosen.push(Object.assign({}, p, { role: 'solo', soloCount: count }));
+    };
+    solo('tree', skN('tree'), 8); solo('shrub', skN('shrub'), 3);
     return chosen.map(function (p) { return Object.assign({}, p); });
   }
 
@@ -331,6 +345,7 @@
       + (st.terrain ? 'TERÉN NA FOTCE: ' + st.terrain + ' ' : '')
       + 'ZACHOVEJ TVAR TERÉNU z fotky: svahy zůstávají svahy, záhony a cesty ve svahu kopírují sklon, nic nesrovnávej do roviny. Opěrné zdi, zídky a terasy dělej JEN tam, kde je zákazník nakreslil v náčrtu nebo kde už na fotce jsou – jinde žádné nepřidávej. '
       + 'Trávník zachovej jako hlavní plochu. Záhony mají plynule zaoblenou hranu s obrubou a jsou mulčované. '
+      + plants.filter(function (p) { return p.role === 'solo'; }).map(function (p) { return (p.kind === 'tree' ? 'Stromy' : 'Solitérní keře') + ' z náčrtu (' + p.soloCount + ' ks) = ' + p.name + ' (' + p.latin + '), výška po výsadbě cca ' + Math.min(4, Math.round(p.height * 0.5 * 10) / 10) + ' m – každý CELÝ: kmen i plná koruna, nic nesmí být useknuté ani schované. '; }).join('')
       + 'Použij POUZE tyto rostliny: ' + plants.map(function (p) { return p.name + ' (' + p.latin + ', výška ' + Math.round(p.height * 100) + ' cm)'; }).join('; ') + '. '
       + 'Rostliny sázej ve skupinách po 3–7 kusech stejného druhu, vysoké dozadu, nízké dopředu. '
       // 2. test: AI přidala neobjednanou bránu s plotem a řadu tújí → zakázáno výslovně.
@@ -358,12 +373,29 @@
       + 'Přání zákazníka: ' + (st.wish || 'žádné') + '.';
   }
 
+  /* Koruny stromů z náčrtu (2026-11-11, majitel: „stromy na levo jednomu chybí úplně koruna“): strom
+   * ťuknutý pod domem/plotem má korunu PŘED zamčeným domem – ochrana stávajících věcí ji vracela zpět
+   * na fotku PŘED, zbyl kmen bez koruny. Nad každým stromem/keřem z náčrtu proto uvolníme elipsu na korunu. */
+  function withCrowns(mask) {
+    var items = hasSketch() ? st.sketch.filter(function (it) { return (it.tool === 'tree' || it.tool === 'shrub') && window.MVGreenSketch.done(it); }) : [];
+    if (!items.length || !mask) return mask;
+    var W = mask.width, H = mask.height, c = document.createElement('canvas'); c.width = W; c.height = H;
+    var g = c.getContext('2d'); g.drawImage(mask, 0, 0); g.fillStyle = '#000';
+    items.forEach(function (it) {
+      var p = it.pts[0], tree = it.tool === 'tree', near = 0.6 + p[1];   // níž na fotce = blíž = větší
+      var rx = W * (tree ? 0.045 : 0.03) * near, ry = H * (tree ? 0.1 : 0.05) * near;
+      g.beginPath(); g.ellipse(p[0] * W, p[1] * H - ry * 0.85, rx, ry, 0, 0, Math.PI * 2); g.fill();
+      g.fillRect(p[0] * W - rx * 0.25, p[1] * H - ry, rx * 0.5, ry);
+    });
+    return c;
+  }
+
   /* ---------- krok 5: celý běh ---------- */
   function runAll() {
     if (st.busy) return;
     if (!cfg.isAdmin) return alert('Zkušební verze je zatím jen pro správce.');
     st.busy = true; st.log = []; render();
-    var plants = pickPlants(), original = st.original, editMask = st.editMask;
+    var plants = pickPlants(), original = st.original, editMask = withCrowns(st.editMask);
     var wM = parseFloat(st.width) || 0;
     var prepared = S.prepare(original, editMask);
     var bufferMask = S.occlusionMask(editMask, (wM || 15) / original.width);
@@ -486,6 +518,12 @@
       cand.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
       nums.forEach(function (o, j) { var p = cand[Math.floor((j + 0.5) * cand.length / nums.length)]; svg += badge(X(p), Y(p), o.num); });
     });
+    // stromy a keře z náčrtu: číslo druhu přímo na místě ťuknutí
+    items.forEach(function (it) {
+      if (it.tool !== 'tree' && it.tool !== 'shrub') return;
+      var l = legend.filter(function (q) { return q.kind === it.tool && !Object.keys(q.beds || {}).length; })[0];
+      if (l) svg += badge(X(it.pts[0]), Y(it.pts[0]) - 12, l.num);
+    });
     labels.forEach(function (l) {
       svg += '<text x="' + l.x + '" y="' + l.y + '" text-anchor="middle" font-family="Inter, sans-serif" font-weight="800" font-size="20" fill="#FFFFFF" stroke="' + l.col + '" stroke-width="6" paint-order="stroke" stroke-linejoin="round">' + esc(l.t) + '</text>';
     });
@@ -546,7 +584,8 @@
         else if (t === 'bed') {
           var specs = (el.plants || []).map(function (x) { return byName(x.name); }).filter(Boolean);
           specs = specs.filter(function (s2, k) { return specs.indexOf(s2) === k; });
-          if (specs.length < 2) specs = ctx.plants.slice();
+          specs = specs.filter(function (s2) { return s2.role !== 'solo'; });
+          if (specs.length < 2) specs = ctx.plants.filter(function (p) { return p.role !== 'solo'; });
           // Každý záhon potřebuje i nízké rostliny do popředí – AI je v seznamu někdy vynechá.
           ['back', 'mid', 'front'].forEach(function (role) { if (!specs.some(function (s2) { return s2.role === role; })) { var add = ctx.plants.filter(function (p) { return p.role === role; })[0]; if (add) specs.push(add); } });
           project.beds.push({ surface: 'mulch', poly: pts, plants: specs.map(function (s2) { return Object.assign({}, s2, { share: s2.role === 'back' ? 0.3 : s2.role === 'mid' ? 0.35 : 0.35 }); }) });
@@ -618,6 +657,9 @@
 
     var sheet = window.MVGreenPlanV2.renderSheet(project);
     ctxAfterSrc = ctx.after || '';
+    ctx.plants.filter(function (p) { return p.role === 'solo'; }).forEach(function (p) {
+      if (!sheet.legend.some(function (l) { return l.key === p.key; })) sheet.legend.push({ key: p.key, name: p.name, latin: p.latin, kind: p.kind, leaf: p.leaf, flower: p.flower, count: p.soloCount, inst: [], beds: {}, num: sheet.legend.length + 1 });
+    });
     var pplan = photoPlan(project, sheet.legend);
     var area = window.MVGreenPlanV2.polyArea;
     var plants = sheet.legend.map(function (l) {
