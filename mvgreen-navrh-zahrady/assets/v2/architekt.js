@@ -339,13 +339,14 @@
           + window.MVGreenSketch.describe(st.sketch, st.landmarks).replace(/\n/g, ' ')
           + ' Náčrt je kreslený prstem na mobilu, je jen PŘIBLIŽNÝ: určuje CO a ZHRUBA KDE, polohy v % jsou orientační. Prvky dolaď podle celé fotky, aby vše na sebe logicky navazovalo a vypadalo jako skutečná realizace (zeď rovná a navazující na terén, schody kolmo ve zdi, chodník souběžně s domem, dlažba až k zídce, plynulé hrany záhonů). Kde v upravované ploše žádná značka není, dej upravený trávník. '
           // 2026-11-11: cesta k zahradnímu domku nahoře skončila jako záhon
+          + (st.sketch.some(function (it) { return it.tool === 'wall'; }) ? 'V místě nové zdi z náčrtu je na fotce HRUBĚ předkreslený pás šedých kamenů – udělej z něj skutečnou, pěknou kamennou opěrnou zídku po CELÉ jeho délce (od začátku až na konec, nic nevynechávej), navazující na stávající zeď/terén. ' : '')
           + 'Cesty, chodníky a dlažbu z náčrtu nakresli CELÉ od začátku až ke konci – až k místu, u kterého podle náčrtu končí (např. k domku nebo kůlně) – a NIKDY je nenahrazuj záhonem ani trávníkem. ' : '')
       + (fences.length && !hasSketch() ? 'Plot je ' + fences.join(' a ') + ' – záhon u plotu veď jako souvislý pás těsně podél plotu, široký 1–1,5 m, vysoké rostliny přímo u plotu. ' : '')
       // 2026-11-11, majitel: záhon pod domem ve svahu nakreslen na rovinu a se zídkou, kterou nechtěl
       + (st.terrain ? 'TERÉN NA FOTCE: ' + st.terrain + ' ' : '')
       + 'ZACHOVEJ TVAR TERÉNU z fotky: svahy zůstávají svahy, záhony a cesty ve svahu kopírují sklon, nic nesrovnávej do roviny. Opěrné zdi, zídky a terasy dělej JEN tam, kde je zákazník nakreslil v náčrtu nebo kde už na fotce jsou – jinde žádné nepřidávej. '
       + 'Trávník zachovej jako hlavní plochu. Záhony mají plynule zaoblenou hranu s obrubou a jsou mulčované. '
-      + plants.filter(function (p) { return p.role === 'solo'; }).map(function (p) { return (p.kind === 'tree' ? 'Stromy' : 'Solitérní keře') + ' z náčrtu (' + p.soloCount + ' ks) = ' + p.name + ' (' + p.latin + '), výška po výsadbě cca ' + Math.min(4, Math.round(p.height * 0.5 * 10) / 10) + ' m – každý CELÝ: kmen i plná koruna, nic nesmí být useknuté ani schované. '; }).join('')
+      + plants.filter(function (p) { return p.role === 'solo'; }).map(function (p) { return (p.kind === 'tree' ? 'Stromy' : 'Solitérní keře') + ' z náčrtu (' + p.soloCount + ' ks) = ' + p.name + ' (' + p.latin + '), výška po výsadbě cca ' + Math.min(4, Math.round(p.height * 0.5 * 10) / 10) + ' m – každý CELÝ: kmen i plná koruna, nic nesmí být useknuté ani schované. Ploty, zdi a domy ZA stromy zůstávají přesně jako na fotce – koruna je jen částečně zakrývá, nic za stromy neodstraňuj ani nepřekresluj. '; }).join('')
       + 'Použij POUZE tyto rostliny: ' + plants.map(function (p) { return p.name + ' (' + p.latin + ', výška ' + Math.round(p.height * 100) + ' cm)'; }).join('; ') + '. '
       + 'Rostliny sázej ve skupinách po 3–7 kusech stejného druhu, vysoké dozadu, nízké dopředu. '
       // 2. test: AI přidala neobjednanou bránu s plotem a řadu tújí → zakázáno výslovně.
@@ -382,12 +383,47 @@
     var W = mask.width, H = mask.height, c = document.createElement('canvas'); c.width = W; c.height = H;
     var g = c.getContext('2d'); g.drawImage(mask, 0, 0); g.fillStyle = '#000';
     items.forEach(function (it) {
+      // 0.6.277: test 0.6.276 – velká elipsa až k zemi pustila AI i na drátěný plot před domem a AI ho
+      // překreslila na trávník. Koruna se uvolní jen NAD výškou plotu (≈ 1,6 m), níž jen úzký pruh na kmen.
       var p = it.pts[0], tree = it.tool === 'tree', near = 0.6 + p[1];   // níž na fotce = blíž = větší
-      var rx = W * (tree ? 0.045 : 0.03) * near, ry = H * (tree ? 0.1 : 0.05) * near;
-      g.beginPath(); g.ellipse(p[0] * W, p[1] * H - ry * 0.85, rx, ry, 0, 0, Math.PI * 2); g.fill();
-      g.fillRect(p[0] * W - rx * 0.25, p[1] * H - ry, rx * 0.5, ry);
+      var bx = p[0] * W, by = p[1] * H;
+      if (tree) {
+        var rx = W * 0.045 * near, top = by - H * 0.26 * near, bottom = by - H * 0.095 * near;
+        g.beginPath(); g.ellipse(bx, (top + bottom) / 2, rx, (bottom - top) / 2, 0, 0, Math.PI * 2); g.fill();
+        g.fillRect(bx - W * 0.006 * near, bottom - 2, W * 0.012 * near, by - bottom + 2);
+      } else {
+        g.beginPath(); g.ellipse(bx, by - H * 0.03 * near, W * 0.025 * near, H * 0.035 * near, 0, 0, Math.PI * 2); g.fill();
+      }
     });
     return c;
+  }
+
+  /* Předkreslená zeď (2026-11-11, test 0.6.276: zeď z náčrtu udělala AI jen napůl, přední část chyběla).
+   * Do fotky, kterou dostane AI (NE do originálu pro kontrolu změn), se v upravované ploše podél zdi
+   * z náčrtu domaluje hrubý pás šedých kamenů – AI ho dotvoří na skutečnou zídku po celé délce. */
+  function underpaint(photo, mask) {
+    var walls = hasSketch() ? st.sketch.filter(function (it) { return it.tool === 'wall' && it.pts.length >= 2 && window.MVGreenSketch.done(it); }) : [];
+    if (!walls.length || !mask) return photo;
+    var W = photo.width, H = photo.height;
+    var layer = document.createElement('canvas'); layer.width = W; layer.height = H; var g = layer.getContext('2d');
+    var rnd = seeded(4242);
+    walls.forEach(function (it) {
+      for (var i = 1; i < it.pts.length; i++) {
+        var a = it.pts[i - 1], b = it.pts[i], L = Math.hypot((b[0] - a[0]) * W, (b[1] - a[1]) * H), n = Math.max(2, Math.ceil(L / 6));
+        for (var k = 0; k <= n; k++) {
+          var t = k / n, x = (a[0] + (b[0] - a[0]) * t) * W, y = (a[1] + (b[1] - a[1]) * t) * H, near = 0.6 + y / H, hh = H * 0.05 * near;
+          for (var r = 0; r < 3; r++) {
+            var v = 105 + Math.floor(rnd() * 70);
+            g.fillStyle = 'rgb(' + v + ',' + (v - 4) + ',' + (v - 12) + ')';
+            g.fillRect(x - 5 + rnd() * 4, y - hh + r * hh / 3 + rnd() * 2, 10 + rnd() * 6, hh / 3 - 1);
+          }
+        }
+      }
+    });
+    g.globalCompositeOperation = 'destination-in'; g.drawImage(mask, 0, 0, W, H);   // jen v upravované ploše
+    var out = document.createElement('canvas'); out.width = W; out.height = H; var o = out.getContext('2d');
+    o.drawImage(photo, 0, 0); o.globalAlpha = 0.85; o.drawImage(layer, 0, 0);
+    return out;
   }
 
   /* ---------- krok 5: celý běh ---------- */
@@ -397,7 +433,7 @@
     st.busy = true; st.log = []; render();
     var plants = pickPlants(), original = st.original, editMask = withCrowns(st.editMask);
     var wM = parseFloat(st.width) || 0;
-    var prepared = S.prepare(original, editMask);
+    var prepared = S.prepare(underpaint(original, editMask), editMask);
     var bufferMask = S.occlusionMask(editMask, (wM || 15) / original.width);
     var ctx = { plants: plants };
     var plantList = plants.map(function (p) { return p.name + ' (' + p.latin + ')'; }).join('; ');
@@ -440,7 +476,7 @@
         ctx.after = done.canvas.toDataURL('image/jpeg', 0.9);
         ctx.before = scaled(original, 1600);
         log('AI čte z fotek přesný půdorys v metrech…');
-        return ajax('mvgreen_ai_plan_v2', { after: scaled(done.canvas, 1600), before: scaled(original, 1024), marked: st.maskPreview || '', sketch: hasSketch() ? st.sketchPreview : '', plants: plantList, hints: hintsText() });
+        return ajax('mvgreen_ai_plan_v2', { after: scaled(done.canvas, 1600), before: scaled(original, 1024), marked: st.maskPreview || '', sketch: hasSketch() ? st.sketchPreview : '', plants: plantList, hints: hintsText() + ((ctx.brief || []).length ? ' ZADÁNÍ ARCHITEKTA (výsadba záhonů – podle něj vyjmenuj rostliny v záhonech): ' + ctx.brief.join(' / ') : '') });
       })
       .then(function (pl) {
         ctx.plan = pl.plan;
@@ -655,6 +691,16 @@
     }
     project.labels.push({ text: 'TRÁVNÍK', x: lc[0], y: lc[1], size: 26, color: '#2E5B33', spacing: 3 });
 
+    // 2026-11-11 (test 0.6.276): architekt rozdělil 10 druhů, půdorys z obrázku převzal jen 6 → PDF
+    // neodpovídalo zadání. Každý vybraný druh (kromě stromů/keřů z náčrtu) musí být v některém záhonu.
+    var mulchBeds = project.beds.filter(function (b) { return b.surface !== 'gravel'; });
+    if (mulchBeds.length) {
+      var bigBed = mulchBeds.slice().sort(function (a, b) { return window.MVGreenPlanV2.polyArea(b.poly) - window.MVGreenPlanV2.polyArea(a.poly); })[0];
+      ctx.plants.forEach(function (p) {
+        if (p.role === 'solo' || mulchBeds.some(function (b) { return b.plants.some(function (q) { return q.key === p.key; }); })) return;
+        bigBed.plants.push(Object.assign({}, p, { share: p.role === 'back' ? 0.3 : 0.35 }));
+      });
+    }
     var sheet = window.MVGreenPlanV2.renderSheet(project);
     ctxAfterSrc = ctx.after || '';
     ctx.plants.filter(function (p) { return p.role === 'solo'; }).forEach(function (p) {

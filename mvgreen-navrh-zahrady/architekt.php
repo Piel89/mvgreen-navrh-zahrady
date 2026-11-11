@@ -149,7 +149,7 @@ add_action('wp_ajax_mvgreen_ai_plan_v2', function () {
         . "Perspektiva: vzdálené věci jsou na fotce menší a výš – přepočítej je na skutečné metry. Co je na fotce NÍŽ, je BLÍŽ k fotografovi (menší y): např. opěrná zídka v popředí před dlažbou má menší y než dlažba za ní, záhon před domem má menší y než dům. Měřítko odvoď ze známých věcí (dveře ~0,9 m, panel plotu ~2 m, dlaždice ~0,2 m) a z údajů zákazníka.\n"
         . "Pro každý prvek dej points: plochy (house, terrace, paving, gravel = kačírek/štěrk, lawn, bed, structure, steps = schody) jako mnohoúhelník 4–12 bodů po obvodu; čáry (fence, wall, hedge, path, stepping) jako lomená čára 2–8 bodů se šířkou width_m; strom/keř jako 1 bod. "
         . "Nové prvky z návrhu mají is_new true, stávající false. Záhon zakresli PŘESNĚ tam a v takovém tvaru, kde je na fotce PO (např. úzký pás podél plotu = úzký pás podél čáry plotu). Trávník zakresli jako celou zbývající travnatou plochu. "
-        . "U každého nového záhonu vyjmenuj rostliny z fotky PO, jen z tohoto seznamu: {$plants}. "
+        . "U každého nového záhonu vyjmenuj rostliny podle ZADÁNÍ ARCHITEKTA v údajích níže (které druhy patří do kterého záhonu), jinak podle fotky PO – jen z tohoto seznamu: {$plants}. "
         . "Popisky česky a krátce. Do notes 1–2 věty, co je odhad.\n"
         . "ÚDAJE OD ZÁKAZNÍKA (mají přednost před odhadem): {$hints}";
     $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $after, 'detail' => 'high']]];
