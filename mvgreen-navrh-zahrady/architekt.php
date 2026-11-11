@@ -46,6 +46,88 @@ function mvgreen_plan_v2_schema() {
         ],
     ];
 }
+/**
+ * AI architekt před kreslením a kontrola po něm (2026-11-11).
+ * Majitel: „chtěl bych, aby ta AI byla intuitivní a ne slepě následovala to, co tam člověk načmárá –
+ * má to pro ni být vodítko, že v těchhle místech to má být, ale je na ní, aby tomu dala kvalitní
+ * a luxusní návrh. Nechceme mít návrhy s chybami.“ (cesta obkreslená hranatě podle čar prstem,
+ * čtvercový záhon změněný na kužel, nová zeď nenapojená na stávající).
+ *  - mvgreen_ai_design_brief: z fotky, náčrtu, terénu a rozpoznaných věcí napíše odborné zadání
+ *    pro kreslení (záměr zákazníka → profesionální provedení) a seznam kontrol pro výsledek.
+ *  - mvgreen_ai_design_check: porovná výsledek se zadáním; při chybě vrátí přesnou opravu a
+ *    prohlížeč nechá návrh jednou překreslit.
+ */
+function mvgreen_ai_chat_json($content, $schema_name, $schema, $timeout = 90) {
+    if (!defined('MVGREEN_OPENAI_API_KEY') || !MVGREEN_OPENAI_API_KEY) return new WP_Error('nokey', 'Chybí MVGREEN_OPENAI_API_KEY.');
+    $model = defined('MVGREEN_OPENAI_PLAN_V2_MODEL') ? MVGREEN_OPENAI_PLAN_V2_MODEL : 'gpt-4.1';
+    $r = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'headers' => ['Authorization' => 'Bearer ' . MVGREEN_OPENAI_API_KEY, 'Content-Type' => 'application/json'],
+        'body' => wp_json_encode(['model' => $model, 'messages' => [['role' => 'user', 'content' => $content]],
+            'response_format' => ['type' => 'json_schema', 'json_schema' => ['name' => $schema_name, 'strict' => true, 'schema' => $schema]]]),
+        'timeout' => $timeout,
+    ]);
+    if (is_wp_error($r)) return $r;
+    $json = json_decode(wp_remote_retrieve_body($r), true);
+    $code = wp_remote_retrieve_response_code($r);
+    if ($code < 200 || $code >= 300) return new WP_Error('api', isset($json['error']['message']) ? sanitize_text_field($json['error']['message']) : 'AI vrátila chybu.');
+    $out = json_decode($json['choices'][0]['message']['content'] ?? '', true);
+    return is_array($out) ? $out : new WP_Error('parse', 'AI nevrátila použitelnou odpověď.');
+}
+function mvgreen_ai_post_image($k) {
+    $v = isset($_POST[$k]) ? wp_unslash($_POST[$k]) : '';
+    return (preg_match('~^data:image/(jpeg|png);base64,[A-Za-z0-9+/=]+$~D', $v) && strlen($v) < 6000000) ? $v : '';
+}
+
+add_action('wp_ajax_mvgreen_ai_design_brief', function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
+    $before = mvgreen_ai_post_image('before'); $sketch = mvgreen_ai_post_image('sketch'); $marked = mvgreen_ai_post_image('marked');
+    if (!$before) wp_send_json_error(['message' => 'Chybí fotka.'], 400);
+    $info = isset($_POST['info']) ? sanitize_textarea_field(wp_unslash($_POST['info'])) : '';
+    $prompt = "Jsi zkušený zahradní architekt, který navrhuje luxusní, ale realizovatelné zahrady v ČR. Zákazník vyfotil svou zahradu"
+        . ($marked ? ', zeleně označil, co má zůstat beze změny' : '')
+        . ($sketch ? ' a prstem na mobilu HRUBĚ načmáral, kde chce jaké prvky (barevné tahy na fotce, význam barev je v údajích níže)' : '') . ".\n"
+        . "Tvůj úkol: pochopit ZÁMĚR zákazníka a navrhnout z něj kvalitní, profesionální a luxusně působící zahradu. Náčrt je jen VODÍTKO, KDE co zhruba má být – NEKOPÍRUJ jeho tvary ani klikaté čáry. Rozhodni jako architekt:\n"
+        . "- cesty: plynulé, elegantní oblouky nebo čisté přímky, jednotná šířka 1–1,2 m, logický začátek a cíl (např. z dlažby ke vstupu, ke studně, k domku), kvalitní obruba;\n"
+        . "- záhony: pěkný, vyvážený tvar (měkce zaoblený nebo čistě geometrický podle stylu a okolí), rozumná hloubka 1–2,5 m, vrstvení rostlin odzadu dopředu;\n"
+        . "- zdi a zídky: VŽDY navazují na stávající zeď, dům, plot nebo terén – nikdy nestojí samostatně v trávníku; materiál ladí se stávajícími stavbami;\n"
+        . "- svah zachovej, prvky ve svahu ho kopírují; schody jen tam, kde je výškový rozdíl;\n"
+        . "- celkově: proporce, symetrie/rytmus, kvalitní materiály, čistota detailu. Žádné nelogické nebo nerealizovatelné prvky. Nepřidávej nic, o co zákazník nežádal (terasy, nábytek, pergoly, ploty, brány).\n"
+        . "Napiš ZADÁNÍ PRO VIZUALIZACI (česky, 6–12 stručných bodů, každý = jeden prvek: co, kde přesně na fotce vzhledem k věcem na ní, tvar, rozměr, materiál, na co navazuje) a SEZNAM KONTROL (4–8 krátkých ověřitelných vět, podle kterých se hotový obrázek zkontroluje, např. „Nová zídka navazuje na stávající kamennou zeď vlevo“).\n"
+        . "ÚDAJE: " . $info;
+    $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => 'high']]];
+    if ($sketch) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $sketch, 'detail' => 'high']];
+    if ($marked) $content[] = ['type' => 'image_url', 'image_url' => ['url' => $marked, 'detail' => 'low']];
+    $schema = ['type' => 'object', 'additionalProperties' => false, 'required' => ['brief', 'checks'], 'properties' => [
+        'brief' => ['type' => 'array', 'items' => ['type' => 'string']],
+        'checks' => ['type' => 'array', 'items' => ['type' => 'string']],
+    ]];
+    $out = mvgreen_ai_chat_json($content, 'design_brief', $schema);
+    if (is_wp_error($out)) wp_send_json_error(['message' => $out->get_error_message()], 200);
+    $clean = function ($a, $n) { return array_slice(array_values(array_filter(array_map(function ($s) { return sanitize_text_field((string) $s); }, (array) $a))), 0, $n); };
+    wp_send_json_success(['brief' => $clean($out['brief'] ?? [], 14), 'checks' => $clean($out['checks'] ?? [], 10)]);
+});
+
+add_action('wp_ajax_mvgreen_ai_design_check', function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
+    $before = mvgreen_ai_post_image('before'); $after = mvgreen_ai_post_image('after');
+    if (!$before || !$after) wp_send_json_error(['message' => 'Chybí fotky.'], 400);
+    $brief = isset($_POST['brief']) ? sanitize_textarea_field(wp_unslash($_POST['brief'])) : '';
+    $checks = isset($_POST['checks']) ? sanitize_textarea_field(wp_unslash($_POST['checks'])) : '';
+    $prompt = "Jsi přísný kontrolor kvality vizualizací zahrad. Obrázek 1 = původní fotka, obrázek 2 = vizualizace návrhu na stejné fotce.\n"
+        . "Zadání návrhu:\n" . $brief . "\nKontroly:\n" . $checks . "\n"
+        . "Posuď obrázek 2: splňuje každou kontrolu? Hledej i obecné chyby: zeď nebo zídka stojící samostatně bez napojení, cesta nikam nevedoucí nebo s ostrými nelogickými zlomy, prvky ve vzduchu nebo nesedící do perspektivy, rozbité okraje, nerealistické rostliny, zničené nebo změněné stávající stavby, dům, plot, obloha. "
+        . "ok = true, jen když je návrh bez podstatných chyb. Do problems napiš konkrétní chyby česky. Do fix napiš krátký přesný pokyn pro opravu při překreslení (co a kde změnit), nebo prázdný text.";
+    $content = [['type' => 'text', 'text' => $prompt], ['type' => 'image_url', 'image_url' => ['url' => $before, 'detail' => 'low']], ['type' => 'image_url', 'image_url' => ['url' => $after, 'detail' => 'high']]];
+    $schema = ['type' => 'object', 'additionalProperties' => false, 'required' => ['ok', 'problems', 'fix'], 'properties' => [
+        'ok' => ['type' => 'boolean'], 'problems' => ['type' => 'array', 'items' => ['type' => 'string']], 'fix' => ['type' => 'string'],
+    ]];
+    $out = mvgreen_ai_chat_json($content, 'design_check', $schema);
+    if (is_wp_error($out)) wp_send_json_error(['message' => $out->get_error_message()], 200);
+    wp_send_json_success(['ok' => !empty($out['ok']), 'problems' => array_slice(array_map('sanitize_text_field', (array) ($out['problems'] ?? [])), 0, 8), 'fix' => sanitize_text_field((string) ($out['fix'] ?? ''))]);
+});
+
 add_action('wp_ajax_mvgreen_ai_plan_v2', function () {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
     if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);

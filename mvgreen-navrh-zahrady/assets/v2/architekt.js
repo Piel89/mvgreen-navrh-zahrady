@@ -313,14 +313,15 @@
     return chosen.map(function (p) { return Object.assign({}, p); });
   }
 
-  function promptText(plants) {
+  function promptText(plants, brief) {
     var users = [st.users.kids && 'děti', st.users.dog && 'pes', st.users.cat && 'kočka'].filter(Boolean);
     var fences = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     return 'Navrhni zahradu ve stylu „' + STYLES[st.style] + '“ s ' + { low: 'minimální', mid: 'střední', high: 'vyšší' }[st.care] + ' údržbou. '
+      + (brief && brief.length ? 'ZADÁNÍ ARCHITEKTA (hlavní podklad, řiď se jím): ' + brief.join(' ') + ' ' : '')
       + (st.wish ? 'PŘÁNÍ ZÁKAZNÍKA (má přednost před vším ostatním a musí být na fotce jasně vidět): ' + st.wish + '. ' : '')
       + ((st.removeNames || []).length ? 'Zákazník chce odstranit: ' + st.removeNames.join(', ') + '. ' : '')
       + (st.removeWhere ? 'Věci, které zákazník nechal odstranit, stály ' + st.removeWhere + '. Když přání mluví o místě, kde stojí/stály (např. „kde stojí auta“), myslí PŘESNĚ tuto oblast – nové zpevněné plochy a zídky dej jen tam a zbytek upravované plochy řeš podle stylu (trávník, záhony). ' : '')
-      + (hasSketch() ? 'ROZMÍSTĚNÍ PODLE NÁČRTU ZÁKAZNÍKA (druhý obrázek) – ZÁVAZNÉ, má přednost před vlastním nápadem: '
+      + (hasSketch() ? 'NÁČRT ZÁKAZNÍKA (druhý obrázek) – VODÍTKO, kde zhruba co má být, tvary a detaily navrhni sám kvalitně: '
           + window.MVGreenSketch.describe(st.sketch, st.landmarks).replace(/\n/g, ' ')
           + ' Náčrt je kreslený prstem na mobilu, je jen PŘIBLIŽNÝ: určuje CO a ZHRUBA KDE, polohy v % jsou orientační. Prvky dolaď podle celé fotky, aby vše na sebe logicky navazovalo a vypadalo jako skutečná realizace (zeď rovná a navazující na terén, schody kolmo ve zdi, chodník souběžně s domem, dlažba až k zídce, plynulé hrany záhonů). Kde v upravované ploše žádná značka není, dej upravený trávník. '
           // 2026-11-11: cesta k zahradnímu domku nahoře skončila jako záhon
@@ -342,7 +343,9 @@
   function guideFor(box) {
     var g = window.MVGreenSketch.guide(st.original, st.sketch), c = document.createElement('canvas');
     c.width = box.W; c.height = box.H;
-    var x = c.getContext('2d'); x.fillStyle = '#7f8a80'; x.fillRect(0, 0, box.W, box.H); x.drawImage(g, box.x, box.y, box.w, box.h);
+    var x = c.getContext('2d'); x.fillStyle = '#7f8a80'; x.fillRect(0, 0, box.W, box.H);
+    // 2026-11-11: rozmazané zóny místo ostrých čar – AI je jinak obkreslovala (hranatá cesta podle prstu)
+    x.filter = 'blur(' + Math.max(4, Math.round(box.w / 220)) + 'px)'; x.drawImage(g, box.x, box.y, box.w, box.h); x.filter = 'none';
     return c.toDataURL('image/jpeg', 0.9);
   }
   function hintsText() {
@@ -368,13 +371,39 @@
     var plantList = plants.map(function (p) { return p.name + ' (' + p.latin + ')'; }).join('; ');
     log('Vybrané rostliny: ' + plants.map(function (p) { return p.name; }).join(', '));
     log('Posílám fotku AI (upravuje se ' + Math.round(prepared.coverage * 100) + ' % fotky)…');
-    var startFields = { image: prepared.image, mask: S.maskToApi(bufferMask, prepared.box), coreMask: S.maskToApi(editMask, prepared.box), instructions: promptText(plants) };
-    if (hasSketch()) { startFields.guide = guideFor(prepared.box); log('Přikládám váš náčrt (' + st.sketch.length + ' prvků) – AI se podle něj řídí.'); }
-    ajax('mvgreen_ai_preview_start', startFields)
-      .then(function (start) { log('AI kreslí návrh…'); return poll(start.jobId, 0); })
-      .then(function (step) { if (!step.image) throw new Error(step.message || 'AI nevrátila obrázek.'); return loadImg(step.image); })
-      .then(function (img) {
-        var done = S.finish(original, editMask, img, prepared.box, bufferMask);
+    // 2026-11-11, majitel: „AI má být intuitivní, náčrt je vodítko … nechceme návrhy s chybami“ →
+    // 1) AI architekt napíše odborné zadání, 2) kreslení podle něj, 3) kontrola a nejvýš jedna oprava.
+    var guide = hasSketch() ? guideFor(prepared.box) : '';
+    var gen = function (instr) {
+      var f = { image: prepared.image, mask: S.maskToApi(bufferMask, prepared.box), coreMask: S.maskToApi(editMask, prepared.box), instructions: instr.slice(0, 5900) };
+      if (guide) f.guide = guide;
+      return ajax('mvgreen_ai_preview_start', f)
+        .then(function (start) { log('AI kreslí návrh…'); return poll(start.jobId, 0); })
+        .then(function (step) { if (!step.image) throw new Error(step.message || 'AI nevrátila obrázek.'); return loadImg(step.image); })
+        .then(function (img) { return S.finish(original, editMask, img, prepared.box, bufferMask); });
+    };
+    var info = 'Styl: ' + STYLES[st.style] + ', údržba ' + CARES[st.care].toLowerCase() + '. ' + hintsText()
+      + ' Rostliny k použití: ' + plantList + '. ' + ((st.removeNames || []).length ? 'Odstranit: ' + st.removeNames.join(', ') + '. ' : '')
+      + ((st.landmarks || []).length ? 'Na fotce rozpoznáno: ' + st.landmarks.filter(function (l) { return l.kind !== 'sky'; }).map(function (l) { return l.name + (l.state === 'keep' ? ' (zůstává)' : l.state === 'remove' ? ' (pryč)' : ''); }).join(', ') + '.' : '');
+    log('AI architekt promýšlí návrh podle vašeho zadání' + (hasSketch() ? ' a náčrtu' : '') + '…');
+    ajax('mvgreen_ai_design_brief', { before: scaled(original, 1024), sketch: hasSketch() ? st.sketchPreview : '', marked: st.maskPreview || '', info: info })
+      .then(function (b) { ctx.brief = b.brief || []; ctx.checks = b.checks || []; log('Zadání architekta: ' + ctx.brief.join(' | ')); },
+        function (e) { ctx.brief = []; ctx.checks = []; log('Zadání architekta se nepovedlo (' + e.message + ') – kreslím podle náčrtu.'); })
+      .then(function () {
+        log('Posílám fotku AI (upravuje se ' + Math.round(prepared.coverage * 100) + ' % fotky)…');
+        return gen(promptText(plants, ctx.brief));
+      })
+      .then(function (done) {
+        if (!ctx.checks || !ctx.checks.length) return done;
+        log('Kontroluji návrh, jestli nemá chyby…');
+        return ajax('mvgreen_ai_design_check', { before: scaled(original, 1024), after: scaled(done.canvas, 1024), brief: ctx.brief.join(' / '), checks: ctx.checks.join(' / ') })
+          .then(function (c) {
+            if (c.ok || !c.fix) { log('Kontrola: bez podstatných chyb.'); return done; }
+            log('Kontrola našla: ' + c.problems.join(' | ') + ' → překresluji s opravou.');
+            return gen(promptText(plants, ctx.brief) + ' OPRAVA PO KONTROLE (nejdůležitější): ' + c.fix).then(function (d2) { log('Opravený návrh hotový.'); return d2; });
+          }, function (e) { log('Kontrola se nepovedla (' + e.message + ') – pokračuji.'); return done; });
+      })
+      .then(function (done) {
         log(done.ok ? 'Vizualizace hotová a zkontrolovaná' + (done.repaired ? ' (okraj u chráněných prvků opraven)' : '') + '.' : 'Pozor: kontrola vizualizace hlásí odchylku ' + Math.round(done.drift) + ' – výsledek je potřeba posoudit.');
         ctx.after = done.canvas.toDataURL('image/jpeg', 0.9);
         ctx.before = scaled(original, 1600);
@@ -436,8 +465,8 @@
       if (!col || t === 'lawn') return;
       var d = pts.map(function (p, k) { return (k ? 'L' : 'M') + X(p) + ' ' + Y(p); }).join(' ');
       var area = t === 'bed' || t === 'paving' || t === 'gravel' || (t === 'path' && closedLine(pts));
-      if (area) svg += '<path d="' + d + ' Z" fill="' + col + '" fill-opacity="0.18" stroke="' + col + '" stroke-width="4" stroke-linejoin="round"/>';
-      else svg += '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="' + (t === 'path' ? 14 : t === 'steps' ? 10 : 6) + '" stroke-opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/>';
+      // 2026-11-11: AI tvary podle náčrtu sama vylepšuje → obrysy z náčrtu by s vizualizací neseděly; jen popisky a čísla
+      void d;
       var txt = t === 'bed' ? 'Záhon ' + bedNo(it) : t === 'gravel' ? 'Kačírek' : t === 'paving' ? 'Zámková dlažba' : t === 'path' ? 'Cesta' : t === 'wall' ? 'Opěrná zeď' : 'Schody';
       var c = area ? cen(pts) : pts[Math.floor(pts.length / 2)];
       labels.push({ x: X(c), y: Y(c) - (t === 'bed' ? 26 : 0), t: txt, col: col });
@@ -464,7 +493,7 @@
       + '<div class="mvg2-pp__legend"><strong>Rostliny</strong><ol>' + legend.map(function (l) {
         var where = bedRows.filter(function (r) { return r.plants.some(function (p) { return p.num === l.num; }); }).map(function (r) { return r.name + ': ' + r.plants.filter(function (p) { return p.num === l.num; })[0].count + ' ks'; });
         return '<li><b>' + l.num + '</b><span><strong>' + esc(l.name) + '</strong><i>' + esc(l.latin) + '</i><em>celkem ' + l.count + ' ks' + (where.length ? ' · ' + esc(where.join(', ')) : '') + '</em></span></li>';
-      }).join('') + '</ol><p>Obrysy jsou podle vašeho náčrtu, čísla ukazují, který druh patří do kterého záhonu. Přesné rozmístění rostlin udělejte podle sponu (strana 5).</p></div></div>';
+      }).join('') + '</ol><p>Popisky ukazují prvky z vašeho zadání, čísla, který druh patří do kterého záhonu. Přesné rozmístění rostlin udělejte podle sponu (strana 5).</p></div></div>';
     return { html: html, bedRows: bedRows };
   }
   var ctxAfterSrc = '';
