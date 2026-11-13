@@ -47,7 +47,7 @@
   var PLANT_PRICE = { tree: 1400, conifer: 650, shrub: 380, grass: 210, perennial: 175, bulb: 25, climber: 320 };
 
   // ---------- práce (osobohodiny šikovného laika včetně výkopu, odvozu a úklidu) ----------
-  var H = { vytyceni: 2, dlazba: 3, cesta: 2.2, zed: 8, schody: 16, zahon: 1, kacirek: 0.6, travnik: 0.12, vysadba: 0.12 };
+  var H = { vytyceni: 2, dlazba: 3, cesta: 2.2, zed: 8, schody: 16, zahon: 1, kacirek: 0.6, travnik: 0.12, regen: 0.02, vysadba: 0.12 };
   var WEEKEND_H = 28;   // 2 lidé × 2 dny × 7 h
 
   // ---------- nářadí a stroje ----------
@@ -59,7 +59,8 @@
     kontejner: { name: 'Kontejner na zeminu a suť 6 m³', unit: 'ks', price: 3600 },
     michacka:  { name: 'Míchačka', unit: 'den', price: 350 },
     kultivator:{ name: 'Rotavátor / kultivátor', unit: 'den', price: 750 },
-    valec:     { name: 'Válec na trávník', unit: 'den', price: 200 }
+    valec:     { name: 'Válec na trávník', unit: 'den', price: 200 },
+    vertikutator: { name: 'Vertikutátor', unit: 'den', price: 600 }
   };
 
   var r1 = function (v) { return Math.round(v * 10) / 10; };
@@ -73,7 +74,7 @@
     var path = sum(m.paths, function (p) { return p.area; }), pathLen = sum(m.paths, function (p) { return p.length; });
     var wallL = sum(m.walls, function (w) { return w.length; }), wallA = sum(m.walls, function (w) { return w.length * (w.height || 0.6); });
     var steps = sum(m.steps, function (s) { return s.count || 3; });
-    var lawn = (m.lawn || 0) + (m.lawnExtra || 0);
+    var lawn = (m.lawn || 0) + (m.lawnExtra || 0), regen = m.lawnRegen || 0;
     var fin = m.finish || {}, pavId = { vf: 'dlazbavf', kamen: 'dlazbakamen' }[fin.paving] || 'dlazba';
     var pavName = { dlazba: 'Zámková dlažba', dlazbavf: 'Velkoformátová dlažba', dlazbakamen: 'Kamenná dlažba' }[pavId];
     var edgeId = { ocel: 'obrubaocel', beton: 'obrubnik' }[fin.edge] || 'obruba';
@@ -93,6 +94,8 @@
     if (concrete > 0.5) add('betonm3', concrete); else if (concrete > 0) add('beton', Math.ceil(concrete / 0.0125));
     // trávník: 35 g/m² osiva, 30 g/m² startovacího hnojiva
     if (lawn > 1) { add('osivo', lawn * 0.035); add('hnojivo', lawn * 0.03); }
+    // regenerace stávajícího trávníku: dosev 15 g/m², hnojivo 30 g/m²
+    if (regen > 1) { add('osivo', regen * 0.015); add('hnojivo', regen * 0.03); }
 
     var round = function (id, q) { var u = M[id].unit; return u === 'ks' || u === 'pytel' || u === 'm' ? Math.ceil(q) : u === 'kg' ? Math.max(1, Math.ceil(q)) : Math.max(0.1, Math.ceil(q * 10) / 10); };
     var materials = Object.keys(mats).map(function (id) { var q = round(id, mats[id]); return { id: id, name: M[id].name, qty: q, unit: M[id].unit, price: M[id].price, cost: Math.round(q * M[id].price) }; });
@@ -108,6 +111,7 @@
     if (wallL > 0.3 || steps) rentAdd('michacka', 1);
     if (lawn > 80) rentAdd('kultivator', 1);
     if (lawn > 40) rentAdd('valec', 1);
+    if (regen > 30) rentAdd('vertikutator', 1);
 
     // práce po krocích (pořadí = harmonogram)
     var tasks = [], task = function (name, scope, h, group) { if (h > 0.2) tasks.push({ name: name, scope: scope, hours: Math.max(1, Math.round(h)), group: group }); };
@@ -120,7 +124,8 @@
     var nPl = sum(plants, function (p) { return p.count; });
     if (nPl) task('Výsadba rostlin a ' + (fin.mulch === 'sterk' ? 'kačírek' : 'mulč'), nPl + ' ks', nPl * H.vysadba + (fin.mulch === 'sterk' ? bed * H.kacirek : 0), 'Záhony');
     if (grav > 0.3) task('Kačírek', r1(grav) + ' m²', grav * H.kacirek, 'Záhony');
-    if (lawn > 1) task('Trávník – urovnání, výsev, válcování', Math.round(lawn) + ' m²', lawn * H.travnik, 'Trávník');
+    if (lawn > 1) task('Nový trávník – urovnání, výsev, válcování', Math.round(lawn) + ' m²', lawn * H.travnik, 'Trávník');
+    if (regen > 1) task('Regenerace stávajícího trávníku – vertikutace, dosev, hnojení', Math.round(regen) + ' m²', regen * H.regen, 'Trávník');
 
     // harmonogram po víkendech (2 lidé)
     var weekends = [], cur = null;

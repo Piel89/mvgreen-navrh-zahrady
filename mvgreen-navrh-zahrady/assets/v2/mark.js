@@ -305,6 +305,37 @@
               });
             }
           }
+          // 2026-11-13 (test 0.6.283, zahrada s levandulemi a hodně stromy): koruny se rozpadly na kousky a
+          // nepřiřazené dílky mezi nimi byly „Změnit“ – zákazník musel ťukat 7× a AI mohla stromy překreslit.
+          // 1) dílek obklopený z většiny jedním chráněným stromem/keřem/pozadím mu připadne (díry v korunách),
+          // 2) nepřiřazený dílek celý NAD nejvyšším místem upravované země (trávník, záhon, hlína…) a bez
+          //    souseda ze země zůstane – měnit se má jen zem, ne stromy a pozadí nad ní.
+          (function () {
+            var st3 = stats(seg), nb = st3.nb, cen = st3.cen;
+            var LEAFY = { tree: 1, shrub: 1, hedge: 1, offsite: 1, neighbor: 1 }, GROUND = { lawn: 1, bed: 1, soil: 1, gravel: 1, path: 1, paving: 1, terrace: 1, rubble: 1 };
+            for (var pass = 0; pass < 6; pass++) {
+              var changed = false;
+              for (var s = 1; s <= N; s++) {
+                if (owner[s] >= 0 || !nb[s] || !nb[s].length) continue;
+                var votes = {}, tot = 0;
+                nb[s].forEach(function (n) { tot++; var o = owner[n]; if (o >= 0 && LEAFY[objects[o].kind] && objects[o].state === 'keep') votes[o] = (votes[o] || 0) + 1; });
+                var best = -1, bv = 0; Object.keys(votes).forEach(function (k) { if (votes[k] > bv) { bv = votes[k]; best = +k; } });
+                if (best >= 0 && bv / tot >= 0.6) { owner[s] = best; changed = true; }
+              }
+              if (!changed) break;
+            }
+            var groundTop = 1;
+            for (var s2 = 1; s2 <= N; s2++) { var o2 = owner[s2]; if (o2 >= 0 && GROUND[objects[o2].kind] && cen[s2][1] < groundTop) groundTop = cen[s2][1]; }
+            if (groundTop < 1) {
+              var bg = -1;
+              for (var s3 = 1; s3 <= N; s3++) {
+                if (owner[s3] >= 0 || cen[s3][1] >= groundTop - 0.02) continue;
+                if ((nb[s3] || []).some(function (n) { return owner[n] >= 0 && GROUND[objects[owner[n]].kind]; })) continue;
+                if (bg < 0) { objects.push({ name: 'Stromy a pozadí nad zahradou', kind: 'tree', state: 'keep' }); bg = objects.length - 1; }
+                owner[s3] = bg;
+              }
+            }
+          })();
           objects.forEach(function (o) { delete o.box; delete o.mask; delete o.img; });
           if (det && det.error) toast('AI teď objekty nenašla (' + det.error.message + '). Ťukněte na to, co má zůstat nebo zmizet.', 5000);
         }

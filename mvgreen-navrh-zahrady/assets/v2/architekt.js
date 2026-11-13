@@ -393,7 +393,11 @@
     // jen když o ně zákazník stojí.
     var HERB = /^(Allium schoenoprasum|Allium tuberosum|Mentha|Melissa|Petroselinum|Levisticum|Origanum vulgare|Salvia officinalis|Salvia rosmarinus|Rosmarinus|Artemisia dracunculus|Anethum|Ocimum|Satureja|Thymus vulgaris)/i;
     var wantHerbs = /bylin/i.test(st.wish || '');
-    var fits = function (p) { return (wantHerbs || !HERB.test(p.latin)) && p.sun.indexOf(st.sun) >= 0 && okWater(p) && !p.acid && !p.spreads && !p.toxic && !(p.thorny && (st.users.kids || st.users.dog)); };
+    // 2026-11-13 (test 0.6.283, svah pod chatou): „Nízká údržba“ vybrala dvě růže a sadec – řez, postřiky,
+    // trny. U nízké údržby (styl nebo péče „Málo“) se náročné rody nevybírají.
+    var HIGHCARE = /^(Rosa|Paeonia|Dahlia|Delphinium|Lupinus|Papaver|Phlox paniculata|Eupatorium|Alcea|Hydrangea macrophylla|Clematis|Chrysanthemum)/i;
+    var lowCare = st.style === 'nizka' || st.care === 'low';
+    var fits = function (p) { return !(lowCare && (HIGHCARE.test(p.latin) || p.thorny)) && (wantHerbs || !HERB.test(p.latin)) && p.sun.indexOf(st.sun) >= 0 && okWater(p) && !p.acid && !p.spreads && !p.toxic && !(p.thorny && (st.users.kids || st.users.dog)); };
     var wts = STYLE_W[st.style] || STYLE_W.prirodni;
     // vážené náhodné pořadí: lepší shoda se stylem = dřív na řadě, ale pokaždé jiný návrh
     var spec = styleSpec();
@@ -747,6 +751,22 @@
   }
   function lineDist(p, line) { var d = Infinity; for (var i = 1; i < line.length; i++) d = Math.min(d, segDist(p, line[i - 1], line[i])); return d; }
 
+  // Podíl zelené (porostlé) plochy v upravované části fotky – stávající trávník se jen regeneruje.
+  function greenShare() {
+    if (!st.original || !st.editMask) return 0;
+    try {
+      var W = 160, H = Math.max(1, Math.round(160 * st.original.height / st.original.width)), c = document.createElement('canvas'); c.width = W; c.height = H;
+      var g = c.getContext('2d'); g.drawImage(st.original, 0, 0, W, H); var ph = g.getImageData(0, 0, W, H).data;
+      g.clearRect(0, 0, W, H); g.drawImage(st.editMask, 0, 0, W, H); var mk = g.getImageData(0, 0, W, H).data;
+      var ed = 0, gr = 0;
+      for (var y = Math.floor(H * 0.35); y < H; y++) for (var x = 0; x < W; x++) {
+        var p = (y * W + x) * 4; if (mk[p + 3] < 128 || mk[p] > 128) continue;   // černá = upravuje se
+        ed++; var r = ph[p], gg = ph[p + 1], b = ph[p + 2]; if (gg > r * 1.05 && gg > b * 1.1 && gg > 50) gr++;
+      }
+      var s = ed > 50 ? gr / ed : 0;
+      return s < 0.35 ? 0 : Math.min(1, s * 1.15);
+    } catch (e) { return 0; }
+  }
   function cenX(poly) { return poly.reduce(function (s, q) { return s + q[0]; }, 0) / poly.length; }
   // Plochy záhonů ze zadání architekta: {1: 11.3, 2: 4} z „Záhon 1 … ≈ 4,5 × 2,5 m (≈ 11,3 m²)“.
   function briefBedAreas(brief) {
@@ -941,7 +961,9 @@
       paths: pavedPath ? [] : project.paths.map(function (p2) { var L = lineLen(p2.line); return { length: L, area: L * (p2.width || 1) }; }),
       walls: newWalls,
       steps: project.structures.filter(function (s3) { return s3.steps && s3.isNew; }).map(function () { return { count: 3 }; }),
-      lawn: Math.max(0, lawnArea), lawnExtra: parseFloat(st.extraLawn) || 0, finish: finish
+      // Test 0.6.283 (velký trávník): 660 m² se počítalo jako nový trávník (výsev, 315 h). Zelená část upravované
+      // plochy na fotce = stávající trávník → jen regenerace (vertikutace, dosev); nový jen na hlíně a suti.
+      lawn: Math.max(0, lawnArea) * (1 - greenShare()), lawnRegen: Math.max(0, lawnArea) * greenShare(), lawnExtra: parseFloat(st.extraLawn) || 0, finish: finish
     };
     var estimate = window.MVGreenKB ? window.MVGreenKB.estimate(model, plants.map(function (p2) { var spec = ctx.plants.filter(function (q) { return q.name === p2.name; })[0] || {}; return { name: p2.name, count: p2.count, price: p2.price, kind: spec.kind, container: p2.container }; })) : null;
     var usersL = [st.users.kids && 'děti', st.users.dog && 'pes', st.users.cat && 'kočka'].filter(Boolean);

@@ -57,6 +57,9 @@ for (const file of fs.readdirSync(DIR).filter(f => f.endsWith('.txt')).sort()) {
       if (!p.flower) warns.push(where + ' kvete, ale nemá barvu květu');
     } else p.bloom = null;
     if (flags !== '-') for (const f of flags) { if (!FLAGS[f]) err('neznámý příznak „' + f + '“'); else p[FLAGS[f]] = true; }
+    // 2026-11-13: v tabulkách chyběl příznak jedovatosti u 33 rostlin (tis, túje, cesmína, brslen, bobkovišeň,
+    // čemeřice, pryšec…) – „Nízká údržba“ pak nabídla tis. Silně jedovaté rody se označí vždy.
+    if (/^(Taxus|Thuja|Aconitum|Digitalis|Convallaria|Daphne|Laburnum|Euonymus|Helleborus|Prunus laurocerasus|Ilex|Euphorbia|Ricinus|Colchicum|Nerium|Brugmansia|Datura|Veratrum|Rhododendron|Kalmia|Pieris)\b/.test(latin)) p.toxic = true;
     // Barva do plánu a kalendáře: květ, jinak list. Stálezelené nemají „kvetení“ celý rok
     // (Martin 2026-11-08: u stálezelených se ukazovalo kvetení všech 12 měsíců).
     p.color = p.flower || p.leaf;
