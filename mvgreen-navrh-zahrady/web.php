@@ -279,3 +279,12 @@ add_shortcode('mvgreen_obchodni_podminky', function () {
 
     return $out . '</div>';
 });
+
+// 2026-11-13, rozbor bod 03 A (Martin souhlasil): stará Elementor úvodní stránka /uvod/ (id 8919) zůstala
+// publikovaná vedle nové úvodní (8975) = duplicitní obsah pro Google. Trvale (301) ji přesměrujeme na úvod.
+// Rollback: nastavit page_on_front zpět na 8919 – pak se přesměrování samo vypne. Náhled v editoru jde dál.
+add_action('template_redirect', function () {
+    if ((int) get_option('page_on_front') === 8919 || !is_page(8919) || is_preview() || isset($_GET['elementor-preview'])) return;
+    wp_safe_redirect(home_url('/'), 301, 'MVGreen');
+    exit;
+});
