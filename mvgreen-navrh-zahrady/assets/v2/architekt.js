@@ -134,7 +134,7 @@
       window.MVGreenSketch.open(st.original, st.editMask, st.sketch, { cacheKey: st.cacheKey }).then(function (r) { if (r) { st.sketch = r.strokes; st.sketchPreview = r.strokes.length ? r.preview : ''; } render(); });
     };
     var geo = $('[data-geo]'); if (geo) geo.onclick = function () { save(); lookupPlace(); };
-    var ms = $('[data-measure]'); if (ms) ms.onclick = function () { save(); measure().then(function (r) { if (r) st.scale = r; render(); }); };
+    var ms = $('[data-measure]'); if (ms) ms.onclick = function () { save(); measure().then(function (r) { if (r === 'clear') st.scale = null; else if (r) st.scale = r; render(); }); };
     var run = $('[data-run]'); if (run) run.onclick = function () { save(); runAll(); };
     var pr = $('[data-print]'); if (pr) pr.onclick = function () { document.body.classList.add('mvg2-printing'); window.print(); setTimeout(function () { document.body.classList.remove('mvg2-printing'); }, 500); };
     var slide = function (v) { $('[data-after]').style.clipPath = 'inset(0 ' + (100 - v) + '% 0 0)'; $('[data-divider]').style.left = v + '%'; };
@@ -162,7 +162,7 @@
         + '<div style="padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#1d2420;display:grid;gap:8px">'
         + '<div data-msg></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
         + '<label style="display:flex;gap:6px;align-items:center">Vzdálenost <input type="text" inputmode="decimal" placeholder="např. 1,2" style="width:90px;font:16px system-ui;padding:8px;border-radius:8px;border:0" value="' + (st.scale ? String(st.scale.m).replace('.', ',') : '') + '"> m</label>'
-        + '<span style="flex:1"></span><button type="button" data-x style="padding:10px 14px;border-radius:99px;border:1px solid #fff;background:none;color:#fff;font:600 15px system-ui">Zrušit</button>'
+        + '<span style="flex:1"></span><button type="button" data-clear style="padding:10px 14px;border-radius:99px;border:1px solid #fff;background:none;color:#fff;font:600 15px system-ui">Smazat</button><button type="button" data-x style="padding:10px 14px;border-radius:99px;border:1px solid #fff;background:none;color:#fff;font:600 15px system-ui">Zrušit</button>'
         + '<button type="button" data-ok style="padding:10px 16px;border-radius:99px;border:0;background:#8DC58A;color:#10200f;font:700 15px system-ui">Uložit</button></div></div>';
       document.body.appendChild(el);
       var cv = el.querySelector('canvas'), g = cv.getContext('2d'), inp = el.querySelector('input'), msg = el.querySelector('[data-msg]'), ok = el.querySelector('[data-ok]');
@@ -177,7 +177,11 @@
         msg.textContent = pts.length === 0 ? 'Ťukněte na první bod (např. levý kraj dlažby).' : pts.length === 1 ? 'Ťukněte na druhý bod.' : 'Hotovo – napište skutečnou vzdálenost mezi body. Bod posunete dalším ťuknutím vedle něj.';
         ok.disabled = !(pts.length === 2 && val()); ok.style.opacity = ok.disabled ? 0.45 : 1;
       };
+      var down = null;
+      cv.addEventListener('pointerdown', function (e) { down = e.isPrimary ? { x: e.clientX, y: e.clientY, t: Date.now() } : null; });
+      cv.addEventListener('pointercancel', function () { down = null; });
       cv.addEventListener('pointerup', function (e) {
+        if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10 || Date.now() - down.t > 600) { down = null; return; } down = null;
         var b = cv.getBoundingClientRect(), p = [(e.clientX - b.left) / b.width, (e.clientY - b.top) / b.height];
         if (p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1) return;
         if (pts.length < 2) pts.push(p);
@@ -187,6 +191,7 @@
       inp.oninput = draw;
       var close = function (r) { el.remove(); done(r); };
       el.querySelector('[data-x]').onclick = function () { close(null); };
+      el.querySelector('[data-clear]').onclick = function () { close('clear'); };
       ok.onclick = function () { if (!ok.disabled) close({ a: pts[0], b: pts[1], m: val() }); };
       draw();
     });
@@ -349,7 +354,7 @@
   // styl má teď pravidla pro tvary, materiály, mulč, obruby, barvy a rostliny; dostane je architekt
   // (zadání), kreslení, kontrola i rozpočet (path/mulch/edge → kb.js).
   var STYLE_SPEC = {
-    prirodni: { path: 'kamen', mulch: 'kura', edge: 'ocel', solo: /Amelanchier|Malus|Acer|Cornus|Sorbus|Cercis/,
+    prirodni: { path: 'kamen', mulch: 'kura', edge: 'plast', solo: /Amelanchier|Malus|Acer|Cornus|Sorbus|Cercis/,
       rules: 'PŘÍRODNÍ STYL: volné, měkce zaoblené tvary záhonů a cest; přírodní materiály – cesta z plochých nepravidelných kamenů nebo štěrku, kamenné zídky; záhony mulčované kůrou; bohatě vrstvené výsadby trvalek a trav v loukovém duchu, pestré, ale sladěné barvy; zahrada volně splývá s okolím.',
       check: 'Působí návrh přírodně: měkké tvary, přírodní kámen, volné vrstvené výsadby?' },
     moderni: { path: 'vf', mulch: 'sterk', edge: 'ocel', palette: true, solo: /Amelanchier|Carpinus|Acer|Fastigiata|Red Sentinel|Pyrus|Gleditsia|Columnar|Ballerina/,
@@ -418,7 +423,7 @@
       if (!count) return;
       // Test 0.6.276/277: na strom u domu vybral ovocnou višeň, pak švestku (padající ovoce, nevzhledné) →
       // ovocné jen na přání; okrasné druhy typické pro styl mají přednost.
-      var wantFruit = /ovoc/i.test(st.wish || '');
+      var wantFruit = /ovoc/i.test(st.wish || '') && !/(bez|žádn\S*|nechci|nechceme|nepřeji|ne)\s+(\S+\s+)?ovoc/i.test(st.wish || '');
       var list = pool.filter(function (q) { return q.kind === kind && chosen.indexOf(q) < 0 && q.height <= maxH && (kind !== 'shrub' || q.role === 'back') && (wantFruit || !/ovocn/i.test(q.name)); });
       var p = list.filter(function (q) { return spec.solo.test(q.latin); })[0] || list[0];
       if (p) chosen.push(Object.assign({}, p, { role: 'solo', soloCount: count }));
@@ -468,10 +473,10 @@
     x.filter = 'blur(' + Math.max(4, Math.round(box.w / 220)) + 'px)'; x.drawImage(g, box.x, box.y, box.w, box.h); x.filter = 'none';
     return c.toDataURL('image/jpeg', 0.9);
   }
-  function hintsText() {
+  function hintsText(withScale) {
     var fences = Object.keys(st.fence).filter(function (k) { return st.fence[k]; }).map(function (k) { return SIDES[k]; });
     return 'Dům na fotce: ' + HOUSES[st.house].toLowerCase() + '. Plot/hranice pozemku: ' + (fences.join(', ') || 'neuvedeno') + '. '
-      + (st.width ? 'Šířka zahrady zleva doprava ≈ ' + st.width + ' m. ' : '') + (st.depth ? 'Hloubka od fotografa dozadu ≈ ' + st.depth + ' m. ' : '') + scaleText()
+      + (st.width ? 'Šířka zahrady zleva doprava ≈ ' + st.width + ' m. ' : '') + (st.depth ? 'Hloubka od fotografa dozadu ≈ ' + st.depth + ' m. ' : '') + (withScale ? scaleText() : '')
       + (st.removeWhere ? 'Odstraněné věci (např. auta) stály ' + st.removeWhere + '. ' : '')
       + (hasSketch() ? 'NÁČRT ZÁKAZNÍKA (obrázek 4, závazný pro polohu prvků): ' + window.MVGreenSketch.describe(st.sketch, st.landmarks).replace(/\n/g, ' ') + ' ' : '')
       + (st.terrain ? 'Terén na fotce: ' + st.terrain + ' ' : '')
@@ -614,7 +619,7 @@
         ctx.after = done.canvas.toDataURL('image/jpeg', 0.9);
         ctx.before = scaled(original, 1600);
         log('AI čte z fotek přesný půdorys v metrech…');
-        return ajax('mvgreen_ai_plan_v2', { after: scaled(done.canvas, 1600), before: withScaleLine(original, st.scale ? 1600 : 1024), marked: st.maskPreview || '', sketch: hasSketch() ? st.sketchPreview : '', plants: plantList, hints: hintsText() + ((ctx.brief || []).length ? ' ZADÁNÍ ARCHITEKTA (výsadba záhonů – podle něj vyjmenuj rostliny v záhonech): ' + ctx.brief.join(' / ') : '') });
+        return ajax('mvgreen_ai_plan_v2', { after: scaled(done.canvas, 1600), before: withScaleLine(original, st.scale ? 1600 : 1024), marked: st.maskPreview || '', sketch: hasSketch() ? st.sketchPreview : '', plants: plantList, hints: hintsText(true) + ((ctx.brief || []).length ? ' ZADÁNÍ ARCHITEKTA (výsadba záhonů – podle něj vyjmenuj rostliny v záhonech): ' + ctx.brief.join(' / ') : '') });
       })
       .then(function (pl) {
         ctx.plan = pl.plan;
@@ -873,10 +878,10 @@
     var spec = styleSpec(), briefTxt = (ctx.brief || []).join(' '), pathTxt = (ctx.brief || []).filter(function (t) { return /cest|chodník|dlažb/i.test(t); }).join(' '), bedTxt = (ctx.brief || []).filter(function (t) { return /záhon/i.test(t); }).join(' ');
     var finish = {
       paving: /velkoformát|betonov[áé] (dlažb|dlaždic)/i.test(pathTxt) ? 'vf' : /kamenn|přírodní(ho)? kam|plochých kamen|pískov|rul[ay]/i.test(pathTxt) ? 'kamen' : /zámkov/i.test(pathTxt) ? 'zamkova' : spec.path,
-      mulch: /(štěrk|kačír)[^.]{0,40}(mulč|záhon)|mulč[^.]{0,30}(štěrk|kačír)/i.test(bedTxt) ? 'sterk' : /kůr/i.test(bedTxt) ? 'kura' : spec.mulch,
+      mulch: /kůr|štěpk/i.test(bedTxt) ? 'kura' : /(štěrk|kačír)[^.]{0,40}(mulč|záhon)|mulč[^.]{0,30}(štěrk|kačír)/i.test(bedTxt) ? 'sterk' : spec.mulch,
       edge: /ocelov|corten/i.test(briefTxt) ? 'ocel' : spec.edge
     };
-    if (finish.paving === 'kamen' && /štěrkov[áé] cest/i.test(pathTxt)) finish.paving = spec.path;
+    if (finish.paving === 'kamen' && /štěrkov[áé] cest/i.test(pathTxt)) finish.paving = spec.path === 'kamen' ? 'zamkova' : spec.path;
     var pathPaving = pavedPath ? project.paths.map(function (p2) { var L = lineLen(p2.line); return { area: L * (p2.width || 1), perimeter: 2 * L }; }) : [];
     var model = {
       beds: project.beds.filter(function (b) { return b.surface !== 'gravel'; }).map(function (b) { return { area: area(b.poly), perimeter: perim(b.poly) }; }),
