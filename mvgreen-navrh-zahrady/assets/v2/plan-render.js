@@ -117,7 +117,10 @@
         if (mine) { mine.push({ p: c.p, sp: sp }); order.sort(function (a, b) { var da = Math.min.apply(null, mine.map(function (q) { return Math.hypot(q.p[0] - a.p[0], q.p[1] - a.p[1]); })), db = Math.min.apply(null, mine.map(function (q) { return Math.hypot(q.p[0] - b.p[0], q.p[1] - b.p[1]); })); return da + o.nd(a) * 2 - db - o.nd(b) * 2; }); i = -1; }
       }
     };
-    plan.forEach(function (o) { tryPlace(o, Math.min(o.target, GROUP(o.sp)), false); if (o.n < Math.min(o.target, GROUP(o.sp))) tryPlace(o, Math.min(o.target, GROUP(o.sp)), true); });
+    // 1. kolo od největších (keře, jehličnany, pak podle sponu) – test 0.6.283: tři trávy obsadily střed
+    // záhonu 3,5 × 2 m a javor se už nevešel, v PDF chyběl.
+    var big = function (o) { return (/shrub|conifer|tree/.test(o.sp.kind || '') ? 10 : 0) + o.sp.spon; };
+    plan.slice().sort(function (a, b) { return big(b) - big(a); }).forEach(function (o) { tryPlace(o, Math.min(o.target, GROUP(o.sp)), false); if (o.n < Math.min(o.target, GROUP(o.sp))) tryPlace(o, Math.min(o.target, GROUP(o.sp)), true); });
     plan.forEach(function (o) { tryPlace(o, o.target, false); });
     return placed;
   }

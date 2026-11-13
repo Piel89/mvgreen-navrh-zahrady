@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.283
+ * Version: 0.6.284
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.283');
+define('MVGREEN_VERSION', '0.6.284');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -388,7 +388,7 @@ $mvgreen_ai_preview_start_handle = function () {
     // headroom above the realistic worst case while still bounding the request. The staged payload
     // can legitimately hold several masks at once, so it gets its own, larger cap.
     // 2026-11-11: se zadáním AI architekta má prompt ~5 900 znaků = až ~11 000 bajtů (čeština) → limit 16 000;
-    // 0.6.283: prompt s náčrtem a stylem má až ~12 000 znaků (řez v prohlížeči) = až ~24 000 B → limit 40 000
+    // 0.6.284: prompt s náčrtem a stylem má až ~12 000 znaků (řez v prohlížeči) = až ~24 000 B → limit 40 000
     if (strlen($image)>12000000 || strlen($instructions)>40000 || strlen($stages_raw)>48000000 || strlen($concepts_raw)>96000) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
     // The photo may be JPEG (small, no alpha needed) or PNG; every mask must stay PNG (needs the alpha channel).
     $image_mime = 'image/png';

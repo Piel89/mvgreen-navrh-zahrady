@@ -95,6 +95,10 @@ add_action('wp_ajax_mvgreen_ai_design_brief', function () {
         . "- záhony: tvar podle stylu (měkce zaoblený, nebo obdélníkový/geometrický), rozumná hloubka 1–2,5 m, vrstvení rostlin odzadu dopředu; u KAŽDÉHO záhonu napiš rozměr a plochu přesně ve tvaru „Záhon N: … rozměr ≈ D × H m (≈ P m²)“ (D = délka podél hlavní hrany, H = hloubka) – odvoď je ze šířky a hloubky zahrady v údajích a z polohy záhonu na fotce, plocha z toho slouží k výpočtu rostlin a rozpočtu;\n"
         // 2026-11-13 (test 0.6.282): zadání jmenovalo i druhy mimo seznam (Monarda, Pennisetum).
         . "- rostliny jmenuj JEN ze seznamu „Rostliny k použití“ v údajích, žádné jiné druhy;\n"
+        // Test 0.6.283: zadání plánovalo záhon v zeleně označené (chráněné) části a zrušilo stávající levandule;
+        // na svahu vymyslelo schodiště, které na fotce není, a obrázek pak přidal zdi a schody.
+        . "- nové prvky navrhuj JEN tam, kde fotka NENÍ zeleně označená; zelené věci (stávající záhony, stromy, ploty, stavby) zůstávají a na zadání na ně jen navazuj;\n"
+        . "- žádné nové zdi, zídky, schody, terasy, domky ani kůlny, pokud je zákazník nenakreslil nebo nenapsal; svah řeš výsadbou ve svahu. Popisuj jen věci, které na fotce opravdu jsou;\n"
         . "- stávající ploty (i drátěné a pletivové), domy a stavby zůstávají viditelné, nic před ně ani místo nich nepřidávej (žádné živé ploty);\n"
         . "- zdi a zídky: VŽDY navazují na stávající zeď, dům, plot nebo terén – nikdy nestojí samostatně v trávníku; materiál ladí se stávajícími stavbami;\n"
         . "- svah zachovej, prvky ve svahu ho kopírují; schody jen tam, kde je výškový rozdíl;\n"

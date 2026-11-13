@@ -510,6 +510,10 @@
     var keep = (st.landmarks || []).filter(function (l) { return l.state === 'keep' && l.kind !== 'sky'; }).map(function (l) { return l.name; });
     if (keep.length) out.push('Beze změny a viditelné zůstalo: ' + keep.join(', ') + '.');
     out.push('Stávající ploty (i tenké drátěné nebo pletivové) jsou na obrázku 2 na stejném místě jako na obrázku 1 a nejsou nahrazené ani zakryté novým živým plotem, řadou keřů nebo tújí.');
+    // Test 0.6.283: na svahu pod chatou AI přistavěla dvě betonové zdi a schodiště, u velkého trávníku
+    // nový zahradní domek – nic z toho zákazník nechtěl.
+    var wantBuild = /zeď|zíd|schod|terasa|domek|kůln|altán|pergol/i.test(st.wish || '') || (hasSketch() && st.sketch.some(function (it) { return /wall|steps/.test(it.tool); }));
+    if (!wantBuild) out.push('Nepřibyly žádné nové zdi, zídky, schody, terasy ani stavby (domky, kůlny, altány) – svah zůstal svahem.');
     out.push(styleSpec().check);
     return out;
   }
@@ -793,7 +797,7 @@
           if (specs.length < 2) specs = ctx.plants.filter(function (p) { return p.role !== 'solo'; });
           // Každý záhon potřebuje i nízké rostliny do popředí – AI je v seznamu někdy vynechá.
           ['back', 'mid', 'front'].forEach(function (role) { if (!specs.some(function (s2) { return s2.role === role; })) { var add = ctx.plants.filter(function (p) { return p.role === role; })[0]; if (add) specs.push(add); } });
-          project.beds.push({ surface: 'mulch', poly: pts, plants: specs.map(function (s2) { return Object.assign({}, s2, { share: s2.role === 'back' ? 0.3 : s2.role === 'mid' ? 0.35 : 0.35 }); }) });
+          project.beds.push({ surface: 'mulch', poly: pts, label: el.label || '', plants: specs.map(function (s2) { return Object.assign({}, s2, { share: s2.role === 'back' ? 0.3 : s2.role === 'mid' ? 0.35 : 0.35 }); }) });
         }
       }
       // Popisek podle skutečnosti: nová dlažba nesmí mít „stávající“ (2. test: parkovací stání).
@@ -830,12 +834,19 @@
     var bedAreas = briefBedAreas(ctx.brief);
     var mBeds = project.beds.filter(function (b) { return b.surface !== 'gravel'; }).sort(function (a, b) { return cenX(a.poly) - cenX(b.poly); });
     ctx.areaNotes = [];
+    // Párování záhon ze zadání ↔ záhon v půdorysu: podle čísla v popisku („Záhon 2 …“); pořadí zleva jen
+    // když popisky čísla nemají a počet sedí (test 0.6.283: půdorys měl navíc „řadu koulí u plotu“ a
+    // pořadí zleva přiřadilo plochy posunutě).
+    var byLabel = mBeds.some(function (b) { return /Záhon\s*\d+/i.test(b.label || ''); });
+    var nBrief = Object.keys(bedAreas).length;
     mBeds.forEach(function (b, i) {
-      var want = bedAreas[i + 1], have = window.MVGreenPlanV2.polyArea(b.poly);
+      var lm = /Záhon\s*(\d+)/i.exec(b.label || '');
+      var no = byLabel ? (lm ? +lm[1] : 0) : (mBeds.length === nBrief ? i + 1 : 0);
+      var want = bedAreas[no], have = window.MVGreenPlanV2.polyArea(b.poly);
       if (!want || !have || (want / have > 0.77 && want / have < 1.3)) return;
       var k = Math.max(0.4, Math.min(2.5, Math.sqrt(want / have))), c = [cenX(b.poly), b.poly.reduce(function (s, q) { return s + q[1]; }, 0) / b.poly.length];
       b.poly = b.poly.map(function (q) { return [Math.max(0, Math.min(w, c[0] + (q[0] - c[0]) * k)), Math.max(0, Math.min(d, c[1] + (q[1] - c[1]) * k))]; });
-      ctx.areaNotes.push('Záhon ' + (i + 1) + ': půdorys ' + have.toFixed(1).replace('.', ',') + ' m² → podle zadání ' + window.MVGreenPlanV2.polyArea(b.poly).toFixed(1).replace('.', ',') + ' m²');
+      ctx.areaNotes.push('Záhon ' + no + ': půdorys ' + have.toFixed(1).replace('.', ',') + ' m² → podle zadání ' + window.MVGreenPlanV2.polyArea(b.poly).toFixed(1).replace('.', ',') + ' m²');
     });
     // Hrany záhonu u plotu/zdi/domu = „záda“ záhonu → vysoké rostliny dozadu (plan-render.js: bed.back).
     project.beds.forEach(function (b) {

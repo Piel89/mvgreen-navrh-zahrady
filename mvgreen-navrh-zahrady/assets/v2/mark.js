@@ -22,7 +22,10 @@
   var STATE_NAME = { keep: 'Zůstane', remove: 'Pryč', change: 'Navrhnout znovu' };
   var NEXT = { keep: 'remove', remove: 'change', change: 'keep' };
   var FORCE = { house: 'keep', neighbor: 'keep', sky: 'keep', offsite: 'keep', fence: 'keep', gate: 'keep', car: 'remove', container: 'remove', rubble: 'remove' };
-  var DEFAULT = { tree: 'keep', shrub: 'keep', hedge: 'keep', wall: 'keep', shed: 'keep', paving: 'keep', path: 'keep', terrace: 'keep', steps: 'keep', lawn: 'change', bed: 'change', soil: 'change', gravel: 'change' };
+  var DEFAULT = { tree: 'keep', shrub: 'keep', hedge: 'keep', wall: 'keep', shed: 'keep', paving: 'keep', path: 'keep', terrace: 'keep', steps: 'keep', lawn: 'change', bed: 'keep', soil: 'change', gravel: 'change' };
+  // 2026-11-13 (test 0.6.283, zahrada s levandulemi): stávající záhon byl předvolený jako „Změnit“, zákazník
+  // to nepřepnul a AI levandule zrušila, přestože architekt psal „navázat na stávající záhon“. Stávající
+  // výsadba teď zůstává; kdo ji chce předělat, ťukne na ni.
 
   function mk(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
