@@ -92,7 +92,9 @@ add_action('wp_ajax_mvgreen_ai_design_brief', function () {
         // (tvary, materiály, mulč, obruby, barvy) přicházejí v ÚDAJÍCH a jsou závazná.
         . "- STYL: v údajích jsou PRAVIDLA STYLU – jsou závazná pro tvary, materiály, mulč, obruby i barvy rostlin, a v každém bodě zadání napiš konkrétní materiál a tvar podle nich, ať je styl na první pohled poznat;\n"
         . "- cesty: podle stylu plynulé oblouky, nebo čisté přímky a pravé úhly; jednotná šířka 1–1,2 m, logický začátek a cíl (např. z dlažby ke vstupu, ke studně, k domku), kvalitní obruba;\n"
-        . "- záhony: tvar podle stylu (měkce zaoblený, nebo obdélníkový/geometrický), rozumná hloubka 1–2,5 m, vrstvení rostlin odzadu dopředu;\n"
+        . "- záhony: tvar podle stylu (měkce zaoblený, nebo obdélníkový/geometrický), rozumná hloubka 1–2,5 m, vrstvení rostlin odzadu dopředu; u KAŽDÉHO záhonu napiš rozměr a plochu přesně ve tvaru „Záhon N: … rozměr ≈ D × H m (≈ P m²)“ (D = délka podél hlavní hrany, H = hloubka) – odvoď je ze šířky a hloubky zahrady v údajích a z polohy záhonu na fotce, plocha z toho slouží k výpočtu rostlin a rozpočtu;\n"
+        // 2026-11-13 (test 0.6.282): zadání jmenovalo i druhy mimo seznam (Monarda, Pennisetum).
+        . "- rostliny jmenuj JEN ze seznamu „Rostliny k použití“ v údajích, žádné jiné druhy;\n"
         . "- stávající ploty (i drátěné a pletivové), domy a stavby zůstávají viditelné, nic před ně ani místo nich nepřidávej (žádné živé ploty);\n"
         . "- zdi a zídky: VŽDY navazují na stávající zeď, dům, plot nebo terén – nikdy nestojí samostatně v trávníku; materiál ladí se stávajícími stavbami;\n"
         . "- svah zachovej, prvky ve svahu ho kopírují; schody jen tam, kde je výškový rozdíl;\n"
@@ -267,9 +269,13 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
     if (is_array($ok) && in_array($ok[0] ?? '', $models, true)) $tries[] = [$ok[0], (string) ($ok[1] ?? '')];
     foreach ($models as $model) foreach (['minimal', 'low', ''] as $tl) if (!in_array([$model, $tl], $tries, true)) $tries[] = [$model, $tl];
     $skip = [];
-    $deadline = microtime(true) + 45;
-    @set_time_limit(90);
-    foreach ($tries as $try) {
+    $deadline = microtime(true) + 30;
+    @set_time_limit(100);
+    $retried = [];
+    // jen pro test zálohy (správce): POST fallback=1 Gemini přeskočí
+    if (!empty($_POST['fallback'])) { $tries = []; $notes[] = 'Gemini přeskočeno (test zálohy).'; }
+    for ($ti = 0; $ti < count($tries); $ti++) {
+        $try = $tries[$ti];
         list($model, $tl) = $try;
         if (!empty($skip[$model])) continue;
         $left = (int) floor($deadline - microtime(true));
@@ -287,6 +293,8 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
         if ($code < 200 || $code >= 300) {
             $emsg = (string) ($json['error']['message'] ?? ('HTTP ' . $code));
             $last = 'Gemini (' . $model . ($tl ? ', ' . $tl : '') . '): ' . sanitize_text_field($emsg); $notes[] = $last;
+            // přetížení („high demand“, 503/429) bývá na pár sekund → jednou zkusit znovu stejný model
+            if (($code == 503 || $code == 429 || stripos($emsg, 'demand') !== false || stripos($emsg, 'overload') !== false) && empty($retried[$model])) { $retried[$model] = true; sleep(3); $tries[] = $try; continue; }
             if (stripos($emsg, 'thinking') === false) $skip[$model] = true;   // jiná chyba než nastavení přemýšlení → další model
             continue;
         }
@@ -306,6 +314,22 @@ add_action('wp_ajax_mvgreen_ai_detect_v2', function () {
         $notes[] = $model . ': ' . count($objs) . ' objektů, s maskou ' . $withMask . ' (klíče: ' . implode(',', array_keys($first)) . ')';
         if (!$best || count($objs) > count($best['objects'])) { $best = ['objects' => $objs, 'withMask' => $withMask, 'terrain' => $terrainNow]; $used = $model; }
         if ($objs) break;
+    }
+    // 2026-11-13 (test 0.6.282): bezplatné Gemini 2× ze 4 pokusů „high demand“ → označování bez AI.
+    // Záloha bez dalšího účtu: obdélníky objektů od OpenAI (kredit majitele), obrysy z nich dělá SAM
+    // v prohlížeči stejně jako u Gemini. Obrysy GPT kreslit neumí, obdélníky ano.
+    if (!$best) {
+        $gpt = mvgreen_ai_chat_json([['type' => 'text', 'text' => $prompt . ' Coordinates: box_2d = [ymin, xmin, ymax, xmax] as integers 0-1000 relative to the image height and width.'],
+            ['type' => 'image_url', 'image_url' => ['url' => $photo, 'detail' => 'high']]], 'garden_objects', [
+            'type' => 'object', 'additionalProperties' => false, 'required' => ['items', 'terrain'], 'properties' => [
+                'items' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => false, 'required' => ['box_2d', 'label'], 'properties' => [
+                    'box_2d' => ['type' => 'array', 'items' => ['type' => 'integer']], 'label' => ['type' => 'string']]]],
+                'terrain' => ['type' => 'string']]], 50);
+        if (!is_wp_error($gpt) && !empty($gpt['items'])) {
+            $objs = $parse($gpt['items']);
+            $notes[] = 'Záloha OpenAI: ' . count($objs) . ' objektů';
+            if ($objs) { $best = ['objects' => $objs, 'withMask' => 0, 'terrain' => sanitize_text_field((string) ($gpt['terrain'] ?? ''))]; $used = 'openai-zaloha'; }
+        } else $notes[] = 'Záloha OpenAI: ' . (is_wp_error($gpt) ? $gpt->get_error_message() : 'bez objektů');
     }
     if (!$best) wp_send_json_error(['message' => $last, 'notes' => $notes], 200);
     $objects = $best['objects'];

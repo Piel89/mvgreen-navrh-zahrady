@@ -77,22 +77,33 @@
     // Úzký záhon (typicky pás u plotu) nemá místo na tři řady: zahradník dá vysoké dozadu a nízké
     // dopředu a prostřední řadu vynechá – jinak se nízké rostliny do popředí nevešly (2. test).
     var maxSpon = function (role) { return Math.max.apply(null, [0].concat(species.filter(function (s) { return s.role === role; }).map(function (s) { return s.spon; }))); };
-    if (maxSpon('back') && maxSpon('front') && maxSpon('mid') && bedDepth < (maxSpon('back') + maxSpon('mid') + maxSpon('front')) * 0.85) {
-      species = species.filter(function (s) { return s.role !== 'mid'; });
-    }
+    // 2026-11-13 (test 0.6.282): vynechání prostřední řady vyhodilo druhy z projektu (v PDF 8 z 10). Teď se
+    // prostřední druhy v úzkém záhonu jen přesunou do přední řady – každý vybraný druh v záhonu zůstane.
+    var narrow = maxSpon('back') && maxSpon('front') && maxSpon('mid') && bedDepth < (maxSpon('back') + maxSpon('mid') + maxSpon('front')) * 0.85;
+    if (narrow) species = species.map(function (s) { return s.role === 'mid' ? Object.assign({}, s, { role: 'front' }) : s; });
     var roleCount = {};
     species.forEach(function (sp) { var r = sp.role || 'mid'; roleCount[r] = (roleCount[r] || 0) + 1; });
     var roles = Object.keys(roleCount).length || 1;
-    species.forEach(function (sp) {
+    // Dvě kola (2026-11-13, test 0.6.282: druhy na konci řady se do záhonu nevešly a v PDF chyběly, trávy
+    // a trvalky po 1 kuse): 1. kolo dá každému druhu skupinu (trávy a trvalky aspoň 3 ks, keře 1), 2. kolo
+    // doplní zbytek podle sponu. Když svůj pruh nemá volný, smí skupina i do sousedního.
+    var GROUP = function (sp) { return /shrub|conifer|tree/.test(sp.kind || '') ? 1 : 3; };
+    var plan = species.map(function (sp) {
       var rows = Math.max(1, Math.floor(bedDepth / roles / sp.spon));
       var target = sp.role ? Math.max(1, Math.round(bedLen / sp.spon / roleCount[sp.role] * rows)) : Math.max(1, Math.round(area * (sp.share || 1) / shareSum / (sp.spon * sp.spon)));
       var aim = band[sp.role] != null ? band[sp.role] : 0.5;
       var nd = function (c) { return Math.abs((depthOf(c) - dMin) / dSpan - aim); };
+      return { sp: sp, target: Math.max(target, GROUP(sp)), n: 0, nd: nd };
+    });
+    var tryPlace = function (o, limit, widen) {
+      var sp = o.sp;
       // Druh s rolí smí jen do svého pruhu (třetina hloubky záhonu) – jinak střední rostliny
       // zaplnily i lem a nízké do popředí se už nevešly (2. test).
-      var order = cand.filter(function (c) { return !sp.role || nd(c) <= 0.34; }).sort(function (a, b) { return nd(a) - nd(b); });
-      var n = 0;
-      for (var i = 0; i < order.length && n < target; i++) {
+      var order = cand.filter(function (c) { return !sp.role || o.nd(c) <= (widen ? 0.67 : 0.34); }).sort(function (a, b) { return o.nd(a) - o.nd(b); });
+      // skupina pohromadě: po prvním kusu bližší místa k již vysazeným kusům stejného druhu
+      var mine = placed.filter(function (q) { return q.sp === sp; });
+      if (mine.length) order.sort(function (a, b) { var da = Math.min.apply(null, mine.map(function (q) { return Math.hypot(q.p[0] - a.p[0], q.p[1] - a.p[1]); })), db = Math.min.apply(null, mine.map(function (q) { return Math.hypot(q.p[0] - b.p[0], q.p[1] - b.p[1]); })); return da + o.nd(a) * 2 - db - o.nd(b) * 2; });
+      for (var i = 0; i < order.length && o.n < limit; i++) {
         var c = order[i];
         if (c.edge < Math.min(sp.spon * 0.4, 0.35)) continue;
         var ok = true;
@@ -102,9 +113,12 @@
         }
         if (!ok) continue;
         placed.push({ p: c.p, sp: sp });
-        n++;
+        o.n++;
+        if (mine) { mine.push({ p: c.p, sp: sp }); order.sort(function (a, b) { var da = Math.min.apply(null, mine.map(function (q) { return Math.hypot(q.p[0] - a.p[0], q.p[1] - a.p[1]); })), db = Math.min.apply(null, mine.map(function (q) { return Math.hypot(q.p[0] - b.p[0], q.p[1] - b.p[1]); })); return da + o.nd(a) * 2 - db - o.nd(b) * 2; }); i = -1; }
       }
-    });
+    };
+    plan.forEach(function (o) { tryPlace(o, Math.min(o.target, GROUP(o.sp)), false); if (o.n < Math.min(o.target, GROUP(o.sp))) tryPlace(o, Math.min(o.target, GROUP(o.sp)), true); });
+    plan.forEach(function (o) { tryPlace(o, o.target, false); });
     return placed;
   }
 

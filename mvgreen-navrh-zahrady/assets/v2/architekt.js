@@ -136,6 +136,9 @@
     var geo = $('[data-geo]'); if (geo) geo.onclick = function () { save(); lookupPlace(); };
     var ms = $('[data-measure]'); if (ms) ms.onclick = function () { save(); measure().then(function (r) { if (r === 'clear') st.scale = null; else if (r) st.scale = r; render(); }); };
     var run = $('[data-run]'); if (run) run.onclick = function () { save(); runAll(); };
+    // 2026-11-13 (test 0.6.282): pro druhý styl se muselo znovu nahrát fotku a označovat → zpět na přání
+    // se zachovanou fotkou, označením i náčrtem.
+    var rs = $('[data-restyle]'); if (rs) rs.onclick = function () { st.result = null; st.step = 3; render(); window.scrollTo(0, root.offsetTop - 20); };
     var pr = $('[data-print]'); if (pr) pr.onclick = function () { document.body.classList.add('mvg2-printing'); window.print(); setTimeout(function () { document.body.classList.remove('mvg2-printing'); }, 500); };
     var slide = function (v) { $('[data-after]').style.clipPath = 'inset(0 ' + (100 - v) + '% 0 0)'; $('[data-divider]').style.left = v + '%'; };
     var sl = $('[data-slide]'); if (sl) { sl.oninput = function () { slide(+sl.value); }; slide(+sl.value); }
@@ -390,7 +393,7 @@
     // jen když o ně zákazník stojí.
     var HERB = /^(Allium schoenoprasum|Allium tuberosum|Mentha|Melissa|Petroselinum|Levisticum|Origanum vulgare|Salvia officinalis|Salvia rosmarinus|Rosmarinus|Artemisia dracunculus|Anethum|Ocimum|Satureja|Thymus vulgaris)/i;
     var wantHerbs = /bylin/i.test(st.wish || '');
-    var fits = function (p) { return (wantHerbs || !HERB.test(p.latin)) && p.sun.indexOf(st.sun) >= 0 && okWater(p) && !p.acid && !p.spreads && !((p.thorny || p.toxic) && (st.users.kids || st.users.dog)); };
+    var fits = function (p) { return (wantHerbs || !HERB.test(p.latin)) && p.sun.indexOf(st.sun) >= 0 && okWater(p) && !p.acid && !p.spreads && !p.toxic && !(p.thorny && (st.users.kids || st.users.dog)); };
     var wts = STYLE_W[st.style] || STYLE_W.prirodni;
     // vážené náhodné pořadí: lepší shoda se stylem = dřív na řadě, ale pokaždé jiný návrh
     var spec = styleSpec();
@@ -611,11 +614,21 @@
             if (!c.fix) c.fix = c.problems.join(' ');
             if (!c.fix) { log('Kontrola hlásí chybu bez popisu – pokračuji s prvním návrhem.'); return done; }
             log('Kontrola našla: ' + c.problems.join(' | ') + ' → překresluji s opravou.');
-            return gen('OPRAVA PO KONTROLE (nejdůležitější, oprav přesně tohle): ' + c.fix + ' ' + promptText(plants, ctx.brief)).then(function (d2) { log('Opravený návrh hotový.'); return d2; }, function (e) { log('Překreslení se nepovedlo (' + e.message + ') – použiji první návrh.'); return done; });
+            // 2026-11-13 (test 0.6.282): překreslení se dřív nekontrolovalo a log přesto psal „zkontrolovaná“.
+            // Teď se kontroluje znovu a vezme se návrh s menším počtem chyb.
+            return gen('OPRAVA PO KONTROLE (nejdůležitější, oprav přesně tohle): ' + c.fix + ' ' + promptText(plants, ctx.brief)).then(function (d2) {
+              log('Opravený návrh hotový, kontroluji ho znovu…');
+              return ajax('mvgreen_ai_design_check', { before: scaled(original, 1536), after: scaled(d2.canvas, 1536), brief: ctx.brief.join(' / '), checks: ctx.checks.join(' / '), must: mustChecks().join('\n') }).then(function (c2) {
+                if (c2.ok) { log('Druhá kontrola: bez podstatných chyb.'); return d2; }
+                var better = (c2.problems || []).length <= (c.problems || []).length;
+                log('Druhá kontrola našla: ' + (c2.problems || []).join(' | ') + (better ? ' → beru opravený návrh (méně chyb).' : ' → opravený návrh je horší, beru první.'));
+                return better ? d2 : done;
+              }, function () { log('Druhá kontrola se nepovedla – beru opravený návrh.'); return d2; });
+            }, function (e) { log('Překreslení se nepovedlo (' + e.message + ') – použiji první návrh.'); return done; });
           }, function (e) { log('Kontrola se nepovedla (' + e.message + ') – pokračuji.'); return done; });
       })
       .then(function (done) {
-        log(done.ok ? 'Vizualizace hotová a zkontrolovaná' + (done.repaired ? ' (okraj u chráněných prvků opraven)' : '') + '.' : 'Pozor: kontrola vizualizace hlásí odchylku ' + Math.round(done.drift) + ' – výsledek je potřeba posoudit.');
+        log(done.ok ? 'Vizualizace hotová, chráněné části fotky ověřené' + (done.repaired ? ' (okraj u chráněných prvků opraven)' : '') + '.' : 'Pozor: kontrola vizualizace hlásí odchylku ' + Math.round(done.drift) + ' – výsledek je potřeba posoudit.');
         ctx.after = done.canvas.toDataURL('image/jpeg', 0.9);
         ctx.before = scaled(original, 1600);
         log('AI čte z fotek přesný půdorys v metrech…');
@@ -640,6 +653,7 @@
       .then(function () {
         log('Kreslím výkres a skládám PDF…');
         buildResult(ctx);
+        (ctx.areaNotes || []).forEach(function (n) { log(n); });
         st.busy = false; st.step = 5; render();
       })
       .catch(function (e) { st.busy = false; log('CHYBA: ' + e.message); render(); });
@@ -729,6 +743,18 @@
   }
   function lineDist(p, line) { var d = Infinity; for (var i = 1; i < line.length; i++) d = Math.min(d, segDist(p, line[i - 1], line[i])); return d; }
 
+  function cenX(poly) { return poly.reduce(function (s, q) { return s + q[0]; }, 0) / poly.length; }
+  // Plochy záhonů ze zadání architekta: {1: 11.3, 2: 4} z „Záhon 1 … ≈ 4,5 × 2,5 m (≈ 11,3 m²)“.
+  function briefBedAreas(brief) {
+    var out = {}, num = function (t) { return parseFloat(String(t).replace(',', '.')); };
+    (brief || []).forEach(function (t) {
+      var m = /Záhon\s*(\d+)/i.exec(t); if (!m) return;
+      var a = /(\d+(?:[.,]\d+)?)\s*m²/.exec(t), dm = /(\d+(?:[.,]\d+)?)\s*[×x]\s*(\d+(?:[.,]\d+)?)\s*m\b/.exec(t);
+      var v = a ? num(a[1]) : dm ? num(dm[1]) * num(dm[2]) : 0;
+      if (v > 0.5 && v < 400 && !out[m[1]]) out[m[1]] = v;
+    });
+    return out;
+  }
   function buildResult(ctx) {
     var plan = ctx.plan;
     var w = Math.max(3, parseFloat(st.width) || plan.width_m || 12), d = Math.max(3, parseFloat(st.depth) || plan.depth_m || 10);
@@ -797,6 +823,20 @@
       for (var k = 0; k < 40 && share(b.poly) > 0.02; k++) b.poly = b.poly.map(function (q) { return [q[0], Math.max(0, Math.min(d, q[1] + dir * 0.2))]; });
     });
     buildings.forEach(function (bp) { lines.push(bp.concat([bp[0]])); });
+    // 2026-11-13 (test 0.6.282): stejný náčrt → záhon v půdorysu jednou 2,8 m², podruhé 11,5 m² (na obrázku
+    // ~10 m²); rostliny i rozpočet pak neseděly. Architekt v zadání uvádí rozměr každého záhonu („Záhon N: …
+    // ≈ D × H m (≈ P m²)“) a obrázek se kreslí podle něj → plocha ze zadání je spolehlivější než odhad
+    // půdorysu z fotky. Záhon se kolem svého středu zvětší/zmenší na plochu ze zadání.
+    var bedAreas = briefBedAreas(ctx.brief);
+    var mBeds = project.beds.filter(function (b) { return b.surface !== 'gravel'; }).sort(function (a, b) { return cenX(a.poly) - cenX(b.poly); });
+    ctx.areaNotes = [];
+    mBeds.forEach(function (b, i) {
+      var want = bedAreas[i + 1], have = window.MVGreenPlanV2.polyArea(b.poly);
+      if (!want || !have || (want / have > 0.77 && want / have < 1.3)) return;
+      var k = Math.max(0.4, Math.min(2.5, Math.sqrt(want / have))), c = [cenX(b.poly), b.poly.reduce(function (s, q) { return s + q[1]; }, 0) / b.poly.length];
+      b.poly = b.poly.map(function (q) { return [Math.max(0, Math.min(w, c[0] + (q[0] - c[0]) * k)), Math.max(0, Math.min(d, c[1] + (q[1] - c[1]) * k))]; });
+      ctx.areaNotes.push('Záhon ' + (i + 1) + ': půdorys ' + have.toFixed(1).replace('.', ',') + ' m² → podle zadání ' + window.MVGreenPlanV2.polyArea(b.poly).toFixed(1).replace('.', ',') + ' m²');
+    });
     // Hrany záhonu u plotu/zdi/domu = „záda“ záhonu → vysoké rostliny dozadu (plan-render.js: bed.back).
     project.beds.forEach(function (b) {
       var back = [];
@@ -907,7 +947,7 @@
     return '<h2>' + esc(r.facts.title || 'Váš návrh je hotový') + '</h2><p class="mvg2-sub">' + esc(r.facts.concept || '') + '</p>'
       + '<div class="mvg2-compare"><img src="' + r.before + '" alt="Před"><img src="' + r.after + '" alt="Po" data-after><i data-divider></i><span class="mvg2-tag mvg2-tag--l">PO</span><span class="mvg2-tag mvg2-tag--r">PŘED</span></div>'
       + '<label class="mvg2-sub">Posuňte a porovnejte před a po<input type="range" min="0" max="100" value="55" data-slide></label>'
-      + '<div class="mvg2-nav"><span class="mvg2-sub">' + r.plants.reduce(function (s, p) { return s + p.count; }, 0) + ' rostlin, ' + r.plants.length + ' druhů</span><button type="button" class="mvg2-btn" data-print>Stáhnout projekt (PDF, 11 stran)</button></div>'
+      + '<div class="mvg2-nav"><span class="mvg2-sub">' + r.plants.reduce(function (s, p) { return s + p.count; }, 0) + ' rostlin, ' + r.plants.length + ' druhů</span><span><button type="button" class="mvg2-btn mvg2-btn--ghost" data-restyle>Zkusit jiný styl</button> <button type="button" class="mvg2-btn" data-print>Stáhnout projekt (PDF, 11 stran)</button></span></div>'
       + '<h3>Projekt v PDF – náhled</h3><div class="mvg2-pdf-wrap"><div class="mvg2-pdf">' + r.pdfHtml + '</div></div>'
       + '<div class="mvg2-log" data-log>' + st.log.map(esc).join('<br>') + '</div>';
   }
@@ -927,7 +967,7 @@
   }
   window.addEventListener('resize', function () { if (st.step === 5) fitSheets(); });
   // Jen pro testy bez AI (node / konzole): sestaví výsledek z hotových dat.
-  window.MVGreenArchitektTest = { state: st, build: function (ctx) { buildResult(ctx); return st.result; }, pickPlants: pickPlants };
+  window.MVGreenArchitektTest = { state: st, build: function (ctx) { buildResult(ctx); return st.result; }, pickPlants: pickPlants, briefBedAreas: briefBedAreas };
 
   render();
 })();

@@ -117,7 +117,7 @@
    * modelu a cen/norem v assets/v2/kb.js (ceny jsou odhady, Martin je upraví). */
   function page8kb(ctx, steps) {
     var e = ctx.estimate, t = e.totals;
-    var sub = t.weekends <= 1 ? 'Zvládnete to sami za víkend' : 'Odhad: ' + t.hours + ' hodin práce = ' + t.weekends + ' víkendy pro 2 lidi';
+    var sub = t.weekends <= 1 ? 'Zvládnete to sami za víkend' : 'Odhad: ' + t.hours + ' hodin práce = ' + t.weekends + (t.weekends < 5 ? ' víkendy' : ' víkendů') + ' pro 2 lidi';
     return '<section class="mvg2-page">' + head(ctx, 8) + title('POSTUP, HARMONOGRAM A NÁŘADÍ', sub)
       + '<table class="mvg2-table mvg2-table--work"><thead><tr><th>Práce</th><th>Rozsah</th><th>Hodin</th></tr></thead><tbody>'
       + e.tasks.map(function (k) { return '<tr><td>' + esc(k.name) + '</td><td>' + esc(k.scope) + '</td><td>' + k.hours + ' h</td></tr>'; }).join('')
