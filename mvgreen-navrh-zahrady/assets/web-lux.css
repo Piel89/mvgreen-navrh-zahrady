@@ -315,3 +315,32 @@
  .mvg-lux .lx-links{flex-direction:column;align-items:stretch}
  .mvg-lux [style*="gap: 12px; flex-wrap: wrap"]>a{flex:1 1 100%;text-align:center;box-sizing:border-box}
 }
+
+/* 2026-11-13, rozbor bod 02 A (Martin: mobilní úvod měl ~10 000 px = 13 obrazovek):
+ * v mobilu dát před/po a recenze do vodorovného posouvání (swipe) a zhustit služby. */
+/* nápověda „posuňte do strany“ jen v mobilu */
+.mvg-lux .lx-swipe-hint{display:none}
+@media (max-width:760px){
+ .mvg-lux .mvg-gallery,.mvg-lux .lx-reviews__grid{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;margin-left:-16px;margin-right:-16px;padding:0 16px 10px;scroll-padding:0 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+ .mvg-lux .mvg-gallery::-webkit-scrollbar,.mvg-lux .lx-reviews__grid::-webkit-scrollbar{display:none}
+ .mvg-lux .mvg-gallery>.mvg-ba{flex:0 0 86%;scroll-snap-align:start;min-width:0}
+ .mvg-lux .lx-reviews__grid{margin-top:28px}
+ .mvg-lux .lx-review{flex:0 0 84%;scroll-snap-align:start;padding:22px}
+ .mvg-lux .lx-review blockquote{font-size:19px}
+ /* v karuselu posouvá prst fotkou celý pás; jezdec před/po se chytá za kolečko */
+ .mvg-lux .mvg-gallery .mvg-ba__frame{touch-action:pan-x pan-y}
+ .mvg-lux .mvg-gallery .mvg-ba__knob{pointer-events:auto;touch-action:none;width:52px;height:52px;margin:-26px 0 0 -26px}
+ .mvg-lux .lx-swipe-hint{display:block;margin-top:6px;font-size:14px;color:var(--muted)}
+ .mvg-lux .lx-reviews .lx-swipe-hint{color:#3e6b4a}
+ /* služby: menší kolečka, bez popisku, cena na stejném řádku */
+ .mvg-lux .lx-team{height:210px}
+ .mvg-lux .lx-price{gap:6px 14px;padding:16px 0;flex-wrap:nowrap;align-items:center}
+ .mvg-lux .lx-ba{width:64px;height:64px}
+ .mvg-lux .lx-ba span{display:none}
+ .mvg-lux .lx-price__name{flex:1 1 auto}
+ .mvg-lux .lx-price__name strong{font-size:21px}
+ .mvg-lux .lx-price__name span{display:none}
+ .mvg-lux .lx-price__val{flex:none;text-align:right;font-size:12px}
+ .mvg-lux .lx-price__val b{font-size:22px}
+ .mvg-lux .lx-about>img{height:320px}
+}

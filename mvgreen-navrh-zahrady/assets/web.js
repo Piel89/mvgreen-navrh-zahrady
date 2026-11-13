@@ -100,7 +100,10 @@
         range.value = v;
         setPos(frame, v);
       }
+      // 2026-11-13: v mobilním karuselu (.mvg-gallery) posouvá prst po fotce celý pás – jezdec jen za kolečko.
+      var inStrip = function () { return frame.closest('.mvg-gallery') && getComputedStyle(frame.parentNode.parentNode).overflowX === 'auto'; };
       frame.addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'touch' && inStrip() && !e.target.closest('.mvg-ba__knob')) return;
         dragging = true;
         try { frame.setPointerCapture(e.pointerId); } catch (err) {}
         fromEvent(e);
@@ -113,6 +116,16 @@
     });
   }
 
-  function init() { initMenu(); initNavDrop(); initCompare(); }
+  // Nápověda „posuňte do strany“ pod mobilními pásy (zobrazí ji jen CSS do 760 px).
+  function initHints() {
+    document.querySelectorAll('.mvg-lux .mvg-gallery, .mvg-lux .lx-reviews__grid').forEach(function (el) {
+      if (el.nextElementSibling && el.nextElementSibling.classList.contains('lx-swipe-hint')) return;
+      var n = el.children.length; if (n < 2) return;
+      var h = document.createElement('span'); h.className = 'lx-swipe-hint'; h.textContent = 'Posuňte do strany → (' + n + ')';
+      el.insertAdjacentElement('afterend', h);
+    });
+  }
+
+  function init() { initMenu(); initNavDrop(); initCompare(); initHints(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
