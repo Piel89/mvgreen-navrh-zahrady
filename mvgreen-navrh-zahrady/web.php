@@ -107,6 +107,15 @@ add_shortcode('mvgreen_hlavicka', function () {
         ['Plán hnojení a údržby zahrady', home_url('/rocni-plan-pece-a-hnojeni-travniku/')],
         ['AI zahradní architekt', home_url('/navrhni-si-zahradu/')],
     ];
+    // 2026-11-13, Martin: stránky jsou zamčené heslem (nefunguje platební brána) – návštěvník by
+    // v menu narazil na „Připravujeme“ + heslo. Zamčenou stránku proto v menu skryjeme (admin ji vidí
+    // dál); jakmile se heslo zruší, položka se vrátí sama.
+    if (!current_user_can('manage_options')) {
+        $tools = array_values(array_filter($tools, function ($t) {
+            $id = url_to_postid($t[1]);
+            return !$id || get_post_field('post_password', $id) === '';
+        }));
+    }
     $current = trailingslashit(strtok(home_url(add_query_arg([])), '?'));
     $link = function ($label, $url) use ($current) {
         $is = trailingslashit($url) === $current && strpos($url, '#') === false;
@@ -120,7 +129,7 @@ add_shortcode('mvgreen_hlavicka', function () {
         $tools_html .= $l['html'];
         if ($l['active']) $tools_active = true;
     }
-    $nav .= '<div class="mvg-nav__drop' . ($tools_active ? ' mvg-nav__drop--active' : '') . '">'
+    if ($tools) $nav .= '<div class="mvg-nav__drop' . ($tools_active ? ' mvg-nav__drop--active' : '') . '">'
         . '<button type="button" class="mvg-nav__drop-btn" aria-expanded="false">Nástroje' . mvgreen_web_icon('chevron', 15) . '</button>'
         . '<div class="mvg-nav__drop-panel">' . $tools_html . '</div>'
         . '</div>';
