@@ -23,6 +23,8 @@
     // 0.6.278: materiál dlažby, mulče a obruby podle stylu / zadání architekta (dřív vždy zámková a kůra)
     dlazbavf:   { name: 'Velkoformátová betonová dlažba 60 × 30 cm', unit: 'm²', price: 690 },
     dlazbakamen:{ name: 'Kamenná dlažba – přírodní kámen (rula, pískovec)', unit: 'm²', price: 1150 },
+    naslapy:    { name: 'Nášlapné kameny – plochý přírodní kámen 4–6 cm', unit: 'm²', price: 950 },
+    pisek:      { name: 'Písek do lože', unit: 't', price: 520 },
     obrubaocel: { name: 'Ocelová obruba záhonu (pozink / corten)', unit: 'm', price: 380 },
     sterkodrt:  { name: 'Štěrkodrť 0/32 (podklad)', unit: 't', price: 480 },
     drt48:      { name: 'Drť 4/8 (lože pod dlažbu)', unit: 't', price: 620 },
@@ -47,7 +49,7 @@
   var PLANT_PRICE = { tree: 1400, conifer: 650, shrub: 380, grass: 210, perennial: 175, bulb: 25, climber: 320 };
 
   // ---------- práce (osobohodiny šikovného laika včetně výkopu, odvozu a úklidu) ----------
-  var H = { vytyceni: 2, dlazba: 3, cesta: 2.2, zed: 8, schody: 16, zahon: 1, kacirek: 0.6, travnik: 0.12, regen: 0.02, vysadba: 0.12 };
+  var H = { vytyceni: 2, dlazba: 3, cesta: 2.2, zed: 8, schody: 16, zahon: 1, kacirek: 0.6, travnik: 0.12, regen: 0.02, naslap: 1.3, vysadba: 0.12 };
   var WEEKEND_H = 28;   // 2 lidé × 2 dny × 7 h
 
   // ---------- nářadí a stroje ----------
@@ -75,6 +77,8 @@
     var wallL = sum(m.walls, function (w) { return w.length; }), wallA = sum(m.walls, function (w) { return w.length * (w.height || 0.6); });
     var steps = sum(m.steps, function (s) { return s.count || 3; });
     var lawn = (m.lawn || 0) + (m.lawnExtra || 0), regen = m.lawnRegen || 0;
+    // v3: nášlapná cesta z plochých kamenů v trávníku (kameny kryjí ~60 % plochy, lože z písku, bez obrubníků)
+    var step = sum(m.stepping, function (p) { return p.area; });
     var fin = m.finish || {}, pavId = { vf: 'dlazbavf', kamen: 'dlazbakamen' }[fin.paving] || 'dlazba';
     var pavName = { dlazba: 'Zámková dlažba', dlazbavf: 'Velkoformátová dlažba', dlazbakamen: 'Kamenná dlažba' }[pavId];
     var edgeId = { ocel: 'obrubaocel', beton: 'obrubnik' }[fin.edge] || 'obruba';
@@ -92,6 +96,7 @@
     if (steps) { add('stupen', steps); concrete += steps * 0.05; }
     // beton: do půl kubíku pytle (1 pytel ≈ 0,0125 m³), víc = objednat z betonárky
     if (concrete > 0.5) add('betonm3', concrete); else if (concrete > 0) add('beton', Math.ceil(concrete / 0.0125));
+    if (step > 0.3) { add('naslapy', step * 0.6); add('pisek', step * 0.05 * 1.5); }
     // trávník: 35 g/m² osiva, 30 g/m² startovacího hnojiva
     if (lawn > 1) { add('osivo', lawn * 0.035); add('hnojivo', lawn * 0.03); }
     // regenerace stávajícího trávníku: dosev 15 g/m², hnojivo 30 g/m²
@@ -117,6 +122,7 @@
     var tasks = [], task = function (name, scope, h, group) { if (h > 0.2) tasks.push({ name: name, scope: scope, hours: Math.max(1, Math.round(h)), group: group }); };
     task('Vytyčení podle plánu', 'celá úprava', H.vytyceni + (bed + pav + path + grav) * 0.02, 'Příprava');
     if (pav > 0.3) task(pavName + ' vč. výkopu, podkladu a obrubníků', r1(pav) + ' m²', pav * H.dlazba * (pavId === 'dlazbakamen' ? 1.5 : pavId === 'dlazbavf' ? 1.2 : 1), 'Stavební část');
+    if (step > 0.3) task('Nášlapná cesta z kamenů v trávníku', r1(step) + ' m²', step * H.naslap, 'Stavební část');
     if (path > 0.3) task('Štěrková cesta vč. výkopu a obruby', r1(path) + ' m²', path * H.cesta, 'Stavební část');
     if (wallL > 0.3) task('Opěrná zeď vč. základu a drenáže', r1(wallL) + ' m', wallL * H.zed, 'Stavební část');
     if (steps) task('Schody', steps + ' stupňů', H.schody * Math.max(1, steps / 3), 'Stavební část');

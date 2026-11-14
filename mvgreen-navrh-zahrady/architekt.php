@@ -502,3 +502,41 @@ add_shortcode('mvgreen_ai_architekt', function ($atts) {
     ]) . ';', 'before');
     return '<div data-mvgreen-architekt class="mvg2"><p>Načítání…</p></div>';
 });
+
+/**
+ * v3 (2026-11-14, připraveno, zatím se nevolá – majitel: „zatím nic neplať“): AI architekt navrhne PŮDORYS
+ * v metrech jako JSON. Zadání (měření, chráněné plochy, cíle cest, přání) skládá prohlížeč
+ * (assets/v3/plan.js → prompt), výsledek tam zkontroluje validate() a chyby vrátí k opravě (max. 2×).
+ * Fotka jde s promítnutou měřicí sítí, aby AI viděla, kde je který metr.
+ */
+function mvgreen_plan_v3_schema() {
+    $pt = ['type' => 'array', 'items' => ['type' => 'number']];
+    $obj = function ($req, $props) { return ['type' => 'object', 'additionalProperties' => false, 'required' => $req, 'properties' => $props]; };
+    return $obj(['concept', 'beds', 'paths', 'walls', 'trees', 'notes'], [
+        'concept' => ['type' => 'string'],
+        'beds' => ['type' => 'array', 'items' => $obj(['name', 'poly', 'light', 'wet', 'place', 'why'], [
+            'name' => ['type' => 'string'], 'poly' => ['type' => 'array', 'items' => $pt],
+            'light' => ['type' => 'string', 'enum' => ['slunce', 'polostin', 'stin']], 'wet' => ['type' => 'string', 'enum' => ['sucho', 'normal', 'vlhko']],
+            'place' => ['type' => 'string', 'enum' => ['zed', 'cesta', 'volny', 'svah']], 'why' => ['type' => 'string']])],
+        'paths' => ['type' => 'array', 'items' => $obj(['name', 'line', 'width', 'surface', 'from', 'to'], [
+            'name' => ['type' => 'string'], 'line' => ['type' => 'array', 'items' => $pt], 'width' => ['type' => 'number'],
+            'surface' => ['type' => 'string', 'enum' => ['naslap', 'kamen', 'vf', 'zamkova', 'sterk']], 'from' => ['type' => 'string'], 'to' => ['type' => 'string']])],
+        'walls' => ['type' => 'array', 'items' => $obj(['name', 'line', 'height', 'joins'], [
+            'name' => ['type' => 'string'], 'line' => ['type' => 'array', 'items' => $pt], 'height' => ['type' => 'number'], 'joins' => ['type' => 'string']])],
+        'trees' => ['type' => 'array', 'items' => $obj(['at', 'why'], ['at' => $pt, 'why' => ['type' => 'string']])],
+        'notes' => ['type' => 'string'],
+    ]);
+}
+add_action('wp_ajax_mvgreen_ai_plan_v3', function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
+    $photo = mvgreen_ai_post_image('photo');
+    $prompt = isset($_POST['prompt']) ? sanitize_textarea_field(wp_unslash($_POST['prompt'])) : '';
+    $fix = isset($_POST['fix']) ? sanitize_textarea_field(wp_unslash($_POST['fix'])) : '';
+    if (!$photo || strlen($prompt) < 200) wp_send_json_error(['message' => 'Chybí fotka nebo zadání.'], 400);
+    $text = $prompt . ($fix ? "\nPŘEDCHOZÍ NÁVRH NEPROŠEL KONTROLOU – oprav přesně tyto chyby a nic jiného neměň:\n" . $fix : '');
+    $content = [['type' => 'text', 'text' => $text], ['type' => 'image_url', 'image_url' => ['url' => $photo, 'detail' => 'high']]];
+    $out = mvgreen_ai_chat_json($content, 'garden_plan_v3', mvgreen_plan_v3_schema(), 120);
+    if (is_wp_error($out)) wp_send_json_error(['message' => $out->get_error_message()], 200);
+    wp_send_json_success(['plan' => $out]);
+});

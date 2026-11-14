@@ -17,17 +17,17 @@
   // light: slunce | polostin | stin; wet: sucho | normal | vlhko; place: zed (u zdi/plotu/domu), cesta (lem u cesty),
   // volny (ostrůvek), svah; depth: [min, max] m; styles: prirodni moderni nizka rodina
   var MODULES = [
-    { id: 'prerie', name: 'Prérijní slunný záhon', styles: ['prirodni', 'rodina'], light: ['slunce'], wet: ['sucho', 'normal'], place: ['zed', 'volny', 'cesta'], depth: [1.2, 6],
+    { id: 'prerie', name: 'Prérijní slunný záhon', styles: ['prirodni', 'rodina'], light: ['slunce'], wet: ['sucho', 'normal'], place: ['zed', 'volny', 'cesta'], depth: [1.2, 12],
       why: 'Trávy v pravidelném rytmu drží tvar celý rok, mezi nimi rozvolněné skupiny trvalek kvetou od června do října. Pokryvná tráva nenechá místo plevelu. Na jaře okrasné česneky.',
       kostra: { key: 'calamagrostis-acutiflora-karl-foerster', every: 1.6 },
       skupiny: ['echinacea-purpurea-magnus', 'salvia-nemorosa-caradonna', 'achillea-moonshine', 'rudbeckia-fulgida-little-goldstar'],
-      koberec: { key: 'sporobolus-heterolepis', step: 0.6 }, cibule: { key: 'allium-hollandicum-purple-sensation', perM2: 5 } },
-    { id: 'moderni-graficky', name: 'Moderní grafický záhon', styles: ['moderni'], light: ['slunce'], wet: ['sucho', 'normal'], place: ['zed', 'volny', 'cesta'], depth: [1, 6],
+      koberec: { key: 'sporobolus-heterolepis', step: 0.6 }, cibule: { key: 'allium-hollandicum-purple-sensation', perM2: 3 } },
+    { id: 'moderni-graficky', name: 'Moderní grafický záhon', styles: ['moderni'], light: ['slunce'], wet: ['sucho', 'normal'], place: ['zed', 'volny', 'cesta'], depth: [1, 12],
       why: 'Stálezelené koule kleče v přesném rytmu dávají záhonu kostru i v zimě. Mezi nimi bloky levandule, šanty a perovskie v jedné paletě modrofialové a stříbrné. Podklad tvoří pokryvná sesleria.',
       kostra: { key: 'pinus-mugo-mops', every: 1.4 },
       skupiny: ['lavandula-angustifolia', 'perovskia-little-spire', 'nepeta-faassenii'],
       koberec: { key: 'sesleria-autumnalis', step: 0.4 }, cibule: { key: 'allium-globemaster', perM2: 2 } },
-    { id: 'moderni-travni', name: 'Moderní travní záhon', styles: ['moderni'], light: ['slunce', 'polostin'], wet: ['normal', 'vlhko'], place: ['zed', 'volny'], depth: [1.5, 6],
+    { id: 'moderni-travni', name: 'Moderní travní záhon', styles: ['moderni'], light: ['slunce', 'polostin'], wet: ['normal', 'vlhko'], place: ['zed', 'volny'], depth: [1.5, 12],
       why: 'Vysoký bezkolenec tvoří průhlednou clonu v rytmu. Bílá rdesna a pokryvná sesleria drží omezenou moderní paletu. Záhon je pěkný od července do zimy.',
       kostra: { key: 'molinia-arundinacea-transparent', every: 1.6 },
       skupiny: ['persicaria-amplexicaulis-alba', 'deschampsia-cespitosa-goldtau'],
@@ -41,7 +41,7 @@
       kostra: { key: 'hydrangea-arborescens-annabelle', every: 2.0 },
       skupiny: ['astilbe-arendsii-brautschleier', 'geranium-phaeum-lily-lovell', 'hosta-june'],
       koberec: { key: 'geranium-macrorrhizum-bevan-s-variety', step: 0.45 }, cibule: null },
-    { id: 'stin', name: 'Stinný záhon pod stromy', styles: ['prirodni', 'moderni', 'nizka', 'rodina'], light: ['stin'], wet: ['sucho', 'normal', 'vlhko'], place: ['zed', 'volny', 'cesta'], depth: [0.8, 6],
+    { id: 'stin', name: 'Stinný záhon pod stromy', styles: ['prirodni', 'moderni', 'nizka', 'rodina'], light: ['stin'], wet: ['sucho', 'normal', 'vlhko'], place: ['zed', 'volny', 'cesta'], depth: [0.8, 12],
       why: 'Do stínu, kde tráva neroste: kapradiny jako kostra, skupiny bohyšek, pomněnkovce a škornice. Pod nimi stálezelená tlustonitka. Vydrží i suchý stín pod stromy.',
       kostra: { key: 'dryopteris-affinis', every: 1.4 },
       skupiny: ['hosta-patriot', 'brunnera-macrophylla', 'epimedium-versicolor-sulphureum'],
@@ -51,27 +51,27 @@
       kostra: { key: 'pinus-mugo-gnom', every: 2.4 },
       skupiny: ['potentilla-fruticosa-tilford-cream', 'perovskia-lacey-blue', 'nepeta-faassenii'],
       koberec: { key: 'sesleria-heufleriana', step: 0.35 }, cibule: null },
-    { id: 'nizka-kerova', name: 'Keřový záhon na nízkou údržbu', styles: ['nizka'], light: ['slunce', 'polostin'], wet: ['sucho', 'normal'], place: ['zed', 'volny', 'cesta'], depth: [1, 6],
+    { id: 'nizka-kerova', name: 'Keřový záhon na nízkou údržbu', styles: ['nizka'], light: ['slunce', 'polostin'], wet: ['sucho', 'normal'], place: ['zed', 'volny', 'cesta'], depth: [1, 12],
       why: 'Málo práce: stálezelená kleč, kvetoucí tavolníky a mochny, pod nimi pokryvný kakost. Stačí jeden řez za rok, bez dosazování.',
       kostra: { key: 'pinus-mugo-mops', every: 1.8 },
       skupiny: ['spiraea-japonica-shirobana', 'potentilla-fruticosa-red-ace'],
       koberec: { key: 'geranium-macrorrhizum-czakor', step: 0.45 }, cibule: null },
-    { id: 'rodina-odolna', name: 'Odolný rodinný záhon', styles: ['rodina'], light: ['slunce', 'polostin'], wet: ['normal', 'sucho'], place: ['zed', 'volny', 'cesta'], depth: [1, 6],
+    { id: 'rodina-odolna', name: 'Odolný rodinný záhon', styles: ['rodina'], light: ['slunce', 'polostin'], wet: ['normal', 'sucho'], place: ['zed', 'volny', 'cesta'], depth: [1, 12],
       why: 'Na děti a míče: netrnité a nejedovaté druhy, které snesou pošlapání a rychle obrostou. Kostra z tavolníku, skupiny denivek a kakostu, mezi nimi kontryhel.',
       kostra: { key: 'spiraea-japonica-anthony-waterer', every: 1.8 },
       skupiny: ['hemerocallis-happy-returns', 'geranium-sirak'],
       koberec: { key: 'alchemilla-mollis', step: 0.45 }, cibule: null },
-    { id: 'soukromi', name: 'Clona u plotu', styles: ['prirodni', 'rodina', 'moderni', 'nizka'], light: ['slunce', 'polostin'], wet: ['normal', 'vlhko'], place: ['zed'], depth: [1.6, 6],
+    { id: 'soukromi', name: 'Clona u plotu', styles: ['prirodni', 'rodina', 'moderni', 'nizka'], light: ['slunce', 'polostin'], wet: ['normal', 'vlhko'], place: ['zed'], depth: [1.6, 12],
       why: 'Clona proti pohledům bez tújí: latnaté hortenzie a ozdobnice dorostou do 2 m, ale zůstanou vzdušné. Před nimi astry na podzim, pod nimi pokryvný kakost.',
       kostra: { key: 'hydrangea-paniculata-vanille-fraise', every: 1.8, alt: 'miscanthus-sinensis-ferner-osten' },
       skupiny: ['symphyotrichum-novae-angliae-barr-s-blue'],
       koberec: { key: 'geranium-macrorrhizum-czakor', step: 0.45 }, cibule: null },
-    { id: 'vlhky-polostin', name: 'Vlhký polostinný záhon', styles: ['prirodni', 'rodina', 'moderni'], light: ['polostin', 'stin'], wet: ['vlhko'], place: ['zed', 'volny', 'cesta'], depth: [1, 6],
+    { id: 'vlhky-polostin', name: 'Vlhký polostinný záhon', styles: ['prirodni', 'rodina', 'moderni'], light: ['polostin', 'stin'], wet: ['vlhko'], place: ['zed', 'volny', 'cesta'], depth: [1, 12],
       why: 'Do vlhčího místa: velké modré bohyšky jako kostra, skupiny kosatce sibiřského, čechravy a bílého rdesna. Pod nimi ostřice.',
       kostra: { key: 'hosta-blue-angel', every: 1.6 },
       skupiny: ['iris-sibirica-caesar-s-brother', 'astilbe-japonica-europa', 'persicaria-amplexicaulis-alba'],
       koberec: { key: 'carex-sylvatica', step: 0.4 }, cibule: null },
-    { id: 'moderni-polostin', name: 'Moderní polostinný záhon', styles: ['moderni', 'nizka'], light: ['polostin', 'stin'], wet: ['normal', 'vlhko'], place: ['zed', 'volny', 'cesta'], depth: [0.8, 6],
+    { id: 'moderni-polostin', name: 'Moderní polostinný záhon', styles: ['moderni', 'nizka'], light: ['polostin', 'stin'], wet: ['normal', 'vlhko'], place: ['zed', 'volny', 'cesta'], depth: [0.8, 12],
       why: 'Bílé hortenzie v rytmu, skupiny zlaté trávy hakonechloa a tmavých dlužich. Pod nimi tlustonitka. Omezená paleta (bílá, zelená, tmavá), působí čistě a moderně.',
       kostra: { key: 'hydrangea-arborescens-annabelle', every: 1.8 },
       skupiny: ['hakonechloa-macra', 'heuchera-obsidian', 'brunnera-macrophylla-looking-glass'],
@@ -161,7 +161,7 @@
       var sp3 = mod.koberec.step, ksp3 = spec(mod.koberec.key).spon;
       for (var s = A.s0; s <= A.s1; s += sp3 * 0.866) for (var t = A.t0 + ((Math.round((s - A.s0) / (sp3 * 0.866)) % 2) ? sp3 / 2 : 0); t <= A.t1; t += sp3) {
         // přírodní styly: síť rozvolnit (náhodný posun), jinak koberec vypadá jako řádky na poli; moderní nechat pravidelný
-        var jit = mod.styles.indexOf('moderni') >= 0 && mod.styles.length <= 2 ? 0 : sp3 * 0.28;
+        var jit = (mod.styles.indexOf('moderni') >= 0 && mod.styles.length <= 2) || depth < 1.4 ? 0 : sp3 * 0.28;
         var pt3 = at(t + (rnd() - 0.5) * 2 * jit, s + (rnd() - 0.5) * 2 * jit); if (free(pt3, Math.min(ksp3, sp3), 0.4)) put(mod.koberec.key, pt3, 'koberec');
       }
     }
