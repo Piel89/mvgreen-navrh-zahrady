@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.286
+ * Version: 0.6.287
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.286');
+define('MVGREEN_VERSION', '0.6.287');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -388,7 +388,7 @@ $mvgreen_ai_preview_start_handle = function () {
     // headroom above the realistic worst case while still bounding the request. The staged payload
     // can legitimately hold several masks at once, so it gets its own, larger cap.
     // 2026-11-11: se zadáním AI architekta má prompt ~5 900 znaků = až ~11 000 bajtů (čeština) → limit 16 000;
-    // 0.6.286: prompt s náčrtem a stylem má až ~12 000 znaků (řez v prohlížeči) = až ~24 000 B → limit 40 000
+    // 0.6.287: prompt s náčrtem a stylem má až ~12 000 znaků (řez v prohlížeči) = až ~24 000 B → limit 40 000
     if (strlen($image)>12000000 || strlen($instructions)>40000 || strlen($stages_raw)>48000000 || strlen($concepts_raw)>96000) wp_send_json_error(['message'=>'Fotografie nebo zadání je příliš velké.'], 413);
     // The photo may be JPEG (small, no alpha needed) or PNG; every mask must stay PNG (needs the alpha channel).
     $image_mime = 'image/png';
@@ -596,6 +596,8 @@ $mvgreen_ai_preview_start_handle = function () {
         'next_index' => 0,
         'instructions' => array_map(function ($sd) { return $sd['instructions']; }, $stage_defs),
         'is_admin' => $is_admin,
+        // 2026-11-14: správce si pro srovnávací test vizualizací může vyžádat plnou kvalitu (test_quality=xhigh)
+        'admin_quality' => ($is_admin && isset($_POST['test_quality']) && in_array($_POST['test_quality'], ['low', 'medium', 'high', 'xhigh'], true)) ? $_POST['test_quality'] : '',
         'result_post_id' => $result_post_id,
         'phase' => $is_concepts ? 'concepts' : 'normal',
         'concepts_ok' => 0,
@@ -704,7 +706,7 @@ $mvgreen_ai_preview_step_handle = function () {
     // mvgreen_ai_preview_start_handle above) use OpenAI's cheapest quality tier instead of the
     // production 'xhigh', so repeated logic/positioning tests during development don't burn real
     // money at full quality. Every customer-paid design still gets the default 'xhigh' untouched.
-    $admin_test_quality = $meta['is_admin'] ? 'low' : 'xhigh';
+    $admin_test_quality = $meta['is_admin'] ? (!empty($meta['admin_quality']) ? $meta['admin_quality'] : 'low') : 'xhigh';
     $guide_file = $meta['dir'] . '/guide.jpg';
     $guide_bytes = is_readable($guide_file) ? (string) @file_get_contents($guide_file) : '';
     $r = mvgreen_run_ai_image_stage($current_bytes, $meta['current_mime'], $mask_bytes, $meta['instructions'][$i], $meta['size'], $admin_test_quality, $guide_bytes);
