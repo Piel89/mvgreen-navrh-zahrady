@@ -540,3 +540,44 @@ add_action('wp_ajax_mvgreen_ai_plan_v3', function () {
     if (is_wp_error($out)) wp_send_json_error(['message' => $out->get_error_message()], 200);
     wp_send_json_success(['plan' => $out]);
 });
+
+/**
+ * v3 – vizualizace přes obrázkový model Google Gemini (2026-11-14, majitel: „kvalitní výstup vizualizací je
+ * základ“; OpenAI gpt-image maluje volně a nedodrží rozvržení). Gemini dostane fotku + přesný podklad
+ * z půdorysu a vrátí upravenou fotku; prohlížeč pak mimo masku vrátí původní pixely (ai-safety finish),
+ * takže nic chráněného se změnit nemůže. Klíč je stejný jako pro označování. POZOR: bezplatná úroveň
+ * smí data použít k tréninku → jen naše testovací fotky, pro zákazníky placená úroveň.
+ * models: seznam zkoušených modelů (správce může poslat vlastní v POST model).
+ */
+add_action('wp_ajax_mvgreen_ai_gemini_image', function () {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Zatím jen pro správce.'], 403);
+    $gkey = function_exists('mvgreen_gemini_key') ? mvgreen_gemini_key() : '';
+    if (!$gkey) wp_send_json_error(['message' => 'Chybí klíč Google Gemini.'], 200);
+    $img = function ($k) { $v = isset($_POST[$k]) ? wp_unslash($_POST[$k]) : ''; return preg_match('~^data:image/(jpeg|png);base64,([A-Za-z0-9+/=]+)$~D', $v, $m) && strlen($v) < 12000000 ? ['mime' => 'image/' . $m[1], 'data' => $m[2]] : null; };
+    $photo = $img('photo'); $guide = $img('guide');
+    $prompt = isset($_POST['prompt']) ? sanitize_textarea_field(wp_unslash($_POST['prompt'])) : '';
+    if (!$photo || !$prompt) wp_send_json_error(['message' => 'Chybí fotka nebo zadání.'], 400);
+    $want = isset($_POST['model']) ? preg_replace('~[^a-z0-9.\-]~', '', strtolower((string) wp_unslash($_POST['model']))) : '';
+    $models = array_values(array_unique(array_filter([$want, 'gemini-3-pro-image-preview', 'gemini-2.5-flash-image', 'gemini-2.5-flash-image-preview'])));
+    $parts = [['text' => $prompt], ['inline_data' => ['mime_type' => $photo['mime'], 'data' => $photo['data']]]];
+    if ($guide) $parts[] = ['inline_data' => ['mime_type' => $guide['mime'], 'data' => $guide['data']]];
+    @set_time_limit(150);
+    $notes = [];
+    foreach ($models as $model) {
+        $r = wp_remote_post('https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent', [
+            'headers' => ['x-goog-api-key' => $gkey, 'Content-Type' => 'application/json'],
+            'body' => wp_json_encode(['contents' => [['parts' => $parts]], 'generationConfig' => ['responseModalities' => ['TEXT', 'IMAGE']]]),
+            'timeout' => 120,
+        ]);
+        if (is_wp_error($r)) { $notes[] = $model . ': ' . $r->get_error_message(); continue; }
+        $code = wp_remote_retrieve_response_code($r); $json = json_decode(wp_remote_retrieve_body($r), true);
+        if ($code < 200 || $code >= 300) { $notes[] = $model . ': ' . sanitize_text_field((string) ($json['error']['message'] ?? 'HTTP ' . $code)); continue; }
+        foreach ((array) ($json['candidates'][0]['content']['parts'] ?? []) as $p) {
+            $d = $p['inline_data'] ?? ($p['inlineData'] ?? null);
+            if ($d && !empty($d['data'])) wp_send_json_success(['image' => 'data:' . ($d['mime_type'] ?? ($d['mimeType'] ?? 'image/png')) . ';base64,' . $d['data'], 'model' => $model, 'notes' => $notes]);
+        }
+        $notes[] = $model . ': bez obrázku (' . sanitize_text_field(substr((string) ($json['candidates'][0]['finishReason'] ?? ''), 0, 60)) . ')';
+    }
+    wp_send_json_error(['message' => 'Gemini obrázek nevrátil.', 'notes' => $notes], 200);
+});
