@@ -85,7 +85,7 @@
   var SEASON_GENERAL = {
     high: {
       summer: [
-        W('Sečení výš (7-8 cm) v horkých dnech, aby trávník lépe snášel sucho.{{WATER}}'),
+        W('V horkých dnech sekejte o 1–2 cm výš než obvykle ({{MOWHOT}}), aby trávník lépe snášel sucho.{{WATER}}'),
         W('Zálivka podle potřeby, raději zřídka a vydatně než často a málo.{{WATER}}{{SLOPE}}'),
         A('Nekosit na krátko v suchu a horku.{{WATER}}'),
         W('Ve vlhku a horku hlídejte i jiné choroby než plíseň sněžnou - rezavé skvrny (rez travní) nebo hnědé skvrny s tmavým okrajem (listová skvrnitost) signalizují, že trávník potřebuje míň dusíku a víc vzduchu (prořídnout zálivku, nesekat nakrátko).'),
@@ -93,7 +93,7 @@
     },
     standard: {
       summer: [
-        W('Sečení výš (6-7 cm) v horkých dnech, aby trávník lépe snášel sucho.{{WATER}}{{SLOPE}}'),
+        W('V horkých dnech sekejte o 1–2 cm výš než obvykle ({{MOWHOT}}), aby trávník lépe snášel sucho.{{WATER}}{{SLOPE}}'),
         A('Nekosit na krátko v suchu a horku.{{WATER}}'),
         W('Ve vlhku a horku hlídejte i jiné choroby než plíseň sněžnou - rezavé skvrny (rez travní) nebo hnědé skvrny s tmavým okrajem (listová skvrnitost) signalizují, že trávník potřebuje míň dusíku a víc vzduchu.'),
       ],
@@ -182,20 +182,26 @@
    * Nadmořská výška posouvá start/konec sezóny - výš je chladněji, sezóna začíná později a
    * končí dřív. Posun v měsících, zaokrouhlený na celé měsíce (0 = nížina do 350 m).
    */
+  // Posun v POLOVINÁCH měsíce (2026-11-14 oprava): dřív se celý rok posunul o celé měsíce později,
+  // včetně podzimu – v Domažlicích (430 m) pak plán radil hnojit dusíkem v listopadu a draslíkem
+  // v prosinci. Ve vyšší poloze ale jaro začíná POZDĚJI a podzim končí DŘÍV. Proto:
+  // jaro (únor–květen) +posun, léto beze změny, podzim (září–listopad) −posun.
   function altitudeShift(altitude) {
     var a = Number(altitude) || 0;
-    if (a >= 700) return 2;
-    if (a >= 500) return 1;
-    if (a >= 350) return 0.5;
+    if (a >= 700) return 3;   // ~6 týdnů
+    if (a >= 500) return 2;   // ~1 měsíc
+    if (a >= 350) return 1;   // ~2 týdny
     return 0;
   }
-
-  function shiftMonth(baseMonthIndex, shift) {
-    var idx = Math.round(baseMonthIndex + shift);
-    while (idx < 0) idx += 12;
-    while (idx > 11) idx -= 12;
-    return idx;
+  // Základ harmonogramu = nížina (do 350 m), termín „1. polovina měsíce i“ = půlměsíc 2*i.
+  function shiftHalf(baseMonthIndex, shift) {
+    var h = baseMonthIndex * 2;
+    if (baseMonthIndex >= 1 && baseMonthIndex <= 4) h += shift;          // jaro později
+    else if (baseMonthIndex >= 8 && baseMonthIndex <= 10) h -= [0, 1, 1, 2][shift] || 0;   // podzim dřív, ale méně než jaro (konec sezóny se ve výšce zkracuje méně)
+    return Math.max(0, Math.min(23, h));
   }
+  function halfLabel(h) { return (h % 2 ? 'konec ' : 'začátek ') + MONTHS_GEN[Math.floor(h / 2)]; }
+  var MONTHS_GEN = ['ledna', 'února', 'března', 'dubna', 'května', 'června', 'července', 'srpna', 'září', 'října', 'listopadu', 'prosince'];
 
   /** Jílovitá půda váže živiny déle (nižší dávka), písčitá je rychle vyplavuje (vyšší dávka). */
   function soilMultiplier(soil) {
@@ -324,10 +330,10 @@
     // Výstup zůstává v přirozeném pořadí od ledna (m.i), jen LABEL měsíce se posune podle výšky -
     // takže "leden" v horách může nést úkoly, co v nížině platí už pro únor, ale řádek zůstává
     // na svém místě v kalendáři tak, jak ho zákazník čte shora dolů.
-    var fertTable = [];
+    var fertTable = [], fertCand = [];
     var result = months.map(function (m) {
-      var idx = shiftMonth(m.i, shift);
-      var label = MONTHS[idx];
+      var half = shiftHalf(m.i, shift), idx = Math.floor(half / 2);
+      var label = MONTHS[idx], when = halfLabel(half);
       var tasks = m.tasks.map(function (t) {
         // {{WATER}}/{{SLOPE}} jsou explicitní značky přímo u těch pár řádků harmonogramu, co o
         // zálivce/svahu mluví (stejná místa jako dřív, kdy se waterNote/slopeNote připojovaly
@@ -335,14 +341,29 @@
         var text = t.text.replace('{{WATER}}', waterNote).replace('{{SLOPE}}', slopeNote);
         return { text: text, type: t.type };
       });
-      if (m.fert) {
-        fertTable.push(fertTableRow(label, m.fert.action, m.fert.key, m.fert.variant, areaM2, soilMult));
-      }
-      return { key: idx, label: label, tasks: tasks };
+      if (m.fert) fertCand.push({ half: half, label: label, when: when, fert: m.fert });
+      return { key: idx, label: label, when: when, tasks: tasks };
     });
     // Tabulka hnojení se řadí chronologicky podle (případně nadmořskou výškou posunutého) měsíce -
     // ne podle pořadí dávky v kódu, aby odpovídala pořadí, v jakém zákazník kalendář čte.
-    fertTable.sort(function (a, b) { return MONTHS.indexOf(a.month) - MONTHS.indexOf(b.month); });
+    // Mezi dávkami aspoň 4 týdny (2 půlměsíce). Ve vyšší poloze je sezóna kratší a posunuté jaro by
+    // jinak dávky namačkalo (750 m: 5 dávek za 2 měsíce) – vypadne vyrovnávací dávka (C), nikdy startovní,
+    // dusíková ani zazimovací. Pak se dávky přečíslují.
+    var prio = function (c) { return c.fert.key === 'C' ? 2 : 1; }, kept = [];
+    fertCand.slice().sort(function (a, b) { return prio(a) - prio(b) || a.half - b.half; }).forEach(function (c) {
+      if (kept.every(function (k) { return Math.abs(k.half - c.half) >= 2; })) kept.push(c);
+    });
+    kept.sort(function (a, b) { return a.half - b.half; });
+    kept.forEach(function (c, i) {
+      var desc = String(c.fert.action).replace(/^\d+\.\s*(\(poslední\)\s*)?dávka\s*(-\s*)?/i, '').replace(/^Jediná jarní dávka\s*-\s*/i, '');
+      var last = i === kept.length - 1, num = (i + 1) + '. ' + (last ? '(poslední) ' : '') + 'dávka';
+      var row = fertTableRow(c.label, desc ? num + ' – ' + desc : num, c.fert.key, c.fert.variant, areaM2, soilMult);
+      row.when = c.when.charAt(0).toUpperCase() + c.when.slice(1); row.half = c.half;
+      fertTable.push(row);
+    });
+    // dva úkoly ve stejném měsíci (jaro posunuté, podzim předsunutý) se sloučí do jedné karty měsíce
+    var byIdx = {};
+    result = result.filter(function (m) { if (byIdx[m.key]) { byIdx[m.key].tasks = byIdx[m.key].tasks.concat(m.tasks); return false; } byIdx[m.key] = m; return true; });
 
     // Obecné poznámky navíc (zavlažování, problémy, poslední hnojení) - nejsou vázané na
     // konkrétní měsíc, zobrazují se jednou nahoře nad kalendářem.
@@ -364,11 +385,12 @@
     result.notes = notes;
     // Sezónní obecné rady (viz SEASON_GENERAL výš) - stejná {{WATER}}/{{SLOPE}} substituce jako
     // u měsíčních úkolů, jen aplikovaná na tenhle samostatný, sezónou (ne měsícem) klíčovaný set.
+    var mf0 = grassType ? GRASS_SPECIES[grassType] : tierMowFallback(tier), mowHot = (mf0.mowMax + 1) + '–' + (mf0.mowMax + 2) + ' cm';
     var seasonGeneralSrc = SEASON_GENERAL[tier] || {};
     var seasonGeneral = {};
     Object.keys(seasonGeneralSrc).forEach(function (seasonKey) {
       seasonGeneral[seasonKey] = seasonGeneralSrc[seasonKey].map(function (t) {
-        return { text: t.text.replace('{{WATER}}', waterNote).replace('{{SLOPE}}', slopeNote), type: t.type };
+        return { text: t.text.replace('{{WATER}}', waterNote).replace('{{SLOPE}}', slopeNote).replace('{{MOWHOT}}', mowHot), type: t.type };
       });
     });
     result.seasonGeneral = seasonGeneral;
@@ -437,7 +459,7 @@
   function renderFertTable(fertTable, fertType) {
     if (!fertTable || !fertTable.length) return '';
     var rows = fertTable.map(function (r) {
-      return '<tr><td><strong>' + htmlEscape(r.month) + '</strong></td><td>' + htmlEscape(r.action) + '</td>' +
+      return '<tr><td><strong>' + htmlEscape(r.when || r.month) + '</strong></td><td>' + htmlEscape(r.action) + '</td>' +
         '<td>' + htmlEscape(r.name) + '<br><small>NPK ' + htmlEscape(r.npk) + '</small></td>' +
         '<td>' + r.doseG + ' g/m²</td>' +
         '<td>' + (r.totalKg != null ? fmtKg(r.totalKg) + ' na ' + r.areaM2 + ' m²' : '—') + '</td></tr>';
