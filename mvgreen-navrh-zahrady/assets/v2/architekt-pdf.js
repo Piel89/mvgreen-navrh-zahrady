@@ -253,7 +253,7 @@
       + title('HNOJENÍ TRÁVNÍKU · UKÁZKA', 'Váš trávník má podle plánu zhruba ' + lawn + ' m²')
       + '<table class="mvg2-table"><thead><tr><th>Termín</th><th>Hnojivo</th><th>Dávka</th><th>Na ' + lawn + ' m²</th></tr></thead><tbody>'
       + [['Duben', 'Rychlé dusíkaté se sírou (NPK ≈ 27-6-6 + S)'], ['Červen', 'Vyvážené s hořčíkem a železem (NPK ≈ 12-4-9)'], ['Září', 'Rychlé dusíkaté se sírou (NPK ≈ 27-6-6 + S)'], ['Říjen', 'Draselné „zimní“ (NPK ≈ 12-0-42)']].map(function (r) { return '<tr><td><strong>' + r[0] + '</strong></td><td>' + r[1] + '</td><td>25 g/m²</td><td>' + String(dose).replace('.', ',') + ' kg</td></tr>'; }).join('') + '</tbody></table>'
-      + '<div class="mvg2-promo"><strong>Trávník je naše parketa</strong><span>Plný roční plán péče a hnojení na míru za 49 Kč – termíny podle vaší nadmořské výšky, řešení mechu a plevele. Kolem Domažlic trávník i založíme a postaráme se o něj. mvgreen.cz · 723 339 650</span></div></section>');
+      + '<div class="mvg2-promo"><strong>Trávník je naše parketa</strong><span>Plný roční plán péče a hnojení na míru za 499 Kč – termíny podle vaší nadmořské výšky, řešení mechu a plevele. Kolem Domažlic trávník i založíme a postaráme se o něj. mvgreen.cz · 723 339 650</span></div></section>');
 
     // 11 – dobré vědět, zdroje
     out.push('<section class="mvg2-page">' + head(ctx, 11) + title('DOBRÉ VĚDĚT PŘED KOPÁNÍM', 'Ať nepřekvapí soused ani úřad')

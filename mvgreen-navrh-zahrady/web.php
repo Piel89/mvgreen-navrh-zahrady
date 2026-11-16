@@ -244,8 +244,8 @@ add_shortcode('mvgreen_obchodni_podminky', function () {
 
     $out .= $sec('2. Co se prodává', '<p>Předmětem prodeje je výhradně digitální obsah nedodávaný na hmotném nosiči, vygenerovaný na základě údajů, které kupující sám zadá:</p><ul>'
         . '<li><strong>AI návrh zahrady (89 Kč)</strong> – vizualizace zahrady vytvořená pomocí umělé inteligence z fotografie a popisu zadaného kupujícím, včetně orientačního rozmístění výsadby, seznamu rostlin s cenou a plánu péče.</li>'
-        . '<li><strong>Roční plán péče o trávník (49 Kč)</strong> – dvanáctiměsíční plán hnojení a péče o trávník sestavený podle plochy, lokality a stavu trávníku, které kupující zadá.</li>'
-        . '<li><strong>Balíček AI návrh + roční plán péče (119 Kč)</strong> – obojí výše zvýhodněně.</li>'
+        . '<li><strong>Roční plán péče o trávník (499 Kč)</strong> – dvanáctiměsíční plán hnojení a péče o trávník sestavený podle plochy, lokality a stavu trávníku, které kupující zadá.</li>'
+        . '<li><strong>Balíček AI návrh + roční plán péče (549 Kč)</strong> – obojí výše zvýhodněně.</li>'
         . '</ul><p>Nejde o odbornou zahradnickou ani zahradně-architektonickou konzultaci na místě, ani o závazné projektové či stavební řešení. Výstupy jsou orientační a vycházejí z údajů zadaných kupujícím a obecných agronomických doporučení – před realizací je vhodné je ověřit na místě.</p>');
 
     $out .= $sec('3. Objednávka a uzavření smlouvy', '<p>Kupující zadá e-mail, potvrdí souhlas podle čl. 5 a objednávku odešle tlačítkem <strong>„Objednat s povinností platby“</strong>, čímž se zavazuje cenu zaplatit; platí ji předem přes platební bránu. Kupní smlouva je uzavřena okamžikem připsání platby a aktivace přístupového kódu.</p>');

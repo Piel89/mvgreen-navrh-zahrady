@@ -20,13 +20,14 @@ if (!defined('ABSPATH')) exit;
  *  - 'design' = jedno vygenerování AI návrhu zahrady (čerpá se, stojí nás OpenAI volání)
  *  - 'care'   = roční plán hnojení a péče o zahradu (deterministický výpočet, nic nás nestojí,
  *               takže se nečerpá jako "použití" - jen se kontroluje, že kód tento grant má)
- * 'bundle' dává oba zvýhodněně (119 Kč místo 89+49=138 Kč, úspora 19 Kč).
+ * 'bundle' dává oba zvýhodněně (549 Kč místo 89+499=588 Kč, úspora 39 Kč).
+ * 2026-11-16 Martin: "cenu určitě zvedni 499 Kč" (konkurence sena.cz má plán za 1 495 Kč); balíček musí být dražší než samotný plán.
  */
 function mvgreen_packages() {
     return [
         'design' => ['uses' => 1, 'price' => 89,  'label' => '1 AI návrh zahrady (jako od zahradního architekta)', 'grants' => ['design']],
-        'care'   => ['uses' => 1, 'price' => 49,  'label' => 'Roční plán hnojení a péče o zahradu', 'grants' => ['care']],
-        'bundle' => ['uses' => 1, 'price' => 119, 'label' => 'AI návrh zahrady + roční plán péče (zvýhodněně)', 'grants' => ['design', 'care']],
+        'care'   => ['uses' => 1, 'price' => 499,  'label' => 'Roční plán hnojení a péče o zahradu', 'grants' => ['care']],
+        'bundle' => ['uses' => 1, 'price' => 549, 'label' => 'AI návrh zahrady + roční plán péče (zvýhodněně)', 'grants' => ['design', 'care']],
     ];
 }
 

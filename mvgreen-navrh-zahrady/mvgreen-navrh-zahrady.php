@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.287
+ * Version: 0.6.288
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.287');
+define('MVGREEN_VERSION', '0.6.288');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -58,7 +58,10 @@ function mvgreen_enqueue_designer_assets() {
     wp_enqueue_script('mvgreen-brief', plugin_dir_url(__FILE__) . 'assets/garden-brief.js', [], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-plan', plugin_dir_url(__FILE__) . 'assets/garden-plan.js', [], MVGREEN_VERSION, true);
     wp_enqueue_script('mvgreen-care', plugin_dir_url(__FILE__) . 'assets/garden-care.js', [], MVGREEN_VERSION, true);
-    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-area-types', 'mvgreen-brief', 'mvgreen-plan', 'mvgreen-care'], MVGREEN_VERSION, true);
+    // Mozek ročního plánu (2026-11-16): pravidla R1–R15 nad garden-care.js, řídí výstup podle dotazníku.
+    wp_enqueue_script('mvgreen-lawn-kb', plugin_dir_url(__FILE__) . 'assets/lawn-kb.js', [], MVGREEN_VERSION, true);
+    wp_enqueue_script('mvgreen-brain', plugin_dir_url(__FILE__) . 'assets/brain.js', ['mvgreen-care', 'mvgreen-lawn-kb'], MVGREEN_VERSION, true);
+    wp_enqueue_script('mvgreen-designer', plugin_dir_url(__FILE__) . 'assets/app.js', ['mvgreen-plants-805', 'mvgreen-ai-safety', 'mvgreen-paint-mask', 'mvgreen-area-types', 'mvgreen-brief', 'mvgreen-plan', 'mvgreen-care', 'mvgreen-brain'], MVGREEN_VERSION, true);
     wp_add_inline_script('mvgreen-designer', 'window.MVGreenAI = '.wp_json_encode(['ajaxUrl'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('mvgreen_ai_test'),'enabled'=>current_user_can('manage_options'),'workerUrl'=>plugins_url('assets/mg-segment-worker.js', __FILE__),'imgUrl'=>plugins_url('assets/img/', __FILE__)]).';', 'before');
     // Use the exact WordPress site logo; supports classic and block themes.
     $mvgreen_logo_id = (int) get_theme_mod('custom_logo', 0);
@@ -82,7 +85,7 @@ add_shortcode('mvgreen_navrh_zahrady', function () {
 });
 
 /**
- * Samostatná stránka jen s ročním plánem péče a hnojení (49 Kč), odpojená od stránky s AI návrhem
+ * Samostatná stránka jen s ročním plánem péče a hnojení (499 Kč), odpojená od stránky s AI návrhem
  * (2026-11-02, na přání Martina – AI návrh se ještě dlouho bude vyvíjet, plán péče má být hotový
  * produkt na vlastní adrese). Používá stejný JS balíček a stejné #mg-care2-* UI jako modal uvnitř
  * [mvgreen_navrh_zahrady] (žádná duplikace logiky) – jen app.js podle data-mvgreen-standalone="care"
@@ -943,4 +946,6 @@ require_once __DIR__ . '/web.php';
 require_once __DIR__ . '/github-updater.php';
 require_once __DIR__ . '/payments.php';
 require_once __DIR__ . '/plan.php';
+// Roční plán péče o trávník – nová prodejní stránka [mvgreen_plan_travnik] (2026-11-16)
+require_once __DIR__ . '/travnik.php';
 require_once __DIR__ . '/architekt.php';
