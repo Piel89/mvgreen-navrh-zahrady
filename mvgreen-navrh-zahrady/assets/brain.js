@@ -62,6 +62,7 @@
     R8: { title: 'Vysoký fosfor/draslík v rozboru – hnojivo bez P/K', source: SRC_LAB + ' + ' + SRC_L, confidence: 'B', approved: false },
     R9: { title: 'Bez rozboru – doporučit rozbor, neslibovat „zazimování“ draslíkem', source: SRC_L, confidence: 'B', approved: false },
     R10: { title: 'Listopadová dávka jen když tráva roste a nemrzne', source: SRC_L, confidence: 'B', approved: false },
+    R17: { title: 'Poslední podzimní dávka podle teploty půdy v obci (ne v září)', source: 'video V10 (Svoboda + Exner) + Martin [M] 16. 11. 2026', confidence: 'C', approved: false },
     R11: { title: 'Úsporný režim – hnojit podle příznaků', source: SRC_M, confidence: 'C', approved: false },
     R12: { title: 'Nikdy na mokrou trávu, sníh ani zmrzlou půdu', source: SRC_M + ' + ' + SRC_L, confidence: 'A', approved: true },
     R13: { title: 'Organické hnojivo – dávka podle obsahu živiny z obalu, cena na m²', source: 'diskuse praktiků (sporné údaje o dávce)', confidence: 'C', approved: false },
@@ -240,11 +241,15 @@
     if (c.hotDays != null) rows.push(['Tropické dny (30 °C a víc)', Math.round(c.hotDays) + ' za rok']);
     if (c.galeDays != null) rows.push(['Dny se silným větrem (nárazy 60 km/h a víc)', Math.round(c.galeDays) + ' za rok']);
     var notes = [];
-    if (c.hotDays >= 6) notes.push('U vás bývá ' + Math.round(c.hotDays) + ' tropických dnů ročně – v tu dobu přidejte zálivku (15 l/m² týdně a víc podle stavu trávníku) a nesekejte nakrátko.');
+    if (c.hotDays >= 6) notes.push('U vás bývá ' + Math.round(c.hotDays) + ' tropických dnů ročně – v tu dobu přidejte zálivku (30 l/m² týdně a víc podle stavu trávníku) a nesekejte nakrátko.');
     if (c.rainYear && c.rainYear < 650) notes.push('Srážek je u vás málo (' + Math.round(c.rainYear) + ' mm za rok) – bez zálivky bude trávník v létě strádat.');
     if (c.galeDays >= 12) notes.push('Často u vás fouká – hnojivo a osivo nerozhazujte ve větru, granule se rozletí nerovnoměrně.');
-    return { place: c.place || '', years: c.years, rows: rows, notes: notes };
+    return { place: c.place || '', years: c.years, rows: rows, notes: notes, source: c.source || '' };
   }
+
+  // Martin 2026-11-19: „travnik po hnojeni musi vzdycky zalit vodou. bud musi pockat az bude prset nebo aspon hadici.
+  // bez vody po hnojeni vzdy hrozi spaleni“ -> platí pro KAŽDOU dávku a KAŽDÉ hnojivo (dřív jen u rychlého, R3).
+  var WATER_AFTER = 'Po hnojení trávník vždy zalijte: buď hnojte, když se blíží déšť, nebo ho hned po aplikaci zalijte aspoň hadicí (zhruba 5–6 l/m²). Bez vody po hnojení vždy hrozí spálení.';
 
   function msg(rule, severity, text) {
     var r = RULES[rule] || {};
@@ -370,6 +375,30 @@
       recs.push(msg('R10', 'info', 'Poslední dávka v listopadu je podmíněná: jen když tráva ještě roste a půda není zmrzlá. Pozdější hnojení už trávníku nepomůže a dusík se může splachovat.'));
     }
 
+    // --- R17: termín poslední podzimní dávky podle teploty půdy v obci -----------------------------------------------
+    // Martin 2026-11-16 („udělej tu novou funkci a dej tam tu teplotu“): podzimní dávka se neřídí jen kalendářem ani jen
+    // nadmořskou výškou, ale tím, kdy u zákazníka půda klesá pod 10 °C (průměr posledních let, data obce z pluginu).
+    // Video V10 (Svoboda + Exner): v teplejších místech až konec října–listopad, výš dřív; tráva roste, dokud je půda teplá.
+    // Vodítko: o půlměsíc po poklesu pod 10 °C (tráva zpomalila, kořeny ještě pracují), nejdřív 2. půlka října a nejpozději
+    // 2. půlka listopadu (Martin: „nechat v plánu do listopadu“); od předchozí dávky aspoň 4 týdny. Neschváleno, jistota C.
+    var cool = a.climate && Number(a.climate.soilBelow10) > 0 ? Number(a.climate.soilBelow10) : 0;
+    // 2026-11-19: jen anglický trávník. U nízké a standardní úrovně R17 posouvala SCHVÁLENOU říjnovou dávku na listopad
+    // (zjištěno testem Znojmo/standard) – schválené kalendáře se bez Martina nemění.
+    if (last && cool && typeof last.half === 'number' && last.half >= 18 && mode === 'preventive' && (requestedTier === 'representative' || requestedTier === 'sportovni')) {
+      var cd = new Date(2025, 0, 1 + Math.round(cool));
+      var coolHalf = cd.getMonth() * 2 + (cd.getDate() <= 15 ? 0 : 1);
+      var target = Math.max(19, Math.min(21, coolHalf + 1));
+      var prev = fertTable.length > 1 ? fertTable[fertTable.length - 2] : null;
+      if (prev && typeof prev.half === 'number' && target - prev.half < 2) target = prev.half + 2;
+      if (target <= 21 && target !== last.half) {
+        var gen = ['ledna', 'února', 'března', 'dubna', 'května', 'června', 'července', 'srpna', 'září', 'října', 'listopadu', 'prosince'];
+        var wh = (target % 2 ? 'Konec ' : 'Začátek ') + gen[Math.floor(target / 2)];
+        last.half = target; last.when = wh; last.month = MONTHS_CZ[Math.floor(target / 2)];
+      }
+      last.condition = (last.condition ? last.condition + ' ' : '') + 'Termín je odvozený od teploty půdy u vás: pod 10 °C klesá v průměru kolem ' + doyLabel(cool) + ' Rozhodující je počasí – dávejte, dokud tráva roste.';
+      recs.push(msg('R17', 'info', 'Poslední podzimní dávku máme načasovanou podle toho, kdy u vás půda klesá pod 10 °C (v průměru kolem ' + doyLabel(cool) + ', průměr posledních ' + ((a.climate && a.climate.years) || 5) + ' let). V září se podzimní hnojivo nedává – půda je ještě teplá a trávník má druhé léto; září je na regeneraci. Datum je orientační, vždy se řiďte počasím: tráva roste, nemrzne a je suchá.'));
+    }
+
     // --- R11: úsporný režim ------------------------------------------------------------------------------------------
     var symptomGuide = null;
     if (mode === 'thrifty') {
@@ -388,7 +417,9 @@
     if (has(a.problems, 'thatch')) recs.push(msg('R15', 'info', 'Plsť (vrstva odumřelé trávy nad 1,3 cm): vertikutace hlavně koncem srpna až v září, na jaře až od 10 °C v půdě; aerifikace dutými hroty jednou ročně, nejlépe na podzim (při silném zhutnění dvakrát). V letním vedru ne.'));
 
     // --- R12: vždy -------------------------------------------------------------------------------------------------------
-    recs.unshift(msg('R12', 'info', 'Hnojte jen na suchou trávu (na mokré se granule přilepí a spálí stébla) a nikdy na sníh ani na zmrzlou půdu.'));
+    recs.unshift(msg('R12', 'info', 'Hnojte jen na suchou trávu (na mokré se granule přilepí a spálí stébla) a nikdy na sníh ani na zmrzlou půdu. ' + WATER_AFTER));
+    // zálivka po hnojení u KAŽDÉ dávky (Martin 2026-11-19) – přidává se do podmínky řádku, odtud ji bere kalendář, připomínky i .ics
+    fertTable.forEach(function (r) { r.condition = (r.condition || 'Jen na suchou trávu, bez mrazu a sněhu.') + ' ' + WATER_AFTER; });
 
     // --- doporučená úroveň ------------------------------------------------------------------------------------------------
     if (recommendedTier !== requestedTier) recs.unshift(msg(warnings.some(function (w) { return w.rule === 'R1'; }) ? 'R1' : 'R2', 'high', 'Doporučená úroveň péče: ' + TIER_LABEL[recommendedTier] + ' (zvolili jste ' + TIER_LABEL[requestedTier] + '). Plán je zatím spočítaný pro vámi zvolenou úroveň.'));
@@ -449,7 +480,7 @@
     var h = '<section class="mg-brain"><h4>🧠 Doporučení k vašemu trávníku</h4>';
     if (top.length) h += '<ul class="mg-brain-warn">' + top.map(item).join('') + '</ul>';
     if (rest.length) h += '<details class="mg-brain-more"><summary>Další doporučení (' + rest.length + ')</summary><ul class="mg-brain-rec">' + rest.map(item).join('') + '</ul></details>';
-    h += '<p class="mg-brain-always">Vždy platí: hnojte jen na suchou trávu, nikdy na sníh ani na zmrzlou půdu.</p>';
+    h += '<p class="mg-brain-always">Vždy platí: hnojte jen na suchou trávu, nikdy na sníh ani na zmrzlou půdu, a po hnojení vždy zalijte (déšť nebo hadice) – bez vody hrozí spálení.</p>';
     if (res.reminders && res.reminders.length) h += '<p><button type="button" class="mg-primary" id="mg-brain-ics">📅 Přidat připomínky hnojení do kalendáře v mobilu</button><br><small>Stáhne se soubor kalendáře – telefon vás den před každým hnojením upozorní. Nic se nikam neodesílá.</small></p>';
     if (res.symptomGuide) {
       h += '<h4>Kdy přihnojit (úsporný režim)</h4><table class="mg-fert-table"><thead><tr><th>Co vidíte</th><th>Co udělat</th></tr></thead><tbody>' +

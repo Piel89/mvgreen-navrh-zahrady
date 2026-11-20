@@ -48,6 +48,12 @@ function mvgreen_code_grants($post) {
     return array_filter(array_map('trim', explode(',', (string) $raw)));
 }
 
+/** Obsahuje objednávka (podle ID příspěvku) daný grant? Bez ohledu na stav platby – jen pro výběr textu e-mailu a návratu. */
+function mvgreen_code_has_grant_post($post_id, $grant) {
+    $post = get_post($post_id);
+    return $post ? in_array($grant, mvgreen_code_grants($post), true) : false;
+}
+
 /** True jen když je kód zaplacený A obsahuje daný grant ('design' nebo 'care'). */
 function mvgreen_code_has_grant($code, $grant) {
     $post = mvgreen_find_code_post($code);
@@ -250,6 +256,209 @@ function mvgreen_gopay_payment_status($gopay_id) {
 }
 
 /* ---------------------------------------------------------------------- *
+ * Stripe Checkout (REST API bez knihovny)
+ * Martin 2026-11-17: „doporuč mi nějakou platební bránu, když GoPay tak trvá, nejlépe zdarma“ →
+ * Stripe: bez měsíčního poplatku, platí se jen z prodeje. Když je Stripe nastavený, má přednost
+ * před GoPay. Klíče zadává majitel v Nastavení → MVGreen AI (konstanty ve wp-config mají přednost).
+ * Zákazník platí na stránce Stripe (přesměrování), náš web se ke Stripe z prohlížeče nepřipojuje.
+ * ---------------------------------------------------------------------- */
+
+function mvgreen_stripe_secret() {
+    if (defined('MVGREEN_STRIPE_SECRET_KEY') && MVGREEN_STRIPE_SECRET_KEY) return MVGREEN_STRIPE_SECRET_KEY;
+    return (string) get_option('mvgreen_stripe_secret_key', '');
+}
+
+function mvgreen_stripe_webhook_secret() {
+    if (defined('MVGREEN_STRIPE_WEBHOOK_SECRET') && MVGREEN_STRIPE_WEBHOOK_SECRET) return MVGREEN_STRIPE_WEBHOOK_SECRET;
+    return (string) get_option('mvgreen_stripe_webhook_secret', '');
+}
+
+function mvgreen_stripe_configured() {
+    return (bool) preg_match('~^(sk|rk)_(test|live)_~', mvgreen_stripe_secret());
+}
+
+/** Testovací klíč (sk_test_ / rk_test_) = žádné skutečné peníze. */
+function mvgreen_stripe_test_mode() {
+    return (bool) preg_match('~^(sk|rk)_test_~', mvgreen_stripe_secret());
+}
+
+/** Která brána se použije: 'stripe', 'gopay', nebo '' (platby nespuštěné). */
+function mvgreen_pay_provider() {
+    if (mvgreen_stripe_configured()) return 'stripe';
+    if (mvgreen_gopay_configured()) return 'gopay';
+    return '';
+}
+
+/** Jsou platby jen testovací (bez skutečných peněz)? – pro správcovskou simulaci. */
+function mvgreen_pay_test_mode() {
+    $p = mvgreen_pay_provider();
+    if ($p === 'stripe') return mvgreen_stripe_test_mode();
+    if ($p === 'gopay') return mvgreen_gopay_sandbox();
+    return true;
+}
+
+function mvgreen_stripe_request($method, $path, $params = []) {
+    $args = [
+        'method' => $method,
+        'headers' => ['Authorization' => 'Bearer ' . mvgreen_stripe_secret()],
+        'timeout' => 30,
+    ];
+    if ($method === 'POST') {
+        $args['headers']['Content-Type'] = 'application/x-www-form-urlencoded';
+        $args['body'] = http_build_query($params, '', '&');
+    }
+    $response = wp_remote_request('https://api.stripe.com/v1/' . $path, $args);
+    if (is_wp_error($response)) return new WP_Error('stripe_http', 'Spojení s platební bránou selhalo.');
+    $code = wp_remote_retrieve_response_code($response);
+    $json = json_decode(wp_remote_retrieve_body($response), true);
+    if ($code < 200 || $code >= 300 || !is_array($json)) {
+        $detail = is_array($json) && isset($json['error']['message']) ? $json['error']['message'] : ('HTTP ' . $code);
+        error_log('MVGreen Stripe: ' . $path . ' – ' . $detail); // do logu serveru, zákazník vidí jen obecnou chybu
+        return new WP_Error('stripe_api', 'Platební brána odmítla požadavek.');
+    }
+    return $json;
+}
+
+/** Vytvoří Checkout Session. Vrací ['id','url'] nebo WP_Error. */
+function mvgreen_stripe_create_session($post_id, $amount_kc, $order_number, $email, $description, $back_url) {
+    // {CHECKOUT_SESSION_ID} musí zůstat doslova (Stripe ho sám nahradí) – proto se připojuje až za add_query_arg.
+    $success = add_query_arg(['action' => 'mvgreen_stripe_return', 'mvg_back' => rawurlencode($back_url)], admin_url('admin-post.php'))
+        . '&sid={CHECKOUT_SESSION_ID}';
+    $cancel = add_query_arg('mvg_platba', 'zruseno', $back_url);
+    $params = [
+        'mode' => 'payment',
+        'locale' => 'cs',
+        'line_items' => [[
+            'quantity' => 1,
+            'price_data' => [
+                'currency' => 'czk',
+                'unit_amount' => (int) round($amount_kc * 100),
+                'product_data' => ['name' => $description],
+            ],
+        ]],
+        'client_reference_id' => $order_number,
+        'metadata' => ['mvg_post' => (string) $post_id, 'mvg_order' => $order_number],
+        'payment_intent_data' => ['description' => $order_number . ' – ' . $description],
+        'success_url' => $success,
+        'cancel_url' => $cancel,
+        'expires_at' => time() + 2 * HOUR_IN_SECONDS,
+    ];
+    if ($email) $params['customer_email'] = $email;
+    $json = mvgreen_stripe_request('POST', 'checkout/sessions', $params);
+    if (is_wp_error($json)) return $json;
+    if (empty($json['id']) || empty($json['url'])) return new WP_Error('stripe_create', 'Platbu se nepodařilo vytvořit.');
+    return ['id' => (string) $json['id'], 'url' => (string) $json['url']];
+}
+
+/**
+ * Autoritativně ověří Checkout Session u Stripe a případně aktivuje kód (idempotentně).
+ * Vrací příspěvek objednávky, nebo null. Nevěří prohlížeči ani webhooku – jen odpovědi Stripe API.
+ */
+function mvgreen_stripe_sync($session_id) {
+    if (!preg_match('~^cs_(test|live)_[A-Za-z0-9]+$~', $session_id)) return null;
+    $posts = get_posts(['post_type' => 'mvgreen_kod', 'meta_key' => '_mvg_stripe_id', 'meta_value' => $session_id, 'numberposts' => 1, 'post_status' => 'any']);
+    if (!$posts) return null;
+    $post = $posts[0];
+    if (get_post_meta($post->ID, '_mvg_status', true) === 'paid') return $post;
+    $s = mvgreen_stripe_request('GET', 'checkout/sessions/' . rawurlencode($session_id));
+    if (is_wp_error($s)) return $post;
+    $expected_amount = (int) round(((float) get_post_meta($post->ID, '_mvg_amount', true)) * 100);
+    $expected_order = (string) get_post_meta($post->ID, '_mvg_order_number', true);
+    $ok = isset($s['payment_status'], $s['amount_total'], $s['currency'], $s['client_reference_id'])
+        && $s['payment_status'] === 'paid'
+        && (int) $s['amount_total'] === $expected_amount
+        && strtolower($s['currency']) === 'czk'
+        && (string) $s['client_reference_id'] === $expected_order;
+    if ($ok) {
+        mvgreen_activate_code($post->ID);
+    } elseif (isset($s['status']) && $s['status'] === 'expired') {
+        update_post_meta($post->ID, '_mvg_status', 'canceled');
+    }
+    return $post;
+}
+
+add_action('admin_post_nopriv_mvgreen_stripe_return', 'mvgreen_stripe_return_handle');
+add_action('admin_post_mvgreen_stripe_return', 'mvgreen_stripe_return_handle');
+
+function mvgreen_stripe_return_handle() {
+    $back = isset($_GET['mvg_back']) ? rawurldecode(wp_unslash($_GET['mvg_back'])) : '';
+    $back = wp_validate_redirect($back, home_url('/'));
+    $sid = isset($_GET['sid']) ? sanitize_text_field(wp_unslash($_GET['sid'])) : '';
+    $post = $sid ? mvgreen_stripe_sync($sid) : null;
+    wp_safe_redirect(mvgreen_pay_return_url($post, $back));
+    exit;
+}
+
+/**
+ * Webhook Stripe – pojistka, když zákazník po zaplacení zavře prohlížeč dřív, než se vrátí na web.
+ * Podpis se ověřuje tajemstvím webhooku; stav se pak stejně ověří dotazem na API (mvgreen_stripe_sync).
+ * Adresa pro Stripe: /wp-admin/admin-post.php?action=mvgreen_stripe_webhook
+ */
+add_action('admin_post_nopriv_mvgreen_stripe_webhook', 'mvgreen_stripe_webhook_handle');
+add_action('admin_post_mvgreen_stripe_webhook', 'mvgreen_stripe_webhook_handle');
+
+function mvgreen_stripe_verify_signature($payload, $header, $secret, $tolerance = 300) {
+    if (!$secret || !$header) return false;
+    $t = 0; $sigs = [];
+    foreach (explode(',', $header) as $part) {
+        $kv = explode('=', trim($part), 2);
+        if (count($kv) !== 2) continue;
+        if ($kv[0] === 't') $t = (int) $kv[1];
+        if ($kv[0] === 'v1') $sigs[] = $kv[1];
+    }
+    if (!$t || !$sigs || abs(time() - $t) > $tolerance) return false;
+    $expected = hash_hmac('sha256', $t . '.' . $payload, $secret);
+    foreach ($sigs as $sig) if (hash_equals($expected, $sig)) return true;
+    return false;
+}
+
+function mvgreen_stripe_webhook_handle() {
+    $payload = (string) file_get_contents('php://input');
+    $header = isset($_SERVER['HTTP_STRIPE_SIGNATURE']) ? (string) wp_unslash($_SERVER['HTTP_STRIPE_SIGNATURE']) : '';
+    if (!mvgreen_stripe_verify_signature($payload, $header, mvgreen_stripe_webhook_secret())) { status_header(400); exit; }
+    $event = json_decode($payload, true);
+    $type = isset($event['type']) ? $event['type'] : '';
+    if (in_array($type, ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'checkout.session.expired'], true)
+        && !empty($event['data']['object']['id'])) {
+        mvgreen_stripe_sync((string) $event['data']['object']['id']);
+    }
+    status_header(200);
+    exit;
+}
+
+/** Vytvoří platbu u aktivní brány a uloží její ID k objednávce. Vrací URL platební stránky nebo WP_Error. */
+function mvgreen_pay_create($post_id, $package, $order_number, $email, $back) {
+    if (mvgreen_pay_provider() === 'stripe') {
+        $s = mvgreen_stripe_create_session($post_id, (int) $package['price'], $order_number, $email, $package['label'], $back);
+        if (is_wp_error($s)) return $s;
+        update_post_meta($post_id, '_mvg_stripe_id', $s['id']);
+        update_post_meta($post_id, '_mvg_provider', 'stripe');
+        return $s['url'];
+    }
+    $payment = mvgreen_gopay_create_payment((int) $package['price'], $order_number, $email, $package['label'], $back);
+    if (is_wp_error($payment)) return $payment;
+    update_post_meta($post_id, '_mvg_gopay_id', $payment['id']);
+    update_post_meta($post_id, '_mvg_provider', 'gopay');
+    return $payment['gw_url'];
+}
+
+/** Kam poslat zákazníka po návratu z brány (společné pro GoPay i Stripe). */
+function mvgreen_pay_return_url($post, $back) {
+    $status = 'cekame';
+    $hash = '#mvg-koupit';
+    if ($post) {
+        $paid = get_post_meta($post->ID, '_mvg_status', true) === 'paid';
+        if ($paid) $status = 'diky';
+        // Roční plán: po zaplacení se stránka sama odemkne – kód jde v #části adresy (ta se neposílá na server
+        // ani dál jako referer). 2026-11-17: zákazník po platbě nesmí opisovat kód ani znovu vyplňovat dotazník.
+        if (mvgreen_code_has_grant_post($post->ID, 'care')) {
+            $hash = $paid ? '#kod=' . rawurlencode($post->post_title) : '#mvg-plan';
+        }
+    }
+    return add_query_arg('mvg_platba', $status, $back) . $hash;
+}
+
+/* ---------------------------------------------------------------------- *
  * Nákup: formulář (vykresluje assets/app.js) → admin-post handler → GoPay
  * ---------------------------------------------------------------------- */
 
@@ -281,7 +490,7 @@ function mvgreen_buy_handle() {
     $package = mvgreen_package($package_id);
     if (!$package) mvgreen_buy_redirect($back, 'chyba-udaje');
 
-    if (!mvgreen_gopay_configured()) mvgreen_buy_redirect($back, 'chyba-platba-nenastavena');
+    if (!mvgreen_pay_provider()) mvgreen_buy_redirect($back, 'chyba-platba-nenastavena');
 
     $code = mvgreen_generate_unique_code();
     $post_id = wp_insert_post([
@@ -299,15 +508,15 @@ function mvgreen_buy_handle() {
     update_post_meta($post_id, '_mvg_status', 'pending');
     update_post_meta($post_id, '_mvg_order_number', $order_number);
     mvgreen_store_grants($post_id, $package);
+    update_post_meta($post_id, '_mvg_back', $back);
 
-    $payment = mvgreen_gopay_create_payment((int) $package['price'], $order_number, $email, $package['label'], $back);
-    if (is_wp_error($payment)) {
+    $pay_url = mvgreen_pay_create($post_id, $package, $order_number, $email, $back);
+    if (is_wp_error($pay_url)) {
         update_post_meta($post_id, '_mvg_status', 'canceled');
         mvgreen_buy_redirect($back, 'chyba-platba');
     }
-    update_post_meta($post_id, '_mvg_gopay_id', $payment['id']);
 
-    wp_redirect($payment['gw_url']);
+    wp_redirect($pay_url);
     exit;
 }
 
@@ -326,12 +535,12 @@ function mvgreen_gopay_return_handle() {
     $back = isset($_GET['mvg_back']) ? rawurldecode(wp_unslash($_GET['mvg_back'])) : '';
     $back = wp_validate_redirect($back, home_url('/'));
     $gopay_id = isset($_GET['id']) ? sanitize_text_field(wp_unslash($_GET['id'])) : '';
-    $status = 'cekame';
+    $post = null;
     if ($gopay_id && preg_match('~^\d+$~', $gopay_id)) {
         $posts = get_posts(['post_type' => 'mvgreen_kod', 'meta_key' => '_mvg_gopay_id', 'meta_value' => $gopay_id, 'numberposts' => 1, 'post_status' => 'any']);
-        if ($posts && get_post_meta($posts[0]->ID, '_mvg_status', true) === 'paid') $status = 'diky';
+        if ($posts) $post = $posts[0];
     }
-    wp_safe_redirect(add_query_arg('mvg_platba', $status, $back) . '#mvg-koupit');
+    wp_safe_redirect(mvgreen_pay_return_url($post, $back));
     exit;
 }
 
@@ -377,7 +586,33 @@ function mvgreen_activate_code($post_id) {
     update_post_meta($post_id, '_mvg_uses_left', $uses);
     $email = get_post_meta($post_id, '_mvg_email', true);
     $code = get_post_field('post_title', $post_id);
-    if ($email && is_email($email) && $code) {
+    if ($email && is_email($email) && $code && mvgreen_code_has_grant_post($post_id, 'care') && !mvgreen_code_has_grant_post($post_id, 'design')) {
+        // 2026-11-17: kupující plánu trávníku dostával e-mail o „AI návrhu zahrady“.
+        $back = get_post_meta($post_id, '_mvg_back', true);
+        $link = $back ? strtok($back, '#') . '#kod=' . rawurlencode($code) : '';
+        $body = "Dobrý den,
+
+děkujeme za platbu. Váš roční plán péče o trávník je odemčený.
+
+Kód k plánu:
+
+    " . $code . "
+
+"
+            . ($link ? "Plán otevřete tímto odkazem (odemkne se sám):
+" . $link . "
+
+" : '')
+            . "Na jiném zařízení zadejte kód na stránce plánu do pole „Už máte kód z e-mailu?“ a vyplňte znovu údaje o trávníku.
+"
+            . "Kód si uschovejte, platí po celý rok.
+
+Připomínky do kalendáře si uložíte tlačítkem v plánu.
+
+Martin Vondrovic
+MV GREEN, Domažlice";
+        wp_mail($email, 'MV GREEN – váš roční plán péče o trávník', $body);
+    } elseif ($email && is_email($email) && $code) {
         $subject = 'MV GREEN – váš kód pro AI návrh zahrady';
         $body = "Dobrý den,\n\ndíky za platbu. Váš kód pro AI návrh zahrady je:\n\n    " . $code . "\n\n"
             . "Zadejte ho v návrháři zahrady v kroku generování návrhu. Kód platí pro " . $uses . " vygenerování.\n\nMV GREEN";
@@ -485,7 +720,7 @@ function mvgreen_kod_buy_handle() {
     $email = sanitize_email(wp_unslash($_POST['email'] ?? ''));
     if (!$email || !is_email($email)) wp_send_json_error(['message' => 'Zadejte prosím platný e-mail.']);
     if (empty($_POST['consent'])) wp_send_json_error(['message' => 'Potvrďte prosím souhlas se zahájením plnění před odesláním platby.']);
-    if (!mvgreen_gopay_configured()) wp_send_json_error(['message' => 'Platby zatím nejsou spuštěné. Zkuste to prosím později.']);
+    if (!mvgreen_pay_provider()) wp_send_json_error(['message' => 'Platby zatím nejsou spuštěné. Zkuste to prosím později.']);
 
     $package_id = isset($_POST['package']) ? sanitize_key(wp_unslash($_POST['package'])) : 'design';
     $package = mvgreen_package($package_id);
@@ -504,24 +739,23 @@ function mvgreen_kod_buy_handle() {
     mvgreen_store_grants($post_id, $package);
 
     $back = wp_get_referer() ?: home_url('/'); // same-origin AJAX request – referer is reliable here
-    $payment = mvgreen_gopay_create_payment((int) $package['price'], $order_number, $email, $package['label'], $back);
-    if (is_wp_error($payment)) {
+    update_post_meta($post_id, '_mvg_back', $back);
+    $pay_url = mvgreen_pay_create($post_id, $package, $order_number, $email, $back);
+    if (is_wp_error($pay_url)) {
         update_post_meta($post_id, '_mvg_status', 'canceled');
         wp_send_json_error(['message' => 'Platbu se nepodařilo vytvořit. Zkuste to prosím znovu.']);
     }
-    update_post_meta($post_id, '_mvg_gopay_id', $payment['id']);
-    wp_send_json_success(['redirect' => $payment['gw_url']]);
+    wp_send_json_success(['redirect' => $pay_url]);
 }
 
 /**
- * Admin-only: simulace úspěšné platby bez reálného GoPay. Funguje pouze v sandboxu
- * nebo dokud platba není nastavená – jakmile naběhnou ostré GoPay klíče se sandbox
- * vypnutým, endpoint se sám deaktivuje.
+ * Admin-only: simulace úspěšné platby bez skutečné brány. Funguje jen v testovacím režimu brány
+ * (GoPay sandbox / Stripe sk_test_) nebo dokud platba není nastavená – s ostrými klíči se sám vypne.
  */
 add_action('wp_ajax_mvgreen_kod_simulate', function () {
     if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Pouze správce webu.'], 403);
     check_ajax_referer('mvgreen_ai_test', 'nonce');
-    if (mvgreen_gopay_configured() && !mvgreen_gopay_sandbox()) {
+    if (!mvgreen_pay_test_mode()) {
         wp_send_json_error(['message' => 'Simulace je dostupná jen v testovacím (sandbox) režimu.'], 403);
     }
     $email = sanitize_email(wp_unslash($_POST['email'] ?? 'test@example.com')) ?: 'test@example.com';

@@ -38,9 +38,11 @@
   var WATER = {
     rules: [
       // Martin 2026-11-16 (vlastní praxe): běžné počasí 10 l/m² týdně, v tropech 15 l/m² týdně, když trávník pořád strádá, přidat; brzy ráno 5–7 h, 2× týdně, v extrémním počasí obden, při žloutnutí přidat.
-      'Za běžného počasí zhruba 10 litrů na m² za týden, v tropických dnech 15 litrů na m² za týden (včetně deště). Sledujte trávník – když pořád žloutne nebo vadne, přidejte.',
+      // 2026-11-19/20 Martin: „zálivku zvyš“ (průzkum zdrojů: CZ 20–40 l/m² týdně, medián ≈ 27; na jednu zálivku medián 12,5 l) -> 20 / 30 l, ve 2 zálivkách po ~10 l.
+      'Za běžného počasí zhruba 20 litrů na m² za týden (2 zálivky po asi 10 litrech), v tropických dnech 30 litrů na m² za týden (včetně deště). Sledujte trávník – když pořád žloutne nebo vadne, přidejte.',
       'Zalévejte brzy ráno, nejlépe mezi 5. a 7. hodinou. Večerní a odpolední zálivka podporuje plísně.',
-      'Běžně 2× týdně, v extrémním horku a suchu obden. Déšť se počítá – po vydatném dešti zálivku vynechte.',
+      'Běžně 2× týdně, v extrémním horku a suchu až obden (menší dávky po 10–15 litrech). Déšť se počítá – po vydatném dešti zálivku vynechte.',
+      'Chcete-li vědět, jestli je zálivka dost: po zálivce vykopněte kousek drnu – půda má být vlhká do 10–15 cm. Nebo šlápněte na trávník: když se stébla nevzpřímí, chce vodu.',
       'Vydatně a méně často je lepší než každý den trochu: kořeny jdou hlouběji a méně se daří lipnici roční.',
       'Kolik vám zálivka dává, změříte plechovkou nebo kelímkem postaveným na trávníku.',
       'Na svahu a utužených místech zalévejte po menších dávkách, ať voda nestéká; předtím pomůže propíchnout.',

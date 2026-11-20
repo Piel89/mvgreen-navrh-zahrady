@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MVGreen – Navrhni si zahradu
  * Description: Editor zahrady s upravitelnými plochami, orientačním měřením a zadáním. S volitelnou AI vizualizací pro správce webu.
- * Version: 0.6.288
+ * Version: 0.6.289
  * Requires PHP: 7.4
  * Text Domain: mvgreen-navrh-zahrady
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 // hardcoded '0.6.66' string that never moved across several later releases, so browsers (and any
 // cache in front of the site) could keep serving old JS/CSS after an update even though the plugin
 // itself had updated – a stale-cache bug fixed here, not just for this release.
-define('MVGREEN_VERSION', '0.6.288');
+define('MVGREEN_VERSION', '0.6.289');
 
 /**
  * Defense in depth for upload subfolders: even though every file written here is already
@@ -99,7 +99,7 @@ add_shortcode('mvgreen_plan_pece', function () {
 });
 
 /**
- * Správce testuje zdarma (denní limit). Veřejnost platí přes GoPay a použije
+ * Správce testuje zdarma (denní limit). Veřejnost platí přes Stripe a použije
  * jednorázový kód (payments.php) – ten se čerpá atomicky až těsně před
  * zavoláním placeného API, aby se nevyčerpal zbytečně při neplatném vstupu.
  */
@@ -855,6 +855,41 @@ add_action('admin_menu', function () {
         echo '</td></tr></table>';
         wp_nonce_field('mvgreen_gemini_key');
         submit_button('Uložit', 'primary', 'mvgreen_gemini_save');
+        echo '</form>';
+
+        // Platby Stripe (2026-11-17, Martin: náhrada za GoPay, které se dlouho schvaluje). Klíče se do prohlížeče
+        // nikdy neposílají, pole ukazují jen konec uloženého klíče.
+        $smsg = '';
+        if (isset($_POST['mvgreen_stripe_save']) && check_admin_referer('mvgreen_stripe_keys')) {
+            if (!empty($_POST['mvgreen_stripe_delete'])) {
+                delete_option('mvgreen_stripe_secret_key'); delete_option('mvgreen_stripe_webhook_secret'); $smsg = 'Klíče Stripe smazány.';
+            } else {
+                $sk = isset($_POST['mvgreen_stripe_secret_key']) ? trim(sanitize_text_field(wp_unslash($_POST['mvgreen_stripe_secret_key']))) : '';
+                $wh = isset($_POST['mvgreen_stripe_webhook_secret']) ? trim(sanitize_text_field(wp_unslash($_POST['mvgreen_stripe_webhook_secret']))) : '';
+                if ($sk !== '' && !preg_match('~^(sk|rk)_(test|live)_~', $sk)) $smsg = 'Tajný klíč musí začínat sk_test_, sk_live_, rk_test_ nebo rk_live_. Neuloženo.';
+                elseif ($wh !== '' && strpos($wh, 'whsec_') !== 0) $smsg = 'Tajemství webhooku musí začínat whsec_. Neuloženo.';
+                else {
+                    if ($sk !== '') update_option('mvgreen_stripe_secret_key', $sk, false);
+                    if ($wh !== '') update_option('mvgreen_stripe_webhook_secret', $wh, false);
+                    $smsg = 'Uloženo.';
+                }
+            }
+        }
+        $sk = function_exists('mvgreen_stripe_secret') ? mvgreen_stripe_secret() : '';
+        $wh = function_exists('mvgreen_stripe_webhook_secret') ? mvgreen_stripe_webhook_secret() : '';
+        $prov = function_exists('mvgreen_pay_provider') ? mvgreen_pay_provider() : '';
+        echo '<h2>Platby – Stripe</h2>';
+        if ($smsg) echo '<div class="notice notice-info"><p>' . esc_html($smsg) . '</p></div>';
+        echo '<p>Stav: <strong>' . esc_html($prov === 'stripe' ? ('Stripe ' . (mvgreen_stripe_test_mode() ? 'TESTOVACÍ režim – žádné skutečné peníze' : 'OSTRÝ režim')) : ($prov === 'gopay' ? 'platí se přes GoPay' : 'platby nejsou spuštěné')) . '</strong></p>';
+        echo '<form method="post"><table class="form-table">';
+        echo '<tr><th><label for="mvg-sk">Tajný klíč (Secret key)</label></th><td><input type="password" id="mvg-sk" name="mvgreen_stripe_secret_key" class="regular-text" autocomplete="off" placeholder="' . esc_attr($sk ? 'uložen, končí …' . substr($sk, -4) : 'sk_test_… nebo sk_live_…') . '">'
+            . '<p class="description">Stripe → Developers → API keys. Nejdřív testovací (sk_test_), ostrý až po zkoušce.</p></td></tr>';
+        echo '<tr><th><label for="mvg-wh">Tajemství webhooku</label></th><td><input type="password" id="mvg-wh" name="mvgreen_stripe_webhook_secret" class="regular-text" autocomplete="off" placeholder="' . esc_attr($wh ? 'uloženo, končí …' . substr($wh, -4) : 'whsec_…') . '">'
+            . '<p class="description">Stripe → Developers → Webhooks → Add endpoint. Adresa: <code>' . esc_html(admin_url('admin-post.php?action=mvgreen_stripe_webhook')) . '</code>, události <code>checkout.session.completed</code>, <code>checkout.session.async_payment_succeeded</code>, <code>checkout.session.expired</code>.</p></td></tr>';
+        if ($sk || $wh) echo '<tr><th></th><td><label><input type="checkbox" name="mvgreen_stripe_delete" value="1"> Smazat uložené klíče Stripe</label></td></tr>';
+        echo '</table>';
+        wp_nonce_field('mvgreen_stripe_keys');
+        submit_button('Uložit Stripe', 'primary', 'mvgreen_stripe_save');
         echo '</form></div>';
     });
 });

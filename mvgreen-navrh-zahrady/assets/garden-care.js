@@ -416,9 +416,9 @@
     if (USE_NOTES[tier]) notes.push(USE_NOTES[tier]);
     if (isHighTier && altitude >= 500) notes.push('Ve vyšší poloze (u vás ' + Math.round(altitude) + ' m) jaro přichází později: termíny v tabulce jsou měsíční a platí, jakmile přestane mrznout a tráva oschne. Dávky, které by vyšly do mrazu nebo na sníh, odložte na první vhodný suchý den bez mrazu – pořadí a rozestup 4 týdny zachovejte.');
     if (irrigation === 'auto') {
-      notes.push('Automatickou závlahu nastavte za běžného počasí na zhruba 10 l/m² za týden, v tropech na 15 l/m² za týden; spouštějte brzy ráno mezi 5. a 7. hodinou, běžně 2× týdně a v extrémním horku obden. Když trávník pořád žloutne, přidejte; po vydatném dešti zálivku vynechte.');
+      notes.push('Automatickou závlahu nastavte za běžného počasí na zhruba 20 l/m² za týden (2 zálivky po ~10 l), v tropech na 30 l/m² za týden; spouštějte brzy ráno mezi 5. a 7. hodinou, běžně 2× týdně a v extrémním horku až obden. Když trávník pořád žloutne, přidejte; po vydatném dešti zálivku vynechte.');
     } else if (irrigation === 'manual') {
-      notes.push('Zalévejte za běžného počasí zhruba 10 l/m² za týden, v tropech 15 l/m² za týden, brzy ráno mezi 5. a 7. hodinou, běžně 2× týdně a v extrémním horku obden. Když trávník pořád žloutne, přidejte; večerní zálivka podporuje plísně.');
+      notes.push('Zalévejte za běžného počasí zhruba 20 l/m² za týden (2 zálivky po ~10 l), v tropech 30 l/m² za týden, brzy ráno mezi 5. a 7. hodinou, běžně 2× týdně a v extrémním horku až obden. Když trávník pořád žloutne, přidejte; večerní zálivka podporuje plísně.');
     } else if (irrigation === 'none') {
       notes.push('Bez zálivky trávník v suchých vedrech přirozeně zežloutne a utlumí růst (letní dormance) – to je normální obranná reakce, ne poškození, po dešti se zase zazelená. V tomto období navíc nehnojte, dusík bez vody trávník spíš poškodí.');
     }
@@ -645,7 +645,7 @@
       + '<div class="mg-care-plan mg-care-timeline">' + seasonsHtml + '</div>'
       + renderExpertTips()
       + '<p class="mg-note">Program vychází z ověřeného profesionálního plánu hnojení (dávky orientačně 20–30 g/m²), upraveného podle úrovně péče, půdy a nadmořské výšky. Značku hnojiva si vyberte sami – rozhoduje složení na obalu.</p>'
-      + '<p class="mg-note">⚠️ Minerální hnojivo aplikujte na suchý trávník, nejlépe před deštěm, a pokud neprší, do pár hodin ho zalijte – jinak hrozí spálení trávníku. Nikdy nehnojte mokrý trávník.</p>'
+      + '<p class="mg-note">⚠️ Minerální hnojivo aplikujte na suchý trávník, nejlépe těsně před deštěm; pokud neprší, hned po aplikaci ho zalijte aspoň hadicí – bez vody po hnojení vždy hrozí spálení trávníku (Martin 2026-11-19). Nikdy nehnojte mokrý trávník.</p>'
       + '<p class="mg-note">⚠️ Hnojivo rozhazujte rozmetadlem (ručním nebo pojízdným rotačním), nikdy ne z ruky – kam se dostane víc granulí, tam tráva spálí. Rozmetadlo plňte mimo trávník a vysypané granule hned smeťte nebo vyfoukejte.</p>'
       + renderUpsell()
       + '</div>';

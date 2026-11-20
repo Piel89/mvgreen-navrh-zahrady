@@ -2101,38 +2101,18 @@ async function mgLookupConditions(els){
  if(name.length<2){status.innerHTML='<small>Nejprve zadejte obec.</small>';return}
  btn.disabled=true;status.innerHTML='<small>Ověřuji polohu…</small>';
  try{
-   const res=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(name)+'&count=10&language=cs&format=json');
-   if(!res.ok)throw Error('geokódování');const json=await res.json();
-   const places=(json.results||[]).filter(x=>x.country_code==='CZ');
-   if(!places.length){status.innerHTML='<small>Obec v ČR nebyla nalezena. Upřesněte název.</small>';return}
-   const p=places[0];const e=await fetch('https://api.open-meteo.com/v1/elevation?latitude='+encodeURIComponent(p.latitude)+'&longitude='+encodeURIComponent(p.longitude));
-   if(!e.ok)throw Error('výška');const v=await e.json(),height=Math.round(v.elevation?.[0]);
+   // 2026-11-16 (Martin: prohlížeč zákazníka se nesmí připojovat k třetím stranám): dřív se tu volal Open-Meteo a NASA POWER
+   // přímo z prohlížeče. Teď vše přes náš server (travnik.php mvgreen_climate – data v pluginu, GeoNames + ERA5-Land, CC BY).
+   // Sklon terénu a vítr se už automaticky neurčují, zůstávají na ruční volbě.
+   const d=await mgAjax('mvgreen_climate',{obec:name});
+   const c=d.climate||{},height=Math.round(c.elevation);
    if(!Number.isFinite(height))throw Error('výška');
    els.altitude.value=height;
    const chips=[mgConditionChip('alt','sky','Nadm. výška',height,' m')];
-   let slopeNote='',climNote=' Automaticky zjištěno, lze ručně opravit.';
-   try{
-     const grid=await mgElevationGrid(p.latitude,p.longitude);
-     const slope=mgSlopeCategory(grid,100);
-     if(slope){
-       els.slope.value=slope;
-       const slopeLabel={flat:'Rovina',mild:'Mírný svah',steep:'Výrazný svah'}[slope];
-       chips.push(mgConditionChip('slope','amber','Sklon terénu',null,null,slopeLabel));
-     }
-   }catch(e2){slopeNote=' Sklon terénu se nepodařilo dopočítat, zůstává na ruční volbě.';}
-   let climFailNote='';
-   try{
-     const years=Number(els.climateYears?els.climateYears.value:1)||1;
-     const clim=await mgPowerClimate(p.latitude,p.longitude,years);
-     const windCat=mgWindCategory(clim.avgWindKmh),waterCat=mgWaterFromPrecip(clim.avgAnnualPrecipMm);
-     if(windCat&&els.wind){els.wind.value=windCat;chips.push(mgConditionChip('wind','teal','Vítr',Math.round(clim.avgWindKmh),' km/h'));}
-     if(waterCat){els.water.value=waterCat;chips.push(mgConditionChip('rain','violet','Srážky/rok',Math.round(clim.avgAnnualPrecipMm),' mm'));}
-     const zone=mgHardinessZone(clim.avgAnnualMinC);
-     if(zone)chips.push(mgConditionChip('zone','pink','Mrazuvzdornost',null,null,'Zóna '+zone));
-     climNote=' Klimatický průměr NASA POWER za posledních '+years+(years===1?' rok':' let')+' (vítr, srážky, mrazuvzdornostní zóna). Vše lze ručně opravit.';
-   }catch(e3){climFailNote=' Vítr a vlhkost se z klimatických dat nepodařilo zjistit, zůstávají na ruční volbě.';}
+   const waterCat=c.rainYear?mgWaterFromPrecip(c.rainYear):null;
+   if(waterCat&&els.water){els.water.value=waterCat;chips.push(mgConditionChip('rain','violet','Srážky/rok',Math.round(c.rainYear),' mm'));}
    status.innerHTML='<div class="mg-cchip-row">'+chips.join('')+'</div>'+
-     '<small class="mg-cchip-note">≈ '+height+' m n. m. · '+(p.name+(p.admin2?', '+p.admin2:'')).replace(/[<>&]/g,'')+'.'+slopeNote+climNote+climFailNote+'</small>';
+     '<small class="mg-cchip-note">≈ '+height+' m n. m. · '+(d.place+(d.admin?', '+d.admin:'')).replace(/[<>&]/g,'')+'. Průměr '+(c.years||5)+' let (Copernicus ERA5-Land). Sklon terénu a vítr nastavte ručně. Vše lze ručně opravit.</small>';
    mgActivateCountUps(status);
    if(els.onDone)els.onDone();
  }catch(e){status.innerHTML='<small>Automatické určení není dostupné. Údaje můžete zadat ručně.</small>'}finally{btn.disabled=false}
@@ -2281,7 +2261,7 @@ async function mgPlanAndAngles(host,summaryBox,finalImage,beforeImage,brief,d,ed
   }));
 }
 window.MVGreenPlanAndAngles=mgPlanAndAngles;
-// Správce testuje zdarma (denní limit). Veřejnost platí přes GoPay a odemkne generování
+// Správce testuje zdarma (denní limit). Veřejnost platí přes Stripe a odemkne generování
 // jednorázovým kódem z e-mailu (payments.php) – obě cesty jdou přes tutéž funkci níže.
 const aiConfig=window.MVGreenAI||{};
 const aiButton=q('mg-ai-test');

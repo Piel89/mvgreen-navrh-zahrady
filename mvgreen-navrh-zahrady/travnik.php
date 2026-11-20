@@ -5,9 +5,8 @@
  * Martin 2026-11-16: stránka podle schváleného náhledu (artefakt „Trávník podle plánu“): nadpis, před/po, časová osa,
  * dotazník, výsledek z „mozku“ (assets/brain.js), cena 499 Kč. Obec → automaticky nadmořská výška a podnebí za
  * posledních 5 let (mrazy, půda 10 °C, srážky, tropické dny, vítr).
- * Mantinel (CLAUDE.md): prohlížeč zákazníka se nesmí připojovat k třetím stranám → geokódování a klimatická data
- * stahuje SERVER (Open-Meteo), výsledek se kešuje. Fonty i fotky jsou z našeho serveru.
- * ⚠ Open-Meteo je zdarma jen pro nekomerční použití – před ostrým prodejem vyřešit licenci (Martin ví, 2026-11-16).
+ * Mantinel (CLAUDE.md): prohlížeč zákazníka se nesmí připojovat k třetím stranám → obce i podnebí jsou v datech
+ * pluginu (data/klima/, GeoNames + ERA5-Land, obojí CC BY 4.0 – zdarma i komerčně), nikdo se nevolá. Fonty i fotky z našeho serveru.
  *
  * Shortcode: [mvgreen_plan_travnik]
  */
@@ -35,92 +34,68 @@ add_shortcode('mvgreen_plan_travnik', function () {
 });
 
 /**
- * Obec → poloha, nadmořská výška a podnebí za posledních 5 celých let. Volá server (ne prohlížeč zákazníka).
- * Kešuje se: geokódování podle názvu 30 dní, klima podle polohy 30 dní. Omezení počtu dotazů z jedné IP.
+ * Obec → poloha, nadmořská výška a podnebí za posledních 5 let – VŠE Z DAT ULOŽENÝCH V PLUGINU, nic se nevolá ven.
+ * Martin 2026-11-16: „zkus najít jiný zdroj, který bude zadarmo“ (Open-Meteo je zdarma jen nekomerčně).
+ * Data (data/klima/): obce.json = GeoNames (CC BY 4.0), klima-cr.json = Copernicus ERA5-Land (CC BY 4.0), průměry
+ * spočítané jednorázově u nás (scratchpad era5/process.py, stejná pravidla jako dřívější výpočet). Aktualizovat 1× ročně.
  */
 add_action('wp_ajax_mvgreen_climate', 'mvgreen_climate_handle');
 add_action('wp_ajax_nopriv_mvgreen_climate', 'mvgreen_climate_handle');
 
-function mvgreen_climate_handle() {
-    check_ajax_referer('mvgreen_ai_test', 'nonce');
-    $name = isset($_POST['obec']) ? trim(sanitize_text_field(wp_unslash($_POST['obec']))) : '';
-    if (mb_strlen($name) < 2 || mb_strlen($name) > 60) wp_send_json_error(['message' => 'Zadejte prosím název obce.']);
-
-    $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'x';
-    $rk = 'mvgreen_clim_rl_' . md5($ip);
-    $n = (int) get_transient($rk);
-    if ($n >= 30) wp_send_json_error(['message' => 'Příliš mnoho dotazů za sebou. Zkuste to prosím za chvíli.']);
-    set_transient($rk, $n + 1, HOUR_IN_SECONDS);
-
-    $args = ['timeout' => 20, 'user-agent' => 'MVGreen-plan/' . MVGREEN_VERSION . '; ' . home_url('/')];
-    $gk = 'mvgreen_geo_' . md5(mb_strtolower($name));
-    $place = get_transient($gk);
-    if (!$place) {
-        $r = wp_remote_get('https://geocoding-api.open-meteo.com/v1/search?' . http_build_query(['name' => $name, 'count' => 10, 'language' => 'cs', 'format' => 'json']), $args);
-        if (is_wp_error($r) || wp_remote_retrieve_response_code($r) !== 200) wp_send_json_error(['message' => 'Obec se teď nepodařilo ověřit. Zkuste to prosím znovu.']);
-        $j = json_decode(wp_remote_retrieve_body($r), true);
-        $hit = null;
-        foreach (($j['results'] ?? []) as $x) { if (($x['country_code'] ?? '') === 'CZ') { $hit = $x; break; } }
-        if (!$hit) wp_send_json_error(['message' => 'Obec v ČR jsme nenašli. Zkontrolujte prosím název.']);
-        $place = ['name' => $hit['name'], 'admin' => trim(($hit['admin2'] ?? '') . (isset($hit['admin1']) ? ', ' . $hit['admin1'] : ''), ', '),
-            'lat' => round((float) $hit['latitude'], 3), 'lon' => round((float) $hit['longitude'], 3)];
-        set_transient($gk, $place, 30 * DAY_IN_SECONDS);
+function mvgreen_klima_data($file) {
+    static $cache = [];
+    if (!isset($cache[$file])) {
+        $p = __DIR__ . '/data/klima/' . $file;
+        $cache[$file] = is_readable($p) ? json_decode(file_get_contents($p), true) : null;
     }
-
-    $y1 = (int) gmdate('Y') - 1; $y0 = $y1 - 4;
-    $ck = 'mvgreen_clim_' . md5($place['lat'] . ',' . $place['lon'] . ',' . $y0);
-    $clim = get_transient($ck);
-    if (!$clim) {
-        $q = ['latitude' => $place['lat'], 'longitude' => $place['lon'], 'start_date' => $y0 . '-01-01', 'end_date' => $y1 . '-12-31',
-            'daily' => 'temperature_2m_min,temperature_2m_max,precipitation_sum,wind_gusts_10m_max,soil_temperature_7_to_28cm_mean', 'timezone' => 'Europe/Prague'];
-        $r = wp_remote_get('https://archive-api.open-meteo.com/v1/archive?' . http_build_query($q), ['timeout' => 40] + $args);
-        if (is_wp_error($r) || wp_remote_retrieve_response_code($r) !== 200) wp_send_json_error(['message' => 'Podnebí se teď nepodařilo načíst. Zkuste to prosím znovu.']);
-        $j = json_decode(wp_remote_retrieve_body($r), true);
-        $clim = mvgreen_climate_stats($j);
-        if (!$clim) wp_send_json_error(['message' => 'Podnebí se nepodařilo spočítat.']);
-        $clim['elevation'] = isset($j['elevation']) ? (float) $j['elevation'] : null;
-        set_transient($ck, $clim, 30 * DAY_IN_SECONDS);
-    }
-    wp_send_json_success(['place' => $place['name'], 'admin' => $place['admin'], 'climate' => $clim + ['place' => $place['name']]]);
+    return $cache[$file];
 }
 
-/** Průměry za roky: poslední jarní / první podzimní mráz, půda ≥ 10 °C (5 dní po sobě) a zpět pod 10 °C, srážky, tropické dny, dny s nárazy ≥ 60 km/h. Dny = pořadí dne v roce. */
-function mvgreen_climate_stats($j) {
-    $d = $j['daily'] ?? null;
-    if (!$d || empty($d['time'])) return null;
-    $years = [];
-    foreach ($d['time'] as $i => $t) {
-        $y = (int) substr($t, 0, 4);
-        $doy = (int) date('z', strtotime($t));
-        $years[$y][] = ['doy' => $doy, 'tmin' => $d['temperature_2m_min'][$i], 'tmax' => $d['temperature_2m_max'][$i],
-            'p' => $d['precipitation_sum'][$i], 'g' => $d['wind_gusts_10m_max'][$i], 's' => $d['soil_temperature_7_to_28cm_mean'][$i]];
+function mvgreen_norm_name($s) {
+    $s = function_exists('remove_accents') ? remove_accents($s) : $s;
+    return trim(preg_replace('/\s+/', ' ', mb_strtolower($s)));
+}
+
+function mvgreen_climate_handle() {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    $raw = isset($_POST['obec']) ? trim(sanitize_text_field(wp_unslash($_POST['obec']))) : '';
+    if (mb_strlen($raw) < 2 || mb_strlen($raw) > 80) wp_send_json_error(['message' => 'Zadejte prosím název obce.']);
+    $obce = mvgreen_klima_data('obce.json');
+    $grid = mvgreen_klima_data('klima-cr.json');
+    if (!$obce || !$grid) wp_send_json_error(['message' => 'Data o obcích teď nejsou k dispozici.']);
+
+    // „Lhota, Plzeň-jih“ → obec + okres (rozliší stejnojmenné obce)
+    $parts = array_map('trim', explode(',', $raw, 2));
+    $name = mvgreen_norm_name($parts[0]);
+    $okres = isset($parts[1]) ? mvgreen_norm_name($parts[1]) : '';
+    $exact = []; $prefix = [];
+    foreach ($obce['rows'] as $r) { // řazeno podle počtu obyvatel – větší obec první
+        $n = mvgreen_norm_name($r[0]);
+        if ($okres !== '' && strpos(mvgreen_norm_name($r[1]), $okres) === false && strpos(mvgreen_norm_name($r[6]), $okres) === false) continue;
+        if ($n === $name) $exact[] = $r; elseif (strpos($n, $name) === 0 && count($prefix) < 5) $prefix[] = $r;
+        if (count($exact) >= 5) break;
     }
-    $acc = ['lastSpringFrost' => [], 'firstAutumnFrost' => [], 'soil10' => [], 'soilBelow10' => [], 'rainYear' => [], 'hotDays' => [], 'galeDays' => []];
-    foreach ($years as $a) {
-        if (count($a) < 360) continue;
-        $ls = null; $fa = null; $s10 = null; $sb = null; $rain = 0; $hot = 0; $gale = 0;
-        $cnt = count($a);
-        foreach ($a as $k => $x) {
-            if ($x['tmin'] !== null && $x['tmin'] < 0) { if ($x['doy'] < 182) $ls = $x['doy']; elseif ($fa === null) $fa = $x['doy']; }
-            $rain += (float) $x['p'];
-            if ($x['tmax'] !== null && $x['tmax'] >= 30) $hot++;
-            if ($x['g'] !== null && $x['g'] >= 60) $gale++;
-            if ($k + 4 < $cnt) {
-                $win = array_slice($a, $k, 5);
-                $allAbove = true; $allBelow = true;
-                foreach ($win as $w) { if ($w['s'] === null || $w['s'] < 10) $allAbove = false; if ($w['s'] === null || $w['s'] >= 10) $allBelow = false; }
-                if ($s10 === null && $x['doy'] > 40 && $allAbove) $s10 = $x['doy'];
-                if ($sb === null && $x['doy'] >= 200 && $allBelow) $sb = $x['doy'];
-            }
+    $hits = $exact ?: $prefix;
+    if (!$hits) wp_send_json_error(['message' => 'Obec jsme nenašli. Zkontrolujte název, případně přidejte okres (např. „Lhota, Plzeň-jih“).']);
+    $o = $hits[0];
+    $others = array_slice(array_map(function ($r) { return $r[0] . ', ' . $r[1]; }, $hits), 1, 4);
+
+    // nejbližší bod mřížky s daty (ERA5-Land nemá data nad vodou – zkusit okolí)
+    $f = $grid['fields'];
+    $ci = (int) round(($o[2] - $grid['lat0']) / $grid['dlat']);
+    $cj = (int) round(($o[3] - $grid['lon0']) / $grid['dlon']);
+    $cell = null;
+    for ($rad = 0; $rad <= 2 && !$cell; $rad++) {
+        for ($di = -$rad; $di <= $rad && !$cell; $di++) for ($dj = -$rad; $dj <= $rad && !$cell; $dj++) {
+            $v = $grid['grid'][$ci + $di][$cj + $dj] ?? null;
+            if ($v && $v[0] !== null) $cell = $v;
         }
-        if ($ls !== null) $acc['lastSpringFrost'][] = $ls;
-        if ($fa !== null) $acc['firstAutumnFrost'][] = $fa;
-        if ($s10 !== null) $acc['soil10'][] = $s10;
-        if ($sb !== null) $acc['soilBelow10'][] = $sb;
-        $acc['rainYear'][] = $rain; $acc['hotDays'][] = $hot; $acc['galeDays'][] = $gale;
     }
-    if (!$acc['rainYear']) return null;
-    $out = ['years' => count($acc['rainYear'])];
-    foreach ($acc as $k => $vals) $out[$k] = $vals ? round(array_sum($vals) / count($vals), 1) : null;
-    return $out;
+    if (!$cell) wp_send_json_error(['message' => 'Pro tuto obec nemáme data o počasí.']);
+    $clim = array_combine($f, $cell);
+    $clim['years'] = (int) $grid['years'];
+    $clim['elevation'] = $o[4];
+    $clim['galeDays'] = null; // nárazy větru ERA5-Land neobsahuje
+    $clim['source'] = 'Počasí: Copernicus Climate Change Service, ERA5-Land (CC BY 4.0); obce: GeoNames (CC BY 4.0).';
+    wp_send_json_success(['place' => $o[0], 'admin' => trim($o[1] . ($o[6] ? ', ' . $o[6] : ''), ', '), 'others' => $others, 'climate' => $clim + ['place' => $o[0]]]);
 }
