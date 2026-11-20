@@ -21,7 +21,9 @@ add_shortcode('mvgreen_plan_travnik', function () {
     wp_enqueue_script('mvgreen-care', $base . 'assets/garden-care.js', [], $v, true);
     wp_enqueue_script('mvgreen-lawn-kb', $base . 'assets/lawn-kb.js', [], $v, true);
     wp_enqueue_script('mvgreen-brain', $base . 'assets/brain.js', ['mvgreen-care', 'mvgreen-lawn-kb'], $v, true);
-    wp_enqueue_script('mvgreen-plan-page', $base . 'assets/plan-page.js', ['mvgreen-brain'], $v, true);
+    wp_enqueue_script('mvgreen-plan-quiz', $base . 'assets/plan-quiz.js', [], $v, true);
+    wp_enqueue_script('mvgreen-plan-output', $base . 'assets/plan-output.js', ['mvgreen-brain'], $v, true);
+    wp_enqueue_script('mvgreen-plan-page', $base . 'assets/plan-page.js', ['mvgreen-brain', 'mvgreen-plan-output', 'mvgreen-plan-quiz'], $v, true);
     wp_add_inline_script('mvgreen-plan-page', 'window.MVGreenPlanPage = ' . wp_json_encode([
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('mvgreen_ai_test'),
