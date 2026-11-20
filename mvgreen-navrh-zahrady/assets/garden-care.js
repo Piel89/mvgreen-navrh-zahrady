@@ -74,8 +74,8 @@
    * "reprezentativní" (vzhled, nízké opotřebení) a "sportovní" (pravidelná zátěž, časté opotřebení)
    * jsou odlišné potřeby, i když hnojivový harmonogram (schedule High) je pro obě stejný. */
   var USE_NOTES = {
-    sportovni: 'Sportovní zátěž trávník mechanicky opotřebovává – po náročnějším víkendu nebo zápase poškozená místa co nejdřív dosejte (15-25 g osiva/m²) a aerifikaci dutými hroty plánujte častěji než jednou za rok, aby půda pod zátěží nezhutněla.',
-    representative: 'Anglický trávník se hnojí pravidelně cca každé 4 týdny po celou hlavní sezónu (březen až listopad, 9 dávek v tabulce níže, i v srpnu; hnojíte vždy, až přestane mrznout a tráva oschne, nikdy na mokrou trávu ani do sněhu) – sekejte často (v sezóně zhruba co 3–4 dny) na vámi zvolenou výšku, nikdy víc než třetinu stébla najednou, okraje pravidelně zarovnávejte a čerstvě posečenou plochu zbytečně nezatěžujte.',
+    sportovni: 'Sportovní zátěž trávník mechanicky opotřebovává – po náročnějším víkendu nebo zápase poškozená místa co nejdřív dosejte (15-25 g osiva/m²) a aerifikaci dutými hroty plánujte podle zhutnění – univerzity radí 1× ročně, při velké zátěži a těžké půdě dvakrát (podzim, jaro).',
+    representative: 'Anglický trávník se hnojí pravidelně cca každé 4 týdny po celou hlavní sezónu (březen až listopad, 9 dávek v tabulce níže, i v srpnu; hnojíte vždy, až přestane mrznout a tráva oschne, nikdy na mokrou trávu ani do sněhu). Je to intenzivní režim (více než 30 g dusíku na m² za rok, víc než běžná univerzitní doporučení pro domácí trávník 10–17 g; blíží se golfovým plochám) a vyžaduje závlahu – sekejte často (v sezóně zhruba co 3–4 dny) na vámi zvolenou výšku, nikdy víc než třetinu stébla najednou, okraje pravidelně zarovnávejte a čerstvě posečenou plochu zbytečně nezatěžujte.',
   };
 
   /** Rady, co neplatí pro jeden konkrétní měsíc, ale pro celou sezónu podle počasí (Martin,
@@ -123,12 +123,13 @@
     // Rozsahy v `look` jsou orientační okolí referenčního složení z Martinova plánu (ne předpis výrobce).
     K: { hasP: false, hasK: true, name: 'Zátěžové hnojivo s vysokým draslíkem', npk: '12-0-42 +2MgO', nPct: 12, drive: 'draslík (K₂O)', refPct: 42, doseGPerM2: { start: 20, end: 30 },
       look: 'Na obalu hledejte: draslík (K₂O) kolem 40 % (35–45), dusík kolem 12 % (do 15), fosfor žádný nebo minimální, hořčík (MgO) alespoň 2 %. Bývá označeno jako zátěžové, podzimní nebo draslíkové trávníkové hnojivo.' },
-    N: { hasP: true, hasK: true, name: 'Rychlé hnojivo s dusíkem a sírou', npk: '27-6-6 +2S', nPct: 27, drive: 'dusík (N)', refPct: 27, doseGPerM2: 20,
-      look: 'Na obalu hledejte: dusík (N) 25–30 %, fosfor (P₂O₅) kolem 6 %, draslík (K₂O) kolem 6 %, síra (S) kolem 2 %. Bývá označeno jako jarní, startovací nebo rychlé dusíkaté trávníkové hnojivo. Je rychlé – aplikujte jen na suchou trávu a po aplikaci zalijte.' },
+    N: { hasP: true, hasK: true, name: 'Rychlé hnojivo s dusíkem a sírou', npk: '27-6-6 +2S', nPct: 27, drive: 'dusík (N)', refPct: 27, doseGPerM2: 18, // 2026-11-20: 20 g = 5,4 g N bylo nad hranicí 4,9 g N na aplikaci, kterou uvádí většina univerzit
+     
+      look: 'Na obalu hledejte: dusík (N) 26–28 %, fosfor (P₂O₅) kolem 6 %, draslík (K₂O) kolem 6 %, síra (S) kolem 2 %. Bývá označeno jako jarní, startovací nebo rychlé dusíkaté trávníkové hnojivo. Je rychlé – aplikujte jen na suchou trávu a po aplikaci zalijte.' },
     // D = náhrada, když rozbor půdy ukáže vysoký/nadlimitní fosfor nebo draslík (živiny se v půdě hromadí a blokují příjem dalších) - dusík bez P a K,
     // dávka se dopočítá tak, aby dodala STEJNÉ množství dusíku jako nahrazená dávka. Referenční složení je orientační (Martin 2026-11-16: bez značek).
     D: { hasP: false, hasK: false, name: 'Dusíkaté hnojivo bez fosforu a draslíku', npk: '30-0-0 (+S)', nPct: 30, drive: 'dusík (N)', refPct: 30, doseGPerM2: 12,
-      look: 'Na obalu hledejte: dusík (N) 20–46 %, fosfor (P₂O₅) 0 %, draslík (K₂O) 0 %; bývá označeno jako čisté dusíkaté nebo trávníkové dusíkaté hnojivo, ideálně se sírou (S). Hořčík a železo si případně doplňte zvlášť, podle rozboru. Při vyšším obsahu rychle rozpustného dusíku aplikujte na suchou trávu a zalijte.' },
+      look: 'Na obalu hledejte: dusík (N) kolem 30 % (28–32), fosfor (P₂O₅) 0 %, draslík (K₂O) 0 %; bývá označeno jako čisté dusíkaté nebo trávníkové dusíkaté hnojivo, ideálně se sírou (S). Hořčík a železo si případně doplňte zvlášť, podle rozboru. Čistá močovina (46 % N) je silnější: dávku z tabulky pak snižte zhruba na dvě třetiny. Aplikujte na suchou trávu a zalijte.' },
     C: { hasP: true, hasK: true, name: 'Vyvážené hnojivo s hořčíkem a železem', npk: '12-4-9 +2MgO +1Fe', nPct: 12, drive: 'dusík (N)', refPct: 12, doseGPerM2: 30,
       look: 'Na obalu hledejte: dusík (N) 10–14 %, fosfor (P₂O₅) 3–6 %, draslík (K₂O) 7–11 %, hořčík (MgO) alespoň 2 %, železo (Fe) kolem 1 %. Bývá označeno jako celoroční, vyvážené nebo „All Season“ trávníkové hnojivo.' },
   };
@@ -138,8 +139,8 @@
    * přibližným složením; tohle mu jen řekne, na co se dívat v obchodě. */
   var FERT_TYPE_NOTE = {
     fast: 'rychlorozpustné minerální (působí 1-3 týdny, nejlevnější, ale po aplikaci je potřeba brzy zalít, jinak hrozí spálení)',
-    crf: 's pomalým uvolňováním – CRF (působí 2-3 měsíce, dražší, ale minimální riziko spálení a nemusíte na něj tak často myslet)',
-    organic: 'organické/organominerální (působí 1-3 měsíce, nulové riziko spálení, navíc dlouhodobě zlepšuje půdu, ale účinek je pomalejší)',
+    crf: 's pomalým uvolňováním – CRF (štítek uvádí 2–3 měsíce, ale v teple se dusík uvolňuje rychleji a trávník ho většinu spotřebuje do několika týdnů; dražší, nižší riziko spálení než u rychlých hnojiv)',
+    organic: 'organické/organominerální (působí 1-3 měsíce, nižší riziko spálení – organominerální hnojiva ale obsahují i minerální složku, takže přesto dodržte dávku a zalijte; účinek je pomalejší)',
   };
 
   /** Druh/směs trávníku (2026-11-02, Martinovo zadání: "potrebujeme jeste zjistit jakej druh
@@ -184,10 +185,10 @@
   }
 
   var PROBLEM_NOTES = {
-    moss: 'Mech bývá příznak stínu, utužené nebo podmáčené půdy, slabé výživy nebo kyselé půdy – nechte si udělat rozbor půdy a v hnojivu upřednostněte variantu se železem, které mech potlačuje a dodá trávě sytě zelenou barvu.',
-    weeds: 'Dvouděložné plevele (jetel, pampeliška apod.) jde ručně vytrhávat, nebo použít schválený herbicid pro neprofesionální uživatele – ideálně v květnu/červnu, ne ve stejném týdnu jako hnojení.',
+    moss: 'Mech bývá příznak stínu, utužené nebo podmáčené půdy, slabé výživy nebo kyselé půdy – nechte si udělat rozbor půdy a řešte příčinu. Železo mech jen hubí a trávu zazelení, návratu mechu ale nezabrání (Clemson); stopové železo v běžném hnojivu na mech nestačí.',
+    weeds: 'Dvouděložné plevele (jetel, pampeliška apod.) jde ručně vytrhávat, nebo použít herbicid registrovaný v ČR pro neprofesionální uživatele (ověřte na etiketě) – ideálně v květnu/červnu; odstup od hnojení a sečení řiďte etiketou přípravku.',
     bare: 'Na holá a řídká místa počítejte s přísevem při podzimní regeneraci – cca 15-25 g osiva/m², zapravit hráběmi max. 0,5 cm hluboko a první 2 týdny udržovat povrch trvale vlhký.',
-    snowmold: 'Loni jste měli plíseň sněžnou – po 15. září proto nehnojte už nic s dusíkem, jen draslíkaté podzimní hnojivo, pravidelně hrabejte spadané listí a strniště před zimou nenechávejte vyšší než 5 cm.',
+    snowmold: 'Loni jste měli plíseň sněžnou – po polovině září proto nepoužívejte silné rychlé dusíkaté hnojivo (pozdní vysoký dusík plíseň zhoršuje), dávky snižte a dejte přednost pomalu působícímu hnojivu, pravidelně hrabejte spadané listí a strniště před zimou nenechávejte vyšší než 5 cm.',
     compaction: 'Utužená půda nebo voda, která se drží na povrchu: letos doporučujeme aerifikaci dutými hroty, i kdyby ji zvolená úroveň péče jinak nevyžadovala – jinak kořeny nemají dost vzduchu a trávník se nezlepší.',
   };
 
@@ -268,7 +269,7 @@
       { i: 6, tasks: [D('V polovině sezóny nůž znovu naostřete – po pár měsících sečení už spíš trhá, než řeže, a natržená stébla snáz napadají houbové choroby.')], fert: { key: 'C', action: '5. dávka' } },
       // Srpen: Martin 2026-11-16 "v srpnu se hnojí" (jeho plán má v srpnu Match Golf 30 g/m²); dřív tu dávka chyběla.
       { i: 7, tasks: [W('Hnojivo aplikujte jen na suchou trávu (nikdy na mokrou – granule se přilepí na stébla a spálí je).')], fert: { key: 'C', action: '6. dávka' } },
-      { i: 8, tasks: [D('Vertikutace (prořezání plsti) a aerace trávníku.'), D('Podzimní přísev prořídlých míst – před výsevem použijte startovací hnojivo s vysokým fosforem pro rychlé zakořenění semen, ne běžné sezónní hnojivo.'), W('Zkontrolujte, jestli se trávník nedá lehce nadzvednout nebo odchlípnout jako koberec – znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte buď biologicky (hlístice do zalévané půdy) nebo chemickým přípravkem proti ponravám podle návodu.')], fert: { key: 'N', action: '6. dávka – obnova po letním stresu' } },
+      { i: 8, tasks: [D('Vertikutace (prořezání plsti) a aerace trávníku.'), D('Podzimní přísev prořídlých míst – před výsevem použijte startovací hnojivo s vysokým fosforem pro rychlé zakořenění semen, ne běžné sezónní hnojivo.'), W('Zkontrolujte, jestli se trávník nedá lehce nadzvednout nebo odchlípnout jako koberec – znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte buď biologicky (hlístice do zalévané půdy) nebo přípravkem proti ponravám registrovaným v ČR pro domácí použití (ověřte na etiketě).')], fert: { key: 'N', action: '6. dávka – obnova po letním stresu' } },
       { i: 9, tasks: [D('Snižujeme frekvenci sečení.')], fert: { key: 'C', action: '7. dávka' } },
       { i: 10, tasks: [D('Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.'), D('Nářadí a hadice vyklidit, aby nezmrzly.')], fert: { key: 'K', variant: 'end', action: '8. (poslední) dávka – podzimní doplnění draslíku před zimou' } },
       { i: 11, tasks: [A('Zimní klid – trávník nezatěžovat, nenechávat na něm hromady listí ani sníh z lopaty.')] },
@@ -291,7 +292,7 @@
       { i: 4, tasks: [D('Sečení cca 1x týdně, hlavní růstová sezóna.'), D('Při sečení zarovnejte i okraje podél záhonů a chodníků (hranová seč) – rychlá věc, co zlepší vzhled víc než samotné sečení.')] },
       { i: 5, tasks: [D('V polovině sezóny nůž znovu naostřete – po pár měsících sečení už spíš trhá, než řeže.')], fert: { key: 'C', action: '2. dávka' } },
       { i: 7, tasks: [W('Intenzitu zatížení (sport, grilování) v tropických vedrech trochu omezte, trávník si v tu dobu hůř regeneruje.')] },
-      { i: 8, tasks: [D('Podzimní vertikutace a přísev prořídlých míst.'), W('Aerifikace se u tohoto režimu doporučuje cca 1x za 2 roky – pokud letos (nebo loni) ještě nebyla, je teď dobrý čas.'), W('Zkontrolujte, jestli se trávník nedá lehce nadzvednout – znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte biologicky (hlístice) nebo chemickým přípravkem proti ponravám.')], fert: { key: 'N', action: '3. dávka – obnova po letním stresu' } },
+      { i: 8, tasks: [D('Podzimní vertikutace a přísev prořídlých míst.'), W('Aerifikace se u tohoto režimu doporučuje cca 1x za 2 roky – pokud letos (nebo loni) ještě nebyla, je teď dobrý čas.'), W('Zkontrolujte, jestli se trávník nedá lehce nadzvednout – znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte biologicky (hlístice) nebo přípravkem proti ponravám registrovaným v ČR pro domácí použití (ověřte na etiketě).')], fert: { key: 'N', action: '3. dávka – obnova po letním stresu' } },
       { i: 9, tasks: [], fert: { key: 'K', variant: 'end', action: '4. (poslední) dávka – podzimní doplnění draslíku před zimou' } },
       { i: 10, tasks: [D('Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.'), D('Nářadí a hadice vyklidit, aby nezmrzly.')] },
       { i: 11, tasks: [A('Zimní klid – trávník nezatěžovat, nenechávat na něm hromady listí ani sníh z lopaty.')] },
@@ -305,7 +306,7 @@
     return [
       { i: 2, tasks: [D('Jarní vyhrabání napadaného listí.'), W('Vertikutace (u tohoto režimu volitelná, stačí 1x ročně) počká na duben, až bude půda prohřátá nad 8-10 °C – dřív trávníku spíš uškodí.')] },
       { i: 3, tasks: [D('Volitelná jarní vertikutace (1x ročně stačí) na prohřáté a mírně suché půdě.'), D('Sečení cca 1x za 10-14 dní, na vyšší výšku (5-7 cm) – nenáročný režim.'), W('Pokud na to bude čas navíc, zarovnejte i okraje podél chodníků a záhonů (hranová seč) – u nízké údržby to není nutné, ale vzhled to zlepší nejvíc ze všeho.')], fert: { key: 'K', variant: 'start', action: 'Jediná jarní dávka – na celé jaro a léto to stačí' } },
-      { i: 8, tasks: [D('Přísev prořídlých míst, pokud je potřeba.'), W('Zkontrolujte, jestli se trávník nedá lehce nadzvednout – znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte biologicky (hlístice) nebo chemickým přípravkem proti ponravám.')], fert: { key: 'K', variant: 'end', action: 'tím letos hnojení končí' } },
+      { i: 8, tasks: [D('Přísev prořídlých míst, pokud je potřeba.'), W('Zkontrolujte, jestli se trávník nedá lehce nadzvednout – znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte biologicky (hlístice) nebo přípravkem proti ponravám registrovaným v ČR pro domácí použití (ověřte na etiketě).')], fert: { key: 'K', variant: 'end', action: 'tím letos hnojení končí' } },
       { i: 10, tasks: [D('Poslední seč sezóny, úklid spadaného listí z trávníku.')] },
     ];
   }
@@ -426,7 +427,7 @@
     if (lastFertilized === 'spring_done') {
       notes.push('Jarní dávku jste letos už aplikovali – první dávku v tabulce hnojení níže letos vynechejte a pokračujte až další v pořadí.');
     } else if (lastFertilized === 'none') {
-      notes.push('Letos jste ještě nehnojili – klidně začněte první dávkou z tabulky co nejdřív, i když aktuální měsíc úplně neodpovídá; jen pokud je už po polovině září, přeskočte rovnou na poslední podzimní (draslíkovou) dávku.');
+      notes.push('Letos jste ještě nehnojili – začněte nejbližší dávkou v pořadí podle toho, jaký je teď měsíc (jarní dávky až když tráva roste; po polovině září přeskočte na podzimní). Vždy jen na suchou trávu, bez mrazu a sněhu.');
     }
     result.notes = notes;
     // Sezónní obecné rady (viz SEASON_GENERAL výš) - stejná {{WATER}}/{{SLOPE}} substituce jako

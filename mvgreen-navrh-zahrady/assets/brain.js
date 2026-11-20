@@ -101,7 +101,7 @@
   };
   // Pořadí podle J. Exnera (Martin 2026-11-16: „nechat Exnera“): aerifikace před vertikutací. Hnojení: s dosevem startovací,
   // bez dosevu dávka podle plánu (Martin 2026-11-16).
-  var REGEN = ['Scalping – posekat na nejnižší výšku, kterou sekačka dovolí (jen anglický a sportovní trávník)', 'Aerifikace dutými hroty (jen u utužené nebo jílovité půdy)', 'Uklidit špunty', 'Vertikutace do kříže', 'Shrabat plsť a mech', 'Pohnojit: když dosíváte, startovacím hnojivem s vyšším obsahem fosforu (místo dávky z plánu); bez dosevu dávkou podle plánu', 'Dosev', 'Pískování a zamést do otvorů', 'Zálivka – povrch stále vlhký, dokud tráva nevzejde'];
+  var REGEN = ['Posekat o něco níž než obvykle (najednou nejvýš o třetinu stébla – univerzity scalping chladnomilných trav nedoporučují)', 'Aerifikace dutými hroty (jen u utužené nebo jílovité půdy)', 'Uklidit špunty', 'Vertikutace do kříže', 'Shrabat plsť a mech', 'Pohnojit: když dosíváte, startovacím hnojivem s vyšším obsahem fosforu (místo dávky z plánu); bez dosevu dávkou podle plánu', 'Dosev', 'Pískování a zamést do otvorů', 'Zálivka – povrch stále vlhký, dokud tráva nevzejde'];
 
   function doyLabel(doy) { var d = new Date(2025, 0, 1 + Math.round(doy)); return d.getDate() + '. ' + (d.getMonth() + 1) + '.'; }
   function springWindow(alt, climate) {
@@ -132,7 +132,6 @@
       P.push({ proc: 'propich', freq: '1× za měsíc', when: 'duben–říjen' });
       P.push({ proc: 'vycesani', freq: '1× za 2 měsíce', when: 'v sezóně, od 10 °C v půdě do září' });
       P.push({ proc: 'vertikutace', freq: '2× ročně', when: spring + ' a koncem srpna až v září' });
-      P.push({ proc: 'scalping', freq: '1× ročně', when: 'na začátku podzimní regenerace (konec srpna–září)' });
       if (compact) {
         P.push({ proc: 'dute', freq: '1× ročně', when: 'konec srpna–září, při silném utužení i na jaře', note: 'Půda je utužená nebo jílovitá – duté hroty ji postupně zlepší (s pískem).' });
         P.push({ proc: 'pisek', freq: 'po aerifikaci (~10 kg/m²), lehce i po jarní vertikutaci', when: 'hned po zásahu' });
@@ -176,13 +175,13 @@
 
   // ===== Ověření postupů (zobrazuje se zákazníkovi u návodu – „působí ověřeně“, Martin 2026-11-16) =====
   var VERIFIED = {
-    propich: 'Univerzitní doporučení (Kansas State University) a praxe MVGreen.',
-    vycesani: 'Praxe MVGreen (anglický trávník 1× za 2 měsíce).',
-    vertikutace: 'Univerzitní doporučení (University of Idaho, Utah State) a praxe českých profesionálních trávníkářů.',
+    propich: 'Praxe MVGreen (1× za měsíc). Univerzity uvádějí jádrovou aerifikaci 1× ročně; plné hroty proti utužení fungují hůř (Kansas State), berte je jako doplněk.',
+    vycesani: 'Praxe MVGreen (anglický trávník 1× za 2 měsíce); v univerzitních doporučeních pro domácí trávník není.',
+    vertikutace: 'Univerzity (Idaho, Utah State, UC IPM) radí hlavně konec srpna–září, jaro jako záloha; dvakrát ročně je praxe MVGreen u anglického trávníku.',
     dute: 'Univerzitní doporučení (Kansas State, Ohio State, University of Nebraska) a praxe českých profesionálních trávníkářů.',
     pisek: 'Praxe českých profesionálních trávníkářů a doporučení LSU AgCenter a USGA.',
     dosev: 'Univerzitní doporučení (University of Illinois Extension) a praxe MVGreen.',
-    scalping: 'Praxe MVGreen.',
+    scalping: 'Praxe MVGreen; univerzity scalping chladnomilných trav nedoporučují.',
   };
   // Množství materiálu na plochu zákazníka (ověřená čísla – znalostní báze §15)
   function amounts(proc, areaM2) {
@@ -241,8 +240,8 @@
     if (c.hotDays != null) rows.push(['Tropické dny (30 °C a víc)', Math.round(c.hotDays) + ' za rok']);
     if (c.galeDays != null) rows.push(['Dny se silným větrem (nárazy 60 km/h a víc)', Math.round(c.galeDays) + ' za rok']);
     var notes = [];
-    if (c.hotDays >= 6) notes.push('U vás bývá ' + Math.round(c.hotDays) + ' tropických dnů ročně – v tu dobu přidejte zálivku (30 l/m² týdně a víc podle stavu trávníku) a nesekejte nakrátko.');
-    if (c.rainYear && c.rainYear < 650) notes.push('Srážek je u vás málo (' + Math.round(c.rainYear) + ' mm za rok) – bez zálivky bude trávník v létě strádat.');
+    if (c.hotDays >= 6) notes.push('U vás bývá ' + Math.round(c.hotDays) + ' tropických dnů ročně (údaj z mřížky 9 km, skutečných vedrů bývá spíš víc) – v tu dobu přidejte zálivku (30 l/m² týdně a víc podle stavu trávníku) a nesekejte nakrátko.');
+    if (c.rainYear && c.rainYear < 650) notes.push('Srážek je u vás málo (' + Math.round(c.rainYear) + ' mm za rok, orientační údaj z mřížky 9 km) – bez zálivky bude trávník v létě strádat.');
     if (c.galeDays >= 12) notes.push('Často u vás fouká – hnojivo a osivo nerozhazujte ve větru, granule se rozletí nerovnoměrně.');
     return { place: c.place || '', years: c.years, rows: rows, notes: notes, source: c.source || '' };
   }
@@ -319,7 +318,7 @@
     if (soilTest) {
       if (HIGH(soilTest.P)) avoid.P = true;
       if (HIGH(soilTest.K)) avoid.K = true;
-      if (avoid.P || avoid.K) warnings.push(msg('R8', 'high', 'Rozbor ukazuje vysoký ' + (avoid.P && avoid.K ? 'fosfor i draslík' : avoid.P ? 'fosfor' : 'draslík') + '. Další ' + (avoid.P && avoid.K ? 'P a K' : avoid.P ? 'fosfor' : 'draslík') + ' by se v půdě hromadil a blokoval příjem ostatních živin (trávník pak bývá světlý a řídký, i když se hnojí). Proto plán používá hnojivo bez ' + (avoid.P && avoid.K ? 'P a K' : avoid.P ? 'fosforu' : 'draslíku') + ' se stejným množstvím dusíku. Rozbor zopakujte za 1–2 roky.'));
+      if (avoid.P || avoid.K) warnings.push(msg('R8', 'high', 'Rozbor ukazuje vysoký ' + (avoid.P && avoid.K ? 'fosfor i draslík' : avoid.P ? 'fosfor' : 'draslík') + '. Další ' + (avoid.P && avoid.K ? 'P a K' : avoid.P ? 'fosfor' : 'draslík') + ' by se v půdě hromadil a blokoval příjem ostatních živin (trávník pak bývá světlý a řídký, i když se hnojí). Proto plán používá hnojivo bez ' + (avoid.P && avoid.K ? 'P a K' : avoid.P ? 'fosforu' : 'draslíku') + ' se stejným množstvím dusíku. Rozbor zopakujte za 2–3 roky (univerzity radí testovat zhruba každé 3 roky, na písčité půdě častěji).'));
       if (HIGH(soilTest.pH)) warnings.push(msg('R7', 'high', 'pH je podle rozboru vysoké – nevápnit (vápno pH ještě zvýší).'));
       else if (soilTest.pH === 'nizka') recs.push(msg('R7', 'info', 'pH je podle rozboru nízké – vápnit podle doporučení laboratoře (množství vápence určuje rozbor, ne odhad); na jednu aplikaci nejvýš ≈ 250 g/m², víc rozdělit na dvě. Hašené vápno nepoužívejte (pálí trávu). Změna pH trvá měsíce.'));
       if (soilTest.Mg === 'nizka') recs.push(msg('R8', 'info', 'Hořčík je podle rozboru nízký – volte hnojiva s hořčíkem (MgO).'));
@@ -357,7 +356,7 @@
         r.warn = 'Na hranici rozpustného dusíku (≈ ' + String(round1(r.nGPerM2)).replace('.', ',') + ' g N/m²): jen na suchou trávu a hned po aplikaci zalít.';
       }
     });
-    if (fertTable.some(function (r) { return r.warn; })) warnings.push(msg('R3', 'medium', 'Rychlé dusíkaté hnojivo: doporučená hranice je ≈ 5 g dusíku na m² na jednu aplikaci. Dávka v tabulce je na její horní hranici (ověřená praxe), proto vždy jen na suchou trávu a hned po aplikaci zalít, jinak hrozí spálení.'));
+    if (fertTable.some(function (r) { return r.warn; })) warnings.push(msg('R3', 'medium', 'Rychlé dusíkaté hnojivo: univerzity uvádějí nejvýš ≈ 5 g dusíku na m² na jednu aplikaci (nejčastěji 4,9 g). Dávka v tabulce je na této hranici, proto vždy jen na suchou trávu a hned po aplikaci zalít, jinak hrozí spálení.'));
 
     // --- R4, R13: typ hnojiva --------------------------------------------------------------------------------------
     if (a.fertType === 'crf') recs.push(msg('R4', 'info', 'Dlouhodobé hnojivo: interval podle štítku (obvykle 8–12 týdnů), ale reálně se živiny uvolňují rychleji, zvlášť v teple – trávník většinu spotřebuje do ~ 2 týdnů. Pro hezký trávník proto i dlouhodobým hnojivem hnojte zhruba každé 4 týdny. Nezačínejte v chladné půdě, poslední dávka nejpozději koncem října.'));
@@ -372,7 +371,7 @@
     var last = fertTable[fertTable.length - 1];
     if (last && /listopad/i.test(last.month || '')) {
       last.condition = 'Jen když tráva ještě roste, nemrzne a je suchá – jinak tuhle dávku letos vynechte.';
-      recs.push(msg('R10', 'info', 'Poslední dávka v listopadu je podmíněná: jen když tráva ještě roste a půda není zmrzlá. Pozdější hnojení už trávníku nepomůže a dusík se může splachovat.'));
+      recs.push(msg('R10', 'info', 'Poslední dávka v listopadu je podmíněná: jen když tráva ještě roste a půda není zmrzlá. Univerzity (např. Purdue) doporučují poslední dávku kolem posledního sečení, dokud je tráva zelená; později už nemá smysl a dusík se může splachovat.'));
     }
 
     // --- R17: termín poslední podzimní dávky podle teploty půdy v obci -----------------------------------------------
@@ -396,7 +395,7 @@
         last.half = target; last.when = wh; last.month = MONTHS_CZ[Math.floor(target / 2)];
       }
       last.condition = (last.condition ? last.condition + ' ' : '') + 'Termín je odvozený od teploty půdy u vás: pod 10 °C klesá v průměru kolem ' + doyLabel(cool) + ' Rozhodující je počasí – dávejte, dokud tráva roste.';
-      recs.push(msg('R17', 'info', 'Poslední podzimní dávku máme načasovanou podle toho, kdy u vás půda klesá pod 10 °C (v průměru kolem ' + doyLabel(cool) + ', průměr posledních ' + ((a.climate && a.climate.years) || 5) + ' let). V září se podzimní hnojivo nedává – půda je ještě teplá a trávník má druhé léto; září je na regeneraci. Datum je orientační, vždy se řiďte počasím: tráva roste, nemrzne a je suchá.'));
+      recs.push(msg('R17', 'info', 'Poslední podzimní dávku máme načasovanou podle toho, kdy u vás půda klesá pod 10 °C (v průměru kolem ' + doyLabel(cool) + ', průměr posledních ' + ((a.climate && a.climate.years) || 5) + ' let). Září patří podle univerzit (Purdue, Illinois) mezi nejlepší doby na hnojení chladnomilných trav a je to i čas na podzimní regeneraci; jen v největších vedrech chvíli počkejte. Datum je orientační, vždy se řiďte počasím: tráva roste, nemrzne a je suchá.'));
     }
 
     // --- R11: úsporný režim ------------------------------------------------------------------------------------------
@@ -413,11 +412,17 @@
     }
 
     // --- R14 pes, R15 plsť ------------------------------------------------------------------------------------------
-    if (has(a.use, 'dog')) recs.push(msg('R14', 'info', 'Pes: fleky dělá dusík z moči. Místo, kde pes močil, zalijte co nejdřív (nejpozději do ~8 hodin). Tam, kam pes chodí močit, hnojte méně. Moč lépe snášejí jílek a kostřava rákosovitá než jemné kostřavy. Na „neutralizéry“ moči nespoléhejte, jejich účinek není doložený.'));
-    if (has(a.problems, 'thatch')) recs.push(msg('R15', 'info', 'Plsť (vrstva odumřelé trávy nad 1,3 cm): vertikutace hlavně koncem srpna až v září, na jaře až od 10 °C v půdě; aerifikace dutými hroty jednou ročně, nejlépe na podzim (při silném zhutnění dvakrát). V letním vedru ne.'));
+    if (has(a.use, 'dog')) recs.push(msg('R14', 'info', 'Pes: fleky dělá dusík z moči. Místo, kde pes močil, zalijte co nejdřív (nejpozději do ~8 hodin). Tam, kam pes chodí močit, hnojte méně. Nejlépe snáší moč kostřava rákosovitá, hůř jílek a nejhůř lipnice luční (NC State); poškozená místa brzy dosejte. Na „neutralizéry“ moči nespoléhejte, jejich účinek není doložený.'));
+    if (has(a.problems, 'thatch')) recs.push(msg('R15', 'info', 'Plsť (vrstva odumřelé trávy nad 1,3 cm): vertikutace hlavně koncem srpna až v září, na jaře až od 10 °C v půdě; aerifikace dutými hroty jednou ročně, nejlépe na podzim (září); při těžké jílovité půdě nebo velké zátěži podle univerzit až dvakrát (podzim a jaro). V letním vedru ne.'));
 
     // --- R12: vždy -------------------------------------------------------------------------------------------------------
     recs.unshift(msg('R12', 'info', 'Hnojte jen na suchou trávu (na mokré se granule přilepí a spálí stébla) a nikdy na sníh ani na zmrzlou půdu. ' + WATER_AFTER));
+    // 2026-11-20 (audit; průzkum: 4 z 5 univerzit – první jarní dávka až když tráva aktivně roste / po prvním sečení; Purdue: výrazný růst až od ≈ 10 °C v půdě)
+    fertTable.forEach(function (r) { if (typeof r.half === 'number' && Math.floor(r.half / 2) <= 3) r.condition = (r.condition ? r.condition + ' ' : '') + 'Jarní dávku dávejte až když tráva začne růst (poprvé sekáte) – dřív dusík jen pobízí měkký přírůstek a trávníku nepomůže.'; });
+    // 2026-11-20 (audit A6, průzkum: 7 ze 7 zdrojů – bez závlahy v suchu a vedru dusíkem nehnojit): letní dávky anglického bez závlahy podmíněné deštěm
+    if (a.irrigation === 'none') fertTable.forEach(function (r) { if (typeof r.half === 'number' && Math.floor(r.half / 2) >= 5 && Math.floor(r.half / 2) <= 7) r.condition = (r.condition ? r.condition + ' ' : '') + 'Bez závlahy tuto dávku v suchu a vedru vynechte – dusík bez vody trávníku nepomůže; dejte ji až po vydatném dešti.'; });
+    // 2026-11-20 (audit A5, zdroje: startovací hnojivo s fosforem, první běžné hnojení za 6–8 týdnů nebo po 2–3 sečích, jedna dávka nejvýš ≈ 4,9 g N)
+    if (a.age === 'new') fertTable.forEach(function (r) { r.condition = (r.condition ? r.condition + ' ' : '') + 'Nový trávník: první běžné hnojení až 6–8 týdnů po výsevu (nebo po 2–3 sečích), do té doby jen startovací hnojivo s fosforem; jedna dávka nejvýš ≈ 4,9 g dusíku na m².'; });
     // zálivka po hnojení u KAŽDÉ dávky (Martin 2026-11-19) – přidává se do podmínky řádku, odtud ji bere kalendář, připomínky i .ics
     fertTable.forEach(function (r) { r.condition = (r.condition || 'Jen na suchou trávu, bez mrazu a sněhu.') + ' ' + WATER_AFTER; });
 
@@ -497,7 +502,7 @@
     if (res.care && res.care.program.length) {
       h += '<h4>🌱 Údržba trávníku během roku</h4><table class="mg-fert-table"><thead><tr><th>Zásah</th><th>Jak často</th><th>Kdy</th></tr></thead><tbody>' +
         res.care.program.map(function (p) { return '<tr><td><strong>' + esc(PROC[p.proc].title) + '</strong>' + (p.note ? '<br><small>' + esc(p.note) + '</small>' : '') + '</td><td>' + esc(p.freq) + '</td><td>' + esc(p.when) + '</td></tr>'; }).join('') +
-        '</tbody></table><p class="mg-note">Vše mechanické jen při půdě alespoň 10 °C, nikdy ve vedru ani na mokrém či zmrzlém trávníku.</p>';
+        '</tbody></table><p class="mg-note">Vertikutaci, vyčesání a aerifikaci dělejte, až tráva aktivně roste (půda alespoň kolem 10 °C), nikdy ve vedru ani na mokrém či zmrzlém trávníku.</p>';
       h += res.care.program.map(function (p) { var d = PROC[p.proc]; return '<details class="mg-brain-more"><summary>Postup: ' + esc(d.title) + '</summary><p><small>' + esc(d.why) + '</small></p><p><small><strong>Nářadí:</strong> ' + esc(d.tools) + '</small></p><ol>' + d.steps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><p><small><strong>Nedělat:</strong> ' + esc(d.avoid) + '</small></p></details>'; }).join('');
       if (res.tier === 'representative' || res.tier === 'sportovni') h += '<details class="mg-brain-more"><summary>Velká podzimní regenerace – pořadí kroků</summary><ol>' + res.care.regeneration.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></details>';
     }

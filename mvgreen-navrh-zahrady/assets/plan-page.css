@@ -220,3 +220,9 @@ body:has(#mvg-plan){overflow-x:hidden}
 .payov-box b{font-size:18px;color:#c6e36c}
 .payov-box span{font-size:14px;opacity:.9}
 @keyframes mvgspin{to{transform:rotate(360deg)}}
+
+/* 2026-11-20: osobní ochutnávka plánu před zaplacením */
+.mvg-plan .ptease{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#0b1711}
+.mvg-plan .ptease p{margin:0}
+.mvg-plan .mchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.mvg-plan .mchip{padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-size:13px}
