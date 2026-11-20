@@ -127,7 +127,7 @@ form.addEventListener('input',function(){render();saveForm()});form.addEventList
 render();
 // Návrat z platební brány: ?mvg_platba=diky|cekame, kód v #kod=… (server ho tam dá jen u zaplacené objednávky).
 (function(){var u;try{u=new URL(location.href)}catch(e){return}var st=u.searchParams.get('mvg_platba'),m=/[#&]kod=([A-Za-z0-9-]+)/.exec(location.hash);if(!st&&!m)return;
-  var box=document.createElement('p');box.className='msg';box.setAttribute('role','status');box.style.margin='0 0 16px';box.style.gridColumn='1 / -1';res.parentNode.insertBefore(box,res);
+  var box=document.createElement('p');box.className='msg';box.setAttribute('role','status');box.style.margin='0 0 16px';box.style.gridColumn='1 / -1';res.parentNode.insertBefore(box,form);
   if(m){box.textContent='Odemykám plán…';Promise.resolve(checkCode(decodeURIComponent(m[1]),true)).then(function(ok){box.className='msg '+(ok?'ok':'err');box.textContent=ok?'Děkujeme za platbu. Plán je odemčený a kód máte i v e-mailu.':'Plán se nepodařilo odemknout. Zadejte prosím kód z e-mailu níže v plánu.'})}
   else if(st==='cekame'){box.textContent='Platbu ještě ověřujeme. Jakmile ji banka potvrdí, pošleme vám kód e-mailem a plán si odemknete.'}
   else if(st==='zruseno'){box.textContent='Platba byla zrušena, nic jsme vám nestrhli. Plán si můžete koupit kdykoli níže.'}

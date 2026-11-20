@@ -386,6 +386,7 @@ function mvgreen_stripe_return_handle() {
     $sid = isset($_GET['sid']) ? sanitize_text_field(wp_unslash($_GET['sid'])) : '';
     $post = $sid ? mvgreen_stripe_sync($sid) : null;
     wp_safe_redirect(mvgreen_pay_return_url($post, $back));
+    mvgreen_finish_response(); // zákazník nečeká na e-mail
     exit;
 }
 
@@ -423,6 +424,7 @@ function mvgreen_stripe_webhook_handle() {
         mvgreen_stripe_sync((string) $event['data']['object']['id']);
     }
     status_header(200);
+    mvgreen_finish_response(); // Stripe nečeká na e-mail (dřív 6–8 s, hrozilo opakování oznámení)
     exit;
 }
 
@@ -580,7 +582,23 @@ function mvgreen_gopay_notify_handle() {
 }
 
 /** Aktivuje kód (uvolní použití) a pošle ho e-mailem. Volá se jen po ověřeném stavu PAID. */
+/** Odešle e-mail až po odeslání odpovědi prohlížeči/Stripe (shutdown) – SMTP trvá několik sekund (2026-11-20: odpověď webhooku trvala 6–8 s). */
+function mvgreen_mail_later($to, $subject, $body) {
+    add_action('shutdown', function () use ($to, $subject, $body) { wp_mail($to, $subject, $body); });
+}
+
+/** Ukončí odpověď (prázdné tělo) a nechá PHP dobíhat na pozadí; následný kód a shutdown už nikoho nezdržují. */
+function mvgreen_finish_response() {
+    ignore_user_abort(true);
+    if (!headers_sent()) { header('Content-Length: 0'); header('Connection: close'); }
+    if (function_exists('fastcgi_finish_request')) { fastcgi_finish_request(); return; }
+    while (ob_get_level() > 0) { @ob_end_flush(); }
+    flush();
+}
+
 function mvgreen_activate_code($post_id) {
+    // Návrat zákazníka a webhook Stripe běží současně – bez atomického zámku by e-mail s kódem odešel dvakrát.
+    if (!add_post_meta($post_id, '_mvg_activated', time(), true)) return;
     $uses = (int) get_post_meta($post_id, '_mvg_uses_total', true);
     update_post_meta($post_id, '_mvg_status', 'paid');
     update_post_meta($post_id, '_mvg_uses_left', $uses);
@@ -611,12 +629,12 @@ Připomínky do kalendáře si uložíte tlačítkem v plánu.
 
 Martin Vondrovic
 MV GREEN, Domažlice";
-        wp_mail($email, 'MV GREEN – váš roční plán péče o trávník', $body);
+        mvgreen_mail_later($email, 'MV GREEN – váš roční plán péče o trávník', $body);
     } elseif ($email && is_email($email) && $code) {
         $subject = 'MV GREEN – váš kód pro AI návrh zahrady';
         $body = "Dobrý den,\n\ndíky za platbu. Váš kód pro AI návrh zahrady je:\n\n    " . $code . "\n\n"
             . "Zadejte ho v návrháři zahrady v kroku generování návrhu. Kód platí pro " . $uses . " vygenerování.\n\nMV GREEN";
-        wp_mail($email, $subject, $body);
+        mvgreen_mail_later($email, $subject, $body);
     }
 }
 
