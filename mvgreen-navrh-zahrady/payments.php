@@ -697,7 +697,12 @@ function mvgreen_kod_check_handle() {
     if (in_array('design', $grants, true) && $left <= 0 && !in_array('care', $grants, true)) {
         wp_send_json_error(['message' => 'Tento kód je už vyčerpaný.']);
     }
-    wp_send_json_success(['left' => $left, 'grants' => $grants]);
+    $res = ['left' => $left, 'grants' => $grants];
+    if (in_array('care', $grants, true)) {
+        $f = json_decode((string) get_post_meta($post->ID, '_mvg_form', true), true);
+        if (is_array($f)) $res['form'] = $f; // odpovědi zákazníka – plán se sestaví i na jiném zařízení
+    }
+    wp_send_json_success($res);
 }
 
 /**
@@ -727,6 +732,28 @@ function mvgreen_ai_result_handle() {
 add_action('wp_ajax_nopriv_mvgreen_kod_buy', 'mvgreen_kod_buy_handle');
 add_action('wp_ajax_mvgreen_kod_buy', 'mvgreen_kod_buy_handle');
 
+/** Odpovědi z dotazníku plánu uložené k objednávce (2026-11-20) – aby se plán otevřel z e-mailu na jakémkoli zařízení.
+ * Propustí se jen povolené tvary a délky, do databáze se nedostane nic cizího. */
+function mvgreen_sanitize_plan_form($raw) {
+    $d = json_decode((string) $raw, true);
+    if (!is_array($d) || !isset($d['f']) || !is_array($d['f'])) return '';
+    $clean = function ($arr, $max) {
+        $out = [];
+        foreach ($arr as $k => $v) {
+            if (count($out) >= $max) break;
+            if (!is_string($k) || !preg_match('/^[A-Za-z0-9:_-]{1,40}$/', $k)) continue;
+            if (is_bool($v)) $out[$k] = $v;
+            elseif (is_int($v) || is_float($v)) $out[$k] = $v + 0;
+            elseif (is_string($v)) $out[$k] = mb_substr(sanitize_text_field($v), 0, 80);
+        }
+        return $out;
+    };
+    $out = ['f' => $clean($d['f'], 60)];
+    if (isset($d['c']) && is_array($d['c'])) $out['c'] = $clean($d['c'], 30);
+    $json = wp_json_encode($out);
+    return ($json && strlen($json) <= 4000) ? $json : '';
+}
+
 function mvgreen_kod_buy_handle() {
     check_ajax_referer('mvgreen_ai_test', 'nonce');
     $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'x';
@@ -755,6 +782,10 @@ function mvgreen_kod_buy_handle() {
     update_post_meta($post_id, '_mvg_status', 'pending');
     update_post_meta($post_id, '_mvg_order_number', $order_number);
     mvgreen_store_grants($post_id, $package);
+    if (in_array('care', $package['grants'], true) && !empty($_POST['form'])) {
+        $form_json = mvgreen_sanitize_plan_form(wp_unslash($_POST['form']));
+        if ($form_json !== '') update_post_meta($post_id, '_mvg_form', $form_json);
+    }
 
     $back = wp_get_referer() ?: home_url('/'); // same-origin AJAX request – referer is reliable here
     update_post_meta($post_id, '_mvg_back', $back);

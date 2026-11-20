@@ -210,3 +210,13 @@ body:has(#mvg-plan){overflow-x:hidden}
 #mvg-plan input[type=text],#mvg-plan input[type=number],#mvg-plan input[type=email],#mvg-plan select{color:var(--fg);background:#0b1711;border:1px solid var(--line);box-shadow:none;height:auto;min-height:44px}
 #mvg-plan .strip img{height:170px}
 #mvg-plan ul,#mvg-plan ol{margin-left:0}
+
+/* 2026-11-20: čekání na přesměrování k platbě – kolečko na tlačítku a překryv přes stránku */
+.mvg-plan .spin,.payov .spin{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:mvgspin .8s linear infinite;vertical-align:-2px;margin-right:8px}
+.payov .spin.big{width:42px;height:42px;border-width:4px;margin:0 0 6px}
+.mvg-plan .btn.busy{opacity:.8;cursor:wait}
+.payov{position:fixed;inset:0;z-index:99999;background:rgba(8,16,12,.82);display:flex;align-items:center;justify-content:center;padding:16px}
+.payov-box{display:grid;gap:8px;justify-items:center;text-align:center;max-width:420px;padding:26px 22px;border-radius:16px;background:#0f1f17;color:#eff0e4;border:1px solid rgba(198,227,108,.4);font:16px/1.45 system-ui,sans-serif}
+.payov-box b{font-size:18px;color:#c6e36c}
+.payov-box span{font-size:14px;opacity:.9}
+@keyframes mvgspin{to{transform:rotate(360deg)}}

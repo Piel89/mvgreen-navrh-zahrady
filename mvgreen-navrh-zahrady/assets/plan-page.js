@@ -51,7 +51,7 @@ function render(){
   var r;
   // prázdný formulář = prázdná stránka s výzvou (Martin 2026-11-20); plán se spočítá, až je vyplněno nejnutnější
   var need=[];if(!(Number(v('area'))>0))need.push('plochu trávníku');if(!read().tier)need.push('jaký trávník chcete');if(v('obec').trim().length<2)need.push('obec');
-  if(need.length){res.innerHTML='<div class="pcard"><div class="phead"><span class="eyebrow">Váš plán</span><h3>Plán se ukáže tady</h3><p class="muted">Vyplňte ještě: '+need.join(', ')+'. Ostatní otázky plán zpřesní.</p></div></div>';lastRes=null;return}
+  if(need.length){res.innerHTML='<div class="pcard"><div class="phead"><span class="eyebrow">Váš plán</span><h3>'+(unlocked?'Plán je odemčený':'Plán se ukáže tady')+'</h3><p class="muted">Vyplňte ještě: '+need.join(', ')+'. Ostatní otázky plán zpřesní.</p></div></div>';lastRes=null;return}
   try{r=B.decide(read())}catch(e){res.innerHTML='<p class="muted">Výpočet se nepovedl: '+esc(e.message)+'</p>';return}
   var rows=r.fertTableReference, thrifty=r.mode==='thrifty', meta=r.plan.tierMeta||{}, K=r.knowledge, PR=B.PROC, area=r.plan.areaM2||0;
   var mh=r.plan.mowHeight||{}, hTxt=mh.min?(mh.min===mh.max?kg(mh.min):mh.min+'–'+mh.max)+' cm':'–';
@@ -122,6 +122,10 @@ function saveForm(){try{var o={};Array.prototype.forEach.call(form.elements,func
   o[k]=(el.type==='checkbox'||el.type==='radio')?el.checked:el.value});localStorage.setItem('mvgPlanForm',JSON.stringify({f:o,c:climate,t:Date.now()}))}catch(e){}}
 function loadForm(){try{var d=JSON.parse(localStorage.getItem('mvgPlanForm')||'null');if(!d||!d.f)return;Array.prototype.forEach.call(form.elements,function(el){var k=el.id||(el.name+':'+el.value);if(!(k in d.f))return;
   if(el.type==='checkbox'||el.type==='radio')el.checked=!!d.f[k];else el.value=d.f[k]});if(d.c)climate=d.c}catch(e){}}
+// Odpovědi z dotazníku se ukládají i k objednávce na serveru (2026-11-20, Martin: odkaz z e-mailu otevřel prázdnou stránku bez plánu),
+// takže se plán po zadání kódu sestaví na jakémkoli zařízení.
+function collectForm(){var o={};Array.prototype.forEach.call(form.elements,function(el){if(!el.id&&!el.name)return;var k=el.id||(el.name+':'+el.value);o[k]=(el.type==='checkbox'||el.type==='radio')?el.checked:el.value});return {f:o,c:climate}}
+function applyForm(d){if(!d||!d.f)return;Array.prototype.forEach.call(form.elements,function(el){var k=el.id||(el.name+':'+el.value);if(!(k in d.f))return;if(el.type==='checkbox'||el.type==='radio')el.checked=!!d.f[k];else el.value=d.f[k]});if(d.c)climate=d.c}
 loadForm();
 form.addEventListener('input',function(){render();saveForm()});form.addEventListener('change',function(){render();saveForm()});form.addEventListener('submit',function(e){e.preventDefault()});
 render();
@@ -146,6 +150,7 @@ function lookup(){var name=v('obec').trim(),btn=document.getElementById('obecBtn
   .catch(function(e){climate=null;setMsg('obecMsg','err',e.message)}).then(function(){btn.disabled=false})}
 function checkCode(code,silent){code=(code||'').trim().toUpperCase();if(!code){setMsg('payMsg','err','Zadejte prosím kód z e-mailu.');return}
   return ajax('mvgreen_kod_check',{code:code}).then(function(d){if((d.grants||[]).indexOf('care')===-1)throw new Error('Tento kód neobsahuje roční plán péče.');
+    if(d.form&&!(Number(v('area'))>0)){applyForm(d.form);saveForm()}
     unlocked=true;try{localStorage.setItem('mvgPlanCode',code)}catch(e){}render();return true})
   .catch(function(e){if(!silent)setMsg('payMsg','err',e.message);else{try{localStorage.removeItem('mvgPlanCode')}catch(x){}}return false})}
 function bindPay(){
@@ -153,8 +158,13 @@ function bindPay(){
   var bb=document.getElementById('buyBtn');if(bb)bb.addEventListener('click',function(){
     var em=v('buyEmail').trim();if(!em){setMsg('payMsg','err','Zadejte prosím e-mail.');return}
     if(!document.getElementById('buyConsent').checked){setMsg('payMsg','err','Potvrďte prosím souhlas se zahájením plnění.');return}
-    bb.disabled=true;setMsg('payMsg','','Připravuji platbu…');
-    ajax('mvgreen_kod_buy',{email:em,consent:'1',package:'care'}).then(function(d){location.href=d.redirect}).catch(function(e){setMsg('payMsg','err',e.message);bb.disabled=false})});
+    if(bb.disabled)return;bb.disabled=true;bb.classList.add('busy');bb.innerHTML='<span class="spin" aria-hidden="true"></span>Přesměrovávám na platbu…';setMsg('payMsg','','');
+    // Překryv přes celou stránku: zákazník vidí, že se něco děje, a nemůže kliknout znovu (Martin 2026-11-20: kliknul 10×, protože nic neviděl; server na každé kliknutí vytvoří objednávku)
+    var ov=document.createElement('div');ov.className='payov';ov.setAttribute('role','alertdialog');ov.setAttribute('aria-live','assertive');
+    ov.innerHTML='<div class="payov-box"><span class="spin big" aria-hidden="true"></span><b>Přesměrovávám vás na zabezpečenou platbu</b><span>Může to trvat až několik sekund. Nezavírejte prosím okno a neklikejte znovu.</span><span class="payov-slow" style="display:none">Trvá to déle než obvykle, platba se pořád připravuje. Vyčkejte prosím.</span></div>';
+    document.body.appendChild(ov);var slow=setTimeout(function(){var el=ov.querySelector('.payov-slow');if(el)el.style.display='block'},12000);
+    var stopBusy=function(){clearTimeout(slow);ov.remove();bb.disabled=false;bb.classList.remove('busy');bb.textContent='Objednat s povinností platby – 499 Kč'};
+    ajax('mvgreen_kod_buy',{email:em,consent:'1',package:'care',form:JSON.stringify(collectForm())}).then(function(d){location.href=d.redirect}).catch(function(e){stopBusy();setMsg('payMsg','err',e.message)})});
   var ib=document.getElementById('icsBtn');if(ib&&lastRes)ib.addEventListener('click',function(){
     var blob=new Blob([B.buildICS(lastRes)],{type:'text/calendar;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='trávník-připomínky.ics';
     document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)});
