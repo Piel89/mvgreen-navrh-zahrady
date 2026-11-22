@@ -8,22 +8,31 @@
  * Mantinel (CLAUDE.md): prohlížeč zákazníka se nesmí připojovat k třetím stranám → obce i podnebí jsou v datech
  * pluginu (data/klima/, GeoNames + ERA5-Land, obojí CC BY 4.0 – zdarma i komerčně), nikdo se nevolá. Fonty i fotky z našeho serveru.
  *
- * Shortcode: [mvgreen_plan_travnik]
+ * Shortcode: [mvgreen_plan_travnik]  (celá stránka)
+ *   [mvgreen_plan_travnik mode="uvod" dotaznik="/adresa-dotazniku/"]  (čistá prodejní stránka, odkaz na dotazník)
+ *   [mvgreen_plan_travnik mode="dotaznik" uvod="/adresa-uvodu/"]  (dotazník a plán; z něj se kupuje)
  */
 if (!defined('ABSPATH')) exit;
 
-add_shortcode('mvgreen_plan_travnik', function () {
+add_shortcode('mvgreen_plan_travnik', function ($atts) {
     if (post_password_required()) return get_the_password_form();
+    $atts = shortcode_atts(['mode' => '', 'dotaznik' => '', 'uvod' => ''], $atts, 'mvgreen_plan_travnik');
+    $mode = in_array($atts['mode'], ['uvod', 'dotaznik'], true) ? $atts['mode'] : '';
     $base = plugin_dir_url(__FILE__);
     $v = MVGREEN_VERSION;
     wp_enqueue_style('mvgreen-web-fonts', $base . 'assets/fonts.css', [], $v);
     wp_enqueue_style('mvgreen-plan-page', $base . 'assets/plan-page.css', ['mvgreen-web-fonts'], $v);
-    wp_enqueue_script('mvgreen-care', $base . 'assets/garden-care.js', [], $v, true);
-    wp_enqueue_script('mvgreen-lawn-kb', $base . 'assets/lawn-kb.js', [], $v, true);
-    wp_enqueue_script('mvgreen-brain', $base . 'assets/brain.js', ['mvgreen-care', 'mvgreen-lawn-kb'], $v, true);
-    wp_enqueue_script('mvgreen-plan-quiz', $base . 'assets/plan-quiz.js', [], $v, true);
-    wp_enqueue_script('mvgreen-plan-output', $base . 'assets/plan-output.js', ['mvgreen-brain'], $v, true);
-    wp_enqueue_script('mvgreen-plan-page', $base . 'assets/plan-page.js', ['mvgreen-brain', 'mvgreen-plan-output', 'mvgreen-plan-quiz'], $v, true);
+    if ($mode === 'uvod') {
+        // Prodejní stránka je lehká: žádný výpočet plánu ani dotazník, jen úvod, před/po a odkaz dál.
+        wp_enqueue_script('mvgreen-plan-page', $base . 'assets/plan-page.js', [], $v, true);
+    } else {
+        wp_enqueue_script('mvgreen-care', $base . 'assets/garden-care.js', [], $v, true);
+        wp_enqueue_script('mvgreen-lawn-kb', $base . 'assets/lawn-kb.js', [], $v, true);
+        wp_enqueue_script('mvgreen-brain', $base . 'assets/brain.js', ['mvgreen-care', 'mvgreen-lawn-kb'], $v, true);
+        wp_enqueue_script('mvgreen-plan-quiz', $base . 'assets/plan-quiz.js', [], $v, true);
+        wp_enqueue_script('mvgreen-plan-output', $base . 'assets/plan-output.js', ['mvgreen-brain'], $v, true);
+        wp_enqueue_script('mvgreen-plan-page', $base . 'assets/plan-page.js', ['mvgreen-brain', 'mvgreen-plan-output', 'mvgreen-plan-quiz'], $v, true);
+    }
     wp_add_inline_script('mvgreen-plan-page', 'window.MVGreenPlanPage = ' . wp_json_encode([
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('mvgreen_ai_test'),
@@ -31,6 +40,9 @@ add_shortcode('mvgreen_plan_travnik', function () {
         // Správce webu vidí celý plán bez platby (kontrola před spuštěním).
         'admin' => current_user_can('manage_options'),
         'terms' => home_url('/obchodni-podminky/'),
+        'mode' => $mode,
+        'dotaznik' => $atts['dotaznik'] ? esc_url_raw($atts['dotaznik']) : '',
+        'uvod' => $atts['uvod'] ? esc_url_raw($atts['uvod']) : '',
     ]) . ';', 'before');
     return '<div class="mvg-plan" id="mvg-plan"><p class="mvg-plan-loading">Načítání…</p></div>';
 });
