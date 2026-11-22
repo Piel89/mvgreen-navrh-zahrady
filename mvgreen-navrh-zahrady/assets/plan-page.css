@@ -391,7 +391,7 @@ body:has(#mvg-plan){overflow-x:hidden}
 .mvg-plan .qz-live{display:grid;gap:12px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);min-width:0}
 @media (max-width:860px){.mvg-plan .qz-live{position:static}}
 .mvg-plan .qz-scenebox{border-radius:18px;overflow:hidden;border:2px solid #f7f9f2;background:#fcfcfb;box-shadow:0 8px 24px -12px rgba(27,37,21,.3)}
-.mvg-plan #qzScene{display:block;width:100%;height:auto;aspect-ratio:420/292}
+.mvg-plan #qzScene{display:block;width:100%;height:auto;aspect-ratio:420/336}
 .mvg-plan .qz-bubble{margin:10px;background:#fcfcfb;color:#1b2515;border:2px solid #f7f9f2;border-radius:14px;padding:9px 12px;font-size:14px;line-height:1.35;box-shadow:0 4px 14px -8px rgba(27,37,21,.4);animation:qzpop .35s cubic-bezier(.2,.9,.3,1.2)}
 @keyframes qzpop{from{transform:translateY(8px) scale(.97);opacity:0}to{transform:none;opacity:1}}
 .mvg-plan .qz-panel{background:#fcfcfb;border:1px solid #d6dccb;border-radius:18px;padding:14px 16px;display:grid;gap:12px;color:#1b2515}
@@ -481,3 +481,11 @@ body:has(#mvg-plan){overflow-x:hidden}
 .mvg-plan .res{background:#eef2e6;border-radius:24px;padding:18px;border:2px solid #f7f9f2}
 #mvg-plan .res .pv-now h3{color:#f4f7ec}
 #mvg-plan .res .pv-hero h2{color:#1b2515}
+
+/* 2026-11-22: oprava přetékání dotazníku na mobilu (sloupec 1fr se roztáhl podle obsahu) a lišta pro správce */
+.mvg-plan .qz-grid,.mvg-plan .qz-steps,.mvg-plan .qz-card,.mvg-plan .qz-live{min-width:0;max-width:100%}
+@media (max-width:860px){.mvg-plan .qz-grid{grid-template-columns:minmax(0,1fr)}.mvg-plan .qz{padding:12px}.mvg-plan .qz-card{padding:14px}.mvg-plan .res{padding:12px}}
+.mvg-plan .qz-steps>*{min-width:0}
+.mvg-plan .qz-val input{width:76px}
+.mvg-plan .admbar{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:10px 14px;border:2px dashed #f0c02a;border-radius:12px;background:rgba(240,192,42,.14);font-size:14px;color:#1b2515}
+.mvg-plan .qz-prog{grid-template-columns:repeat(6,minmax(0,1fr))}.mvg-plan .qz-prog li{min-width:0}.mvg-plan .qz-prog button{padding:0;min-width:0}

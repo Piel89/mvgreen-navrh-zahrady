@@ -21,7 +21,7 @@ function mv(e){var b=ba.getBoundingClientRect();setP(Math.max(0,Math.min(100,(e.
 var st=document.getElementById('sticky');if('IntersectionObserver' in window)new IntersectionObserver(function(en){st.classList.toggle('show',!en[0].isIntersecting)}).observe(document.querySelector('.hero .btn'));
 
 var B=window.MVGreenBrain, res=document.getElementById('res'), form=document.getElementById('q');
-var unlocked=!!CFG.admin, climate=null, lastRes=null;
+var unlocked=!!CFG.admin, paid=false, climate=null, lastRes=null;
 try{var sc=localStorage.getItem('mvgPlanCode');if(sc)checkCode(sc,true)}catch(e){}
 var CAT=[['','Neuvedeno'],['nizka','nízká'],['vyhovujici','vyhovující'],['optimalni','optimální'],['vysoka','vysoká'],['nadlimitni','nadlimitní']];
 ['st-ph','st-p','st-k','st-mg'].forEach(function(id){document.getElementById(id).innerHTML=CAT.map(function(c){return '<option value="'+c[0]+'">'+c[1]+'</option>'}).join('')});
@@ -59,7 +59,8 @@ function render(){
   var rank={high:0,medium:1,info:2};
   var all=r.warnings.concat(r.recommendations).filter(function(m){return m.rule!=='R12'}).sort(function(a,b){return rank[a.severity]-rank[b.severity]});
   var lock=function(title){return '<div class="lockbox"><b>🔒 '+esc(title)+'</b><span>Součást celého plánu za 499 Kč.</span> <a class="btn small" href="#koupit-plan">Koupit plán</a></div>'};
-  var h='', NEW=unlocked&&!thrifty&&rows.length>0, eb=function(n,t){return NEW?t:n+' · '+t};
+  // Správce vidí odemčený plán; přepínač ukáže, co uvidí zákazník před zaplacením (Martin 2026-11-22: myslel si, že se plán ukazuje všem)
+  var h=(CFG.admin&&!paid)?'<div class="admbar"><span>Jste přihlášen jako správce. '+(unlocked?'Vidíte odemčený plán, jako po zaplacení.':'Vidíte náhled, který má zákazník před zaplacením.')+'</span><button type="button" class="btn small ghost" id="admToggle">'+(unlocked?'Zobrazit jako zákazník':'Zobrazit odemčený plán')+'</button></div>':'', NEW=unlocked&&!thrifty&&rows.length>0, eb=function(n,t){return NEW?t:n+' · '+t};
   // Výstup po zaplacení = nový interaktivní přehled (plan-output.js); ostatní části zůstávají jako podrobné návody pod ním (Martin 2026-11-20)
   if(NEW&&window.MVGreenPlanOutput){h+=window.MVGreenPlanOutput.html()}else NEW=false;
   // 1) V kostce
@@ -123,6 +124,7 @@ function render(){
     '<button type="button" class="btn" id="buyBtn">Objednat s povinností platby – 499 Kč</button>'+
     '<label for="codeIn" class="muted" style="font-size:14px;margin-top:6px">Už máte kód z e-mailu?</label><div class="lookup"><input type="text" id="codeIn" maxlength="11" autocomplete="off" placeholder="Např. AB12C-3DE45"><button type="button" class="btn small ghost" id="codeBtn">Odemknout</button></div><p class="msg" id="payMsg" aria-live="polite"></p></div></div>';
   res.innerHTML=h;
+  var at=document.getElementById('admToggle');if(at)at.addEventListener('click',function(){unlocked=!unlocked;render()});
   if(NEW){var P={place:v('obec').trim(),alt:v('alt'),irrKey:v('irr'),soil:selTxt('soil'),sun:selTxt('sun'),irr:selTxt('irr'),grass:selTxt('grass'),probs:[].map.call(form.querySelectorAll('input[name="prob"]:checked,input[name="sym"]:checked,#dog:checked'),function(i){return i.parentNode.textContent.trim()})};
     P.mow=[selTxt('mow'),selTxt('mower'),v('mowh')?v('mowh')+' cm':''].filter(Boolean).join(', ');
     window.MVGreenPlanOutput.mount({r:r,rows:rows,climate:climate,prof:P,area:area})}
@@ -166,7 +168,7 @@ function lookup(){var name=v('obec').trim(),btn=document.getElementById('obecBtn
 function checkCode(code,silent){code=(code||'').trim().toUpperCase();if(!code){setMsg('payMsg','err','Zadejte prosím kód z e-mailu.');return}
   return ajax('mvgreen_kod_check',{code:code}).then(function(d){if((d.grants||[]).indexOf('care')===-1)throw new Error('Tento kód neobsahuje roční plán péče.');
     if(d.form&&!(Number(v('area'))>0)){applyForm(d.form);saveForm()}
-    unlocked=true;try{localStorage.setItem('mvgPlanCode',code)}catch(e){}render();return true})
+    unlocked=true;paid=true;try{localStorage.setItem('mvgPlanCode',code)}catch(e){}render();return true})
   .catch(function(e){if(!silent)setMsg('payMsg','err',e.message);else{try{localStorage.removeItem('mvgPlanCode')}catch(x){}}return false})}
 function bindPay(){
   var cb=document.getElementById('codeBtn');if(cb)cb.addEventListener('click',function(){checkCode(v('codeIn'))});

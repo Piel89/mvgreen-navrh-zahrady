@@ -63,7 +63,7 @@
     $('pvIntroP').textContent = 'Tento plán je sestavený jen pro vaši zahradu' + (p.place ? ' v obci ' + p.place : '') + ' (' + fmt(X.area, 0) + ' m², ' + String(r.tierLabel).toLowerCase() + '). Odpovědi, ze kterých vychází, vidíte v pasu trávníku. Nemusíte nic počítat, všechna čísla jsou přepočítaná na vaši plochu.';
     var it = [
       ['Zjistěte, co je na řadě', 'Karta Tento týden vám řekne, co dělat právě teď. Nejbližší hnojení: <b>' + MONF[dm(nx)] + '</b>, ' + esc(KLOOK[nx.key || 'C']) + ', ' + fmt(nx.doseG, 0) + ' g/m².'],
-      ['Nakupte hnojivo', 'Na celý rok asi <b>' + fmt(kg, 1) + ' kg</b> v ' + Object.keys(types).length + ' typech. Značku si vyberete sami, rozhoduje složení na obalu.'],
+      ['Nakupte hnojivo', 'Na celý rok asi <b>' + fmt(kg, 1) + ' kg</b> ' + (Object.keys(types).length === 1 ? 'v 1 typu' : 've ' + Object.keys(types).length + ' typech') + '. Značku si vyberete sami, rozhoduje složení na obalu.'],
       ['Nastavte zálivku', 'Zhruba <b>' + lw + ' l/m² týdně</b> ve dvou zálivkách brzy ráno. Na vašich ' + fmt(X.area, 0) + ' m² je to asi ' + fmt(m3, 1) + ' m³ vody.'],
       ['Odškrtávejte', 'Dole je seznam úkolů pro vaši sezónu. Hotové odškrtnete a kroužek ukáže, kolik už máte za sebou.']];
     $('pvSteps').innerHTML = it.map(function (x) { return '<li><b>' + x[0] + '</b><span>' + x[1] + '</span></li>'; }).join('');
