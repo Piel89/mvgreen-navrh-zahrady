@@ -261,8 +261,8 @@
   function init(opts) {
     Q.form = opts.form; var host = $('qz'); if (!host || Q.inited) return; Q.inited = true;
     Q.soilNode = Q.form.querySelector('details.soil');
-    host.innerHTML = '<div class="qz-grid"><aside class="qz-live" aria-label="Živý náhled vašeho trávníku"><div class="qz-scenebox"><canvas id="qzScene" role="img" aria-label="Živý obrázek vašeho trávníku podle odpovědí"></canvas><div class="qz-bubble" id="qzBubble" aria-live="polite">Tohle je váš trávník. Klikejte a sledujte, jak se mění.</div></div>' +
-      '<div class="qz-panel"><div class="qz-score" id="qzScore"></div><div class="qz-strip" id="qzStrip" aria-label="Měsíce hnojení"></div><p class="qz-hint" id="qzHint"></p></div><div class="qz-panel qz-seasonbox"><div class="qz-season"><label for="qzDoy"><b>Rok na vašem trávníku</b><span id="qzDoyL"></span></label><input type="range" id="qzDoy" min="1" max="365" value="196" aria-label="Posunout rok"></div><div class="qz-clim" id="qzClim"></div></div></aside>' +
+    host.innerHTML = '<div class="qz-grid"><aside class="qz-live" aria-label="Živý náhled vašeho trávníku"><div class="qz-scenebox"><canvas id="qzScene" role="img" aria-label="Živý obrázek vašeho trávníku podle odpovědí"></canvas><div class="qz-bubble" id="qzBubble" aria-live="polite">Tohle je váš trávník. Klikejte a sledujte, jak se mění.</div><div class="qz-season"><label for="qzDoy"><b>Rok na trávníku</b><span id="qzDoyL"></span></label><input type="range" id="qzDoy" min="1" max="365" value="196" aria-label="Posunout rok"><a class="qz-clink" href="#qzClim">Podnebí u vás ↓</a></div></div>' +
+      '<div class="qz-panel"><div class="qz-score" id="qzScore"></div><div class="qz-strip" id="qzStrip" aria-label="Měsíce hnojení"></div><p class="qz-hint" id="qzHint"></p></div><div class="qz-panel qz-seasonbox"><div class="qz-clim" id="qzClim"></div></div></aside>' +
       '<section class="qz-steps"><ol class="qz-prog" id="qzProg"></ol><div class="qz-card" id="qzCard"></div><div class="qz-nav"><button type="button" class="qz-btn ghost" id="qzBack">Zpět</button><button type="button" class="qz-btn" id="qzNext">Další</button></div></section></div>';
     readS();
     Q.scene = makeScene($('qzScene'), S);
@@ -278,7 +278,7 @@
     Q.r = r || null; Q.need = need || []; readS(); Q.scene.update(S); paintStep(); drawLive(); drawProg();
   }
   function refresh() { if (!Q.inited) return; readS(); Q.scene.update(S); renderStep(); }
-  window.MVGreenQuiz = { init: init, update: update, refresh: refresh, setClimate: function (c) { Q.clim = (c && c.years) ? c : null; if (!Q.inited) return; readS(); Q.scene.update(S); drawClim(); } };
+  window.MVGreenQuiz = { makeScene: makeScene, init: init, update: update, refresh: refresh, setClimate: function (c) { Q.clim = (c && c.years) ? c : null; if (!Q.inited) return; readS(); Q.scene.update(S); drawClim(); } };
 
   function makeScene(cv, S) {
 /* --- scéna: živá animace v canvasu (vítr v trávě, kapky vody s gravitací, sekačka, která opravdu seče a trávník pak dorůstá) --- */

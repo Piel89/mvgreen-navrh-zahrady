@@ -24,7 +24,8 @@ add_shortcode('mvgreen_plan_travnik', function ($atts) {
     wp_enqueue_style('mvgreen-plan-page', $base . 'assets/plan-page.css', ['mvgreen-web-fonts'], $v);
     if ($mode === 'uvod') {
         // Prodejní stránka je lehká: žádný výpočet plánu ani dotazník, jen úvod, před/po a odkaz dál.
-        wp_enqueue_script('mvgreen-plan-page', $base . 'assets/plan-page.js', [], $v, true);
+        wp_enqueue_script('mvgreen-plan-quiz', $base . 'assets/plan-quiz.js', [], $v, true);
+        wp_enqueue_script('mvgreen-plan-page', $base . 'assets/plan-page.js', ['mvgreen-plan-quiz'], $v, true);
     } else {
         wp_enqueue_script('mvgreen-care', $base . 'assets/garden-care.js', [], $v, true);
         wp_enqueue_script('mvgreen-lawn-kb', $base . 'assets/lawn-kb.js', [], $v, true);
