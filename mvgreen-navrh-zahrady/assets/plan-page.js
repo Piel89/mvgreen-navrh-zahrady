@@ -19,7 +19,26 @@ root.innerHTML="<div class=\"in hero\">\n  <div class=\"brand\"><i aria-hidden=\
   }
   if(MODE==='uvod'){
     var url=(CFG.dotaznik||'#plan').replace(/"/g,'');
-    var pl2=q('#plan');if(pl2)pl2.innerHTML='<span class="eyebrow">Sestavte si plán</span><h2>Pár otázek o vašem trávníku</h2><p class="muted" style="margin-top:8px;max-width:62ch">Stačí obec, plocha a jaký trávník chcete. Při každé odpovědi se vám mění obrázek trávníku a skládá se váš rok. Zabere to pár minut.</p><p style="margin-top:18px"><a class="btn" href="'+url+'">Sestavit můj plán</a></p>';
+    var pl2=q('#plan');if(pl2){
+      // Ukázka na prodejní stránce (Martin 2026-11-22): dvě otázky, obrázek se mění, odpovědi se předají dotazníku přes localStorage.
+      var TZ=[['low','Nízká údržba','Ať je zelený, času mám málo.','Nízká údržba: nejméně hnojení a nejméně starostí.'],['standard','Běžný rodinný','Děti, pes, ať vypadá hezky.','Rodinný trávník: pár hnojení rozložených mezi jaro a podzim.'],['representative','Anglický trávník','Hustý, jemný, hnojení každý měsíc.','Anglický trávník: hnojení zhruba každý měsíc v sezóně, největší nároky na péči.'],['sportovni','Sportovní','Pravidelná zátěž, rychlá obnova.','Sportovní trávník: důraz na zátěž a rychlou obnovu.']],TA=[50,150,300,600],tzA=150,tzT='standard';
+      var tzh='<span class="eyebrow">Zkuste si to</span><h2>Dvě otázky a vidíte, jak to půjde</h2><p class="muted" style="margin-top:8px;max-width:62ch">Plán vzniká z vašich odpovědí. Vyzkoušejte první dvě, zbytek doplníte v dotazníku.</p>'+
+      '<div class="tz"><div class="tz-pic" id="tzPic" data-tier="standard" aria-hidden="true"><span class="tz-lines"></span><span class="tz-lab" id="tzLab"></span></div><div class="tz-q">'+
+      '<h3>Jak velký je váš trávník?</h3><div class="tz-chips" id="tzA">'+TA.map(function(a){return '<button type="button" data-a="'+a+'" aria-pressed="'+(a===tzA)+'">'+a+' m²</button>'}).join('')+'</div>'+
+      '<h3>Jaký trávník chcete mít?</h3><div class="tz-tiles" id="tzT" role="radiogroup" aria-label="Úroveň péče">'+TZ.map(function(t){return '<button type="button" role="radio" data-t="'+t[0]+'" aria-checked="'+(t[0]===tzT)+'"><b>'+t[1]+'</b><span>'+t[2]+'</span></button>'}).join('')+'</div>'+
+      '<p class="tz-say" id="tzSay" aria-live="polite"></p><p style="margin-top:14px"><a class="btn" id="tzGo" href="'+url+'">Pokračovat – sestavit celý plán</a></p></div></div>';
+      pl2.innerHTML=tzh;
+      var tzUp=function(){var pic=pl2.querySelector('#tzPic');pic.setAttribute('data-tier',tzT);pic.style.setProperty('--s',Math.min(1,.55+Math.log(tzA/50)/Math.log(12)*.45));pl2.querySelector('#tzLab').textContent=tzA+' m²';
+        [].forEach.call(pl2.querySelectorAll('#tzA button'),function(b){b.setAttribute('aria-pressed',String(+b.getAttribute('data-a')===tzA))});
+        [].forEach.call(pl2.querySelectorAll('#tzT button'),function(b){b.setAttribute('aria-checked',String(b.getAttribute('data-t')===tzT))});
+        pl2.querySelector('#tzSay').textContent=TZ.filter(function(t){return t[0]===tzT})[0][3]+' Na '+tzA+' m² z toho dostanete přesný kalendář, dávky v kg a nákupní seznam.'};
+      pl2.querySelector('#tzA').addEventListener('click',function(e){var b=e.target.closest('button');if(b){tzA=+b.getAttribute('data-a');tzUp()}});
+      pl2.querySelector('#tzT').addEventListener('click',function(e){var b=e.target.closest('button');if(b){tzT=b.getAttribute('data-t');tzUp()}});
+      pl2.querySelector('#tzGo').addEventListener('click',function(){try{var d=JSON.parse(localStorage.getItem('mvgPlanForm')||'null')||{f:{}};d.f=d.f||{};d.f.area=String(tzA);TZ.forEach(function(t){d.f['tier:'+t[0]]=(t[0]===tzT)});d.t=Date.now();localStorage.setItem('mvgPlanForm',JSON.stringify(d))}catch(e){}});
+      tzUp();
+    }
+    // Cenová karta je hned pod ukázkou, druhé stejné tlačítko by bylo zbytečné (Martin 2026-11-22: 2× za sebou „Sestavit můj plán“).
+    var kb=q('#koupit .cta-row a.btn');if(kb)kb.remove();
     all('a[href="#plan"]').forEach(function(a){a.setAttribute('href',url)});
   }
 })();
@@ -67,6 +86,7 @@ function wheel(rows){
   return '<svg class="wheel" viewBox="0 0 300 300" role="img" aria-label="Roční kolo – termíny hnojení">'+s+'</svg>';
 }
 function render(){
+  if(window.MVGreenQuiz&&MVGreenQuiz.setClimate)MVGreenQuiz.setClimate(climate);
   var r;
   // prázdný formulář = prázdná stránka s výzvou (Martin 2026-11-20); plán se spočítá, až je vyplněno nejnutnější
   var need=[];if(!(Number(v('area'))>0))need.push('plochu trávníku');if(!read().tier)need.push('jaký trávník chcete');if(v('obec').trim().length<2)need.push('obec');
