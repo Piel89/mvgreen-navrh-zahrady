@@ -489,3 +489,32 @@ body:has(#mvg-plan){overflow-x:hidden}
 .mvg-plan .qz-val input{width:76px}
 .mvg-plan .admbar{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:10px 14px;border:2px dashed #f0c02a;border-radius:12px;background:rgba(240,192,42,.14);font-size:14px;color:#1b2515}
 .mvg-plan .qz-prog{grid-template-columns:repeat(6,minmax(0,1fr))}.mvg-plan .qz-prog li{min-width:0}.mvg-plan .qz-prog button{padding:0;min-width:0}
+
+/* 2026-11-22: mobil – méně rámečků, obrázek trávníku zůstává nahoře při odpovídání, větší dlaždice */
+.mvg-plan .qz-stepno{font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:#5d6955;margin:0}
+@media (max-width:860px){
+  .mvg-plan .qz{background:transparent;border:0;padding:0}
+  .mvg-plan .res{background:transparent;border:0;padding:0}
+  .mvg-plan .qz-grid{gap:14px}
+  .mvg-plan .qz-live{display:contents}
+  .mvg-plan .qz-scenebox{order:1;position:sticky;top:calc(env(safe-area-inset-top,0px) + 6px);z-index:6;box-shadow:0 10px 24px -10px rgba(0,0,0,.5)}
+  .mvg-plan #qzScene{aspect-ratio:auto;height:168px;object-fit:cover;object-position:50% 56%}
+  .mvg-plan .qz-bubble{margin:0;border:0;border-top:2px solid #e3e8d8;border-radius:0;box-shadow:none;padding:7px 12px;font-size:13px;line-height:1.3;min-height:2.7em}
+  .mvg-plan .qz-steps{order:2}
+  .mvg-plan .qz-panel{order:3}
+  .mvg-plan .qz-prog{gap:3px}
+  .mvg-plan .qz-prog button{height:38px;font-size:13px}
+  .mvg-plan .qz-card{padding:16px;gap:20px}
+  .mvg-plan .qz h3{font-size:22px}
+  .mvg-plan .qz-tiles,.mvg-plan .qz-tiles.two{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .mvg-plan .qz-tiles.two{grid-template-columns:minmax(0,1fr)}
+  .mvg-plan .qz-tile{min-height:64px;padding:12px;align-content:center}
+  .mvg-plan .qz-tile b{font-size:15px}
+  .mvg-plan .qz-chip{padding:11px 14px;font-size:15px}
+  .mvg-plan .qz-chips{gap:10px}
+  .mvg-plan .qz-nav{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:5;gap:10px}
+  .mvg-plan .qz-nav .qz-btn{flex:1;justify-content:center;min-height:50px;box-shadow:0 6px 16px -6px rgba(0,0,0,.45)}
+  .mvg-plan .qz-nav .qz-btn.ghost{background:#fcfcfb}
+  .mvg-plan .qz-range input[type=range]{height:36px}
+}
+@media (max-width:860px){.mvg-plan .qz-tiles:has(>:nth-child(3):last-child){grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.mvg-plan .qz-tiles:has(>:nth-child(3):last-child) .qz-tile{padding:10px 8px}.mvg-plan .qz-tiles:has(>:nth-child(3):last-child) .qz-tile b{font-size:14px;padding-right:0}.mvg-plan .qz-tiles:has(>:nth-child(3):last-child) .qz-tile[aria-pressed=true]::after{right:4px;top:4px;width:16px;height:16px;font-size:10px}}
