@@ -84,10 +84,10 @@
       steps: ['Posekejte na obvyklou výšku.', 'Na suchém trávníku projeďte vyčesávačem jedním směrem, hráběmi táhněte lehce, ať trávu nevytrháváte.', 'Vyčesanou stařinu shrabejte nebo posbírejte sekačkou s košem.', 'Za sucha potom zalijte.'],
       avoid: 'Ve vedru a suchu, na mokrém trávníku a dokud půda nemá 10 °C.' },
     vertikutace: { title: 'Vertikutace', tools: 'Vertikutátor s noži (koupit nebo půjčit).', why: 'Prořízne a vytáhne plsť a mech, aby ke kořenům šel vzduch, voda i hnojivo.',
-      steps: ['Posekejte nízko a posečenou hmotu odstraňte.', 'Nože nastavte tak, aby jen lehce řezaly do půdy (2–3 mm).', 'Bez dosevu stačí jeden přejezd jedním směrem. Když budete dosévat, projeďte dvakrát do kříže.', 'Vytaženou plsť a mech shrabejte.', 'Pohnojte podle plánu a zalijte. 1–2 týdny bude trávník vypadat hůř, to je normální.', 'Když dosíváte, pokračujte dosevem a lehkým pískováním.'],
+      steps: ['Těsně před vertikutací posekejte nízko (jediná výjimka z pravidla třetiny) a posečenou hmotu odstraňte.', 'Nože nastavte tak, aby jen lehce řezaly do půdy (2–3 mm).', 'Bez dosevu stačí jeden přejezd jedním směrem. Když budete dosévat, projeďte dvakrát do kříže.', 'Vytaženou plsť a mech shrabejte.', 'Pohnojte podle plánu a zalijte. 1–2 týdny bude trávník vypadat hůř, to je normální.', 'Když dosíváte, pokračujte dosevem a lehkým pískováním.'],
       avoid: 'Ve vedru, v suchu bez možnosti zalít, na mokrém trávníku a dokud půda nemá 10 °C.' },
     dute: { title: 'Aerifikace dutými hroty', tools: 'Aerifikátor s dutými hroty (půjčovna) nebo vidle s dutými hroty, hrábě, koště.', why: 'Vytáhne válečky zeminy a uvolní utuženou půdu. Otvory se zasypou pískem, takže se půda časem zlepšuje.',
-      steps: ['Den předem vydatně zalijte – půda má být vlhká, ne rozbahněná.', 'Posekejte nízko.', 'Aerifikujte do hloubky 5–8 cm s rozestupem 5–8 cm. Slabší stroj projeďte dvakrát, podruhé křížem.', 'Vytažené špunty nechte oschnout a shrabejte (nebo rozdrťte a zameťte zpět).', 'Do 1–2 dnů pískujte (viz pískování) a případně dosejte.', '2–3 týdny trávník nezatěžujte.'],
+      steps: ['Den předem vydatně zalijte – půda má být vlhká, ne rozbahněná.', 'Těsně před aerifikací posekejte nízko (jediná výjimka z pravidla třetiny).', 'Aerifikujte do hloubky 5–8 cm s rozestupem 5–8 cm. Slabší stroj projeďte dvakrát, podruhé křížem.', 'Vytažené špunty nechte oschnout a shrabejte (nebo rozdrťte a zameťte zpět).', 'Do 1–2 dnů pískujte (viz pískování) a případně dosejte.', '2–3 týdny trávník nezatěžujte.'],
       avoid: 'V létě ve vedru, na zmrzlé nebo podmáčené půdě, u nového trávníku v prvním roce.' },
     pisek: { title: 'Pískování (top dressing)', tools: 'Praný písek 0/2, kolečko, lopata, koště nebo vlečná síť.', why: 'Zlepšuje půdu, vyrovnává drobné nerovnosti a drží otvory po aerifikaci otevřené.',
       steps: ['Kupte praný písek 0/2 – rozhoduje zrnitost a že je praný, ne barva.', 'Množství: po aerifikaci dutými hroty asi 10 kg/m² (100 m² ≈ 1 tuna). Jinak jen lehce, nejvýš asi 5 kg/m² (vrstva 3–4 mm).', 'Rozhrňte ho na suchý trávník.', 'Zameťte do otvorů a mezi stébla, stébla musí zůstat vidět.', 'Zalijte.'],
@@ -95,13 +95,13 @@
     dosev: { title: 'Dosev', tools: 'Travní osivo stejného typu jako trávník, rozmetadlo, hrábě.', why: 'Zahustí trávník a zaplní holá místa, než je zaroste plevel.',
       steps: ['Dosévejte hned po vertikutaci do kříže nebo po aerifikaci, kdy semena zapadnou do půdy.', 'Pohnojte startovacím hnojivem s vyšším obsahem fosforu (dávka podle obalu) – místo běžné dávky z plánu v tom měsíci.', 'Množství 15–25 g osiva na m² (řiďte se obalem), na holá místa víc.', 'Osivo rozhoďte rozmetadlem ve dvou směrech do kříže.', 'Lehce zahrabejte nebo zasypte tenkou vrstvou písku, nejvýš 0,5 cm.', 'Prvních asi 10 dní udržujte povrch stále vlhký: krátká zálivka 2–3× denně.', 'Jílek vzejde za 7–10 dní, kostřavy za 2–3 týdny. 2–3 týdny po trávníku nechoďte.'],
       avoid: 'V létě ve vedru (mladá tráva se uvaří) a pozdě na podzim, kdy už nestihne zesílit.' },
-    scalping: { title: 'Scalping (velmi nízká seč)', tools: 'Sekačka s co nejnižším nastavením a košem (vřetenová sekačka jde nejníž).', why: 'Odstraní starou hmotu, plsť a slabé přerostlé části. Je to první krok velké podzimní regenerace.',
-      steps: ['Jen u zaběhlého anglického nebo sportovního trávníku, při velké regeneraci koncem srpna až v září.', 'Posekejte na co nejnižší výšku, kterou vaše sekačka dovolí.', 'Veškerou hmotu posbírejte.', 'Hned pokračujte: aerifikace dutými hroty (u utužené půdy), vertikutace do kříže, shrabání, hnojení, dosev, pískování.', '2–3 týdny bude trávník vypadat hůř.'],
+    scalping: { title: 'Scalping (velmi nízká seč před vertikutací nebo aerifikací)', tools: 'Sekačka s nízkým nastavením a košem (vřetenová sekačka jde nejníž).', why: 'Odstraní starou hmotu, plsť a slabé přerostlé části. Je to první krok velké podzimní regenerace.',
+      steps: ['Jen u zaběhlého anglického nebo sportovního trávníku, při velké regeneraci koncem srpna až v září.', 'Velmi nízká seč (scalping) se dělá jen těsně před vertikutací nebo aerifikací, nikdy samostatně. Jinak sekejte vždy tak, aby se najednou ubralo nejvýš třetinu stébla.', 'Před vertikutací nebo aerifikací posekejte nízko, na nejnižší výšku, kterou vaše sekačka dovolí.', 'Veškerou hmotu posbírejte.', 'Hned pokračujte: aerifikace dutými hroty (u utužené půdy), vertikutace do kříže, shrabání, hnojení, dosev, pískování.', '2–3 týdny bude trávník vypadat hůř.'],
       avoid: 'V zimě a brzy na jaře, ve vedru, u nového trávníku.' },
   };
   // Pořadí podle J. Exnera (Martin 2026-11-16: „nechat Exnera“): aerifikace před vertikutací. Hnojení: s dosevem startovací,
   // bez dosevu dávka podle plánu (Martin 2026-11-16).
-  var REGEN = ['Posekat o něco níž než obvykle (najednou nejvýš o třetinu stébla – univerzity scalping chladnomilných trav nedoporučují)', 'Aerifikace dutými hroty (jen u utužené nebo jílovité půdy)', 'Uklidit špunty', 'Vertikutace do kříže', 'Shrabat plsť a mech', 'Pohnojit: když dosíváte, startovacím hnojivem s vyšším obsahem fosforu (místo dávky z plánu); bez dosevu dávkou podle plánu', 'Dosev', 'Pískování a zamést do otvorů', 'Zálivka – povrch stále vlhký, dokud tráva nevzejde'];
+  var REGEN = ['Scalping: těsně před aerifikací a vertikutací posekat nízko (jediná výjimka z pravidla třetiny stébla; jinak vždy najednou nejvýš o třetinu)', 'Aerifikace dutými hroty (jen u utužené nebo jílovité půdy)', 'Uklidit špunty', 'Vertikutace do kříže', 'Shrabat plsť a mech', 'Pohnojit: když dosíváte, startovacím hnojivem s vyšším obsahem fosforu (místo dávky z plánu); bez dosevu dávkou podle plánu', 'Dosev', 'Pískování a zamést do otvorů', 'Zálivka – povrch stále vlhký, dokud tráva nevzejde'];
 
   function doyLabel(doy) { var d = new Date(2025, 0, 1 + Math.round(doy)); return d.getDate() + '. ' + (d.getMonth() + 1) + '.'; }
   function springWindow(alt, climate) {
@@ -181,7 +181,7 @@
     dute: 'Univerzitní doporučení (Kansas State, Ohio State, University of Nebraska) a praxe českých profesionálních trávníkářů.',
     pisek: 'Praxe českých profesionálních trávníkářů a doporučení LSU AgCenter a USGA.',
     dosev: 'Univerzitní doporučení (University of Illinois Extension) a praxe MVGreen.',
-    scalping: 'Praxe MVGreen; univerzity scalping chladnomilných trav nedoporučují.',
+    scalping: 'Praxe MVGreen (Martin 2026-11-23): nízká seč jen před vertikutací nebo aerifikací, jinak vždy nejvýš o třetinu stébla.',
   };
   // Množství materiálu na plochu zákazníka (ověřená čísla – znalostní báze §15)
   function amounts(proc, areaM2) {
@@ -350,6 +350,13 @@
     if (plan.tierMeta) plan.tierMeta.label = TIER_LABEL[requestedTier];
     var fertTable = plan.fertTable || [];
 
+    // --- velká plocha (Martin 2026-11-23: lidé mají i 2 500 m²): množství, rozmetadlo a zálivka po hnojení jsou jiné než u 150 m² ---
+    var bigArea = Number(plan.areaM2) || 0;
+    if (bigArea >= 1000 && fertTable.length) {
+      var bigKg = fertTable.reduce(function (t, r) { return t + (r.totalKg || 0); }, 0), bigMax = fertTable.reduce(function (t, r) { return Math.max(t, r.totalKg || 0); }, 0);
+      recs.push(msg('VELKA', 'medium', 'Velká plocha (' + Math.round(bigArea) + ' m²): na celý rok potřebujete asi ' + Math.round(bigKg) + ' kg hnojiva, tedy zhruba ' + Math.ceil(bigKg / 25) + ' pytlů po 25 kg, a největší jednorázová dávka je ' + Math.round(bigMax) + ' kg. Rozhazujte pojízdným rozmetadlem, ruční na takovou plochu nestačí. Zálivka po hnojení (5–6 l/m²) je tu asi ' + Math.round(bigArea * 5.5 / 1000) + ' m³ vody na jednu dávku, což hadicí prakticky nejde: hnojte těsně před vydatným deštěm, nebo použijte závlahu. Cenu hnojiva si spočítejte předem, na této ploše je znát.'));
+    }
+
     // --- R3: rychlé hnojivo – hranice dusíku na aplikaci ----------------------------------------------------------
     fertTable.forEach(function (r) {
       if ((r.key === 'N' || a.fertType === 'fast') && r.nGPerM2 > 4.9) {
@@ -424,7 +431,7 @@
     // 2026-11-20 (audit A5, zdroje: startovací hnojivo s fosforem, první běžné hnojení za 6–8 týdnů nebo po 2–3 sečích, jedna dávka nejvýš ≈ 4,9 g N)
     if (a.age === 'new') fertTable.forEach(function (r) { r.condition = (r.condition ? r.condition + ' ' : '') + 'Nový trávník: první běžné hnojení až 6–8 týdnů po výsevu (nebo po 2–3 sečích), do té doby jen startovací hnojivo s fosforem; jedna dávka nejvýš ≈ 4,9 g dusíku na m².'; });
     // zálivka po hnojení u KAŽDÉ dávky (Martin 2026-11-19) – přidává se do podmínky řádku, odtud ji bere kalendář, připomínky i .ics
-    fertTable.forEach(function (r) { r.condition = (r.condition || 'Jen na suchou trávu, bez mrazu a sněhu.') + ' ' + WATER_AFTER; });
+    fertTable.forEach(function (r) { r.condition = (r.condition || 'Jen na suchou trávu, bez mrazu a sněhu.') + ' Po hnojení zalijte (déšť nebo hadice).'; }); // plné znění s l/m² je jednou v doporučeních (Martin 2026-11-23: zkrátit)
 
     // --- doporučená úroveň ------------------------------------------------------------------------------------------------
     if (recommendedTier !== requestedTier) recs.unshift(msg(warnings.some(function (w) { return w.rule === 'R1'; }) ? 'R1' : 'R2', 'high', 'Doporučená úroveň péče: ' + TIER_LABEL[recommendedTier] + ' (zvolili jste ' + TIER_LABEL[requestedTier] + '). Plán je zatím spočítaný pro vámi zvolenou úroveň.'));
@@ -447,7 +454,7 @@
 
     // --- připomínky (jen pravidelný režim) ---------------------------------------------------------------------------------
     var reminders = mode === 'preventive' ? fertTable.map(function (r) {
-      return { when: r.when, text: r.action + ': ' + r.name + ' ' + r.doseG + ' g/m²' + (r.totalKg ? ' (' + r.totalKg + ' kg)' : ''), condition: r.condition || 'Až bude tráva suchá, bez mrazu a sněhu.' };
+      return { when: r.when, text: r.action + ': ' + r.name + ' ' + String(r.doseG).replace('.', ',') + ' g/m²' + (r.totalKg ? ' (' + String(r.totalKg).replace('.', ',') + ' kg)' : ''), condition: r.condition || 'Až bude tráva suchá, bez mrazu a sněhu.' };
     }) : [];
 
     var out = {
@@ -543,7 +550,7 @@
       var d = new Date(today.getFullYear(), month, day);
       if (d < today) d = new Date(today.getFullYear() + 1, month, day);
       var end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
-      var desc = r.action + '. ' + r.name + ': ' + r.doseG + ' g/m²' + (r.totalKg ? ' (celkem ' + String(r.totalKg).replace('.', ',') + ' kg)' : '') + '. ' +
+      var desc = r.action + '. ' + r.name + ': ' + String(r.doseG).replace('.', ',') + ' g/m²' + (r.totalKg ? ' (celkem ' + String(r.totalKg).replace('.', ',') + ' kg)' : '') + '. ' +
         (r.condition || 'Jen na suchou trávu, bez mrazu a sněhu – jinak počkejte na první vhodný den.') + (r.warn ? ' ' + r.warn : '') + ' ' + (r.look || '');
       L.push('BEGIN:VEVENT', 'UID:mvgreen-' + ymd(d) + '-' + i + '@mvgreen.cz', 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + ymd(d), 'DTEND;VALUE=DATE:' + ymd(end),
         fold('SUMMARY:' + tx('Hnojení trávníku – ' + r.name)), fold('DESCRIPTION:' + tx(desc)), 'TRANSP:TRANSPARENT',
