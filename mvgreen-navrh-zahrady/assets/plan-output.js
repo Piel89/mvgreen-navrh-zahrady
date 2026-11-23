@@ -171,7 +171,7 @@
     ['pisek', 'dosev'].forEach(function (k) {
       if (X.r.care.program.some(function (p) { return p.proc === k; })) { var am = X.r.amount(k); if (am) h += '<div class="pv-bagrow pv-extra"><span><b>' + esc(PR[k].title) + '</b><br><span class="muted pv-small">' + esc(am) + '</span></span></div>'; }
     });
-    h += '<p><button type="button" class="btn" id="icsBtn">Přidat připomínky do kalendáře v mobilu</button></p><p class="muted pv-small">Stáhne se soubor kalendáře s připomínkami hnojení i údržby trávníku. Telefon upozorní den předem v 8:00. Nic se nikam neodesílá.</p>';
+    h += '<p><button type="button" class="btn" id="icsBtn">Přidat připomínky do kalendáře v mobilu</button></p><p class="muted pv-small">Stáhne se soubor kalendáře s připomínkami hnojení i údržby trávníku. Telefon upozorní den předem v 8:00. Nic se nikam neodesílá.</p><p><button type="button" class="btn ghost" id="prtBtn">Vytisknout nebo uložit jako PDF</button></p>';
     $('pvShop').innerHTML = h;
   }
 

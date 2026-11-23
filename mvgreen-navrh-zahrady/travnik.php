@@ -83,22 +83,49 @@ function mvgreen_climate_handle() {
     $parts = array_map('trim', explode(',', $raw, 2));
     $name = mvgreen_norm_name($parts[0]);
     $okres = isset($parts[1]) ? mvgreen_norm_name($parts[1]) : '';
-    $exact = []; $prefix = [];
-    foreach ($obce['rows'] as $r) { // řazeno podle počtu obyvatel – větší obec první
+    // Zákazník už vybral z nabídky (index řádku v obce.json); ověří se, že řádek opravdu nese zadaný název.
+    $pick = isset($_POST['pick']) ? (int) $_POST['pick'] : -1;
+    $picked = ($pick >= 0 && isset($obce['rows'][$pick]) && mvgreen_norm_name($obce['rows'][$pick][0]) === $name) ? $obce['rows'][$pick] : null;
+    $exact = []; $exactIdx = []; $prefix = [];
+    if (!$picked) foreach ($obce['rows'] as $i => $r) { // řazeno podle počtu obyvatel – větší obec první
         $n = mvgreen_norm_name($r[0]);
         if ($okres !== '' && strpos(mvgreen_norm_name($r[1]), $okres) === false && strpos(mvgreen_norm_name($r[6]), $okres) === false) continue;
-        if ($n === $name) $exact[] = $r; elseif (strpos($n, $name) === 0 && count($prefix) < 5) $prefix[] = $r;
-        if (count($exact) >= 5) break;
+        if ($n === $name) { $exact[] = $r; $exactIdx[] = $i; } elseif (strpos($n, $name) === 0 && count($prefix) < 5) $prefix[] = $r;
+        if (count($exact) >= 8) break;
     }
-    $hits = $exact ?: $prefix;
+    // Martin 2026-11-23: Merklín je u Domažlic i u Karlových Varů. Při víc shodách se zákazník rozhoduje sám (dřív se tiše vzala největší obec).
+    if (!$picked && count($exact) > 1) {
+        $towns = [];
+        foreach ($obce['rows'] as $r) if ($r[5] >= 5000) $towns[] = $r;
+        $choose = [];
+        foreach ($exact as $k => $r) {
+            $near = null; $nearKm = 1e9;
+            foreach ($towns as $t) {
+                if ($t === $r) continue;
+                $dy = ($t[2] - $r[2]) * 111.2; $dx = ($t[3] - $r[3]) * 111.2 * cos(deg2rad($r[2]));
+                $d = sqrt($dx * $dx + $dy * $dy);
+                if ($d < $nearKm && mvgreen_norm_name($t[0]) !== $name) { $nearKm = $d; $near = $t[0]; }
+            }
+            $choose[] = ['pick' => $exactIdx[$k], 'name' => $r[0], 'okres' => $r[1], 'kraj' => trim(preg_replace('/\s*kraj$/u', '', (string) $r[6])), 'elevation' => $r[4],
+                'near' => $near, 'nearKm' => $near ? (int) round($nearKm) : null];
+        }
+        wp_send_json_success(['choose' => $choose, 'name' => $exact[0][0]]);
+    }
+    $hits = $picked ? [$picked] : ($exact ?: $prefix);
     if (!$hits) wp_send_json_error(['message' => 'Obec jsme nenašli. Zkontrolujte název, případně přidejte okres (např. „Lhota, Plzeň-jih“).']);
     $o = $hits[0];
     $others = array_slice(array_map(function ($r) { return $r[0] . ', ' . $r[1]; }, $hits), 1, 4);
 
+    mvgreen_climate_send($o, $others, $grid, null, null);
+}
+
+/** Podnebí pro vybranou obec (nebo pro souřadnice zákazníka, když jsou zadané) – společné pro hledání podle názvu i podle polohy. */
+function mvgreen_climate_send($o, $others, $grid, $lat, $lon) {
     // nejbližší bod mřížky s daty (ERA5-Land nemá data nad vodou – zkusit okolí)
     $f = $grid['fields'];
-    $ci = (int) round(($o[2] - $grid['lat0']) / $grid['dlat']);
-    $cj = (int) round(($o[3] - $grid['lon0']) / $grid['dlon']);
+    $la = $lat !== null ? $lat : $o[2]; $lo = $lon !== null ? $lon : $o[3];
+    $ci = (int) round(($la - $grid['lat0']) / $grid['dlat']);
+    $cj = (int) round(($lo - $grid['lon0']) / $grid['dlon']);
     $cell = null;
     for ($rad = 0; $rad <= 2 && !$cell; $rad++) {
         for ($di = -$rad; $di <= $rad && !$cell; $di++) for ($dj = -$rad; $dj <= $rad && !$cell; $dj++) {
@@ -113,4 +140,29 @@ function mvgreen_climate_handle() {
     $clim['galeDays'] = null; // nárazy větru ERA5-Land neobsahuje
     $clim['source'] = 'Počasí: Copernicus Climate Change Service, ERA5-Land (CC BY 4.0); obce: GeoNames (CC BY 4.0).';
     wp_send_json_success(['place' => $o[0], 'admin' => trim($o[1] . ($o[6] ? ', ' . $o[6] : ''), ', '), 'others' => $others, 'climate' => $clim + ['place' => $o[0]]]);
+}
+
+/**
+ * Podnebí podle polohy zařízení (Martin 2026-11-23, varianta C). Souřadnice se jen použijí k určení nejbližší obce a bodu mřížky,
+ * nikam se neukládají ani nelogují. Mimo území ČR (s tolerancí) se odmítnou.
+ */
+add_action('wp_ajax_mvgreen_climate_geo', 'mvgreen_climate_geo_handle');
+add_action('wp_ajax_nopriv_mvgreen_climate_geo', 'mvgreen_climate_geo_handle');
+
+function mvgreen_climate_geo_handle() {
+    check_ajax_referer('mvgreen_ai_test', 'nonce');
+    $lat = isset($_POST['lat']) ? (float) $_POST['lat'] : 0.0;
+    $lon = isset($_POST['lon']) ? (float) $_POST['lon'] : 0.0;
+    if ($lat < 48.4 || $lat > 51.2 || $lon < 11.9 || $lon > 19.0) wp_send_json_error(['message' => 'Poloha vypadá mimo Českou republiku. Napište prosím název obce.']);
+    $obce = mvgreen_klima_data('obce.json');
+    $grid = mvgreen_klima_data('klima-cr.json');
+    if (!$obce || !$grid) wp_send_json_error(['message' => 'Data o obcích teď nejsou k dispozici.']);
+    $best = null; $bestD = 1e9; $k = cos(deg2rad($lat));
+    foreach ($obce['rows'] as $r) {
+        $dy = ($r[2] - $lat) * 111.2; $dx = ($r[3] - $lon) * 111.2 * $k;
+        $d = $dx * $dx + $dy * $dy;
+        if ($d < $bestD) { $bestD = $d; $best = $r; }
+    }
+    if (!$best || sqrt($bestD) > 15) wp_send_json_error(['message' => 'U vaší polohy jsme nenašli obec. Napište prosím název obce.']);
+    mvgreen_climate_send($best, [], $grid, $lat, $lon);
 }

@@ -155,7 +155,7 @@ function render(){
   if(unlocked){
     h+='<div class="shop">'+r.shopping.rows.map(function(s){return '<div class="r"><span><span class="pill" style="background:'+COL[s.key]+'">'+esc(SHORT[s.key])+'</span>'+esc(s.name)+'<br><small class="muted">'+s.doses+'× za rok</small></span><b>'+kg(s.kg)+' kg</b></div>'}).join('');
     ['pisek','dosev'].forEach(function(k){if(r.care.program.some(function(p){return p.proc===k})){var am=r.amount(k);if(am)h+='<div class="r"><span>'+esc(PR[k].title)+'<br><small class="muted">'+esc(am)+'</small></span><b></b></div>'}});
-    h+='</div><p><button type="button" class="btn" id="icsBtn">Přidat připomínky do kalendáře v mobilu</button></p><p class="muted" style="font-size:14px">Stáhne se soubor kalendáře s připomínkami hnojení i údržby trávníku. Telefon upozorní den předem v 8:00. Nic se nikam neodesílá.</p>';
+    h+='</div><p><button type="button" class="btn" id="icsBtn">Přidat připomínky do kalendáře v mobilu</button></p><p class="muted" style="font-size:14px">Stáhne se soubor kalendáře s připomínkami hnojení i údržby trávníku. Telefon upozorní den předem v 8:00. Nic se nikam neodesílá.</p><p><button type="button" class="btn ghost" id="prtBtn">Vytisknout nebo uložit jako PDF</button></p>';
   } else h+=lock('Nákupní seznam v kg pro vaši plochu a připomínky do mobilu');
   h+='</section>'}
   // 8) Zdroje
@@ -165,6 +165,8 @@ function render(){
     '<label style="font-size:13px;display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="buyConsent" style="margin-top:3px"><span>Souhlasím, aby plnění začalo ihned po zaplacení, a beru na vědomí, že tím ztrácím právo na odstoupení do 14 dnů. <a href="'+esc(CFG.terms)+'" target="_blank" rel="noopener" style="color:var(--lime)">Obchodní podmínky</a></span></label>'+
     '<button type="button" class="btn" id="buyBtn">Objednat s povinností platby – 499 Kč</button>'+
     '<label for="codeIn" class="muted" style="font-size:14px;margin-top:6px">Už máte kód z e-mailu?</label><div class="lookup"><input type="text" id="codeIn" maxlength="11" autocomplete="off" placeholder="Např. AB12C-3DE45"><button type="button" class="btn small ghost" id="codeBtn">Odemknout</button></div><p class="msg" id="payMsg" aria-live="polite"></p></div></div>';
+  // Celý rok pro tisk (Martin 2026-11-23): na obrazovce je vidět jen jeden měsíc, vytištěný plán má mít všech 12. Na obrazovce skryté.
+  if(unlocked&&r.months&&r.months.length)h+='<section class="prt-cal"><h3>Celý rok měsíc po měsíci</h3>'+r.months.map(function(m){var it=(m.items||[]);return '<div class="prt-m"><b>'+esc(m.name)+'</b>'+(it.length?'<ul>'+it.map(function(i){return '<li><b>'+esc(i.title)+'</b>'+(i.detail?' – '+esc(i.detail):'')+(i.cond?' <i>'+esc(i.cond)+'</i>':'')+'</li>'}).join('')+'</ul>':'<p>Trávník odpočívá.</p>')+'</div>'}).join('')+'</section>';
   res.innerHTML=h;
   var at=document.getElementById('admToggle');if(at)at.addEventListener('click',function(){unlocked=!unlocked;render()});
   if(NEW){var P={place:v('obec').trim(),alt:v('alt'),irrKey:v('irr'),soil:selTxt('soil'),sun:selTxt('sun'),irr:selTxt('irr'),grass:selTxt('grass'),probs:[].map.call(form.querySelectorAll('input[name="prob"]:checked,input[name="sym"]:checked,#dog:checked'),function(i){return i.parentNode.textContent.trim()})};
@@ -202,11 +204,31 @@ render();
 function ajax(action,data){var fd=new FormData();fd.append('action',action);fd.append('nonce',CFG.nonce);Object.keys(data||{}).forEach(function(k){fd.append(k,data[k])});
   return fetch(CFG.ajaxUrl,{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json().catch(function(){throw new Error('Server teď neodpovídá. Zkuste to prosím za chvíli znovu.')})},function(){throw new Error('Nepodařilo se spojit se serverem. Zkontrolujte připojení a zkuste to znovu.')}).then(function(j){if(!j||!j.success)throw new Error((j&&j.data&&j.data.message)||'Něco se nepovedlo.');return j.data})}
 function setMsg(id,kind,t){var el=document.getElementById(id);if(el){el.className='msg '+(kind||'');el.textContent=t||''}}
-function lookup(){var name=v('obec').trim(),btn=document.getElementById('obecBtn');if(name.length<2){setMsg('obecMsg','err','Zadejte prosím obec.');return}
+function clearChoices(){var c=document.getElementById('qObecChoices');if(c)c.innerHTML=''}
+function showChoices(d,name){
+  setMsg('obecMsg','','Obcí jménem „'+d.name+'“ je víc. Vyberte tu svou:');
+  var c=document.getElementById('qObecChoices');if(!c)return;
+  c.innerHTML=d.choose.map(function(x){return '<button type="button" class="qz-choice" data-pick="'+x.pick+'"><b>'+esc(x.name)+'</b>, okres '+esc(x.okres)+' <span>'+esc(x.kraj)+' kraj · '+Math.round(x.elevation)+' m n. m.'+(x.near?' · u města '+esc(x.near)+' ('+x.nearKm+' km)':'')+'</span></button>'}).join('')+(d.choose.length>=8?'<p class="qz-hint">Nenašli jste svou? Připište k názvu okres, např. „'+esc(d.name)+', Domažlice“.</p>':'');
+  [].forEach.call(c.querySelectorAll('[data-pick]'),function(b){b.onclick=function(){lookup(+b.getAttribute('data-pick'))}})}
+function applyClimate(d){climate=d.climate;if(d.climate&&d.climate.elevation!=null)document.getElementById('alt').value=Math.round(d.climate.elevation);
+  setMsg('obecMsg','ok',d.place+(d.admin?' ('+d.admin+')':'')+' · '+(d.climate.elevation!=null?Math.round(d.climate.elevation)+' m n. m. · ':'')+'podnebí za '+d.climate.years+' let doplněno'+(d.others&&d.others.length?'. Myslíte jinou obec? Napište i okres, např. „'+d.others[0]+'“.':''));render()}
+function lookup(pick){if(typeof pick!=='number')pick=null;var name=v('obec').trim(),btn=document.getElementById('obecBtn');if(name.length<2){setMsg('obecMsg','err','Zadejte prosím obec.');return}
   btn.disabled=true;setMsg('obecMsg','','Zjišťuji podnebí obce…');
-  ajax('mvgreen_climate',{obec:name}).then(function(d){climate=d.climate;if(d.climate&&d.climate.elevation!=null)document.getElementById('alt').value=Math.round(d.climate.elevation);
-    setMsg('obecMsg','ok',d.place+(d.admin?' ('+d.admin+')':'')+' · '+(d.climate.elevation!=null?Math.round(d.climate.elevation)+' m n. m. · ':'')+'podnebí za '+d.climate.years+' let doplněno'+(d.others&&d.others.length?'. Myslíte jinou obec? Napište i okres, např. „'+d.others[0]+'“.':''));render()})
-  .catch(function(e){climate=null;setMsg('obecMsg','err',e.message)}).then(function(){btn.disabled=false})}
+  ajax('mvgreen_climate',pick===null?{obec:name}:{obec:name,pick:pick}).then(function(d){if(d.choose){climate=null;showChoices(d,name);return}clearChoices();applyClimate(d)})
+  .catch(function(e){climate=null;clearChoices();setMsg('obecMsg','err',e.message)}).then(function(){btn.disabled=false})}
+// Podnebí podle polohy zařízení (Martin 2026-11-23). Souřadnice na 3 desetinná místa (~100 m) jdou jen na náš server a neukládají se.
+function geoLookup(){var btn=document.getElementById('obecBtn');
+  if(!navigator.geolocation){setMsg('obecMsg','err','Tohle zařízení polohu neumí. Napište prosím obec.');return}
+  clearChoices();setMsg('obecMsg','','Zjišťuji polohu… (prohlížeč se zeptá na povolení)');
+  navigator.geolocation.getCurrentPosition(function(pos){
+    setMsg('obecMsg','','Zjišťuji podnebí podle polohy…');
+    ajax('mvgreen_climate_geo',{lat:pos.coords.latitude.toFixed(3),lon:pos.coords.longitude.toFixed(3)}).then(function(d){
+      var o=document.getElementById('obec');o.value=d.place;o.dispatchEvent(new Event('input',{bubbles:true}));o.dispatchEvent(new Event('change',{bubbles:true}));
+      var q=document.getElementById('qObec');if(q)q.value=d.place;applyClimate(d)})
+    .catch(function(e){setMsg('obecMsg','err',e.message)})},
+  function(err){setMsg('obecMsg','err',err&&err.code===1?'Poloha nebyla povolena. Napište prosím název obce.':'Polohu se nepodařilo zjistit. Napište prosím název obce.')},
+  {enableHighAccuracy:false,timeout:12000,maximumAge:600000})}
+window.MVGreenPlanGeo=geoLookup;
 function checkCode(code,silent){code=(code||'').trim().toUpperCase();if(!code){setMsg('payMsg','err','Zadejte prosím kód z e-mailu.');return}
   return ajax('mvgreen_kod_check',{code:code}).then(function(d){if((d.grants||[]).indexOf('care')===-1)throw new Error('Tento kód neobsahuje roční plán péče.');
     if(d.form&&!(Number(v('area'))>0)){applyForm(d.form);saveForm()}
@@ -224,6 +246,7 @@ function bindPay(){
     document.body.appendChild(ov);var slow=setTimeout(function(){var el=ov.querySelector('.payov-slow');if(el)el.style.display='block'},12000);
     var stopBusy=function(){clearTimeout(slow);ov.remove();bb.disabled=false;bb.classList.remove('busy');bb.textContent='Objednat s povinností platby – 499 Kč'};
     ajax('mvgreen_kod_buy',{email:em,consent:'1',package:'care',form:JSON.stringify(collectForm())}).then(function(d){location.href=d.redirect}).catch(function(e){stopBusy();setMsg('payMsg','err',e.message)})});
+  var pb=document.getElementById('prtBtn');if(pb)pb.addEventListener('click',function(){window.print()});
   var ib=document.getElementById('icsBtn');if(ib&&lastRes)ib.addEventListener('click',function(){
     var blob=new Blob([B.buildICS(lastRes)],{type:'text/calendar;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='trávník-připomínky.ics';
     document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)});
@@ -233,3 +256,5 @@ document.getElementById('obec').addEventListener('keydown',function(e){if(e.key=
 if(v('obec').trim().length>=2)lookup();
 
 })();
+// Tisk plánu: zavřené rozbalovací bloky se jinak nevytisknou.
+(function(){var op=[];window.addEventListener('beforeprint',function(){op=[];[].forEach.call(document.querySelectorAll('#mvg-plan details'),function(d){op.push([d,d.open]);d.open=true})});window.addEventListener('afterprint',function(){op.forEach(function(x){x[0].open=x[1]});op=[]})})();

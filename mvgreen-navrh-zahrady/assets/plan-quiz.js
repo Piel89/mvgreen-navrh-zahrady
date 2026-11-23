@@ -131,7 +131,7 @@
   function stepHTML(n) {
     var h = '';
     if (n === 0) h = '<h3>Kde trávník roste a jak je velký?</h3>' +
-      '<div class="qz-q"><label class="qz-lab" for="qObec">Obec</label><div class="qz-row"><input id="qObec" type="text" autocomplete="address-level2" placeholder="např. Domažlice" style="flex:1;min-width:0"><button type="button" class="qz-btn small" id="qObecBtn">Zjistit</button></div><span class="qz-hint" id="qObecMsg">Doplníme nadmořskou výšku a podnebí vaší obce za posledních 5 let.</span></div>' +
+      '<div class="qz-q"><label class="qz-lab" for="qObec">Obec</label><div class="qz-row"><input id="qObec" type="text" autocomplete="address-level2" placeholder="např. Domažlice" style="flex:1;min-width:0"><button type="button" class="qz-btn small" id="qObecBtn">Zjistit</button></div><span class="qz-hint" id="qObecMsg">Doplníme nadmořskou výšku a podnebí vaší obce za posledních 5 let.</span><div class="qz-choices" id="qObecChoices" aria-live="polite"></div><button type="button" class="qz-geo" id="qObecGeo" hidden>Použít polohu tohoto zařízení</button><span class="qz-hint qz-geo-note" id="qObecGeoNote" hidden>Poloha se pošle jen na náš server, jen k určení obce, a neukládá se.</span></div>' +
       '<div class="qz-q"><label class="qz-lab" for="qAreaR">Plocha trávníku</label><div class="qz-range"><input id="qAreaR" type="range" min="0" max="100" value="50"><span class="qz-val"><input id="qArea" type="number" min="1" max="20000" inputmode="numeric" placeholder="150"> m²</span></div>' +
       '<div class="qz-chips">' + [50, 150, 300, 600, 1200, 2500].map(function (a) { return '<button type="button" class="qz-chip" data-area="' + a + '">' + a + ' m²</button>'; }).join('') + '</div><span class="qz-hint">Stačí přibližně. Obrázek ukazuje velikost trávníku vůči domu.</span></div>';
     if (n === 1) h = '<h3>Jaký trávník chcete mít?</h3><div class="qz-tiles two" role="radiogroup" aria-label="Úroveň péče">' + TIERS.map(function (t) { return '<button type="button" class="qz-tile" data-tier="' + t[0] + '" aria-pressed="false" role="radio">' + ICO.h(t[3]) + '<b>' + t[1] + '</b><small>' + t[2] + '</small></button>'; }).join('') + '</div>';
@@ -198,9 +198,10 @@
       [].forEach.call(c.querySelectorAll('.qz-chip[data-area]'), function (b) { b.onclick = function () { var a = +b.getAttribute('data-area'); setField('area', a, 'input'); say('<b>' + fmt(a, 0) + ' m²</b> zapsáno.'); }; });
     }
     var ob = $('qObec'); if (ob) {
-      ob.oninput = function () { setField('obec', ob.value, 'input'); };
+      ob.oninput = function () { var ch = $('qObecChoices'); if (ch) ch.innerHTML = ''; setField('obec', ob.value, 'input'); };
       ob.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); var bt = $('obecBtn'); if (bt) bt.click(); } };
       $('qObecBtn').onclick = function () { var bt = $('obecBtn'); if (bt) bt.click(); };
+      var geo = $('qObecGeo'); if (geo && navigator.geolocation) { geo.hidden = false; $('qObecGeoNote').hidden = false; geo.onclick = function () { if (window.MVGreenPlanGeo) window.MVGreenPlanGeo(); }; }
       mirrorMsg();
     }
     var mh = $('qMowH'); if (mh) mh.oninput = function () { var h = +mh.value; S.mowh = h; S.mowhSet = true; $('qMowV').textContent = fmt(h, 1) + ' cm'; Q.scene.update(S); say(h <= 3 ? '<b>' + fmt(h, 1) + ' cm</b>: nízký střih, jemný hustý trávník, vyžaduje častější sečení.' : h >= 6 ? '<b>' + fmt(h, 1) + ' cm</b>: vysoký trávník, hrubší a méně hustý.' : '<b>' + fmt(h, 1) + ' cm</b>: běžná výška pro rodinný trávník.'); later(function () { setField('mowh', h, 'input'); }); };
@@ -260,7 +261,7 @@
       '<div class="qz-yr"><div class="qz-yb">' + segs + '<b class="qz-cur" style="left:' + (d / 365 * 100) + '%"></b></div><div class="qz-ym">' + MONF.map(function (m) { return '<span>' + m + '</span>'; }).join('') + '</div></div>' +
       '<p class="qz-cl"><span><i class="s0"></i>mrazy</span><span><i class="s1"></i>bez mrazu, půda pod 10 °C</span><span><i class="s2"></i>půda nad 10 °C</span></p>' +
       '<p class="qz-cstate">' + msg + '</p>' +
-      (c ? '<dl class="qz-cg">' + rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl><p class="qz-hint">Průměr posledních ' + esc(c.years) + ' let z družicových dat (ERA5-Land, mřížka asi 9 km). Údaje jsou orientační, skutečné počasí se může lišit.</p>'
+      (c ? '<dl class="qz-cg">' + rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('') + '</dl><p class="qz-hint">Průměr posledních ' + esc(c.years) + ' let z družicových dat (ERA5-Land, mřížka asi 9 km; obsahuje upravené údaje služby Copernicus Climate Change Service, CC BY 4.0). Obce: GeoNames, CC BY 4.0. Údaje jsou orientační, skutečné počasí se může lišit.</p>'
         : '<p class="qz-hint">Tohle je typický rok. Doplňte obec a ukážeme podnebí u vás.</p>');
   }
   /* --- veřejné rozhraní pro plan-page.js --- */

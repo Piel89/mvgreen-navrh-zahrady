@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) exit;
 function mvgreen_github_update_meta() {
     $cached = get_transient('mvgreen_github_update_meta');
     if (is_array($cached) && !wp_doing_cron() && !(is_admin() && (isset($_GET['force-check']) || isset($_GET['force_check'])))) return $cached;
+    if (get_transient('mvgreen_github_update_fail') && !wp_doing_cron() && !(is_admin() && (isset($_GET['force-check']) || isset($_GET['force_check'])))) return false;
     // Primary: GitHub contents API (fresh; raw CDN caches ~5 min and ignores the query). Fallback: raw file. Errors are kept for diagnosis.
     $data = null; $errors = [];
     $sources = [
@@ -29,8 +30,14 @@ function mvgreen_github_update_meta() {
         $errors[] = $kind . ': neplatná odpověď';
     }
     update_option('mvgreen_update_last_check', ['time' => time(), 'version' => $data['version'] ?? null, 'errors' => $errors], false);
-    if (!$data) return false;
+    if (!$data) {
+        // Neúspěch si krátce zapamatujeme (Martin 2026-11-23: web odpovídal 20–40 s). Dřív se při nedostupném GitHubu zkoušely až tři
+        // požadavky po 12 s při KAŽDÉM čtení záznamu o aktualizacích; teď nejvýš jednou za 5 minut.
+        if (!wp_doing_cron()) set_transient('mvgreen_github_update_fail', 1, 5 * MINUTE_IN_SECONDS);
+        return false;
+    }
     set_transient('mvgreen_github_update_meta', $data, 5 * MINUTE_IN_SECONDS);
+    delete_transient('mvgreen_github_update_fail');
     return $data;
 }
 

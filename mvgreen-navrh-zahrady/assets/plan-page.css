@@ -589,3 +589,35 @@ html:has(#mvg-plan),body:has(#mvg-plan){overflow-x:clip}
 .mvg-plan .qz-clink{flex:0 0 auto;font:600 12.5px var(--f-b);color:#27541f;text-decoration:none;white-space:nowrap}
 @media(max-width:860px){.mvg-plan .qz-scenebox .qz-season{padding:5px 12px 7px}.mvg-plan .qz-scenebox .qz-season label{font-size:12.5px}}
 .mvg-plan .tz-range{width:100%;accent-color:#2f7a3a;margin:-8px 0 16px}
+
+/* Tisk a uložení do PDF (Martin 2026-11-23): vytiskne se jen hotový plán (#res), bez dotazníku, obrázku, tlačítek a hlavičky šablony. */
+@media print {
+  body * { visibility: hidden !important; }
+  #res, #res * { visibility: visible !important; }
+  #res { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+  #res .btn, #res button, #res .admbar, #res .paywall, #res .lock, #res .buybox { display: none !important; }
+  #res .pcard, #res .proc, #res .mcard, #res .prow, #res .keys, #res table, #res tr, #res li { break-inside: avoid; page-break-inside: avoid; }
+  #res h2, #res h3, #res h4 { break-after: avoid; page-break-after: avoid; }
+  #res { box-shadow: none !important; }
+  .mvg-plan, #res { background: #fff !important; color: #000 !important; }
+  #res a { color: inherit; text-decoration: none; }
+  @page { margin: 14mm; }
+}
+.mvg-plan .prt-cal{display:none}
+@media print {
+  .mvg-plan .prt-cal{display:block !important;margin-top:18px;border-top:2px solid #2f7a3a;padding-top:10px}
+  .prt-cal h3{margin:0 0 8px}
+  .prt-m{margin:0 0 8px;break-inside:avoid}
+  .prt-m ul{margin:2px 0 0 18px;padding:0;font-size:12px}
+  .prt-m p{margin:2px 0 0;font-size:12px}
+}
+
+/* Výběr z více obcí stejného jména a poloha zařízení (Martin 2026-11-23) */
+.mvg-plan .qz-choices{display:grid;gap:8px;margin:8px 0 0}
+.mvg-plan .qz-choices:empty{display:none}
+.mvg-plan .qz-choice{display:block;width:100%;text-align:left;padding:10px 12px;border:1px solid #c9d3bd;border-radius:10px;background:#fff;color:#1f3a20;font:inherit;font-size:14px;line-height:1.35;cursor:pointer}
+.mvg-plan .qz-choice:hover,.mvg-plan .qz-choice:focus-visible{border-color:#2f7a3a;background:#f2f8ec;outline:none}
+.mvg-plan .qz-choice span{display:block;font-size:13px;color:#5d6955;margin-top:2px}
+.mvg-plan .qz-geo{margin:8px 0 0;padding:8px 12px;border:1px dashed #2f7a3a;border-radius:10px;background:transparent;color:#2f7a3a;font:inherit;font-size:14px;cursor:pointer}
+.mvg-plan .qz-geo[hidden],.mvg-plan .qz-geo-note[hidden]{display:none}
+.mvg-plan .qz-geo-note{display:block;margin-top:4px}

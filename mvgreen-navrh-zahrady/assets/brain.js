@@ -354,16 +354,16 @@
     var bigArea = Number(plan.areaM2) || 0;
     if (bigArea >= 1000 && fertTable.length) {
       var bigKg = fertTable.reduce(function (t, r) { return t + (r.totalKg || 0); }, 0), bigMax = fertTable.reduce(function (t, r) { return Math.max(t, r.totalKg || 0); }, 0);
-      recs.push(msg('VELKA', 'medium', 'Velká plocha (' + Math.round(bigArea) + ' m²): na celý rok potřebujete asi ' + Math.round(bigKg) + ' kg hnojiva, tedy zhruba ' + Math.ceil(bigKg / 25) + ' pytlů po 25 kg, a největší jednorázová dávka je ' + Math.round(bigMax) + ' kg. Rozhazujte pojízdným rozmetadlem, ruční na takovou plochu nestačí. Zálivka po hnojení (5–6 l/m²) je tu asi ' + Math.round(bigArea * 5.5 / 1000) + ' m³ vody na jednu dávku, což hadicí prakticky nejde: hnojte těsně před vydatným deštěm, nebo použijte závlahu. Cenu hnojiva si spočítejte předem, na této ploše je znát.'));
+      recs.push(msg('VELKA', 'medium', 'Velká plocha (' + Math.round(bigArea) + ' m²): na celý rok potřebujete asi ' + Math.round(bigKg) + ' kg hnojiva, tedy zhruba ' + Math.ceil(bigKg / 25) + ' pytlů po 25 kg, a největší jednorázová dávka je ' + Math.round(bigMax) + ' kg. Rozhazujte pojízdným rozmetadlem, ruční na takovou plochu nestačí. Zálivka po hnojení (5–6 l/m²) je tu asi ' + Math.round(bigArea * 5.5 / 1000) + ' m³ vody na jednu dávku, což hadicí prakticky nejde: hnojte těsně před vydatným deštěm, nebo použijte závlahu. Vertikutaci a aerifikaci dělejte pojízdným strojem (půjčovna nebo služba), ruční nářadí na takovou plochu nestačí. Kdyby plán obsahoval aerifikaci dutými hroty s pískováním (asi 10 kg písku na m²), je to u vás zhruba ' + Math.round(bigArea * 10 / 1000) + ' t písku. Cenu hnojiva si spočítejte předem, na této ploše je znát.'));
     }
 
     // --- R3: rychlé hnojivo – hranice dusíku na aplikaci ----------------------------------------------------------
     fertTable.forEach(function (r) {
       if ((r.key === 'N' || a.fertType === 'fast') && r.nGPerM2 > 4.9) {
-        r.warn = 'Na hranici rozpustného dusíku (≈ ' + String(round1(r.nGPerM2)).replace('.', ',') + ' g N/m²): jen na suchou trávu a hned po aplikaci zalít.';
+        r.warn = (r.nGPerM2 > 5.0 ? 'Nad hranicí rozpustného dusíku (≈ ' : 'Na hranici rozpustného dusíku (≈ ') + String(round1(r.nGPerM2)).replace('.', ',') + ' g N/m²): jen na suchou trávu a hned po aplikaci zalít' + (r.nGPerM2 > 5.0 ? '; bezpečnější je rozdělit ji na dvě poloviční dávky s odstupem 2–3 týdnů.' : '.');
       }
     });
-    if (fertTable.some(function (r) { return r.warn; })) warnings.push(msg('R3', 'medium', 'Rychlé dusíkaté hnojivo: univerzity uvádějí nejvýš ≈ 5 g dusíku na m² na jednu aplikaci (nejčastěji 4,9 g). Dávka v tabulce je na této hranici, proto vždy jen na suchou trávu a hned po aplikaci zalít, jinak hrozí spálení.'));
+    if (fertTable.some(function (r) { return r.warn; })) warnings.push(msg('R3', 'medium', 'Rychlé dusíkaté hnojivo: univerzity uvádějí nejvýš ≈ 5 g dusíku na m² na jednu aplikaci (nejčastěji 4,9 g). Dávka v tabulce je na této hranici (u písčité půdy a při vyšším dávkování i mírně nad ní, pak ji rozdělte na dvě poloviční dávky s odstupem 2–3 týdnů), proto vždy jen na suchou trávu a hned po aplikaci zalít, jinak hrozí spálení.'));
 
     // --- R4, R13: typ hnojiva --------------------------------------------------------------------------------------
     if (a.fertType === 'crf') recs.push(msg('R4', 'info', 'Dlouhodobé hnojivo: interval podle štítku (obvykle 8–12 týdnů), ale reálně se živiny uvolňují rychleji, zvlášť v teple – trávník většinu spotřebuje do ~ 2 týdnů. Pro hezký trávník proto i dlouhodobým hnojivem hnojte zhruba každé 4 týdny. Nezačínejte v chladné půdě, poslední dávka nejpozději koncem října.'));
