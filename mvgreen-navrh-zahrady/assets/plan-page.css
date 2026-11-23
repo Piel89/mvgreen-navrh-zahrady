@@ -588,3 +588,4 @@ html:has(#mvg-plan),body:has(#mvg-plan){overflow-x:clip}
 .mvg-plan .qz-scenebox .qz-season input[type=range]{flex:1 1 auto;width:auto;min-width:0;margin:0}
 .mvg-plan .qz-clink{flex:0 0 auto;font:600 12.5px var(--f-b);color:#27541f;text-decoration:none;white-space:nowrap}
 @media(max-width:860px){.mvg-plan .qz-scenebox .qz-season{padding:5px 12px 7px}.mvg-plan .qz-scenebox .qz-season label{font-size:12.5px}}
+.mvg-plan .tz-range{width:100%;accent-color:#2f7a3a;margin:-8px 0 16px}

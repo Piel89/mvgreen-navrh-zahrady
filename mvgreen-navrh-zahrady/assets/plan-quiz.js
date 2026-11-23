@@ -30,7 +30,13 @@
   };
   var PGROUPS = [['Samotná tráva', ['pale', 'thin', 'bare']], ['Něco roste, co tam nemá', ['moss', 'weeds', 'poa', 'crabgrass']], ['Skvrny a choroby', ['spots', 'snowmold', 'grubs', 'dog']], ['Půda pod trávou', ['thatch', 'compaction']]];
   var THUMBS = {};
+  /* Skutečné fotky z Wikimedia Commons (Martin 2026-11-22), uložené u nás v pluginu – prohlížeč se k třetí straně nepřipojuje.
+     Jen licence CC0 / CC BY, autor se uvádí pod seznamem. Ostatní potíže zatím kreslené (mech a spol. mají jen CC BY-SA). */
+  var PHOTO = { weeds: 'weeds', poa: 'poa', crabgrass: 'crabgrass', snowmold: 'snowmold', grubs: 'grubs' };
+  var PHOTO_CREDIT = 'Fotografie: AnRo0002 (CC0), I. Sáček senior (CC0), NY State IPM Program, Cornell University (CC BY 2.0), přes Wikimedia Commons.';
+  function photoBase() { var P = window.MVGreenPlanPage; return P && P.img ? P.img + 'foto/' : ''; }
   function thumb(key) {
+    if (PHOTO[key] && photoBase()) return photoBase() + PHOTO[key] + '.jpg';
     if (THUMBS[key]) return THUMBS[key];
     var cv = document.createElement('canvas'); cv.width = 224; cv.height = 140; var c = cv.getContext('2d'), r = 7;
     var rn = function () { r = (r * 16807) % 2147483647; return (r - 1) / 2147483646; };
@@ -59,7 +65,7 @@
     return (THUMBS[key] = cv.toDataURL('image/jpeg', .82));
   }
   function probTile(k) { var h = PHELP[k]; return '<button type="button" class="qz-chip qz-prob" data-p="' + k + '" aria-pressed="false"><img src="' + thumb(k) + '" alt="" width="112" height="70" loading="lazy"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<em>odborně: ' + esc(h[1]) + '</em>' : '') + '<span>' + esc(h[2]) + '</span></button>'; }
-  function probsHTML() { return PGROUPS.map(function (g) { return '<div class="qz-q"><span class="qz-lab">' + g[0] + '</span><div class="qz-probs">' + g[1].map(probTile).join('') + '</div></div>'; }).join('') + '<p class="qz-hint">Obrázky jsou jen ilustrace. Nevíte nebo nic nevidíte? Nechte prázdné, plán pak počítá s běžným stavem trávníku.</p>'; }
+  function probsHTML() { return PGROUPS.map(function (g) { return '<div class="qz-q"><span class="qz-lab">' + g[0] + '</span><div class="qz-probs">' + g[1].map(probTile).join('') + '</div></div>'; }).join('') + '<p class="qz-hint">Část obrázků jsou jen ilustrace. ' + (photoBase() ? PHOTO_CREDIT + ' ' : '') + 'Nevíte nebo nic nevidíte? Nechte prázdné, plán pak počítá s běžným stavem trávníku.</p>'; }
   var KEYNAME = { K: 'draslíkové', N: 'rychlé dusíkaté', C: 'vyvážené', D: 'dusíkaté bez P a K' };
   var SAY = {
     tier: { low: 'Nízká údržba: nejméně hnojení a nejméně starostí.', standard: 'Rodinný trávník: pár hnojení rozložených mezi jaro a podzim.', representative: 'Anglický trávník: hnojení zhruba každý měsíc v sezóně, největší nároky na péči.', sportovni: 'Sportovní trávník: důraz na zátěž a rychlou obnovu.' },
@@ -127,7 +133,7 @@
     if (n === 0) h = '<h3>Kde trávník roste a jak je velký?</h3>' +
       '<div class="qz-q"><label class="qz-lab" for="qObec">Obec</label><div class="qz-row"><input id="qObec" type="text" autocomplete="address-level2" placeholder="např. Domažlice" style="flex:1;min-width:0"><button type="button" class="qz-btn small" id="qObecBtn">Zjistit</button></div><span class="qz-hint" id="qObecMsg">Doplníme nadmořskou výšku a podnebí vaší obce za posledních 5 let.</span></div>' +
       '<div class="qz-q"><label class="qz-lab" for="qAreaR">Plocha trávníku</label><div class="qz-range"><input id="qAreaR" type="range" min="0" max="100" value="50"><span class="qz-val"><input id="qArea" type="number" min="1" max="20000" inputmode="numeric" placeholder="150"> m²</span></div>' +
-      '<div class="qz-chips">' + [50, 150, 300, 600, 1200].map(function (a) { return '<button type="button" class="qz-chip" data-area="' + a + '">' + a + ' m²</button>'; }).join('') + '</div><span class="qz-hint">Stačí přibližně. Obrázek ukazuje velikost trávníku vůči domu.</span></div>';
+      '<div class="qz-chips">' + [50, 150, 300, 600, 1200, 2500].map(function (a) { return '<button type="button" class="qz-chip" data-area="' + a + '">' + a + ' m²</button>'; }).join('') + '</div><span class="qz-hint">Stačí přibližně. Obrázek ukazuje velikost trávníku vůči domu.</span></div>';
     if (n === 1) h = '<h3>Jaký trávník chcete mít?</h3><div class="qz-tiles two" role="radiogroup" aria-label="Úroveň péče">' + TIERS.map(function (t) { return '<button type="button" class="qz-tile" data-tier="' + t[0] + '" aria-pressed="false" role="radio">' + ICO.h(t[3]) + '<b>' + t[1] + '</b><small>' + t[2] + '</small></button>'; }).join('') + '</div>';
     if (n === 2) h = '<h3>Slunce a půda</h3><div class="qz-q"><span class="qz-lab">Kolik má trávník slunce?</span><div class="qz-tiles">' + tile('sun', 'full', 'Většinu dne', '', ICO.full) + tile('sun', 'partial', 'Polostín', '', ICO.partial) + tile('sun', 'shade', 'Stín', '', ICO.shade) + '</div></div>' +
       '<div class="qz-q"><span class="qz-lab">Jaká je půda?</span><div class="qz-tiles">' + tile('soil', 'unknown', 'Nevím', '', ICO.soil('#8a7a66')) + tile('soil', 'normal', 'Běžná', 'propustná', ICO.soil('#6b4a2f')) + tile('soil', 'clay', 'Jílovitá', 'těžká', ICO.soil('#8a5532')) + tile('soil', 'sand', 'Písčitá', 'lehká', ICO.soil('#d2b278')) + '</div><span class="qz-hint">Tip: stiskněte hrst vlhké půdy. Drží tvar jako plastelína? Je jílovitá. Sype se? Je písčitá.</span></div><div id="qSoilHost"></div>';
@@ -167,7 +173,7 @@
     [].forEach.call(c.querySelectorAll('.qz-chip[data-area]'), function (b) { b.setAttribute('aria-pressed', String(S.areaSet && +b.getAttribute('data-area') === S.area)); });
     var ob = $('qObec'); if (ob && document.activeElement !== ob) ob.value = val('obec');
     var ar = $('qArea'); if (ar && document.activeElement !== ar) ar.value = S.areaSet ? S.area : '';
-    var as = $('qAreaR'); if (as && document.activeElement !== as) as.value = Math.round(Math.log(S.area / 20) / Math.log(100) * 100);
+    var as = $('qAreaR'); if (as && document.activeElement !== as) as.value = Math.round(Math.log(Math.min(5000, S.area) / 20) / Math.log(250) * 100);
     var mh = $('qMowH'); if (mh && document.activeElement !== mh) { mh.value = S.mowh; $('qMowV').textContent = fmt(S.mowh, 1) + ' cm'; }
     if (Q.step === 5) paintPass();
   }
@@ -187,7 +193,7 @@
     [].forEach.call(c.querySelectorAll('.qz-chip[data-p]'), function (b) { b.onclick = function () { var k = b.getAttribute('data-p'); toggleProb(k); say(S.probs.has(k) ? (SAY.prob[k] || 'Zapsáno, plán to zohlední v doporučeních.') : 'Odebráno z plánu.'); }; });
     var ar = $('qAreaR'), an = $('qArea');
     if (ar) {
-      ar.oninput = function () { var a = Math.max(20, Math.round(20 * Math.pow(100, ar.value / 100) / 10) * 10); S.area = a; S.areaSet = true; an.value = a; Q.scene.update(S); paintStep(); later(function () { setField('area', a, 'input'); }); };
+      ar.oninput = function () { var raw = 20 * Math.pow(250, ar.value / 100), a = Math.max(20, raw >= 1000 ? Math.round(raw / 50) * 50 : Math.round(raw / 10) * 10); S.area = a; S.areaSet = true; an.value = a; Q.scene.update(S); paintStep(); later(function () { setField('area', a, 'input'); }); };
       an.oninput = function () { var a = Number(an.value); if (a > 0) { S.area = a; S.areaSet = true; Q.scene.update(S); } later(function () { setField('area', an.value, 'input'); }); };
       [].forEach.call(c.querySelectorAll('.qz-chip[data-area]'), function (b) { b.onclick = function () { var a = +b.getAttribute('data-area'); setField('area', a, 'input'); say('<b>' + fmt(a, 0) + ' m²</b> zapsáno.'); }; });
     }
