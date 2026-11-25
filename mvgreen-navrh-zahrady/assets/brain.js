@@ -62,7 +62,7 @@
     R8: { title: 'Vysoký fosfor/draslík v rozboru – hnojivo bez P/K', source: SRC_LAB + ' + ' + SRC_L, confidence: 'B', approved: false },
     R9: { title: 'Bez rozboru – doporučit rozbor, neslibovat „zazimování“ draslíkem', source: SRC_L, confidence: 'B', approved: false },
     R10: { title: 'Listopadová dávka jen když tráva roste a nemrzne', source: SRC_L, confidence: 'B', approved: false },
-    R17: { title: 'Poslední podzimní dávka podle teploty půdy v obci (ne v září)', source: 'video V10 (Svoboda + Exner) + Martin [M] 16. 11. 2026', confidence: 'C', approved: false },
+    R17: { title: 'Poslední podzimní dávka podle teploty půdy v obci (ne v září)', source: 'odborné zdroje + Martin [M] 16. 11. 2026', confidence: 'C', approved: false },
     R11: { title: 'Úsporný režim – hnojit podle příznaků', source: SRC_M, confidence: 'C', approved: false },
     R12: { title: 'Nikdy na mokrou trávu, sníh ani zmrzlou půdu', source: SRC_M + ' + ' + SRC_L, confidence: 'A', approved: true },
     R13: { title: 'Organické hnojivo – dávka podle obsahu živiny z obalu, cena na m²', source: 'diskuse praktiků (sporné údaje o dávce)', confidence: 'C', approved: false },
@@ -74,7 +74,7 @@
 
   // ===== PÉČE O DRN – mechanické zásahy (Martin 2026-11-16: „úplně tam chybí aerifikace (duté, plné hroty), vertikutace,
   // dosev, top dressing, scalping, detailní postup“; „anglický vyčesávat klidně 1× za 2 měsíce, propichování válcem
-  // s hroty 1× za měsíc“). Čísla: interní znalostní báze §15 (univerzitní doporučení + Exner/Svoboda + Martin).
+  // s hroty 1× za měsíc“). Čísla: interní znalostní báze §15 (univerzitní doporučení + odborné zdroje + Martin).
   // Vše mechanické jen při půdě ≥ 10 °C (Martin). =====
   var PROC = {
     propich: { title: 'Propichování (plné hroty)', tools: 'Válec s hroty, nebo aerifikační vidle s plnými hroty.', why: 'Dostane do půdy vzduch a vodu. Nic se nevynáší a povrch se skoro nenaruší, proto se dá dělat často.',
@@ -86,22 +86,30 @@
     vertikutace: { title: 'Vertikutace', tools: 'Vertikutátor s noži (koupit nebo půjčit).', why: 'Prořízne a vytáhne plsť a mech, aby ke kořenům šel vzduch, voda i hnojivo.',
       steps: ['Těsně před vertikutací posekejte nízko (jediná výjimka z pravidla třetiny) a posečenou hmotu odstraňte.', 'Nože nastavte tak, aby jen lehce řezaly do půdy (2–3 mm).', 'Bez dosevu stačí jeden přejezd jedním směrem. Když budete dosévat, projeďte dvakrát do kříže.', 'Vytaženou plsť a mech shrabejte.', 'Pohnojte podle plánu a zalijte. 1–2 týdny bude trávník vypadat hůř, to je normální.', 'Když dosíváte, pokračujte dosevem a lehkým pískováním.'],
       avoid: 'Ve vedru, v suchu bez možnosti zalít, na mokrém trávníku a dokud půda nemá 10 °C.' },
-    dute: { title: 'Aerifikace dutými hroty', tools: 'Aerifikátor s dutými hroty (půjčovna) nebo vidle s dutými hroty, hrábě, koště.', why: 'Vytáhne válečky zeminy a uvolní utuženou půdu. Otvory se zasypou pískem, takže se půda časem zlepšuje.',
+    dute: { title: 'Aerifikace dutými hroty', tools: 'Aerifikátor s dutými hroty (půjčovna) nebo vidle s dutými hroty, hrábě, koště; úklid špuntů usnadní sběrač špuntů.', why: 'Vytáhne válečky zeminy a uvolní utuženou půdu. Otvory se zasypou pískem, takže se půda časem zlepšuje.',
       steps: ['Den předem vydatně zalijte – půda má být vlhká, ne rozbahněná.', 'Těsně před aerifikací posekejte nízko (jediná výjimka z pravidla třetiny).', 'Aerifikujte do hloubky 5–8 cm s rozestupem 5–8 cm. Slabší stroj projeďte dvakrát, podruhé křížem.', 'Vytažené špunty nechte oschnout a shrabejte (nebo rozdrťte a zameťte zpět).', 'Do 1–2 dnů pískujte (viz pískování) a případně dosejte.', '2–3 týdny trávník nezatěžujte.'],
       avoid: 'V létě ve vedru, na zmrzlé nebo podmáčené půdě, u nového trávníku v prvním roce.' },
-    pisek: { title: 'Pískování (top dressing)', tools: 'Praný písek 0/2, kolečko, lopata, koště nebo vlečná síť.', why: 'Zlepšuje půdu, vyrovnává drobné nerovnosti a drží otvory po aerifikaci otevřené.',
-      steps: ['Kupte praný písek 0/2 – rozhoduje zrnitost a že je praný, ne barva.', 'Množství: po aerifikaci dutými hroty asi 10 kg/m² (100 m² ≈ 1 tuna). Jinak jen lehce, nejvýš asi 5 kg/m² (vrstva 3–4 mm).', 'Rozhrňte ho na suchý trávník.', 'Zameťte do otvorů a mezi stébla, stébla musí zůstat vidět.', 'Zalijte.'],
+    pisek: { title: 'Pískování (top dressing)', tools: 'Křemičitý písek jemné zrnitosti (nejlépe 0,1–0,5 mm), kolečko, lopata, koště nebo vlečná síť.', why: 'Zlepšuje půdu, vyrovnává drobné nerovnosti a drží otvory po aerifikaci otevřené.',
+      steps: ['Kupte křemičitý písek jemné zrnitosti, nejlépe kolem 0,1–0,5 mm: dobře zapadne mezi stébla i do otvorů po aerifikaci. Hrubší písek (do 2 mm) jde také, hůř se ale zapravuje a hrubá zrna zůstávají na povrchu a otupují nože sekačky. Písek má být čistý, bez prachu, jílu a kamínků; stavební písek ze stavebnin se na trávník nehodí. Na větší plochu se vyplatí koupit volně ložený písek v pískovně nebo u dodavatele štěrků a písků.', 'Množství: po aerifikaci dutými hroty asi 10 kg/m² (100 m² ≈ 1 tuna). Jinak jen lehce, nejvýš asi 5 kg/m² (vrstva 3–4 mm).', 'Rozhrňte ho na suchý trávník.', 'Zameťte do otvorů a mezi stébla, stébla musí zůstat vidět.', 'Zalijte.'],
       avoid: 'Silnou vrstvu najednou – lépe méně a častěji.' },
     dosev: { title: 'Dosev', tools: 'Travní osivo stejného typu jako trávník, rozmetadlo, hrábě.', why: 'Zahustí trávník a zaplní holá místa, než je zaroste plevel.',
       steps: ['Dosévejte hned po vertikutaci do kříže nebo po aerifikaci, kdy semena zapadnou do půdy.', 'Pohnojte startovacím hnojivem s vyšším obsahem fosforu (dávka podle obalu) – místo běžné dávky z plánu v tom měsíci.', 'Množství 15–25 g osiva na m² (řiďte se obalem), na holá místa víc.', 'Osivo rozhoďte rozmetadlem ve dvou směrech do kříže.', 'Lehce zahrabejte nebo zasypte tenkou vrstvou písku, nejvýš 0,5 cm.', 'Prvních asi 10 dní udržujte povrch stále vlhký: krátká zálivka 2–3× denně.', 'Jílek vzejde za 7–10 dní, kostřavy za 2–3 týdny. 2–3 týdny po trávníku nechoďte.'],
-      avoid: 'V létě ve vedru (mladá tráva se uvaří) a pozdě na podzim, kdy už nestihne zesílit.' },
+      avoid: 'V létě ve vedru (mladá tráva se uvaří) a pozdě na podzim, kdy už nestihne zesílit. Na jaře osivo nevysévejte dřív než v dubnu po prvním sečení: v chladné půdě leží bez užitku.' },
     scalping: { title: 'Scalping (velmi nízká seč před vertikutací nebo aerifikací)', tools: 'Sekačka s nízkým nastavením a košem (vřetenová sekačka jde nejníž).', why: 'Odstraní starou hmotu, plsť a slabé přerostlé části. Je to první krok velké podzimní regenerace.',
       steps: ['Jen u zaběhlého anglického nebo sportovního trávníku, při velké regeneraci koncem srpna až v září.', 'Velmi nízká seč (scalping) se dělá jen těsně před vertikutací nebo aerifikací, nikdy samostatně. Jinak sekejte vždy tak, aby se najednou ubralo nejvýš třetinu stébla.', 'Před vertikutací nebo aerifikací posekejte nízko, na nejnižší výšku, kterou vaše sekačka dovolí.', 'Veškerou hmotu posbírejte.', 'Hned pokračujte: aerifikace dutými hroty (u utužené půdy), vertikutace do kříže, shrabání, hnojení, dosev, pískování.', '2–3 týdny bude trávník vypadat hůř.'],
       avoid: 'V zimě a brzy na jaře, ve vedru, u nového trávníku.' },
   };
-  // Pořadí podle J. Exnera (Martin 2026-11-16: „nechat Exnera“): aerifikace před vertikutací. Hnojení: s dosevem startovací,
+  // Pořadí podle odborné praxe (Martin 2026-11-16: ponechat toto pořadí): aerifikace před vertikutací. Hnojení: s dosevem startovací,
   // bez dosevu dávka podle plánu (Martin 2026-11-16).
   var REGEN = ['Scalping: těsně před aerifikací a vertikutací posekat nízko (jediná výjimka z pravidla třetiny stébla; jinak vždy najednou nejvýš o třetinu)', 'Aerifikace dutými hroty (jen u utužené nebo jílovité půdy)', 'Uklidit špunty', 'Vertikutace do kříže', 'Shrabat plsť a mech', 'Pohnojit: když dosíváte, startovacím hnojivem s vyšším obsahem fosforu (místo dávky z plánu); bez dosevu dávkou podle plánu', 'Dosev', 'Pískování a zamést do otvorů', 'Zálivka – povrch stále vlhký, dokud tráva nevzejde'];
+
+  // Sportovní trávník: regenerace bez scalpingu a s lehčí vertikutací (2026-11-25, viz careProgram); zbytek pořadí stejný.
+  var REGEN_SPORT = REGEN.map(function (x, i) {
+    if (i === 0) return 'Posekat na běžnou výšku, nakrátko ne (sportovní trávník se scalpingu nepodrobuje)';
+    if (/^Vertikutace/.test(x)) return 'Lehká vertikutace jedním směrem (hluboký zásah by trávník při zátěži oslabil)';
+    if (/^Aerifikace/.test(x)) return 'Aerifikace dutými hroty';
+    return x;
+  });
 
   function doyLabel(doy) { var d = new Date(2025, 0, 1 + Math.round(doy)); return d.getDate() + '. ' + (d.getMonth() + 1) + '.'; }
   function springWindow(alt, climate) {
@@ -121,14 +129,23 @@
   function careProgram(tier, a) {
     var sp = springWindow(a.altitude, a.climate), spring = 'jaro, až má půda 10 °C (' + sp.text + ')';
     var hi = tier === 'representative' || tier === 'sportovni';
-    // Martin 2026-11-16: „řiď se co říká Exner podle zhutnění půdního profilu“ – duté hroty jen u utužené/jílovité půdy
+    // Martin 2026-11-16: „řiď se podle zhutnění půdního profilu“ – duté hroty jen u utužené/jílovité půdy
     var compact = has(a.problems, 'compaction') || a.soil === 'clay', thatch = has(a.problems, 'thatch');
     var P = [];
     if (a.age === 'new') {
       P.push({ proc: 'dosev', freq: 'podle potřeby', when: 'holá místa koncem srpna až v září', note: 'První rok jen sečení a dosev holých míst; vertikutaci ne dřív než za rok (Martin). Trávník nechte dorůst asi do 10 cm a pak zkracujte vždy o třetinu.' });
       return P;
     }
-    if (hi) {
+    if (tier === 'sportovni') {
+      // 2026-11-25 (Martin: „odlišíme sportovní od anglického“): sportovní trávník se oslabuje zátěží, ne vzhledem. Důraz na provzdušnění
+      // a rychlý dosev, bez scalpingu a bez hluboké jarní vertikutace. Návrh čeká na Martinovo schválení (dávky hnojení zatím jako u anglického).
+      P.push({ proc: 'propich', freq: '1× za měsíc', when: 'duben–říjen' });
+      P.push({ proc: 'vycesani', freq: '1× za 2 měsíce', when: 'v sezóně, od 10 °C v půdě do září' });
+      P.push({ proc: 'vertikutace', freq: '1× ročně, lehce', when: 'koncem srpna až v září', note: 'Na jaře hlubokou vertikutaci nedělejte: oslabený trávník by zátěž nezvládl. Stačí vyčesání.' });
+      P.push({ proc: 'dute', freq: '2× ročně', when: spring + ' a v září', note: 'U sportovního trávníku se půda utužuje rychle, proto aerifikaci dutými hroty dělejte pravidelně, nejen při utužení.' });
+      P.push({ proc: 'pisek', freq: 'po každé aerifikaci (~10 kg/m²)', when: 'hned po zásahu' });
+      P.push({ proc: 'dosev', freq: '2–3× ročně + po zátěži', when: 'jaro po prvním sečení, září a podle poškození', note: 'Poškozená místa po náročném víkendu nebo zápase dosejte co nejdřív (15–25 g osiva na m², na holá místa víc).' });
+    } else if (hi) {
       P.push({ proc: 'propich', freq: '1× za měsíc', when: 'duben–říjen' });
       P.push({ proc: 'vycesani', freq: '1× za 2 měsíce', when: 'v sezóně, od 10 °C v půdě do září' });
       P.push({ proc: 'vertikutace', freq: '2× ročně', when: spring + ' a koncem srpna až v září' });
@@ -384,7 +401,7 @@
     // --- R17: termín poslední podzimní dávky podle teploty půdy v obci -----------------------------------------------
     // Martin 2026-11-16 („udělej tu novou funkci a dej tam tu teplotu“): podzimní dávka se neřídí jen kalendářem ani jen
     // nadmořskou výškou, ale tím, kdy u zákazníka půda klesá pod 10 °C (průměr posledních let, data obce z pluginu).
-    // Video V10 (Svoboda + Exner): v teplejších místech až konec října–listopad, výš dřív; tráva roste, dokud je půda teplá.
+    // Odborný zdroj: v teplejších místech až konec října–listopad, výš dřív; tráva roste, dokud je půda teplá.
     // Vodítko: o půlměsíc po poklesu pod 10 °C (tráva zpomalila, kořeny ještě pracují), nejdřív 2. půlka října a nejpozději
     // 2. půlka listopadu (Martin: „nechat v plánu do listopadu“); od předchozí dávky aspoň 4 týdny. Neschváleno, jistota C.
     var cool = a.climate && Number(a.climate.soilBelow10) > 0 ? Number(a.climate.soilBelow10) : 0;
@@ -430,6 +447,11 @@
     if (a.irrigation === 'none') fertTable.forEach(function (r) { if (typeof r.half === 'number' && Math.floor(r.half / 2) >= 5 && Math.floor(r.half / 2) <= 7) r.condition = (r.condition ? r.condition + ' ' : '') + 'Bez závlahy tuto dávku v suchu a vedru vynechte – dusík bez vody trávníku nepomůže; dejte ji až po vydatném dešti.'; });
     // 2026-11-20 (audit A5, zdroje: startovací hnojivo s fosforem, první běžné hnojení za 6–8 týdnů nebo po 2–3 sečích, jedna dávka nejvýš ≈ 4,9 g N)
     if (a.age === 'new') fertTable.forEach(function (r) { r.condition = (r.condition ? r.condition + ' ' : '') + 'Nový trávník: první běžné hnojení až 6–8 týdnů po výsevu (nebo po 2–3 sečích), do té doby jen startovací hnojivo s fosforem; jedna dávka nejvýš ≈ 4,9 g dusíku na m².'; });
+    // 2026-11-25 (Martin): u anglického i sportovního se další dávka dává vždy 4 týdny po SKUTEČNÉ předchozí dávce, ne podle měsíce;
+    // když celý měsíc mrzne, dávka toho měsíce odpadá (nedohání se).
+    if (requestedTier === 'representative' || requestedTier === 'sportovni') fertTable.forEach(function (r, i) {
+      if (i > 0) r.condition = (r.condition ? r.condition + ' ' : '') + 'Dejte ji nejdřív 4 týdny po předchozí dávce. Když celý měsíc mrzne, tuto dávku vynechte a nedohánějte ji.';
+    });
     // zálivka po hnojení u KAŽDÉ dávky (Martin 2026-11-19) – přidává se do podmínky řádku, odtud ji bere kalendář, připomínky i .ics
     fertTable.forEach(function (r) { r.condition = (r.condition || 'Jen na suchou trávu, bez mrazu a sněhu.') + ' Po hnojení zalijte (déšť nebo hadice).'; }); // plné znění s l/m² je jednou v doporučeních (Martin 2026-11-23: zkrátit)
 
@@ -465,7 +487,7 @@
       symptomGuide: symptomGuide, shopping: shopping, reminders: reminders, missing: missing,
       nPerYear: plan.tierMeta && plan.tierMeta.nRange,
       knowledge: knowledge(a, requestedTier),
-      care: { program: careProgram(requestedTier, a), procedures: PROC, regeneration: REGEN, spring: springWindow(a.altitude, a.climate) },
+      care: { program: careProgram(requestedTier, a), procedures: PROC, regeneration: requestedTier === 'sportovni' ? REGEN_SPORT : REGEN, spring: springWindow(a.altitude, a.climate) },
       climate: climateSummary(a.climate),
     };
     out.months = monthPlan(out, a);

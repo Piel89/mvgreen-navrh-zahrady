@@ -74,8 +74,8 @@
    * "reprezentativní" (vzhled, nízké opotřebení) a "sportovní" (pravidelná zátěž, časté opotřebení)
    * jsou odlišné potřeby, i když hnojivový harmonogram (schedule High) je pro obě stejný. */
   var USE_NOTES = {
-    sportovni: 'Sportovní zátěž trávník mechanicky opotřebovává – po náročnějším víkendu nebo zápase poškozená místa co nejdřív dosejte (15-25 g osiva/m²) a aerifikaci dutými hroty plánujte podle zhutnění – univerzity radí 1× ročně, při velké zátěži a těžké půdě dvakrát (podzim, jaro).',
-    representative: 'Anglický trávník se hnojí pravidelně cca každé 4 týdny po celou hlavní sezónu (březen až listopad, 9 dávek v tabulce níže, i v srpnu; hnojíte vždy, až přestane mrznout a tráva oschne, nikdy na mokrou trávu ani do sněhu). Je to intenzivní režim (více než 30 g dusíku na m² za rok, víc než běžná univerzitní doporučení pro domácí trávník 10–17 g; blíží se golfovým plochám) a vyžaduje závlahu – sekejte často (v sezóně zhruba co 3–4 dny) na vámi zvolenou výšku, nikdy víc než třetinu stébla najednou, okraje pravidelně zarovnávejte a čerstvě posečenou plochu zbytečně nezatěžujte.',
+    sportovni: 'Sekejte o něco výš než u anglického trávníku (zhruba 3,5–5 cm): vyšší stéblo lépe snáší sešlap. Sportovní zátěž trávník mechanicky opotřebovává – po náročnějším víkendu nebo zápase poškozená místa co nejdřív dosejte (15-25 g osiva/m²) a aerifikaci dutými hroty plánujte podle zhutnění – univerzity radí 1× ročně, při velké zátěži a těžké půdě dvakrát (podzim, jaro).',
+    representative: 'Anglický trávník se hnojí pravidelně cca každé 4 týdny po celou hlavní sezónu (březen až listopad, 9 dávek v tabulce níže, i v srpnu; hnojíte vždy, až přestane mrznout a tráva oschne, nikdy na mokrou trávu ani do sněhu). Je to intenzivní režim (více než 30 g dusíku na m² za rok, víc než běžná univerzitní doporučení pro domácí trávník 10–17 g; blíží se golfovým plochám) a vyžaduje závlahu – sekejte často (v sezóně zhruba co 3–4 dny, v době nejsilnějšího růstu kolem poloviny května klidně 3× týdně) na vámi zvolenou výšku, nikdy víc než třetinu stébla najednou, okraje pravidelně zarovnávejte a čerstvě posečenou plochu zbytečně nezatěžujte.',
   };
 
   /** Rady, co neplatí pro jeden konkrétní měsíc, ale pro celou sezónu podle počasí (Martin,
@@ -178,10 +178,13 @@
   var TIER_MOW_FALLBACK = {
     low: { mowMin: 5, mowMax: 7 },
     standard: { mowMin: 4, mowMax: 5 },
-    high: { mowMin: 3, mowMax: 4 },
+    // 2026-11-25 (Martin): anglický trávník se sekne od 15 do 38 mm; zákazník si výšku stejně volí posuvníkem (dřív tu bylo 3–4 cm).
+    high: { mowMin: 1.5, mowMax: 3.8 },
+    // sportovní: výš než anglický, vyšší stéblo lépe snáší zátěž (2026-11-25, návrh čeká na Martinovo schválení)
+    sportovni: { mowMin: 3.5, mowMax: 5 },
   };
   function tierMowFallback(tier) {
-    return TIER_MOW_FALLBACK[tier === 'representative' || tier === 'sportovni' ? 'high' : tier] || TIER_MOW_FALLBACK.standard;
+    return TIER_MOW_FALLBACK[tier === 'representative' ? 'high' : tier] || TIER_MOW_FALLBACK.standard;
   }
 
   var PROBLEM_NOTES = {
@@ -261,8 +264,9 @@
   function scheduleHigh() {
     return [
       { i: 0, tasks: [A('Zimní klid – trávník nesekat, nehnojit, nevstupovat na zmrzlý nebo podmáčený povrch.')] },
-      { i: 1, tasks: [D('Zimní klid, příprava na sezónu – naostřit nůž sekačky, zkontrolovat techniku a rozmetadlo hnojiva.')] },
-      { i: 2, tasks: [D('Jarní vyhrabání napadaného listí a plsti.')], fert: { key: 'K', variant: 'start', action: 'po oschnutí trávníku – zahájení sezóny, posílení kořenů' } },
+      { i: 1, tasks: [D('Zimní klid, příprava na sezónu – naostřit nůž sekačky, zkontrolovat techniku a rozmetadlo hnojiva.'), W('Zatím do drnu nezasahujte strojem ani osivem a nehnojte dusíkem, dokud se neobjeví čerstvé zelené přírůstky. Trávník je v klidu, zásah by se mu hojil dlouho a podpořil by lipnici roční.')] },
+      // 2026-11-25 (Martin: „tohle ano“): v březnu jen šetrné vyhrabání; zásahy do drnu až od dubna při půdě 10 °C.
+      { i: 2, tasks: [D('Jarní vyhrabání napadaného listí a plsti.'), W('Vyhrabávejte šetrně hráběmi, ne strojem. Mechanické zásahy do drnu a dosev počkají na duben, až půda drží 10 °C a trávník rychle roste.')], fert: { key: 'K', variant: 'start', action: 'po oschnutí trávníku – zahájení sezóny, posílení kořenů' } },
       { i: 3, tasks: [D('Pravidelné sečení – první seče o něco výš než obvykle, pak postupně na vaši výšku.')], fert: { key: 'N', action: '2. dávka – rychlé nastartování růstu a obarvení po zimě' } },
       { i: 4, tasks: [D('V hlavní růstové sezóně sekejte co 3-4 dny (u anglického trávníku je častější sečení žádoucí a dělá hustotu i jemnost trávníku) – nikdy ale neseřezávejte najednou víc než 1/3 výšky stébla, jinak trávník zbytečně stresujete.'), D('Při sečení rovnou zarovnejte i okraje trávníku podél záhonů a chodníků (hranová seč) – udrží to ostrou, upravenou hranici, ne jen posekanou plochu.')], fert: { key: 'C', action: '3. dávka – hlavní růstová sezóna začíná' } },
       { i: 5, tasks: [], fert: { key: 'C', action: '4. dávka' } },
@@ -270,8 +274,8 @@
       // Srpen: Martin 2026-11-16 "v srpnu se hnojí" (jeho plán má v srpnu Match Golf 30 g/m²); dřív tu dávka chyběla.
       { i: 7, tasks: [W('Hnojivo aplikujte jen na suchou trávu (nikdy na mokrou – granule se přilepí na stébla a spálí je).')], fert: { key: 'C', action: '6. dávka' } },
       { i: 8, tasks: [D('Vertikutace (prořezání plsti) a aerace trávníku.'), D('Podzimní přísev prořídlých míst – před výsevem použijte startovací hnojivo s vysokým fosforem pro rychlé zakořenění semen, ne běžné sezónní hnojivo.'), W('Zkontrolujte, jestli se trávník nedá lehce nadzvednout nebo odchlípnout jako koberec – znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte buď biologicky (hlístice do zalévané půdy) nebo přípravkem proti ponravám registrovaným v ČR pro domácí použití (ověřte na etiketě).')], fert: { key: 'N', action: '6. dávka – obnova po letním stresu' } },
-      { i: 9, tasks: [D('Snižujeme frekvenci sečení.')], fert: { key: 'C', action: '7. dávka' } },
-      { i: 10, tasks: [D('Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.'), D('Nářadí a hadice vyklidit, aby nezmrzly.')], fert: { key: 'K', variant: 'end', action: '8. (poslední) dávka – podzimní doplnění draslíku před zimou' } },
+      { i: 9, tasks: [D('Od poloviny října sečte jen 1× týdně a dál sekejte podle růstu trávy: dokud roste a padá do koše, sekáme.')], fert: { key: 'C', action: '7. dávka' } },
+      { i: 10, tasks: [D('Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.'), D('Listí odklízejte do tří dnů: pod souvislou vrstvou začne trávník žloutnout a hnít.'), D('Nářadí a hadice vyklidit, aby nezmrzly.')], fert: { key: 'K', variant: 'end', action: '8. (poslední) dávka – podzimní doplnění draslíku před zimou' } },
       { i: 11, tasks: [A('Zimní klid – trávník nezatěžovat, nenechávat na něm hromady listí ani sníh z lopaty.')] },
     ];
   }
@@ -286,15 +290,15 @@
   function scheduleStandard() {
     return [
       { i: 0, tasks: [A('Zimní klid – trávník nesekat, nehnojit, nevstupovat na zmrzlý nebo podmáčený povrch.')] },
-      { i: 1, tasks: [D('Zimní klid, příprava na sezónu – naostřit nůž sekačky, zkontrolovat techniku.')] },
+      { i: 1, tasks: [D('Zimní klid, příprava na sezónu – naostřit nůž sekačky, zkontrolovat techniku.'), W('Zatím do drnu nezasahujte strojem ani osivem a nehnojte dusíkem, dokud se neobjeví čerstvé zelené přírůstky. Trávník je v klidu, zásah by se mu hojil dlouho a podpořil by lipnici roční.')] },
       { i: 2, tasks: [D('Jarní vyhrabání napadaného listí a plsti.'), W('Na vertikutaci je ještě brzy – počkejte na duben, až bude půda trvale prohřátá nad 8-10 °C. Dřív by zásah trávníku spíš uškodil, než pomohl.')] },
       { i: 3, tasks: [D('Jarní vertikutace (2-3 mm) na prohřáté (nad 8-10 °C) a mírně suché půdě.'), D('Pravidelné sečení – první seče o něco výš než obvykle, pak postupně na vaši výšku.')], fert: { key: 'K', variant: 'start', action: '1. dávka po oschnutí trávníku – start sezóny, posílení kořenů' } },
       { i: 4, tasks: [D('Sečení cca 1x týdně, hlavní růstová sezóna.'), D('Při sečení zarovnejte i okraje podél záhonů a chodníků (hranová seč) – rychlá věc, co zlepší vzhled víc než samotné sečení.')] },
       { i: 5, tasks: [D('V polovině sezóny nůž znovu naostřete – po pár měsících sečení už spíš trhá, než řeže.')], fert: { key: 'C', action: '2. dávka' } },
       { i: 7, tasks: [W('Intenzitu zatížení (sport, grilování) v tropických vedrech trochu omezte, trávník si v tu dobu hůř regeneruje.')] },
       { i: 8, tasks: [D('Podzimní vertikutace a přísev prořídlých míst.'), W('Aerifikace se u tohoto režimu doporučuje cca 1x za 2 roky – pokud letos (nebo loni) ještě nebyla, je teď dobrý čas.'), W('Zkontrolujte, jestli se trávník nedá lehce nadzvednout – znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte biologicky (hlístice) nebo přípravkem proti ponravám registrovaným v ČR pro domácí použití (ověřte na etiketě).')], fert: { key: 'N', action: '3. dávka – obnova po letním stresu' } },
-      { i: 9, tasks: [], fert: { key: 'K', variant: 'end', action: '4. (poslední) dávka – podzimní doplnění draslíku před zimou' } },
-      { i: 10, tasks: [D('Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.'), D('Nářadí a hadice vyklidit, aby nezmrzly.')] },
+      { i: 9, tasks: [D('Od poloviny října sečení zřeďte na 1× týdně a dál sekejte podle růstu trávy.')], fert: { key: 'K', variant: 'end', action: '4. (poslední) dávka – podzimní doplnění draslíku před zimou' } },
+      { i: 10, tasks: [D('Poslední seč sezóny (podle počasí), úklid spadaného listí z trávníku.'), D('Listí odklízejte do tří dnů: pod souvislou vrstvou začne trávník žloutnout a hnít.'), D('Nářadí a hadice vyklidit, aby nezmrzly.')] },
       { i: 11, tasks: [A('Zimní klid – trávník nezatěžovat, nenechávat na něm hromady listí ani sníh z lopaty.')] },
     ];
   }
@@ -307,7 +311,7 @@
       { i: 2, tasks: [D('Jarní vyhrabání napadaného listí.'), W('Vertikutace (u tohoto režimu volitelná, stačí 1x ročně) počká na duben, až bude půda prohřátá nad 8-10 °C – dřív trávníku spíš uškodí.')] },
       { i: 3, tasks: [D('Volitelná jarní vertikutace (1x ročně stačí) na prohřáté a mírně suché půdě.'), D('Sečení cca 1x za 10-14 dní, na vyšší výšku (5-7 cm) – nenáročný režim.'), W('Pokud na to bude čas navíc, zarovnejte i okraje podél chodníků a záhonů (hranová seč) – u nízké údržby to není nutné, ale vzhled to zlepší nejvíc ze všeho.')], fert: { key: 'K', variant: 'start', action: 'Jediná jarní dávka – na celé jaro a léto to stačí' } },
       { i: 8, tasks: [D('Přísev prořídlých míst, pokud je potřeba.'), W('Zkontrolujte, jestli se trávník nedá lehce nadzvednout – znamení larev chroustů (ponrav) v kořenech. Pokud ano, řešte biologicky (hlístice) nebo přípravkem proti ponravám registrovaným v ČR pro domácí použití (ověřte na etiketě).')], fert: { key: 'K', variant: 'end', action: 'tím letos hnojení končí' } },
-      { i: 10, tasks: [D('Poslední seč sezóny, úklid spadaného listí z trávníku.')] },
+      { i: 10, tasks: [D('Poslední seč sezóny, úklid spadaného listí z trávníku.'), D('Listí odklízejte do tří dnů: pod souvislou vrstvou začne trávník žloutnout a hnít.')] },
     ];
   }
 
@@ -415,7 +419,9 @@
     // konkrétní měsíc, zobrazují se jednou nahoře nad kalendářem.
     var notes = [];
     if (USE_NOTES[tier]) notes.push(USE_NOTES[tier]);
-    if (isHighTier && altitude >= 500) notes.push('Ve vyšší poloze (u vás ' + Math.round(altitude) + ' m) jaro přichází později: termíny v tabulce jsou měsíční a platí, jakmile přestane mrznout a tráva oschne. Dávky, které by vyšly do mrazu nebo na sníh, odložte na první vhodný suchý den bez mrazu – pořadí a rozestup 4 týdny zachovejte.');
+    if (isHighTier && altitude >= 500) notes.push('Ve vyšší poloze (u vás ' + Math.round(altitude) + ' m) jaro přichází později: termíny v tabulce jsou měsíční a platí, jakmile přestane mrznout a tráva oschne. Dávku, která by vyšla do mrazu nebo na sníh, dejte na první vhodný suchý den bez mrazu; když mrzne celý měsíc, dávka toho měsíce odpadá.');
+    // 2026-11-25 (Martin): rozhoduje skutečné datum dávky, ne měsíc v tabulce.
+    if (isHighTier) notes.push('Termíny v tabulce jsou orientační. Dávku dejte, až to počasí dovolí (suchá tráva, bez mrazu a sněhu). Další dávka je vždy za 4 týdny od skutečné aplikace, ne podle měsíce. Když celý měsíc mrzne, dávka toho měsíce odpadá a nedohání se: dáte-li první dávku například až 4. dubna, další přijde asi za 4 týdny.');
     if (irrigation === 'auto') {
       notes.push('Automatickou závlahu nastavte za běžného počasí na zhruba 20 l/m² za týden (2 zálivky po ~10 l), v tropech na 30 l/m² za týden; spouštějte brzy ráno mezi 5. a 7. hodinou, běžně 2× týdně a v extrémním horku až obden. Když trávník pořád žloutne, přidejte; po vydatném dešti zálivku vynechte.');
     } else if (irrigation === 'manual') {

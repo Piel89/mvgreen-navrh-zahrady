@@ -45,7 +45,10 @@ add_shortcode('mvgreen_plan_travnik', function ($atts) {
         'dotaznik' => $atts['dotaznik'] ? esc_url_raw($atts['dotaznik']) : '',
         'uvod' => $atts['uvod'] ? esc_url_raw($atts['uvod']) : '',
     ]) . ';', 'before');
-    return '<div class="mvg-plan" id="mvg-plan"><p class="mvg-plan-loading">Načítání…</p></div>';
+    // 2026-11-25 (Martin: „udělej všechno, co můžeš“, bod r8 ze seznamu před spuštěním): bez JavaScriptu zůstávalo jen „Načítání…“.
+    return '<div class="mvg-plan" id="mvg-plan"><p class="mvg-plan-loading">Načítání…</p>'
+        . '<noscript><p>Plán péče o trávník se počítá přímo ve vašem prohlížeči, proto potřebuje zapnutý JavaScript. '
+        . 'Zapněte ho prosím, nebo nám zavolejte na 723 339 650 či napište na mvgreen@seznam.cz a poradíme vám.</p></noscript></div>';
 });
 
 /**

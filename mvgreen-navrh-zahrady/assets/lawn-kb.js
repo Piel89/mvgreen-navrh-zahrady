@@ -3,8 +3,8 @@
  *
  * Martin (2026-11-16): „všechny znalosti co máš nebo najdeš pro starost a péči o trávník po celý rok do toho přidej –
  * to je to gro“; „musíme mít řešení na všechny choroby (lipnice, plíseň sněžná, ježatka…), když je rosa, ráno stahovat“.
- * Obsah = vlastními slovy z interní znalostní báze (Martinova praxe, univerzitní doporučení, videa R. Svobody
- * a J. Exnera). Žádné značky přípravků: chemii jen „registrovanou v ČR pro trávník, podle etikety“ (Martin: bez značek;
+ * Obsah = vlastními slovy z interní znalostní báze (Martinova praxe, univerzitní doporučení, odborná videa a přednášky)
+ * Žádné značky přípravků: chemii jen „registrovanou v ČR pro trávník, podle etikety“ (Martin: bez značek;
  * přípravky z videí nejsou vždy v ČR pro trávník registrované).
  * Používá brain.js (decide → res.knowledge). Export: window.MVGreenLawnKB = { MOW, WATER, PROBLEMS, SEASON_TIPS }
  */
@@ -30,7 +30,7 @@
     mowerNote: {
       reel: 'Vřetenová sekačka stříhá jako nůžky a jde nízko – nejlepší pro jemné kostřavy a anglický trávník.',
       rotary: 'Rotační sekačka: jemné kostřavy nesnesou nízký střih, držte vyšší výšku.',
-      robot: 'Robotická sekačka seče často a málo – vhodné pomalu rostoucí druhy; trávník vyčesávejte častěji (ideálně co 14 dní), jinak se tvoří plsť.',
+      robot: 'Robotická sekačka seče často a málo – vhodné pomalu rostoucí druhy; trávník vyčesávejte častěji (ideálně co 14 dní), jinak se tvoří plsť. Pomůže i přípravek na rozklad plsti (enzymy).',
     },
   };
 
@@ -44,6 +44,7 @@
       'Běžně 2× týdně, v extrémním horku a suchu až obden (menší dávky po 10–15 litrech). Déšť se počítá – po vydatném dešti zálivku vynechte.',
       'Chcete-li vědět, jestli je zálivka dost: po zálivce vykopněte kousek drnu – půda má být vlhká do 10–15 cm. Nebo šlápněte na trávník: když se stébla nevzpřímí, chce vodu.',
       'Vydatně a méně často je lepší než každý den trochu: kořeny jdou hlouběji a méně se daří lipnici roční.',
+      'Netrapte trávník stálou vlhkostí: krátké časté zálivky (třeba 3 minuty ráno a 3 večer) smočí jen povrch, ke kořenům se voda nedostane a podporují plísně. Automatickou závlahu nechte seřídit na delší a řidší zálivky.',
       'Kolik vám zálivka dává, změříte plechovkou nebo kelímkem postaveným na trávníku.',
       'Na svahu a utužených místech zalévejte po menších dávkách, ať voda nestéká; předtím pomůže propíchnout.',
     ],
@@ -115,8 +116,12 @@
     { when: 'Celá sezóna', text: 'Když je ráno rosa, stáhněte ji (hadicí taženou přes trávník, lanem nebo koštětem). Tráva rychleji oschne a méně ji napadají plísně.' },
     { when: 'Červenec–srpen', text: 'Ráno za rosy projděte trávník a hledejte pavučinky – mycelium plísní je vidět jen ráno.' },
     { when: 'Podzim', text: 'Listí hrabejte nebo foukejte průběžně, ne až na konci podzimu.' },
-    { when: 'Zima', text: 'Po zmrzlém nebo zasněženém trávníku nechoďte a nedávejte na něj hromady sněhu ani listí.' },
-    { when: 'Únor–březen', text: 'Naostřete nůž sekačky, zkontrolujte rozmetadlo a vertikutátor.' },
+    // 2026-11-25 (Martin: „tohle ano“): řídit se teploměrem, ne kalendářem; v klidu nic nedělat; podzimní sečení a listí; rovnání trávníku.
+    { when: 'Zima', text: 'Na trávník vstupujte jen při teplotě nad nulou a oschlém povrchu. Po zmrzlém, podmáčeném nebo ledovém podloží nechoďte a nedávejte na něj hromady sněhu ani listí: časté stopy v zimě se na jaře změní v ložiska plísně sněžné.' },
+    { when: 'Únor–březen', text: 'Naostřete nůž sekačky, zkontrolujte rozmetadlo a vertikutátor. Trávník je ještě v klidu: dokud nevidíte čerstvé zelené přírůstky, nevertikutujte, nedosévejte a nehnojte dusíkem. Zásah v klidu se hojí dlouho a podpoří lipnici roční. Řiďte se teploměrem, ne kalendářem: až půda drží 10 °C a tráva roste, začíná se.' },
+    { when: 'Říjen–listopad', text: 'Od poloviny října sečte jen 1× týdně a sekejte, dokud tráva roste (půda kolem 10 °C ještě nespí). Listí odklízejte do tří dnů, protože pod souvislou vrstvou začne trávník žloutnout.' },
+    { when: 'Duben–říjen', text: 'Drobné nerovnosti do asi 3 cm srovnávejte lehkým pískováním v sezóně, raději častěji a málo než jednou silnou vrstvou (stébla musí zůstat vidět). Těžký válec půdu utuží, použít lze jen lehký a na vlahé půdě. Větší propady kolem 10 cm řešte v dubnu až květnu: drn sloupněte, doplňte zeminu a drn položte zpět.' },
+    { when: 'Září', text: 'Při podzimní regeneraci zvažte půdní vylepšovač (mikroorganismy, kompost, zeolit), který zlepší kořenovou vrstvu a půdní život. Kdo málo vertikutuje nebo má robotickou sekačku, která trávu nesbírá, může zkusit i přípravek na rozklad plsti (enzymy).' },
   ];
 
   var api = { MOW: MOW, WATER: WATER, PROBLEMS: PROBLEMS, SEASON_TIPS: SEASON_TIPS };
