@@ -231,15 +231,22 @@
     // návyky a sezónní upozornění (lawn-kb + Martinova pravidla)
     var tip = function (m, title, detail) { add(m, { type: 'tip', title: title, detail: detail }); };
     tip(1, 'Příprava na sezónu', 'Naostřit nůž sekačky, zkontrolovat rozmetadlo a vertikutátor.');
-    tip(2, 'Vyhrabat listí a stařinu', 'Jakmile oschne a nemrzne.');
+    // 2026-11-25 (Martin: „tohle ano“): klid v drnu v únoru a březnu, řídit se teploměrem; viz také pravidlo 10 °C v půdě.
+    tip(1, 'Zatím nic do drnu', 'Dokud nevidíte čerstvé zelené přírůstky, nezasahujte do drnu strojem ani osivem a nehnojte dusíkem. Trávník je v klidu, zásah by se mu hojil dlouho a podpořil by lipnici roční.');
+    tip(2, 'Vyhrabat listí a stařinu', 'Jakmile oschne a nemrzne. Šetrně hráběmi, ne strojem.');
+    tip(2, 'Mechanické zásahy počkají na duben', 'Zásahy do drnu a dosev až když půda drží 10 °C a trávník rychle roste. Řiďte se teploměrem, ne kalendářem.');
     tip(3, 'První seče', 'O něco výš než obvykle, pak postupně na vaši výšku.');
+    tip(3, 'Rovnání trávníku', 'Drobné nerovnosti do asi 3 cm srovnávejte lehkým pískováním v sezóně, raději častěji a málo než jednou silnou vrstvou (stébla musí zůstat vidět). Těžký válec půdu utuží. Větší propady kolem 10 cm řešte v dubnu až květnu: drn sloupněte, doplňte zeminu a drn položte zpět.');
+    if (res.tier === 'representative' || res.tier === 'sportovni') tip(4, 'Nejsilnější růst', 'Kolem poloviny května klidně sekejte až 3× týdně; vždy nejvýš o třetinu stébla.');
     tip(4, 'Hlídat ježatku a lipnici', 'Mladou ježatku vytrhat; v době květu lipnice sbírat posečenou hmotu.');
     [5, 6, 7].forEach(function (m) { tip(m, 'Horko', 'Nesekat nakrátko (o 1–2 cm výš), zalévat ráno, ráno stahovat rosu.'); });
     tip(6, 'Ranní obchůzka', 'Za rosy hledat pavučinky plísní (dolarová skvrnitost).');
     tip(8, 'Kontrola ponrav', 'Zkusit zvednout drn na podezřelých místech.');
-    [9, 10].forEach(function (m) { tip(m, 'Listí', 'Hrabat nebo foukat průběžně – prevence plísně sněžné.'); });
-    tip(10, 'Poslední seč', 'Na běžnou výšku, nenechávat do zimy dlouhou trávu.');
-    [11, 0, 1].forEach(function (m) { tip(m, 'Zimní klid', 'Na zmrzlý nebo zasněžený trávník nechodit, nedávat na něj sníh ani listí.'); });
+    tip(8, 'Půdní vylepšovače', 'Při podzimní regeneraci zvažte půdní vylepšovač (mikroorganismy, kompost, zeolit), který zlepší kořenovou vrstvu. Kdo málo vertikutuje nebo má robotickou sekačku, která trávu nesbírá, může zkusit i přípravek na rozklad plsti (enzymy).');
+    [9, 10].forEach(function (m) { tip(m, 'Listí', 'Odklízejte do tří dnů (hrabáním nebo foukáním): pod souvislou vrstvou začne trávník žloutnout a hnít. Je to i prevence plísně sněžné.'); });
+    if (res.tier !== 'low') tip(9, 'Od půlky října sečte méně', 'Od poloviny října sečte jen 1× týdně a dál sekejte podle růstu: dokud tráva roste a padá do koše, sekáme.');
+    tip(10, 'Poslední seč', 'Na běžnou výšku, nenechávat do zimy dlouhou trávu. Sekejte, dokud tráva roste (půda kolem 10 °C ještě nespí).');
+    [11, 0, 1].forEach(function (m) { tip(m, 'Zimní klid', 'Na trávník vstupujte jen při teplotě nad nulou a oschlém povrchu. Po zmrzlém, podmáčeném nebo ledovém podloží nechoďte, nedávejte na něj sníh ani listí: časté stopy se na jaře změní v plíseň sněžnou.'); });
     if (a && a.age === 'new') tip(3, 'Nový trávník', 'Nechat dorůst asi do 10 cm, pak zkracovat vždy o třetinu. Rotační sekačkou nesekat příliš brzy.');
     return M;
   }
