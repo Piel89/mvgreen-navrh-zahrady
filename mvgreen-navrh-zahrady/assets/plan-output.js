@@ -39,7 +39,7 @@
       '<div class="pv-card" id="pv-w"><div class="pv-hd"><div><span class="eyebrow">Voda</span><h3>Kolik zalévat</h3></div><button class="pv-tog" type="button" id="pvHeat" aria-pressed="false"><i></i>Tropické vedro</button></div>' +
       '<div class="pv-water"><div><div class="pv-tank" id="pvTank"></div><p class="muted pv-small">Pruh ukazuje týdenní množství vody v litrech na m² (včetně deště). Šrafovaná oblast je rozpětí, které uvádějí zdroje.</p></div><div class="pv-facts" id="pvWFacts"></div></div></div>' +
       '<div class="pv-card" id="pv-m"><div><span class="eyebrow">Sečení</span><h3>Kdy sekat a kolik ukrojit</h3></div>' +
-      '<div class="pv-mow"><div><label for="pvMowH" class="pv-lab">Výška, na kterou chcete trávník mít</label><div class="pv-range"><input id="pvMowH" type="range" min="1.5" max="8" step="0.5"><span class="pv-val" id="pvMowVal"></span></div><div class="pv-facts" id="pvMowFacts" style="margin-top:12px"></div></div><svg id="pvBlades" viewBox="0 0 320 260" role="img" aria-label="Schéma stébla a výšky sečení"></svg></div></div>' +
+      '<div class="pv-mow"><div><label for="pvMowH" class="pv-lab">Výška, na kterou chcete trávník mít</label><div class="pv-range"><input id="pvMowH" type="range" min="1.5" max="8" step="0.1"><span class="pv-val" id="pvMowVal"></span></div><div class="pv-facts" id="pvMowFacts" style="margin-top:12px"></div></div><svg id="pvBlades" viewBox="0 0 320 260" role="img" aria-label="Schéma stébla a výšky sečení"></svg></div></div>' +
       '<div class="pv-card" id="pv-s"><div><span class="eyebrow">Moje sezóna</span><h3>Odškrtávejte, co už je hotové</h3></div><div class="pv-season"><div class="pv-ring" id="pvRing"></div><div><div class="pv-tasks" id="pvTasks"></div><p class="pv-win" id="pvWin"></p></div></div></div>' +
       '<div class="pv-tip" id="pvTip" role="status"></div></div>';
   }
@@ -224,7 +224,13 @@
     $('pvMowH').value = S.mow;
     drawTop(); drawNow(); drawRibbon(); drawDetail(); drawChart(); drawShop(); drawWater(); drawMow(); drawSeason();
     var hb = $('pvHeat'); hb.setAttribute('aria-pressed', S.heat); hb.onclick = function () { S.heat = !S.heat; hb.setAttribute('aria-pressed', S.heat); drawWater(); drawTop(); };
-    $('pvMowH').oninput = function (e) { S.mow = +e.target.value; drawMow(); };
+    // Posuvník sečení: krok 0,1 cm a překreslení nejvýš jednou za snímek, aby na mobilu netrhal (Martin 2026-11-24: "na mobilu se to seká, není to plynulé").
+    var mowRaf = 0;
+    $('pvMowH').oninput = function (e) {
+      S.mow = +e.target.value;
+      if (mowRaf) return;
+      mowRaf = (window.requestAnimationFrame || function (f) { return setTimeout(f, 16); })(function () { mowRaf = 0; drawMow(); });
+    };
     var tb = $('pvTblBtn'); var showTbl = function () { $('pvTable').hidden = !S.tbl; $('pvChart').style.display = S.tbl ? 'none' : 'block'; tb.setAttribute('aria-pressed', S.tbl); tb.textContent = S.tbl ? 'Zobrazit graf' : 'Zobrazit tabulku'; };
     tb.onclick = function () { S.tbl = !S.tbl; showTbl(); }; showTbl();
     if (!mount.rb) { mount.rb = true; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { if ($('pvChart') && X) drawChart(); }, 150); }); }
